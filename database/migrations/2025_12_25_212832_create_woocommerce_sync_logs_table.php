@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('woocommerce_sync_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('sync_type', 255);
+            $table->string('operation', 255);
+            $table->longText('records')->nullable();
+            $table->unsignedBigInteger('synced_by');
+            $table->timestamps();
+
+            $table->foreign('synced_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('restrict')
+                ->onUpdate('cascade');
+
+            $table->index('sync_type');
+            $table->index('operation');
+            $table->index('synced_by');
+            $table->index('created_at');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('woocommerce_sync_logs');
+    }
+};

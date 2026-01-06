@@ -1,0 +1,143 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryBulkDestroyRequest;
+use App\Http\Requests\CategoryIndexRequest;
+use App\Http\Requests\CategoryRequest;
+use App\Http\Requests\ImportRequest;
+use App\Http\Resources\CategoryResource;
+use App\Models\Category;
+use App\Services\CategoryService;
+use Illuminate\Http\JsonResponse;
+
+/**
+ * CategoryController
+ *
+ * API controller for managing categories with full CRUD operations.
+ */
+class CategoryController extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @param CategoryService $service
+     */
+    public function __construct(
+        private readonly CategoryService $service
+    )
+    {
+    }
+
+    /**
+     * Display a paginated listing of categories.
+     *
+     * @param CategoryIndexRequest $request
+     * @return JsonResponse
+     */
+    public function index(CategoryIndexRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $perPage = $validated['per_page'] ?? 10;
+        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
+
+        $categories = $this->service->getCategories($filters, $perPage)
+            ->through(fn($category) => new CategoryResource($category));
+
+        return response()->success($categories, 'Categories fetched successfully');
+    }
+
+    /**
+     * Store a newly created category.
+     *
+     * @param CategoryRequest $request
+     * @return JsonResponse
+     */
+    public function store(CategoryRequest $request): JsonResponse
+    {
+        $category = $this->service->createCategory($request->validated());
+
+        return response()->success(
+            new CategoryResource($category),
+            'Category created successfully',
+            201
+        );
+    }
+
+    /**
+     * Display the specified category.
+     *
+     * @param Category $category
+     * @return JsonResponse
+     */
+    public function show(Category $category): JsonResponse
+    {
+        return response()->success(
+            new CategoryResource($category),
+            'Category retrieved successfully'
+        );
+    }
+
+    /**
+     * Update the specified category.
+     *
+     * @param CategoryRequest $request
+     * @param Category $category
+     * @return JsonResponse
+     */
+    public function update(CategoryRequest $request, Category $category): JsonResponse
+    {
+        $category = $this->service->updateCategory($category, $request->validated());
+
+        return response()->success(
+            new CategoryResource($category),
+            'Category updated successfully'
+        );
+    }
+
+    /**
+     * Remove the specified category from storage.
+     *
+     * @param Category $category
+     * @return JsonResponse
+     */
+    public function destroy(Category $category): JsonResponse
+    {
+        $this->service->deleteCategory($category);
+
+        return response()->success(null, 'Category deleted successfully');
+    }
+
+    /**
+     * Bulk delete multiple categories.
+     *
+     * @param CategoryBulkDestroyRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDestroy(CategoryBulkDestroyRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeleteCategories($request->validated()['ids']);
+
+        return response()->success(
+            ['deleted_count' => $count],
+            "Deleted {$count} categories successfully"
+        );
+    }
+
+    /**
+     * Import categories from a file.
+     *
+     * @param ImportRequest $request
+     * @return JsonResponse
+     */
+    public function import(ImportRequest $request): JsonResponse
+    {
+        $this->service->importCategories($request->file('file'));
+
+        return response()->success(null, 'Categories imported successfully');
+    }
+}
+
