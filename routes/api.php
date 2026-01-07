@@ -60,11 +60,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('brands.import');
     Route::apiResource('brands', BrandController::class);
 
-    Route::apiResource('units', UnitController::class);
+    Route::get('units/base-units', [UnitController::class, 'getBaseUnits'])
+        ->name('units.baseUnits');
+    Route::patch('units/bulk-activate', [UnitController::class, 'bulkActivate'])
+        ->name('units.bulkActivate');
+    Route::patch('units/bulk-deactivate', [UnitController::class, 'bulkDeactivate'])
+        ->name('units.bulkDeactivate');
     Route::delete('units/bulk-destroy', [UnitController::class, 'bulkDestroy'])
         ->name('units.bulkDestroy');
     Route::post('units/import', [UnitController::class, 'import'])
         ->name('units.import');
+    Route::apiResource('units', UnitController::class);
 
     Route::apiResource('taxes', TaxController::class);
     Route::delete('taxes/bulk-destroy', [TaxController::class, 'bulkDestroy'])

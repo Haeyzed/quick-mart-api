@@ -58,6 +58,20 @@ class UnitService extends BaseService
     }
 
     /**
+     * Get all active base units (units where base_unit is null).
+     * Used for populating base unit dropdowns.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Unit>
+     */
+    public function getBaseUnits(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Unit::where('is_active', true)
+            ->whereNull('base_unit')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
      * Create a new unit.
      *
      * @param array<string, mixed> $data Validated unit data
@@ -84,9 +98,12 @@ class UnitService extends BaseService
     private function normalizeUnitData(array $data): array
     {
         // Set default operator and operation_value if base_unit is not set
+        // This matches the salespro logic: if no base_unit, set defaults
         if (empty($data['base_unit'])) {
-            $data['operator'] = $data['operator'] ?? '*';
-            $data['operation_value'] = $data['operation_value'] ?? 1;
+            $data['operator'] = '*';
+            $data['operation_value'] = 1;
+            // Clear base_unit to ensure it's null
+            $data['base_unit'] = null;
         }
 
         // Normalize boolean fields to match database schema
@@ -176,6 +193,34 @@ class UnitService extends BaseService
     {
         $this->transaction(function () use ($file) {
             Excel::import(new UnitsImport(), $file);
+        });
+    }
+
+    /**
+     * Bulk activate multiple units.
+     *
+     * @param array<int> $ids Array of unit IDs to activate
+     * @return int Number of units activated
+     */
+    public function bulkActivateUnits(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Unit::whereIn('id', $ids)
+                ->update(['is_active' => true]);
+        });
+    }
+
+    /**
+     * Bulk deactivate multiple units.
+     *
+     * @param array<int> $ids Array of unit IDs to deactivate
+     * @return int Number of units deactivated
+     */
+    public function bulkDeactivateUnits(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Unit::whereIn('id', $ids)
+                ->update(['is_active' => false]);
         });
     }
 }

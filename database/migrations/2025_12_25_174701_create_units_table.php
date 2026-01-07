@@ -20,6 +20,7 @@ return new class extends Migration
             $table->double('operation_value')->nullable();
             $table->boolean('is_active')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('base_unit')
                 ->references('id')

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportRequest;
 use App\Http\Requests\UnitBulkDestroyRequest;
+use App\Http\Requests\UnitBulkUpdateRequest;
 use App\Http\Requests\UnitIndexRequest;
 use App\Http\Requests\UnitRequest;
 use App\Http\Resources\UnitResource;
@@ -82,6 +83,19 @@ class UnitController extends Controller
     }
 
     /**
+     * Get all active base units (for dropdown selection).
+     *
+     * @return JsonResponse
+     */
+    public function getBaseUnits(): JsonResponse
+    {
+        $baseUnits = $this->service->getBaseUnits()
+            ->map(fn($unit) => new UnitResource($unit));
+
+        return response()->success($baseUnits, 'Base units fetched successfully');
+    }
+
+    /**
      * Update the specified unit.
      *
      * @param UnitRequest $request
@@ -138,6 +152,38 @@ class UnitController extends Controller
         $this->service->importUnits($request->file('file'));
 
         return response()->success(null, 'Units imported successfully');
+    }
+
+    /**
+     * Bulk activate multiple units.
+     *
+     * @param UnitBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkActivate(UnitBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateUnits($request->validated()['ids']);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "Activated {$count} unit" . ($count !== 1 ? 's' : '') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk deactivate multiple units.
+     *
+     * @param UnitBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDeactivate(UnitBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateUnits($request->validated()['ids']);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "Deactivated {$count} unit" . ($count !== 1 ? 's' : '') . " successfully"
+        );
     }
 }
 
