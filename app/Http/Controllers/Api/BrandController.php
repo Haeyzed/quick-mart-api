@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BrandBulkDestroyRequest;
+use App\Http\Requests\BrandBulkUpdateRequest;
 use App\Http\Requests\BrandIndexRequest;
 use App\Http\Requests\BrandRequest;
 use App\Http\Requests\ImportRequest;
@@ -138,6 +139,38 @@ class BrandController extends Controller
         $this->service->importBrands($request->file('file'));
 
         return response()->success(null, 'Brands imported successfully');
+    }
+
+    /**
+     * Bulk activate multiple brands.
+     *
+     * @param BrandBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkActivate(BrandBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateBrands($request->validated()['ids']);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "Activated {$count} brand" . ($count !== 1 ? 's' : '') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk deactivate multiple brands.
+     *
+     * @param BrandBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDeactivate(BrandBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateBrands($request->validated()['ids']);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "Deactivated {$count} brand" . ($count !== 1 ? 's' : '') . " successfully"
+        );
     }
 }
 

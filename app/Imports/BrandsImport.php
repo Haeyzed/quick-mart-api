@@ -32,7 +32,9 @@ class BrandsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             }
 
             $name = trim($row['name'] ?? '');
-            $image = trim($row['image'] ?? '');
+            $shortDescription = trim($row['short_description'] ?? '');
+            $imageUrl = trim($row['image_url'] ?? '');
+            $pageTitle = trim($row['page_title'] ?? '');
 
             // Find or create brand
             $brand = Brand::firstOrNew(
@@ -40,7 +42,9 @@ class BrandsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             );
 
             $brand->name = $name;
-            $brand->image = $image ?: null;
+            $brand->image_url = $imageUrl ?: null;
+            $brand->page_title = $pageTitle ?: null;
+            $brand->short_description = $shortDescription;
             $brand->is_active = true;
 
             // Generate slug if not set

@@ -120,11 +120,18 @@ class BrandRequest extends BaseRequest
         // Normalize name (replace multiple whitespaces with single space)
         $name = $this->name ? preg_replace('/\s+/', ' ', trim($this->name)) : null;
 
+        // Convert is_active to boolean if present
+        // Handles strings like "true", "false", "1", "0", etc.
+        $isActive = $this->has('is_active') && $this->is_active !== null
+            ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
         $this->merge([
             'name' => $name,
             'slug' => $this->slug ?: null,
             'short_description' => $this->short_description ?: null,
             'page_title' => $this->page_title ?: null,
+            'is_active' => $isActive,
         ]);
     }
 

@@ -211,5 +211,33 @@ class BrandService extends BaseService
             Excel::import(new BrandsImport(), $file);
         });
     }
+
+    /**
+     * Bulk activate multiple brands.
+     *
+     * @param array<int> $ids Array of brand IDs to activate
+     * @return int Number of brands activated
+     */
+    public function bulkActivateBrands(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Brand::whereIn('id', $ids)
+                ->update(['is_active' => true]);
+        });
+    }
+
+    /**
+     * Bulk deactivate multiple brands.
+     *
+     * @param array<int> $ids Array of brand IDs to deactivate
+     * @return int Number of brands deactivated
+     */
+    public function bulkDeactivateBrands(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Brand::whereIn('id', $ids)
+                ->update(['is_active' => false]);
+        });
+    }
 }
 

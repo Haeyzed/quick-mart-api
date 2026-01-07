@@ -7,32 +7,15 @@ namespace App\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\ImageManager;
 
 /**
  * UploadService
  *
  * A general-purpose file upload service that works with all Laravel storage providers.
  * Supports images, videos, documents, and any other file type.
- * Automatically converts uploaded images to PNG format using Intervention Image 3.
  */
 class UploadService
 {
-    /**
-     * Image manager instance.
-     *
-     * @var ImageManager
-     */
-    protected ImageManager $imageManager;
-
-    /**
-     * Create a new UploadService instance.
-     */
-    public function __construct()
-    {
-        $this->imageManager = new ImageManager(new Driver());
-    }
 
     /**
      * Upload a file and return its public URL.
@@ -57,7 +40,6 @@ class UploadService
 
     /**
      * Upload a file to storage.
-     * If the file is an image, it will be converted to PNG format.
      *
      * @param UploadedFile $file The file to upload
      * @param string $directory Directory path where the file should be stored
@@ -72,66 +54,31 @@ class UploadService
         ?string      $fileName = null
     ): string
     {
-        // Check if the file is an image
-        if ($this->isImage($file)) {
-            return $this->uploadImage($file, $directory, $disk, $fileName);
+        // Generate filename with original extension if not provided
+        if ($fileName === null) {
+            $extension = $file->getClientOriginalExtension();
+            $fileName = $this->generateFileName($extension);
+        } else {
+            // If fileName is provided without extension, add original extension
+            $extension = $file->getClientOriginalExtension();
+            if (!str_contains($fileName, '.')) {
+                $fileName .= '.' . $extension;
+            }
         }
 
-        // Handle non-image files
-        $extension = $file->getClientOriginalExtension();
-        $fileName = $fileName ?? $this->generateFileName($extension);
-        $filePath = $directory . '/' . $fileName;
+        // Ensure directory exists
+        Storage::disk($disk)->makeDirectory($directory);
 
+        // Upload file
         Storage::disk($disk)->putFileAs(
             $directory,
             $file,
             $fileName
         );
 
-        return $filePath;
+        return $directory . '/' . $fileName;
     }
 
-    /**
-     * Check if the uploaded file is an image.
-     *
-     * @param UploadedFile $file The file to check
-     * @return bool True if the file is an image, false otherwise
-     */
-    protected function isImage(UploadedFile $file): bool
-    {
-        $mimeType = $file->getMimeType();
-        return str_starts_with($mimeType, 'image/');
-    }
-
-    /**
-     * Upload an image and convert it to PNG format.
-     *
-     * @param UploadedFile $file The image file to upload
-     * @param string $directory Directory path where the file should be stored
-     * @param string|null $disk Storage disk name (default: 'public')
-     * @param string|null $fileName Custom file name (without extension). If null, generates unique name
-     * @return string The stored file path
-     */
-    protected function uploadImage(
-        UploadedFile $file,
-        string       $directory = 'uploads',
-        ?string      $disk = 'public',
-        ?string      $fileName = null
-    ): string
-    {
-        // Generate filename
-        $fileName = $fileName ?? Str::uuid()->toString();
-        $filePath = $directory . '/' . $fileName;
-
-        // Read image from uploaded file
-        $image = $this->imageManager->read($file->getRealPath());
-
-        // Convert to PNG and save directly to storage path
-        $storagePath = Storage::disk($disk)->path($filePath);
-        $image->toPng()->save($storagePath);
-
-        return $filePath;
-    }
 
     /**
      * Generate a unique file name.
