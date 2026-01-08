@@ -175,6 +175,24 @@ class CategoryRequest extends BaseRequest
         // Normalize name (replace multiple whitespaces with single space)
         $name = $this->name ? preg_replace('/\s+/', ' ', trim($this->name)) : null;
 
+        // Convert is_active to boolean if present
+        // Handles strings like "true", "false", "1", "0", etc.
+        $isActive = $this->has('is_active') && $this->is_active !== null
+            ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
+        // Convert featured to boolean if present
+        // Handles strings like "true", "false", "1", "0", etc.
+        $featured = $this->has('featured') && $this->featured !== null
+            ? filter_var($this->featured, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
+        // Convert is_sync_disable to boolean if present
+        // Handles strings like "true", "false", "1", "0", etc.
+        $isSyncDisable = $this->has('is_sync_disable') && $this->is_sync_disable !== null
+            ? filter_var($this->is_sync_disable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
         $this->merge([
             'name' => $name,
             'slug' => $this->slug ?: null,
@@ -182,6 +200,9 @@ class CategoryRequest extends BaseRequest
             'page_title' => $this->page_title ?: null,
             'icon' => $this->icon ?: null,
             'parent_id' => $this->parent_id ?: null,
+            'is_active' => $isActive,
+            'featured' => $featured,
+            'is_sync_disable' => $isSyncDisable,
             'woocommerce_category_id' => $this->woocommerce_category_id ?: null,
         ]);
     }

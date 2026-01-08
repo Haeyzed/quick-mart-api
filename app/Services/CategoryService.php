@@ -38,6 +38,7 @@ class CategoryService extends BaseService
     public function getCategories(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         return Category::query()
+            ->with('parent:id,name')
             ->when(
                 isset($filters['is_active']),
                 fn($query) => $query->where('is_active', (bool)$filters['is_active'])
@@ -71,7 +72,7 @@ class CategoryService extends BaseService
      */
     public function getCategory(int $id): Category
     {
-        return Category::findOrFail($id);
+        return Category::with('parent:id,name')->findOrFail($id);
     }
 
     /**
@@ -272,6 +273,90 @@ class CategoryService extends BaseService
     {
         $this->transaction(function () use ($file) {
             Excel::import(new CategoriesImport(), $file);
+        });
+    }
+
+    /**
+     * Bulk activate multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to activate
+     * @return int Number of categories activated
+     */
+    public function bulkActivateCategories(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['is_active' => true]);
+        });
+    }
+
+    /**
+     * Bulk deactivate multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to deactivate
+     * @return int Number of categories deactivated
+     */
+    public function bulkDeactivateCategories(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['is_active' => false]);
+        });
+    }
+
+    /**
+     * Bulk enable featured status for multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to enable featured
+     * @return int Number of categories updated
+     */
+    public function bulkEnableFeatured(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['featured' => 1]);
+        });
+    }
+
+    /**
+     * Bulk disable featured status for multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to disable featured
+     * @return int Number of categories updated
+     */
+    public function bulkDisableFeatured(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['featured' => 0]);
+        });
+    }
+
+    /**
+     * Bulk enable sync (set is_sync_disable to 0) for multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to enable sync
+     * @return int Number of categories updated
+     */
+    public function bulkEnableSync(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['is_sync_disable' => 0]);
+        });
+    }
+
+    /**
+     * Bulk disable sync (set is_sync_disable to 1) for multiple categories.
+     *
+     * @param array<int> $ids Array of category IDs to disable sync
+     * @return int Number of categories updated
+     */
+    public function bulkDisableSync(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Category::whereIn('id', $ids)
+                ->update(['is_sync_disable' => 1]);
         });
     }
 }

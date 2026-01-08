@@ -44,11 +44,23 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('verification.resend');
 
     // All other API routes require authentication
-    Route::apiResource('categories', CategoryController::class);
+    Route::patch('categories/bulk-activate', [CategoryController::class, 'bulkActivate'])
+        ->name('categories.bulkActivate');
+    Route::patch('categories/bulk-deactivate', [CategoryController::class, 'bulkDeactivate'])
+        ->name('categories.bulkDeactivate');
+    Route::patch('categories/bulk-enable-featured', [CategoryController::class, 'bulkEnableFeatured'])
+        ->name('categories.bulkEnableFeatured');
+    Route::patch('categories/bulk-disable-featured', [CategoryController::class, 'bulkDisableFeatured'])
+        ->name('categories.bulkDisableFeatured');
+    Route::patch('categories/bulk-enable-sync', [CategoryController::class, 'bulkEnableSync'])
+        ->name('categories.bulkEnableSync');
+    Route::patch('categories/bulk-disable-sync', [CategoryController::class, 'bulkDisableSync'])
+        ->name('categories.bulkDisableSync');
     Route::delete('categories/bulk-destroy', [CategoryController::class, 'bulkDestroy'])
         ->name('categories.bulkDestroy');
     Route::post('categories/import', [CategoryController::class, 'import'])
         ->name('categories.import');
+    Route::apiResource('categories', CategoryController::class);
 
     Route::patch('brands/bulk-activate', [BrandController::class, 'bulkActivate'])
         ->name('brands.bulkActivate');

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryBulkDestroyRequest;
+use App\Http\Requests\CategoryBulkUpdateRequest;
 use App\Http\Requests\CategoryIndexRequest;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Requests\ImportRequest;
@@ -138,6 +139,102 @@ class CategoryController extends Controller
         $this->service->importCategories($request->file('file'));
 
         return response()->success(null, 'Categories imported successfully');
+    }
+
+    /**
+     * Bulk activate multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkActivate(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateCategories($request->validated()['ids']);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "Activated {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk deactivate multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDeactivate(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateCategories($request->validated()['ids']);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "Deactivated {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk enable featured status for multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkEnableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkEnableFeatured($request->validated()['ids']);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Enabled featured for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk disable featured status for multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDisableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDisableFeatured($request->validated()['ids']);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Disabled featured for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk enable sync for multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkEnableSync(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkEnableSync($request->validated()['ids']);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Enabled sync for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk disable sync for multiple categories.
+     *
+     * @param CategoryBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDisableSync(CategoryBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDisableSync($request->validated()['ids']);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Disabled sync for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+        );
     }
 }
 

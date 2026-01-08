@@ -97,6 +97,14 @@ class CategoryResource extends JsonResource
             'parent_id' => $this->parent_id,
 
             /**
+             * Parent category name (if parent exists).
+             *
+             * @var string|null $parent_name
+             * @example Electronics
+             */
+            'parent_name' => $this->parent?->name,
+
+            /**
              * Whether the category is active and visible to users.
              *
              * @var bool $is_active
