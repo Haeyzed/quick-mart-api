@@ -9,11 +9,15 @@ use App\Http\Requests\Categories\CategoryBulkDestroyRequest;
 use App\Http\Requests\Categories\CategoryBulkUpdateRequest;
 use App\Http\Requests\Categories\CategoryIndexRequest;
 use App\Http\Requests\Categories\CategoryRequest;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Models\User;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * CategoryController
@@ -235,6 +239,29 @@ class CategoryController extends Controller
             ['updated_count' => $count],
             "Disabled sync for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
         );
+    }
+
+    /**
+     * Export categories to Excel or PDF.
+     *
+     * @param ExportRequest $request
+     * @return JsonResponse|Response
+     */
+    public function export(ExportRequest $request): JsonResponse|Response
+    {
+        $validated = $request->validated();
+        $ids = $validated['ids'] ?? [];
+        $format = $validated['format'];
+        $method = $validated['method'];
+        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+
+        $filePath = $this->service->exportCategories($ids, $format, $user);
+
+        if ($method === 'download') {
+            return Storage::disk('public')->download($filePath);
+        }
+
+        return response()->success(null, 'Export file sent via email successfully');
     }
 }
 

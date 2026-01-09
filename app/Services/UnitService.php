@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\UnitsExport;
 use App\Imports\UnitsImport;
+use App\Mail\ExportMail;
 use App\Models\Unit;
+use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -222,6 +227,39 @@ class UnitService extends BaseService
             return Unit::whereIn('id', $ids)
                 ->update(['is_active' => false]);
         });
+    }
+
+    /**
+     * Export units to Excel or PDF.
+     *
+     * @param array<int> $ids Array of unit IDs to export (empty for all)
+     * @param string $format Export format: 'excel' or 'pdf'
+     * @param User|null $user User to send email to (null for download)
+     * @return string File path or download response
+     */
+    public function exportUnits(array $ids = [], string $format = 'excel', ?User $user = null): string
+    {
+        $fileName = 'units-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $filePath = 'exports/' . $fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new UnitsExport($ids), $filePath, 'public');
+        } else {
+            // For PDF, use Excel's PDF export with DOMPDF
+            Excel::store(new UnitsExport($ids), $filePath, 'public', \Maatwebsite\Excel\Excel::DOMPDF);
+        }
+
+        // If user is provided, send email
+        if ($user) {
+            Mail::to($user->email)->send(new ExportMail(
+                $user,
+                $filePath,
+                $fileName,
+                'Units'
+            ));
+        }
+
+        return $filePath;
     }
 }
 

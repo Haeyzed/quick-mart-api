@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Requests\TaxBulkDestroyRequest;
 use App\Http\Requests\TaxBulkUpdateRequest;
@@ -12,8 +13,11 @@ use App\Http\Requests\TaxIndexRequest;
 use App\Http\Requests\TaxRequest;
 use App\Http\Resources\TaxResource;
 use App\Models\Tax;
+use App\Models\User;
 use App\Services\TaxService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * TaxController
@@ -171,6 +175,29 @@ class TaxController extends Controller
             ['deactivated_count' => $count],
             "Deactivated {$count} tax" . ($count !== 1 ? 'es' : '') . " successfully"
         );
+    }
+
+    /**
+     * Export taxes to Excel or PDF.
+     *
+     * @param ExportRequest $request
+     * @return JsonResponse|Response
+     */
+    public function export(ExportRequest $request): JsonResponse|Response
+    {
+        $validated = $request->validated();
+        $ids = $validated['ids'] ?? [];
+        $format = $validated['format'];
+        $method = $validated['method'];
+        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+
+        $filePath = $this->service->exportTaxes($ids, $format, $user);
+
+        if ($method === 'download') {
+            return Storage::disk('public')->download($filePath);
+        }
+
+        return response()->success(null, 'Export file sent via email successfully');
     }
 }
 
