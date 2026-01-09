@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BrandBulkDestroyRequest;
-use App\Http\Requests\BrandBulkUpdateRequest;
-use App\Http\Requests\BrandIndexRequest;
-use App\Http\Requests\BrandRequest;
+use App\Http\Requests\Brands\BrandBulkDestroyRequest;
+use App\Http\Requests\Brands\BrandBulkUpdateRequest;
+use App\Http\Requests\Brands\BrandIndexRequest;
+use App\Http\Requests\Brands\BrandRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;

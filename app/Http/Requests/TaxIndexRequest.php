@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 
 /**
  * TaxIndexRequest
  *
  * Validates query parameters for tax index endpoint.
  */
-class TaxIndexRequest extends FormRequest
+class TaxIndexRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -60,6 +60,20 @@ class TaxIndexRequest extends FormRequest
              */
             'search' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'per_page' => $this->per_page ? (int) $this->per_page : null,
+            'page' => $this->page ? (int) $this->page : null,
+            'is_active' => $this->is_active !== null ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
+        ]);
     }
 }
 

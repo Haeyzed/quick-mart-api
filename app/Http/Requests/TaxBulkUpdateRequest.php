@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
- * CategoryBulkDestroyRequest
+ * TaxBulkUpdateRequest
  *
- * Validates bulk delete request for categories.
+ * Validates bulk update request for taxes (activate/deactivate).
  */
-class CategoryBulkDestroyRequest extends FormRequest
+class TaxBulkUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -32,19 +32,19 @@ class CategoryBulkDestroyRequest extends FormRequest
     {
         return [
             /**
-             * Array of category IDs to delete.
+             * Array of tax IDs to update.
              *
              * @var array<int> @ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
-             * Each ID in the ids array must be a valid category ID.
+             * Each ID in the ids array must be a valid tax ID.
              *
              * @var int @ids.*
              * @example 1
              */
-            'ids.*' => ['required', 'integer', 'exists:categories,id'],
+            'ids.*' => ['required', 'integer', Rule::exists('taxes', 'id')],
         ];
     }
 }

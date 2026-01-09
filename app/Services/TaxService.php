@@ -164,5 +164,33 @@ class TaxService extends BaseService
             Excel::import(new TaxesImport(), $file);
         });
     }
+
+    /**
+     * Bulk activate multiple taxes.
+     *
+     * @param array<int> $ids Array of tax IDs to activate
+     * @return int Number of taxes activated
+     */
+    public function bulkActivateTaxes(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Tax::whereIn('id', $ids)
+                ->update(['is_active' => true]);
+        });
+    }
+
+    /**
+     * Bulk deactivate multiple taxes.
+     *
+     * @param array<int> $ids Array of tax IDs to deactivate
+     * @return int Number of taxes deactivated
+     */
+    public function bulkDeactivateTaxes(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            return Tax::whereIn('id', $ids)
+                ->update(['is_active' => false]);
+        });
+    }
 }
 

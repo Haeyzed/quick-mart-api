@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Units;
+
+use App\Http\Requests\BaseRequest;
 
 /**
- * BrandIndexRequest
+ * UnitIndexRequest
  *
- * Validates query parameters for brand index endpoint.
+ * Validates query parameters for unit index endpoint.
  */
-class BrandIndexRequest extends BaseRequest
+class UnitIndexRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -44,17 +46,17 @@ class BrandIndexRequest extends BaseRequest
              */
             'page' => ['nullable', 'integer', 'min:1'],
             /**
-             * Filter brands by active status.
+             * Filter units by active status.
              *
              * @var bool|null @is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],
             /**
-             * Search term to filter brands by name, description, or slug.
+             * Search term to filter units by code or name.
              *
              * @var string|null @search
-             * @example apple
+             * @example kg
              */
             'search' => ['nullable', 'string', 'max:255'],
         ];

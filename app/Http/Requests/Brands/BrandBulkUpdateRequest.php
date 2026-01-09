@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Brands;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * CategoryBulkUpdateRequest
+ * BrandBulkUpdateRequest
  *
- * Validates bulk update request for categories (activate/deactivate).
+ * Validates bulk update request for brands (activate/deactivate).
  */
-class CategoryBulkUpdateRequest extends BaseRequest
+class BrandBulkUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -32,19 +33,19 @@ class CategoryBulkUpdateRequest extends BaseRequest
     {
         return [
             /**
-             * Array of category IDs to update.
+             * Array of brand IDs to update.
              *
              * @var array<int> @ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
-             * Each ID in the ids array must be a valid category ID.
+             * Each ID in the ids array must be a valid brand ID.
              *
              * @var int @ids.*
              * @example 1
              */
-            'ids.*' => ['required', 'integer', Rule::exists('categories', 'id')],
+            'ids.*' => ['required', 'integer', Rule::exists('brands', 'id')],
         ];
     }
 }

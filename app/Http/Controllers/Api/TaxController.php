@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportRequest;
 use App\Http\Requests\TaxBulkDestroyRequest;
+use App\Http\Requests\TaxBulkUpdateRequest;
 use App\Http\Requests\TaxIndexRequest;
 use App\Http\Requests\TaxRequest;
 use App\Http\Resources\TaxResource;
@@ -138,6 +139,38 @@ class TaxController extends Controller
         $this->service->importTaxes($request->file('file'));
 
         return response()->success(null, 'Taxes imported successfully');
+    }
+
+    /**
+     * Bulk activate multiple taxes.
+     *
+     * @param TaxBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkActivate(TaxBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateTaxes($request->validated()['ids']);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "Activated {$count} tax" . ($count !== 1 ? 'es' : '') . " successfully"
+        );
+    }
+
+    /**
+     * Bulk deactivate multiple taxes.
+     *
+     * @param TaxBulkUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function bulkDeactivate(TaxBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateTaxes($request->validated()['ids']);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "Deactivated {$count} tax" . ($count !== 1 ? 'es' : '') . " successfully"
+        );
     }
 }
 

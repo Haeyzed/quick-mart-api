@@ -84,11 +84,15 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('units.import');
     Route::apiResource('units', UnitController::class);
 
-    Route::apiResource('taxes', TaxController::class);
+    Route::patch('taxes/bulk-activate', [TaxController::class, 'bulkActivate'])
+        ->name('taxes.bulkActivate');
+    Route::patch('taxes/bulk-deactivate', [TaxController::class, 'bulkDeactivate'])
+        ->name('taxes.bulkDeactivate');
     Route::delete('taxes/bulk-destroy', [TaxController::class, 'bulkDestroy'])
         ->name('taxes.bulkDestroy');
     Route::post('taxes/import', [TaxController::class, 'import'])
         ->name('taxes.import');
+    Route::apiResource('taxes', TaxController::class);
 
     Route::apiResource('warehouses', WarehouseController::class);
     Route::delete('warehouses/bulk-destroy', [WarehouseController::class, 'bulkDestroy'])

@@ -31,7 +31,7 @@ class CategoryService extends BaseService
     /**
      * Get paginated list of categories with optional filters.
      *
-     * @param array<string, mixed> $filters Available filters: is_active, featured, parent_id, search
+     * @param array<string, mixed> $filters Available filters: is_active, featured, is_sync_disable, parent_id, search
      * @param int $perPage Number of items per page (default: 10)
      * @return LengthAwarePaginator<Category>
      */
@@ -46,6 +46,10 @@ class CategoryService extends BaseService
             ->when(
                 isset($filters['featured']),
                 fn($query) => $query->where('featured', (bool)$filters['featured'])
+            )
+            ->when(
+                isset($filters['is_sync_disable']),
+                fn($query) => $query->where('is_sync_disable', (bool)$filters['is_sync_disable'])
             )
             ->when(
                 isset($filters['parent_id']),

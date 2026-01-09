@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Categories;
 
 use App\Http\Requests\BaseRequest;
 
@@ -60,6 +60,13 @@ class CategoryIndexRequest extends BaseRequest
              */
             'featured' => ['nullable', 'boolean'],
             /**
+             * Filter categories by sync status.
+             *
+             * @var bool|null @is_sync_disable
+             * @example false
+             */
+            'is_sync_disable' => ['nullable', 'boolean'],
+            /**
              * Filter categories by parent category ID.
              *
              * @var int|null @parent_id
@@ -87,6 +94,8 @@ class CategoryIndexRequest extends BaseRequest
             'per_page' => $this->per_page ? (int) $this->per_page : null,
             'page' => $this->page ? (int) $this->page : null,
             'is_active' => $this->is_active !== null ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
+            'featured' => $this->featured !== null ? filter_var($this->featured, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
+            'is_sync_disable' => $this->is_sync_disable !== null ? filter_var($this->is_sync_disable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
         ]);
     }
 }

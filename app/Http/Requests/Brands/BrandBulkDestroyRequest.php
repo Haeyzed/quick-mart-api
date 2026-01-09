@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Brands;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * UnitBulkUpdateRequest
+ * BrandBulkDestroyRequest
  *
- * Validates bulk update request for units (activate/deactivate).
+ * Validates bulk delete request for brands.
  */
-class UnitBulkUpdateRequest extends BaseRequest
+class BrandBulkDestroyRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -32,19 +33,19 @@ class UnitBulkUpdateRequest extends BaseRequest
     {
         return [
             /**
-             * Array of unit IDs to update.
+             * Array of brand IDs to delete.
              *
              * @var array<int> @ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
-             * Each ID in the ids array must be a valid unit ID.
+             * Each ID in the ids array must be a valid brand ID.
              *
              * @var int @ids.*
              * @example 1
              */
-            'ids.*' => ['required', 'integer', Rule::exists('units', 'id')],
+            'ids.*' => ['required', 'integer', Rule::exists('brands', 'id')],
         ];
     }
 }

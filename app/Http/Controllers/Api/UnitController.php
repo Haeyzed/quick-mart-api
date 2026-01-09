@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportRequest;
-use App\Http\Requests\UnitBulkDestroyRequest;
-use App\Http\Requests\UnitBulkUpdateRequest;
-use App\Http\Requests\UnitIndexRequest;
-use App\Http\Requests\UnitRequest;
+use App\Http\Requests\Units\UnitBulkDestroyRequest;
+use App\Http\Requests\Units\UnitBulkUpdateRequest;
+use App\Http\Requests\Units\UnitIndexRequest;
+use App\Http\Requests\Units\UnitRequest;
 use App\Http\Resources\UnitResource;
 use App\Models\Unit;
 use App\Services\UnitService;

@@ -100,8 +100,15 @@ class TaxRequest extends BaseRequest
      */
     protected function prepareForValidation(): void
     {
+        // Convert is_active to boolean if present
+        // Handles strings like "true", "false", "1", "0", etc.
+        $isActive = $this->has('is_active') && $this->is_active !== null
+            ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
         $this->merge([
             'woocommerce_tax_id' => $this->woocommerce_tax_id ?: null,
+            'is_active' => $isActive,
         ]);
     }
 

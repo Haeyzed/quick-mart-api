@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CategoryBulkDestroyRequest;
-use App\Http\Requests\CategoryBulkUpdateRequest;
-use App\Http\Requests\CategoryIndexRequest;
-use App\Http\Requests\CategoryRequest;
+use App\Http\Requests\Categories\CategoryBulkDestroyRequest;
+use App\Http\Requests\Categories\CategoryBulkUpdateRequest;
+use App\Http\Requests\Categories\CategoryIndexRequest;
+use App\Http\Requests\Categories\CategoryRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Units;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * UnitBulkDestroyRequest
+ * UnitBulkUpdateRequest
  *
- * Validates bulk delete request for units.
+ * Validates bulk update request for units (activate/deactivate).
  */
-class UnitBulkDestroyRequest extends FormRequest
+class UnitBulkUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -33,7 +33,7 @@ class UnitBulkDestroyRequest extends FormRequest
     {
         return [
             /**
-             * Array of unit IDs to delete.
+             * Array of unit IDs to update.
              *
              * @var array<int> @ids
              * @example [1, 2, 3]
