@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Requests\Units\UnitBulkDestroyRequest;
 use App\Http\Requests\Units\UnitBulkUpdateRequest;
@@ -12,8 +13,11 @@ use App\Http\Requests\Units\UnitIndexRequest;
 use App\Http\Requests\Units\UnitRequest;
 use App\Http\Resources\UnitResource;
 use App\Models\Unit;
+use App\Models\User;
 use App\Services\UnitService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * UnitController
@@ -184,6 +188,29 @@ class UnitController extends Controller
             ['deactivated_count' => $count],
             "Deactivated {$count} unit" . ($count !== 1 ? 's' : '') . " successfully"
         );
+    }
+
+    /**
+     * Export units to Excel or PDF.
+     *
+     * @param ExportRequest $request
+     * @return JsonResponse|Response
+     */
+    public function export(ExportRequest $request): JsonResponse|Response
+    {
+        $validated = $request->validated();
+        $ids = $validated['ids'] ?? [];
+        $format = $validated['format'];
+        $method = $validated['method'];
+        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+
+        $filePath = $this->service->exportUnits($ids, $format, $user);
+
+        if ($method === 'download') {
+            return Storage::disk('public')->download($filePath);
+        }
+
+        return response()->success(null, 'Export file sent via email successfully');
     }
 }
 

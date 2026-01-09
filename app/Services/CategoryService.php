@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\CategoriesExport;
 use App\Imports\CategoriesImport;
+use App\Mail\ExportMail;
 use App\Models\Category;
+use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -362,6 +367,39 @@ class CategoryService extends BaseService
             return Category::whereIn('id', $ids)
                 ->update(['is_sync_disable' => 1]);
         });
+    }
+
+    /**
+     * Export categories to Excel or PDF.
+     *
+     * @param array<int> $ids Array of category IDs to export (empty for all)
+     * @param string $format Export format: 'excel' or 'pdf'
+     * @param User|null $user User to send email to (null for download)
+     * @return string File path or download response
+     */
+    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null): string
+    {
+        $fileName = 'categories-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $filePath = 'exports/' . $fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new CategoriesExport($ids), $filePath, 'public');
+        } else {
+            // For PDF, use Excel's PDF export with DOMPDF
+            Excel::store(new CategoriesExport($ids), $filePath, 'public', \Maatwebsite\Excel\Excel::DOMPDF);
+        }
+
+        // If user is provided, send email
+        if ($user) {
+            Mail::to($user->email)->send(new ExportMail(
+                $user,
+                $filePath,
+                $fileName,
+                'Categories'
+            ));
+        }
+
+        return $filePath;
     }
 }
 

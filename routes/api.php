@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UnitController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\WarehouseController;
 use Illuminate\Http\Request;
@@ -43,6 +44,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/resend-verification-email', [AuthController::class, 'resendVerificationEmail'])
         ->name('verification.resend');
 
+    // Users
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+
     // All other API routes require authentication
     Route::patch('categories/bulk-activate', [CategoryController::class, 'bulkActivate'])
         ->name('categories.bulkActivate');
@@ -60,6 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('categories.bulkDestroy');
     Route::post('categories/import', [CategoryController::class, 'import'])
         ->name('categories.import');
+    Route::post('categories/export', [CategoryController::class, 'export'])
+        ->name('categories.export');
     Route::apiResource('categories', CategoryController::class);
 
     Route::patch('brands/bulk-activate', [BrandController::class, 'bulkActivate'])
@@ -70,6 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('brands.bulkDestroy');
     Route::post('brands/import', [BrandController::class, 'import'])
         ->name('brands.import');
+    Route::post('brands/export', [BrandController::class, 'export'])
+        ->name('brands.export');
     Route::apiResource('brands', BrandController::class);
 
     Route::get('units/base-units', [UnitController::class, 'getBaseUnits'])
@@ -82,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('units.bulkDestroy');
     Route::post('units/import', [UnitController::class, 'import'])
         ->name('units.import');
+    Route::post('units/export', [UnitController::class, 'export'])
+        ->name('units.export');
     Route::apiResource('units', UnitController::class);
 
     Route::patch('taxes/bulk-activate', [TaxController::class, 'bulkActivate'])
@@ -92,6 +102,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('taxes.bulkDestroy');
     Route::post('taxes/import', [TaxController::class, 'import'])
         ->name('taxes.import');
+    Route::post('taxes/export', [TaxController::class, 'export'])
+        ->name('taxes.export');
     Route::apiResource('taxes', TaxController::class);
 
     Route::apiResource('warehouses', WarehouseController::class);

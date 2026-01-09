@@ -9,11 +9,15 @@ use App\Http\Requests\Brands\BrandBulkDestroyRequest;
 use App\Http\Requests\Brands\BrandBulkUpdateRequest;
 use App\Http\Requests\Brands\BrandIndexRequest;
 use App\Http\Requests\Brands\BrandRequest;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
+use App\Models\User;
 use App\Services\BrandService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * BrandController
@@ -171,6 +175,29 @@ class BrandController extends Controller
             ['deactivated_count' => $count],
             "Deactivated {$count} brand" . ($count !== 1 ? 's' : '') . " successfully"
         );
+    }
+
+    /**
+     * Export brands to Excel or PDF.
+     *
+     * @param ExportRequest $request
+     * @return JsonResponse|Response
+     */
+    public function export(ExportRequest $request): JsonResponse|Response
+    {
+        $validated = $request->validated();
+        $ids = $validated['ids'] ?? [];
+        $format = $validated['format'];
+        $method = $validated['method'];
+        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+
+        $filePath = $this->service->exportBrands($ids, $format, $user);
+
+        if ($method === 'download') {
+            return Storage::disk('public')->download($filePath);
+        }
+
+        return response()->success(null, 'Export file sent via email successfully');
     }
 }
 
