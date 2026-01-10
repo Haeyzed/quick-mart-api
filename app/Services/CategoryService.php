@@ -19,6 +19,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -101,7 +102,7 @@ class CategoryService extends BaseService
             // Normalize data to match database schema
             $data = $this->normalizeCategoryData($data);
 
-            // Handle file upload if present
+            // Handle image file upload if present
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 $filePath = $this->uploadService->upload(
                     $data['image'],
@@ -112,9 +113,19 @@ class CategoryService extends BaseService
                 $data['image_url'] = $this->uploadService->url($filePath, 'public');
             }
 
+            // Handle icon file upload if present
+            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
+                $iconPath = $this->uploadService->upload(
+                    $data['icon'],
+                    'categories/icons',
+                    'public'
+                );
+                $data['icon'] = $iconPath;
+            }
+
             // Generate slug if not provided and name exists
             if (!isset($data['slug']) && isset($data['name'])) {
-                $data['slug'] = Category::generateUniqueSlug($data['name']);
+                $data['slug'] = Category::generateSlug($data['name']);
             }
 
             return Category::create($data);
@@ -124,19 +135,20 @@ class CategoryService extends BaseService
     /**
      * Normalize category data to match database schema requirements.
      *
-     * - is_active: stored as boolean (true/false)
+     * - is_active: stored as boolean (true/false), defaults to true on create
      * - featured: stored as tinyint (0/1)
-     * - is_sync_disable: stored as tinyint (0/1)
+     * - is_sync_disable: stored as tinyint (0/1) or null
      *
      * @param array<string, mixed> $data
+     * @param bool $isUpdate Whether this is an update operation (affects default values)
      * @return array<string, mixed>
      */
-    private function normalizeCategoryData(array $data): array
+    private function normalizeCategoryData(array $data, bool $isUpdate = false): array
     {
-        // is_active is stored as boolean (true/false)
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
+        // is_active defaults to true on create (matches old implementation: $lims_category_data['is_active'] = true;)
+        if (!isset($data['is_active']) && !$isUpdate) {
+            $data['is_active'] = true;
+        } elseif (isset($data['is_active'])) {
             $data['is_active'] = (bool)filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
@@ -144,26 +156,31 @@ class CategoryService extends BaseService
             );
         }
 
-        // featured and is_sync_disable are stored as 0/1 (tinyint) in database
-        if (!isset($data['featured'])) {
-            $data['featured'] = 0;
-        } else {
+        // featured: stored as 0/1 (tinyint) in database
+        if (isset($data['featured'])) {
             $data['featured'] = filter_var(
                 $data['featured'],
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
             ) ? 1 : 0;
+        } elseif (!$isUpdate) {
+            // On create, default to 0 if not provided
+            $data['featured'] = 0;
         }
+        // On update, if not provided, leave it unset (will be handled in updateCategory method)
 
-        if (!isset($data['is_sync_disable'])) {
-            $data['is_sync_disable'] = 0;
-        } else {
+        // is_sync_disable: only set if provided (matches old implementation)
+        if (isset($data['is_sync_disable'])) {
             $data['is_sync_disable'] = filter_var(
                 $data['is_sync_disable'],
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
             ) ? 1 : 0;
+        } elseif (!$isUpdate) {
+            // On create, don't set if not provided (leave as null in database)
+            unset($data['is_sync_disable']);
         }
+        // On update, if not provided, leave it unset (will be handled in updateCategory method)
 
         return $data;
     }
@@ -178,10 +195,10 @@ class CategoryService extends BaseService
     public function updateCategory(Category $category, array $data): Category
     {
         return $this->transaction(function () use ($category, $data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeCategoryData($data);
+            // Normalize data to match database schema (pass isUpdate=true for update operations)
+            $data = $this->normalizeCategoryData($data, isUpdate: true);
 
-            // Handle file upload if present
+            // Handle image file upload if present
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 // Delete old image if exists
                 if ($category->image) {
@@ -195,6 +212,32 @@ class CategoryService extends BaseService
                 );
                 $data['image'] = $filePath;
                 $data['image_url'] = $this->uploadService->url($filePath, 'public');
+            }
+
+            // Handle icon file upload if present
+            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
+                // Delete old icon if exists
+                if ($category->icon) {
+                    $this->uploadService->delete($category->icon, 'public');
+                }
+
+                $iconPath = $this->uploadService->upload(
+                    $data['icon'],
+                    'categories/icons',
+                    'public'
+                );
+                $data['icon'] = $iconPath;
+            }
+
+            // Handle update-specific logic (matches old controller behavior)
+            // If featured is not provided, set it to 0 (matches old: if(!isset($request->featured) && \Schema::hasColumn('categories', 'featured') ){ $input['featured'] = 0; })
+            if (!isset($data['featured']) && Schema::hasColumn('categories', 'featured')) {
+                $data['featured'] = 0;
+            }
+
+            // If is_sync_disable is not provided, set it to null (matches old: if(!isset($input['is_sync_disable']) && \Schema::hasColumn('categories', 'is_sync_disable')) $input['is_sync_disable'] = null;)
+            if (!isset($data['is_sync_disable']) && Schema::hasColumn('categories', 'is_sync_disable')) {
+                $data['is_sync_disable'] = null;
             }
 
             $category->update($data);
@@ -247,6 +290,11 @@ class CategoryService extends BaseService
             // Delete the image file if it exists
             if ($category->image) {
                 $this->uploadService->delete($category->image, 'public');
+            }
+
+            // Delete icon file if exists
+            if ($category->icon) {
+                $this->uploadService->delete($category->icon, 'public');
             }
 
             return $category->delete();
@@ -409,9 +457,14 @@ class CategoryService extends BaseService
 
         // If user is provided, send email
         if ($user && $method === 'email') {
+            // Check mail settings before attempting to send email
             $mailSetting = MailSetting::latest()->first();
             if (!$mailSetting) {
-                abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
+                throw new HttpResponseException(
+                    response()->json([
+                        'message' => 'Mail settings are not configured. Please contact the administrator.',
+                    ], Response::HTTP_BAD_REQUEST)
+                );
             }
 
             $generalSetting = GeneralSetting::latest()->first();
@@ -426,9 +479,13 @@ class CategoryService extends BaseService
                     $generalSetting
                 ));
             } catch (Exception $e) {
-                // Log error but don't fail the export
+                // Log error and return error response instead of aborting
                 $this->logError("Failed to send export email: " . $e->getMessage());
-                abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Failed to send export email: ' . $e->getMessage());
+                throw new HttpResponseException(
+                    response()->json([
+                        'message' => 'Failed to send export email: ' . $e->getMessage(),
+                    ], Response::HTTP_INTERNAL_SERVER_ERROR)
+                );
             }
         }
 

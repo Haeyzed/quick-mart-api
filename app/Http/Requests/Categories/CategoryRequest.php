@@ -84,12 +84,13 @@ class CategoryRequest extends BaseRequest
              */
             'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
-             * Category icon class name or identifier.
+             * Category icon file. Accepts JPEG, PNG, JPG, GIF, or WebP format. Max 5MB.
+             * The full URL will be saved to the icon field after upload.
              *
-             * @var string|null @icon
-             * @example fa fa-electronics
+             * @var UploadedFile|null @icon
+             * @example icon.png
              */
-            'icon' => ['nullable', 'string', 'max:255'],
+            'icon' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
              * Parent category ID for hierarchical structure. Must reference existing category.
              *
@@ -194,18 +195,24 @@ class CategoryRequest extends BaseRequest
             ? filter_var($this->is_sync_disable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        $this->merge([
+        $mergeData = [
             'name' => $name,
             'slug' => $this->slug ?: null,
             'short_description' => $this->short_description ?: null,
             'page_title' => $this->page_title ?: null,
-            'icon' => $this->icon ?: null,
             'parent_id' => $this->parent_id ?: null,
             'is_active' => $isActive,
             'featured' => $featured,
             'is_sync_disable' => $isSyncDisable,
             'woocommerce_category_id' => $this->woocommerce_category_id ?: null,
-        ]);
+        ];
+
+        // Only merge icon if it's provided (for file uploads, don't set to null)
+        if ($this->hasFile('icon')) {
+            $mergeData['icon'] = $this->file('icon');
+        }
+
+        $this->merge($mergeData);
     }
 }
 

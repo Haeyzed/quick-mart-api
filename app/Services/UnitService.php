@@ -266,9 +266,14 @@ class UnitService extends BaseService
 
         // If user is provided, send email
         if ($user && $method === 'email') {
+            // Check mail settings before attempting to send email
             $mailSetting = MailSetting::latest()->first();
             if (!$mailSetting) {
-                abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
+                throw new HttpResponseException(
+                    response()->json([
+                        'message' => 'Mail settings are not configured. Please contact the administrator.',
+                    ], Response::HTTP_BAD_REQUEST)
+                );
             }
 
             $generalSetting = GeneralSetting::latest()->first();
@@ -283,9 +288,13 @@ class UnitService extends BaseService
                     $generalSetting
                 ));
             } catch (Exception $e) {
-                // Log error but don't fail the export
+                // Log error and return error response instead of aborting
                 $this->logError("Failed to send export email: " . $e->getMessage());
-                abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Failed to send export email: ' . $e->getMessage());
+                throw new HttpResponseException(
+                    response()->json([
+                        'message' => 'Failed to send export email: ' . $e->getMessage(),
+                    ], Response::HTTP_INTERNAL_SERVER_ERROR)
+                );
             }
         }
 
