@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * CategoryResource
@@ -78,15 +79,23 @@ class CategoryResource extends JsonResource
              * @var string|null $image_url
              * @example https://example.com/images/category/category-image.jpg
              */
-            'image_url' => $this->image_url,
+            'image_url' => $this->image_url ?? ($this->image ? Storage::disk('public')->url('categories/' . $this->image) : null),
 
             /**
-             * Category icon (class name or identifier).
+             * Category icon filename or path.
              *
              * @var string|null $icon
-             * @example fa fa-electronics
+             * @example category-icon.png
              */
             'icon' => $this->icon,
+
+            /**
+             * Full URL to the category icon.
+             *
+             * @var string|null $icon_url
+             * @example https://example.com/storage/categories/icons/category-icon.png
+             */
+            'icon_url' => $this->icon_url ?? ($this->icon ? Storage::disk('public')->url('categories/icons/' . $this->icon) : null),
 
             /**
              * Parent category ID for hierarchical relationships.

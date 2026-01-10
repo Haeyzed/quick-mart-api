@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
  * @property string|null $image
      * @property string|null $image_url
      * @property string|null $icon
+     * @property string|null $icon_url
      * @property int|null $parent_id
      * @property bool $is_active
  * @property bool|null $is_sync_disable
@@ -56,6 +57,7 @@ class Category extends Model
         'image',
         'image_url',
         'icon',
+        'icon_url',
         'parent_id',
         'is_active',
         'is_sync_disable',

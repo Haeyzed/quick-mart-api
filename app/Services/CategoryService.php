@@ -121,6 +121,7 @@ class CategoryService extends BaseService
                     'public'
                 );
                 $data['icon'] = $iconPath;
+                $data['icon_url'] = $this->uploadService->url($iconPath, 'public');
             }
 
             // Generate slug if not provided and name exists
@@ -227,6 +228,7 @@ class CategoryService extends BaseService
                     'public'
                 );
                 $data['icon'] = $iconPath;
+                $data['icon_url'] = $this->uploadService->url($iconPath, 'public');
             }
 
             // Handle update-specific logic (matches old controller behavior)
