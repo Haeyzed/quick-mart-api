@@ -192,12 +192,14 @@ class BrandController extends Controller
         $columns = $validated['columns'] ?? [];
         $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
 
-        $filePath = $this->service->exportBrands($ids, $format, $user, $columns);
+        $filePath = $this->service->exportBrands($ids, $format, $user, $columns, $method);
 
         if ($method === 'download') {
+            // For download, return file response (frontend handles blob download)
             return Storage::disk('public')->download($filePath);
         }
 
+        // For email, file is stored and attached to email (no need to return file)
         return response()->success(null, 'Export file sent via email successfully');
     }
 }
