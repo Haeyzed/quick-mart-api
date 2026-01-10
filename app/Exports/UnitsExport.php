@@ -17,7 +17,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class UnitsExport implements FromCollection, WithHeadings, WithMapping
 {
     public function __construct(
-        private readonly array $ids = []
+        private readonly array $ids = [],
+        private readonly array $columns = []
     ) {
     }
 
@@ -28,7 +29,7 @@ class UnitsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function collection()
     {
-        $query = Unit::query()->with('baseUnitRelation:id,code');
+        $query = Unit::query()->with('baseUnitRelation:id,code,name');
 
         if (!empty($this->ids)) {
             $query->whereIn('id', $this->ids);
@@ -44,13 +45,23 @@ class UnitsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function headings(): array
     {
-        return [
-            'code',
-            'name',
-            'baseunit',
-            'operator',
-            'operationvalue',
+        $columnLabels = [
+            'id' => 'ID',
+            'code' => 'Code',
+            'name' => 'Name',
+            'base_unit_name' => 'Base Unit',
+            'operator' => 'Operator',
+            'operation_value' => 'Operation Value',
+            'is_active' => 'Is Active',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
         ];
+
+        if (empty($this->columns)) {
+            return array_values($columnLabels);
+        }
+
+        return array_map(fn($col) => $columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
     }
 
     /**
@@ -61,13 +72,26 @@ class UnitsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function map($unit): array
     {
-        return [
-            $unit->code,
-            $unit->name ?? '',
-            $unit->baseUnitRelation?->code ?? '',
-            $unit->operator ?? '*',
-            $unit->operation_value ?? 1,
-        ];
+        $defaultColumns = ['id', 'code', 'name', 'base_unit_name', 'operator', 'operation_value', 'is_active', 'created_at', 'updated_at'];
+        $columnsToExport = empty($this->columns) ? $defaultColumns : $this->columns;
+
+        $data = [];
+        foreach ($columnsToExport as $column) {
+            match ($column) {
+                'id' => $data[] = $unit->id,
+                'code' => $data[] = $unit->code,
+                'name' => $data[] = $unit->name ?? '',
+                'base_unit_name' => $data[] = $unit->baseUnitRelation?->name ?? '',
+                'operator' => $data[] = $unit->operator ?? '*',
+                'operation_value' => $data[] = $unit->operation_value ?? 1,
+                'is_active' => $data[] = $unit->is_active ? 'Yes' : 'No',
+                'created_at' => $data[] = $unit->created_at?->format('Y-m-d H:i:s') ?? '',
+                'updated_at' => $data[] = $unit->updated_at?->format('Y-m-d H:i:s') ?? '',
+                default => $data[] = '',
+            };
+        }
+
+        return $data;
     }
 }
 

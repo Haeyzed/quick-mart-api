@@ -17,6 +17,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 /**
  * BrandService
@@ -251,18 +252,28 @@ class BrandService extends BaseService
      * @param array<int> $ids Array of brand IDs to export (empty for all)
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
+     * @param array<string> $columns Columns to export
      * @return string File path or download response
      */
-    public function exportBrands(array $ids = [], string $format = 'excel', ?User $user = null): string
+    public function exportBrands(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = []): string
     {
         $fileName = 'brands-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
-            Excel::store(new BrandsExport($ids), $filePath, 'public');
+            Excel::store(new BrandsExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, use Excel's PDF export with DOMPDF
-            Excel::store(new BrandsExport($ids), $filePath, 'public', \Maatwebsite\Excel\Excel::DOMPDF);
+            // For PDF, export data first then create PDF view
+            $brands = Brand::query()
+                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
+                ->orderBy('name')
+                ->get();
+
+            $pdf = PDF::loadView('exports.brands-pdf', [
+                'brands' => $brands,
+                'columns' => $columns,
+            ]);
+            Storage::disk('public')->put($filePath, $pdf->output());
         }
 
         // If user is provided, send email

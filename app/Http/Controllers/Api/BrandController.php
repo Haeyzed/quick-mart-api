@@ -189,9 +189,10 @@ class BrandController extends Controller
         $ids = $validated['ids'] ?? [];
         $format = $validated['format'];
         $method = $validated['method'];
+        $columns = $validated['columns'] ?? [];
         $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
 
-        $filePath = $this->service->exportBrands($ids, $format, $user);
+        $filePath = $this->service->exportBrands($ids, $format, $user, $columns);
 
         if ($method === 'download') {
             return Storage::disk('public')->download($filePath);

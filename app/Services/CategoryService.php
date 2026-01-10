@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 /**
  * CategoryService
@@ -375,18 +376,28 @@ class CategoryService extends BaseService
      * @param array<int> $ids Array of category IDs to export (empty for all)
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
+     * @param array<string> $columns Columns to export
      * @return string File path or download response
      */
-    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null): string
+    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = []): string
     {
         $fileName = 'categories-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
-            Excel::store(new CategoriesExport($ids), $filePath, 'public');
+            Excel::store(new CategoriesExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, use Excel's PDF export with DOMPDF
-            Excel::store(new CategoriesExport($ids), $filePath, 'public', \Maatwebsite\Excel\Excel::DOMPDF);
+            // For PDF, export data first then create PDF view
+            $categories = Category::with('parent:id,name')
+                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
+                ->orderBy('name')
+                ->get();
+
+            $pdf = PDF::loadView('exports.categories-pdf', [
+                'categories' => $categories,
+                'columns' => $columns,
+            ]);
+            Storage::disk('public')->put($filePath, $pdf->output());
         }
 
         // If user is provided, send email

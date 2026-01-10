@@ -21,6 +21,8 @@ class ExportRequest extends FormRequest
             'ids.*' => ['required', 'integer'],
             'format' => ['required', 'string', Rule::in(['excel', 'pdf'])],
             'method' => ['required', 'string', Rule::in(['download', 'email'])],
+            'columns' => ['required', 'array', 'min:1'],
+            'columns.*' => ['string'],
             'user_id' => ['required_if:method,email', 'integer', 'exists:users,id'],
         ];
     }
