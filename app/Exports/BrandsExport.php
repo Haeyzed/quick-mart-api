@@ -17,7 +17,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class BrandsExport implements FromCollection, WithHeadings, WithMapping
 {
     public function __construct(
-        private readonly array $ids = []
+        private readonly array $ids = [],
+        private readonly array $columns = []
     ) {
     }
 
@@ -44,12 +45,23 @@ class BrandsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function headings(): array
     {
-        return [
-            'name',
-            'short_description',
-            'image_url',
-            'page_title',
+        $columnLabels = [
+            'id' => 'ID',
+            'name' => 'Name',
+            'slug' => 'Slug',
+            'short_description' => 'Short Description',
+            'page_title' => 'Page Title',
+            'image_url' => 'Image URL',
+            'is_active' => 'Is Active',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
         ];
+
+        if (empty($this->columns)) {
+            return array_values($columnLabels);
+        }
+
+        return array_map(fn($col) => $columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
     }
 
     /**
@@ -60,12 +72,26 @@ class BrandsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function map($brand): array
     {
-        return [
-            $brand->name,
-            $brand->short_description ?? '',
-            $brand->image_url ?? '',
-            $brand->page_title ?? '',
-        ];
+        $defaultColumns = ['id', 'name', 'slug', 'short_description', 'page_title', 'image_url', 'is_active', 'created_at', 'updated_at'];
+        $columnsToExport = empty($this->columns) ? $defaultColumns : $this->columns;
+
+        $data = [];
+        foreach ($columnsToExport as $column) {
+            match ($column) {
+                'id' => $data[] = $brand->id,
+                'name' => $data[] = $brand->name,
+                'slug' => $data[] = $brand->slug ?? '',
+                'short_description' => $data[] = $brand->short_description ?? '',
+                'page_title' => $data[] = $brand->page_title ?? '',
+                'image_url' => $data[] = $brand->image_url ?? '',
+                'is_active' => $data[] = $brand->is_active ? 'Yes' : 'No',
+                'created_at' => $data[] = $brand->created_at?->format('Y-m-d H:i:s') ?? '',
+                'updated_at' => $data[] = $brand->updated_at?->format('Y-m-d H:i:s') ?? '',
+                default => $data[] = '',
+            };
+        }
+
+        return $data;
     }
 }
 

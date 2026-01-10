@@ -17,6 +17,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 /**
  * TaxService
@@ -204,18 +205,28 @@ class TaxService extends BaseService
      * @param array<int> $ids Array of tax IDs to export (empty for all)
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
+     * @param array<string> $columns Columns to export
      * @return string File path or download response
      */
-    public function exportTaxes(array $ids = [], string $format = 'excel', ?User $user = null): string
+    public function exportTaxes(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = []): string
     {
         $fileName = 'taxes-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
-            Excel::store(new TaxesExport($ids), $filePath, 'public');
+            Excel::store(new TaxesExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, use Excel's PDF export with DOMPDF
-            Excel::store(new TaxesExport($ids), $filePath, 'public', \Maatwebsite\Excel\Excel::DOMPDF);
+            // For PDF, export data first then create PDF view
+            $taxes = Tax::query()
+                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
+                ->orderBy('name')
+                ->get();
+
+            $pdf = PDF::loadView('exports.taxes-pdf', [
+                'taxes' => $taxes,
+                'columns' => $columns,
+            ]);
+            Storage::disk('public')->put($filePath, $pdf->output());
         }
 
         // If user is provided, send email

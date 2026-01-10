@@ -17,7 +17,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class TaxesExport implements FromCollection, WithHeadings, WithMapping
 {
     public function __construct(
-        private readonly array $ids = []
+        private readonly array $ids = [],
+        private readonly array $columns = []
     ) {
     }
 
@@ -44,10 +45,20 @@ class TaxesExport implements FromCollection, WithHeadings, WithMapping
      */
     public function headings(): array
     {
-        return [
-            'name',
-            'rate',
+        $columnLabels = [
+            'id' => 'ID',
+            'name' => 'Name',
+            'rate' => 'Rate (%)',
+            'is_active' => 'Is Active',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
         ];
+
+        if (empty($this->columns)) {
+            return array_values($columnLabels);
+        }
+
+        return array_map(fn($col) => $columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
     }
 
     /**
@@ -58,10 +69,23 @@ class TaxesExport implements FromCollection, WithHeadings, WithMapping
      */
     public function map($tax): array
     {
-        return [
-            $tax->name,
-            $tax->rate ?? 0,
-        ];
+        $defaultColumns = ['id', 'name', 'rate', 'is_active', 'created_at', 'updated_at'];
+        $columnsToExport = empty($this->columns) ? $defaultColumns : $this->columns;
+
+        $data = [];
+        foreach ($columnsToExport as $column) {
+            match ($column) {
+                'id' => $data[] = $tax->id,
+                'name' => $data[] = $tax->name,
+                'rate' => $data[] = $tax->rate ?? 0,
+                'is_active' => $data[] = $tax->is_active ? 'Yes' : 'No',
+                'created_at' => $data[] = $tax->created_at?->format('Y-m-d H:i:s') ?? '',
+                'updated_at' => $data[] = $tax->updated_at?->format('Y-m-d H:i:s') ?? '',
+                default => $data[] = '',
+            };
+        }
+
+        return $data;
     }
 }
 
