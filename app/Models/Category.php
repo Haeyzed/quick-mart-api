@@ -21,9 +21,10 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string|null $image
- * @property string|null $image_url
- * @property int|null $parent_id
- * @property bool $is_active
+     * @property string|null $image_url
+     * @property string|null $icon
+     * @property int|null $parent_id
+     * @property bool $is_active
  * @property bool|null $is_sync_disable
  * @property int|null $woocommerce_category_id
  * @property string|null $slug
@@ -54,6 +55,7 @@ class Category extends Model
         'name',
         'image',
         'image_url',
+        'icon',
         'parent_id',
         'is_active',
         'is_sync_disable',
