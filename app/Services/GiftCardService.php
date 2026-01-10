@@ -145,9 +145,7 @@ class GiftCardService extends BaseService
     {
         $mailSetting = MailSetting::latest()->first();
         if (!$mailSetting) {
-            throw ValidationException::withMessages([
-                'email' => ['Mail settings are not configured. Please contact the administrator.'],
-            ]);
+            abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
         }
 
         $recipient = null;
@@ -301,9 +299,7 @@ class GiftCardService extends BaseService
     {
         $mailSetting = MailSetting::latest()->first();
         if (!$mailSetting) {
-            throw ValidationException::withMessages([
-                'email' => ['Mail settings are not configured. Please contact the administrator.'],
-            ]);
+            abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
         }
 
         $recipient = null;

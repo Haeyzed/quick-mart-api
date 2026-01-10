@@ -8,7 +8,10 @@ use App\Exports\CategoriesExport;
 use App\Imports\CategoriesImport;
 use App\Mail\ExportMail;
 use App\Models\Category;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\User;
+use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,6 +31,7 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  */
 class CategoryService extends BaseService
 {
+    use MailInfo;
     public function __construct(
         private readonly UploadService $uploadService
     )
@@ -379,12 +383,13 @@ class CategoryService extends BaseService
      * @param array<string> $columns Columns to export
      * @return string File path or download response
      */
-    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = []): string
+    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = [], string $method = 'download'): string
     {
         $fileName = 'categories-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
+            // Always store file - needed for both download (temporary) and email (attachment)
             Excel::store(new CategoriesExport($ids, $columns), $filePath, 'public');
         } else {
             // For PDF, export data first then create PDF view
@@ -397,17 +402,34 @@ class CategoryService extends BaseService
                 'categories' => $categories,
                 'columns' => $columns,
             ]);
+            
+            // Always store file - needed for both download (temporary) and email (attachment)
             Storage::disk('public')->put($filePath, $pdf->output());
         }
 
         // If user is provided, send email
-        if ($user) {
-            Mail::to($user->email)->send(new ExportMail(
-                $user,
-                $filePath,
-                $fileName,
-                'Categories'
-            ));
+        if ($user && $method === 'email') {
+            $mailSetting = MailSetting::latest()->first();
+            if (!$mailSetting) {
+                abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
+            }
+
+            $generalSetting = GeneralSetting::latest()->first();
+
+            try {
+                $this->setMailInfo($mailSetting);
+                Mail::to($user->email)->send(new ExportMail(
+                    $user,
+                    $filePath,
+                    $fileName,
+                    'Categories',
+                    $generalSetting
+                ));
+            } catch (Exception $e) {
+                // Log error but don't fail the export
+                $this->logError("Failed to send export email: " . $e->getMessage());
+                abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Failed to send export email: ' . $e->getMessage());
+            }
         }
 
         return $filePath;

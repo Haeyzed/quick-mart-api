@@ -7,8 +7,11 @@ namespace App\Services;
 use App\Exports\UnitsExport;
 use App\Imports\UnitsImport;
 use App\Mail\ExportMail;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\Unit;
 use App\Models\User;
+use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -27,6 +30,7 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  */
 class UnitService extends BaseService
 {
+    use MailInfo;
     /**
      * Get paginated list of units with optional filters.
      *
@@ -239,7 +243,7 @@ class UnitService extends BaseService
      * @param array<string> $columns Columns to export
      * @return string File path or download response
      */
-    public function exportUnits(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = []): string
+    public function exportUnits(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = [], string $method = 'download'): string
     {
         $fileName = 'units-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
@@ -261,13 +265,28 @@ class UnitService extends BaseService
         }
 
         // If user is provided, send email
-        if ($user) {
-            Mail::to($user->email)->send(new ExportMail(
-                $user,
-                $filePath,
-                $fileName,
-                'Units'
-            ));
+        if ($user && $method === 'email') {
+            $mailSetting = MailSetting::latest()->first();
+            if (!$mailSetting) {
+                abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
+            }
+
+            $generalSetting = GeneralSetting::latest()->first();
+
+            try {
+                $this->setMailInfo($mailSetting);
+                Mail::to($user->email)->send(new ExportMail(
+                    $user,
+                    $filePath,
+                    $fileName,
+                    'Units',
+                    $generalSetting
+                ));
+            } catch (Exception $e) {
+                // Log error but don't fail the export
+                $this->logError("Failed to send export email: " . $e->getMessage());
+                abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Failed to send export email: ' . $e->getMessage());
+            }
         }
 
         return $filePath;
