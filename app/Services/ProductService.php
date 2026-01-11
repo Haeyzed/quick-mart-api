@@ -59,7 +59,7 @@ class ProductService extends BaseService
         $isRecipe = $filters['is_recipe'] ?? false;
 
         // Base query with relations
-        $query = Product::with(['category:id,name', 'brand:id,title', 'unit:id,unit_name,unit_code'])
+        $query = Product::with(['category:id,name', 'brand:id,name', 'unit:id,unit_name,unit_code'])
             ->where('products.is_active', true);
 
         // Stock filter
@@ -118,7 +118,7 @@ class ProductService extends BaseService
             $variantIds = ProductVariant::where('item_code', 'LIKE', "%{$search}%")
                 ->pluck('product_id');
             
-            $brandIds = Brand::where('title', 'LIKE', "%{$search}%")
+            $brandIds = Brand::where('name', 'LIKE', "%{$search}%")
                 ->pluck('id');
             
             $categoryIds = Category::where('name', 'LIKE', "%{$search}%")
@@ -153,7 +153,7 @@ class ProductService extends BaseService
     {
         return Product::with([
             'category:id,name',
-            'brand:id,title',
+            'brand:id,name',
             'unit:id,unit_name,unit_code',
             'purchaseUnit:id,unit_name,unit_code',
             'saleUnit:id,unit_name,unit_code',
