@@ -90,7 +90,7 @@ class ProductResource extends JsonResource
             'brand' => $this->whenLoaded('brand', function () {
                 return [
                     'id' => $this->brand->id,
-                    'title' => $this->brand->title,
+                    'name' => $this->brand->name,
                 ];
             }),
 
@@ -130,8 +130,8 @@ class ProductResource extends JsonResource
             'unit' => $this->whenLoaded('unit', function () {
                 return [
                     'id' => $this->unit->id,
-                    'unit_name' => $this->unit->unit_name,
-                    'unit_code' => $this->unit->unit_code,
+                    'name' => $this->unit->name,
+                    'code' => $this->unit->code,
                 ];
             }),
 
@@ -720,4 +720,3 @@ class ProductResource extends JsonResource
         ];
     }
 }
-
