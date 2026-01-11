@@ -143,6 +143,8 @@ Route::middleware('auth:sanctum')->group(function () {
     ->name('products.with-variant');
     Route::get('products/generate-code', [ProductController::class, 'generateCode'])
     ->name('products.generate-code');
+    Route::post('products/import', [ProductController::class, 'import'])
+    ->name('products.import');
     Route::apiResource('products', ProductController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);

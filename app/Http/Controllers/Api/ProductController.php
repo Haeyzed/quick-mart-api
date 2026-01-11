@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ImportRequest;
 use App\Http\Requests\Product\ProductIndexRequest;
-use App\Http\Requests\Product\StoreProductRequest;
-use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Requests\Product\ProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ProductService;
@@ -63,10 +63,10 @@ class ProductController extends Controller
     /**
      * Store a newly created product.
      *
-     * @param StoreProductRequest $request
+     * @param ProductRequest $request
      * @return JsonResponse
      */
-    public function store(StoreProductRequest $request): JsonResponse
+    public function store(ProductRequest $request): JsonResponse
     {
         $product = $this->service->createProduct($request->validated());
 
@@ -96,11 +96,11 @@ class ProductController extends Controller
     /**
      * Update the specified product.
      *
-     * @param UpdateProductRequest $request
+     * @param ProductRequest $request
      * @param Product $product
      * @return JsonResponse
      */
-    public function update(UpdateProductRequest $request, Product $product): JsonResponse
+    public function update(ProductRequest $request, Product $product): JsonResponse
     {
         $product = $this->service->updateProduct($product, $request->validated());
 
@@ -181,6 +181,19 @@ class ProductController extends Controller
             ['code' => $code],
             'Product code generated successfully'
         );
+    }
+
+    /**
+     * Import products from a file.
+     *
+     * @param ImportRequest $request
+     * @return JsonResponse
+     */
+    public function import(ImportRequest $request): JsonResponse
+    {
+        $this->service->importProducts($request->file('file'));
+
+        return response()->success(null, 'Products imported successfully');
     }
 }
 

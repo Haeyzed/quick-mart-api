@@ -15,6 +15,7 @@ use App\Models\ProductWarehouse;
 use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
+use App\Imports\ProductsImport;
 use App\Traits\TenantInfo;
 use App\Traits\CacheForget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 
 /**
@@ -990,6 +992,19 @@ class ProductService extends BaseService
     public function generateCode(): string
     {
         return (string)rand(10000000, 99999999);
+    }
+
+    /**
+     * Import products from a file.
+     *
+     * @param UploadedFile $file
+     * @return void
+     */
+    public function importProducts(UploadedFile $file): void
+    {
+        $this->transaction(function () use ($file) {
+            Excel::import(new ProductsImport(), $file);
+        });
     }
 }
 
