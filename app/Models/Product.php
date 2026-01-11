@@ -43,8 +43,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $last_date
  * @property int|null $tax_id
  * @property int|null $tax_method
- * @property string|null $image
+ * @property array|null $image
+ * @property array|null $image_url
  * @property string|null $file
+ * @property string|null $file_url
  * @property bool|null $is_embeded
  * @property bool $is_batch
  * @property bool $is_variant
@@ -141,7 +143,9 @@ class Product extends Model
         'tax_id',
         'tax_method',
         'image',
+        'image_url',
         'file',
+        'file_url',
         'is_embeded',
         'is_batch',
         'is_variant',
@@ -476,6 +480,9 @@ class Product extends Model
             'combo_unit_id' => 'integer',
             'production_cost' => 'float',
             'is_recipe' => 'boolean',
+            'image' => 'array',
+            'image_url' => 'array',
+            'file_url' => 'string',
         ];
     }
 }

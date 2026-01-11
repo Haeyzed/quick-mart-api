@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
@@ -133,6 +134,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('variants', VariantController::class);
     Route::delete('variants/bulk-destroy', [VariantController::class, 'bulkDestroy'])
         ->name('variants.bulkDestroy');
+
+    Route::apiResource('products', ProductController::class);
+    Route::delete('products/bulk-destroy', [ProductController::class, 'bulkDestroy'])
+        ->name('products.bulkDestroy');
+    Route::get('products/without-variant', [ProductController::class, 'getProductsWithoutVariant'])
+        ->name('products.without-variant');
+    Route::get('products/with-variant', [ProductController::class, 'getProductsWithVariant'])
+        ->name('products.with-variant');
+    Route::get('products/generate-code', [ProductController::class, 'generateCode'])
+        ->name('products.generate-code');
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::delete('expense-categories/bulk-destroy', [ExpenseCategoryController::class, 'bulkDestroy'])
