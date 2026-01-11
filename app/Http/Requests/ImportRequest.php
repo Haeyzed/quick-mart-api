@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Http\UploadedFile;
  *
  * Validates file upload for import operations.
  */
-class ImportRequest extends FormRequest
+class ImportRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
