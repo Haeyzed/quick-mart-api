@@ -135,15 +135,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('variants/bulk-destroy', [VariantController::class, 'bulkDestroy'])
         ->name('variants.bulkDestroy');
 
-    Route::apiResource('products', ProductController::class);
     Route::delete('products/bulk-destroy', [ProductController::class, 'bulkDestroy'])
-        ->name('products.bulkDestroy');
+    ->name('products.bulkDestroy');
     Route::get('products/without-variant', [ProductController::class, 'getProductsWithoutVariant'])
-        ->name('products.without-variant');
+    ->name('products.without-variant');
     Route::get('products/with-variant', [ProductController::class, 'getProductsWithVariant'])
-        ->name('products.with-variant');
+    ->name('products.with-variant');
     Route::get('products/generate-code', [ProductController::class, 'generateCode'])
-        ->name('products.generate-code');
+    ->name('products.generate-code');
+    Route::apiResource('products', ProductController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::delete('expense-categories/bulk-destroy', [ExpenseCategoryController::class, 'bulkDestroy'])
