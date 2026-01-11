@@ -24,6 +24,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
@@ -774,7 +775,8 @@ class ProductService extends BaseService
      */
     private function handleImageUploads(array $images, int $offset = 0): array
     {
-        $this->ensureImageDirectoriesExist();
+        $disk = 'public';
+        $baseDirectory = 'images/product';
         
         $imagePaths = [];
         $imageUrls = [];
@@ -794,42 +796,49 @@ class ProductService extends BaseService
                 $imageName = $imageName . '.' . $ext;
             }
             
-            // Move original image
-            $image->move(public_path('images/product'), $imageName);
+            // Ensure base directory exists
+            Storage::disk($disk)->makeDirectory($baseDirectory);
             
-            // Create different sizes
+            // Store original image
+            $originalPath = $baseDirectory . '/' . $imageName;
+            Storage::disk($disk)->putFileAs($baseDirectory, $image, $imageName);
+            
+            // Create different sizes using Intervention Image
             $manager = new ImageManager(new GdDriver());
-            $img = $manager->read(public_path('images/product/' . $imageName));
+            $img = $manager->read($image->getRealPath());
             
-            $img->resize(1000, 1250)->save(public_path('images/product/xlarge/' . $imageName));
-            $img->resize(500, 500)->save(public_path('images/product/large/' . $imageName));
-            $img->resize(250, 250)->save(public_path('images/product/medium/' . $imageName));
-            $img->resize(100, 100)->save(public_path('images/product/small/' . $imageName));
+            // Create size directories and save resized images
+            $sizes = [
+                'xlarge' => [1000, 1250],
+                'large' => [500, 500],
+                'medium' => [250, 250],
+                'small' => [100, 100],
+            ];
             
+            foreach ($sizes as $sizeName => [$width, $height]) {
+                $sizeDirectory = $baseDirectory . '/' . $sizeName;
+                Storage::disk($disk)->makeDirectory($sizeDirectory);
+                
+                $resized = clone $img;
+                $resized->resize($width, $height);
+                
+                // Save to temporary file first, then put to storage
+                $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $imageName;
+                $resized->save($tempPath);
+                
+                Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
+                unlink($tempPath);
+            }
+            
+            // Store just the filename (not full path) for database compatibility
             $imagePaths[] = $imageName;
-            $imageUrls[] = url('images/product', $imageName);
+            $imageUrls[] = Storage::disk($disk)->url($originalPath);
         }
         
         return [
             'paths' => $imagePaths,
             'urls' => $imageUrls
         ];
-    }
-
-    /**
-     * Ensure image directories exist.
-     *
-     * @return void
-     */
-    private function ensureImageDirectoriesExist(): void
-    {
-        $directories = ['xlarge', 'large', 'medium', 'small'];
-        foreach ($directories as $dir) {
-            $path = public_path("images/product/{$dir}");
-            if (!file_exists($path) && !is_dir($path)) {
-                mkdir($path, 0755, true);
-            }
-        }
     }
 
     /**
@@ -840,11 +849,14 @@ class ProductService extends BaseService
      */
     private function deleteImageFromStorage(string $imageName): void
     {
+        $disk = 'public';
+        $baseDirectory = 'images/product';
         $sizes = ['', 'xlarge/', 'large/', 'medium/', 'small/'];
+        
         foreach ($sizes as $size) {
-            $path = public_path("images/product/{$size}{$imageName}");
-            if (file_exists($path)) {
-                unlink($path);
+            $path = $baseDirectory . '/' . $size . $imageName;
+            if (Storage::disk($disk)->exists($path)) {
+                Storage::disk($disk)->delete($path);
             }
         }
     }
