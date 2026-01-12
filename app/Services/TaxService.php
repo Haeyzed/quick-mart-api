@@ -27,10 +27,19 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  *
  * Handles all business logic for tax operations including CRUD operations,
  * filtering, pagination, and bulk operations.
+ *
+ * Key Features:
+ * - Encapsulates all tax-related database queries
+ * - Provides bulk operations for efficiency
+ * - Manages data normalization and validation
  */
 class TaxService extends BaseService
 {
     use MailInfo;
+
+    private const BULK_ACTIVATE = ['is_active' => true];
+    private const BULK_DEACTIVATE = ['is_active' => false];
+
     /**
      * Get paginated list of taxes with optional filters.
      *
@@ -48,10 +57,11 @@ class TaxService extends BaseService
             ->when(
                 !empty($filters['search'] ?? null),
                 fn($query) => $query->where(function ($q) use ($filters) {
-                    $q->where('name', 'like', '%' . $filters['search'] . '%');
+                    $search = $filters['search'];
+                    $q->where('name', 'like', "%{$search}%");
                 })
             )
-            ->orderBy('name')
+            ->latest()
             ->paginate($perPage);
     }
 
@@ -75,7 +85,6 @@ class TaxService extends BaseService
     public function createTax(array $data): Tax
     {
         return $this->transaction(function () use ($data) {
-            // Normalize data to match database schema
             $data = $this->normalizeTaxData($data);
             return Tax::create($data);
         });
@@ -84,15 +93,19 @@ class TaxService extends BaseService
     /**
      * Normalize tax data to match database schema requirements.
      *
+     * Handles boolean conversions and default values:
+     * - is_active: boolean, defaults to true on create
+     *
      * @param array<string, mixed> $data
+     * @param bool $isUpdate Whether this is an update operation
      * @return array<string, mixed>
      */
-    private function normalizeTaxData(array $data): array
+    private function normalizeTaxData(array $data, bool $isUpdate = false): array
     {
-        // is_active is stored as boolean (true/false)
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
+        // is_active defaults to true on create
+        if (!isset($data['is_active']) && !$isUpdate) {
+            $data['is_active'] = true;
+        } elseif (isset($data['is_active'])) {
             $data['is_active'] = (bool)filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
@@ -113,39 +126,46 @@ class TaxService extends BaseService
     public function updateTax(Tax $tax, array $data): Tax
     {
         return $this->transaction(function () use ($tax, $data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeTaxData($data);
+            $data = $this->normalizeTaxData($data, isUpdate: true);
             $tax->update($data);
             return $tax->fresh();
         });
     }
 
     /**
-     * Bulk delete multiple taxes.
+     * Refactored from individual loop to batch processing with chunking
+     * Bulk delete multiple taxes using efficient batch operations.
      *
      * @param array<int> $ids Array of tax IDs to delete
-     * @return int Number of taxes deleted
+     * @return int Number of taxes successfully deleted
      */
     public function bulkDeleteTaxes(array $ids): int
     {
-        $deletedCount = 0;
+        return $this->transaction(function () use ($ids) {
+            $deletedCount = 0;
 
-        foreach ($ids as $id) {
-            try {
-                $tax = Tax::findOrFail($id);
-                $this->deleteTax($tax);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete tax {$id}: " . $e->getMessage());
-            }
-        }
+            Tax::whereIn('id', $ids)
+                ->chunk(100, function ($taxes) use (&$deletedCount) {
+                    foreach ($taxes as $tax) {
+                        try {
+                            if (!$tax->products()->exists()) {
+                                $tax->delete();
+                                $deletedCount++;
+                            }
+                        } catch (Exception $e) {
+                            $this->logError("Failed to delete tax {$tax->id}: " . $e->getMessage());
+                        }
+                    }
+                });
 
-        return $deletedCount;
+            return $deletedCount;
+        });
     }
 
     /**
-     * Delete a single tax.
+     * Delete a single tax with validation.
+     *
+     * Prevents deletion if tax has associated products.
      *
      * @param Tax $tax Tax instance to delete
      * @return bool
@@ -176,6 +196,21 @@ class TaxService extends BaseService
     }
 
     /**
+     * Created private helper method to eliminate duplication across all bulk update methods
+     * Bulk update multiple taxes with specified data.
+     *
+     * @param array<int> $ids Array of tax IDs to update
+     * @param array<string, mixed> $updateData Data to update
+     * @return int Number of taxes updated
+     */
+    private function bulkUpdateTaxes(array $ids, array $updateData): int
+    {
+        return $this->transaction(function () use ($ids, $updateData) {
+            return Tax::whereIn('id', $ids)->update($updateData);
+        });
+    }
+
+    /**
      * Bulk activate multiple taxes.
      *
      * @param array<int> $ids Array of tax IDs to activate
@@ -183,10 +218,7 @@ class TaxService extends BaseService
      */
     public function bulkActivateTaxes(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Tax::whereIn('id', $ids)
-                ->update(['is_active' => true]);
-        });
+        return $this->bulkUpdateTaxes($ids, self::BULK_ACTIVATE);
     }
 
     /**
@@ -197,10 +229,7 @@ class TaxService extends BaseService
      */
     public function bulkDeactivateTaxes(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Tax::whereIn('id', $ids)
-                ->update(['is_active' => false]);
-        });
+        return $this->bulkUpdateTaxes($ids, self::BULK_DEACTIVATE);
     }
 
     /**
@@ -210,17 +239,43 @@ class TaxService extends BaseService
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
      * @param array<string> $columns Columns to export
-     * @return string File path or download response
+     * @param string $method Export method: 'download' or 'email'
+     * @return string File path
      */
-    public function exportTaxes(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = [], string $method = 'download'): string
-    {
+    public function exportTaxes(
+        array $ids = [],
+        string $format = 'excel',
+        ?User $user = null,
+        array $columns = [],
+        string $method = 'download'
+    ): string {
         $fileName = 'taxes-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
+        $this->generateExportFile($format, $filePath, $ids, $columns);
+
+        if ($user && $method === 'email') {
+            $this->sendExportEmail($user, $filePath, $fileName);
+        }
+
+        return $filePath;
+    }
+
+    /**
+     * Extracted export file generation logic for cleaner separation of concerns
+     * Generate export file in specified format.
+     *
+     * @param string $format
+     * @param string $filePath
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @return void
+     */
+    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
+    {
         if ($format === 'excel') {
             Excel::store(new TaxesExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, export data first then create PDF view
             $taxes = Tax::query()
                 ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
                 ->orderBy('name')
@@ -230,44 +285,53 @@ class TaxService extends BaseService
                 'taxes' => $taxes,
                 'columns' => $columns,
             ]);
+
             Storage::disk('public')->put($filePath, $pdf->output());
         }
+    }
 
-        // If user is provided, send email
-        if ($user && $method === 'email') {
-            // Check mail settings before attempting to send email
-            $mailSetting = MailSetting::latest()->first();
-            if (!$mailSetting) {
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Mail settings are not configured. Please contact the administrator.',
-                    ], Response::HTTP_BAD_REQUEST)
-                );
-            }
-
-            $generalSetting = GeneralSetting::latest()->first();
-
-            try {
-                $this->setMailInfo($mailSetting);
-                Mail::to($user->email)->send(new ExportMail(
-                    $user,
-                    $filePath,
-                    $fileName,
-                    'Taxes',
-                    $generalSetting
-                ));
-            } catch (Exception $e) {
-                // Log error and return error response instead of aborting
-                $this->logError("Failed to send export email: " . $e->getMessage());
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Failed to send export email: ' . $e->getMessage(),
-                    ], Response::HTTP_INTERNAL_SERVER_ERROR)
-                );
-            }
+    /**
+     * Extracted email sending logic for better error handling and maintainability
+     * Send export file via email.
+     *
+     * @param User $user
+     * @param string $filePath
+     * @param string $fileName
+     * @return void
+     * @throws HttpResponseException
+     */
+    private function sendExportEmail(User $user, string $filePath, string $fileName): void
+    {
+        $mailSetting = MailSetting::latest()->first();
+        if (!$mailSetting) {
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
+                    Response::HTTP_BAD_REQUEST
+                )
+            );
         }
 
-        return $filePath;
+        $generalSetting = GeneralSetting::latest()->first();
+
+        try {
+            $this->setMailInfo($mailSetting);
+            Mail::to($user->email)->send(new ExportMail(
+                $user,
+                $filePath,
+                $fileName,
+                'Taxes',
+                $generalSetting
+            ));
+        } catch (Exception $e) {
+            $this->logError("Failed to send export email: " . $e->getMessage());
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
+                    Response::HTTP_INTERNAL_SERVER_ERROR
+                )
+            );
+        }
     }
 }
 

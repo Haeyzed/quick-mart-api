@@ -23,14 +23,10 @@ use Illuminate\Support\Facades\Storage;
  * CategoryController
  *
  * API controller for managing categories with full CRUD operations.
+ * Keeps controller thin with all business logic delegated to CategoryService.
  */
 class CategoryController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @param CategoryService $service
-     */
     public function __construct(
         private readonly CategoryService $service
     )
@@ -128,7 +124,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['deleted_count' => $count],
-            "Deleted {$count} categories successfully"
+            $this->pluralizeMessage($count, 'Deleted {count} categor', 'successfully')
         );
     }
 
@@ -157,7 +153,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['activated_count' => $count],
-            "Activated {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Activated {count} categor', 'successfully')
         );
     }
 
@@ -173,7 +169,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['deactivated_count' => $count],
-            "Deactivated {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Deactivated {count} categor', 'successfully')
         );
     }
 
@@ -189,7 +185,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['updated_count' => $count],
-            "Enabled featured for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Enabled featured for {count} categor', 'successfully')
         );
     }
 
@@ -205,7 +201,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['updated_count' => $count],
-            "Disabled featured for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Disabled featured for {count} categor', 'successfully')
         );
     }
 
@@ -221,7 +217,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['updated_count' => $count],
-            "Enabled sync for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Enabled sync for {count} categor', 'successfully')
         );
     }
 
@@ -237,7 +233,7 @@ class CategoryController extends Controller
 
         return response()->success(
             ['updated_count' => $count],
-            "Disabled sync for {$count} categor" . ($count !== 1 ? 'ies' : 'y') . " successfully"
+            $this->pluralizeMessage($count, 'Disabled sync for {count} categor', 'successfully')
         );
     }
 
@@ -259,13 +255,25 @@ class CategoryController extends Controller
         $filePath = $this->service->exportCategories($ids, $format, $user, $columns, $method);
 
         if ($method === 'download') {
-            // For download, return file response (frontend handles blob download)
-            // File will be temporarily stored and can be cleaned up by a scheduled job if needed
             return Storage::disk('public')->download($filePath);
         }
 
-        // For email, file is stored and attached to email (no need to return file)
         return response()->success(null, 'Export file sent via email successfully');
     }
-}
 
+    /**
+     * Pluralize message with count.
+     *
+     * Utility helper to eliminate string concatenation duplication across bulk methods.
+     *
+     * @param int $count
+     * @param string $message Message with {count} placeholder (e.g., "Activated {count} categor")
+     * @param string $suffix Suffix to append (e.g., "successfully")
+     * @return string
+     */
+    private function pluralizeMessage(int $count, string $message, string $suffix): string
+    {
+        $pluralSuffix = $count !== 1 ? 'ies' : 'y';
+        return str_replace('{count}', (string)$count, $message) . $pluralSuffix . " {$suffix}";
+    }
+}

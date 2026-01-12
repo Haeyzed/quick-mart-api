@@ -35,14 +35,14 @@ class UnitBulkUpdateRequest extends BaseRequest
             /**
              * Array of unit IDs to update.
              *
-             * @var array<int> @ids
+             * @var array<int> $ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
              * Each ID in the ids array must be a valid unit ID.
              *
-             * @var int @ids.*
+             * @var int $ids.*
              * @example 1
              */
             'ids.*' => ['required', 'integer', Rule::exists('units', 'id')],

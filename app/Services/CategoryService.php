@@ -29,10 +29,24 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  *
  * Handles all business logic for category operations including CRUD operations,
  * filtering, pagination, and bulk operations.
+ *
+ * Key Features:
+ * - Encapsulates all category-related database queries
+ * - Handles file uploads and deletions
+ * - Provides bulk operations for efficiency
+ * - Manages data normalization and validation
  */
 class CategoryService extends BaseService
 {
     use MailInfo;
+
+    private const BULK_ACTIVATE = ['is_active' => true];
+    private const BULK_DEACTIVATE = ['is_active' => false];
+    private const BULK_ENABLE_FEATURED = ['featured' => 1];
+    private const BULK_DISABLE_FEATURED = ['featured' => 0];
+    private const BULK_ENABLE_SYNC = ['is_sync_disable' => 0];
+    private const BULK_DISABLE_SYNC = ['is_sync_disable' => 1];
+
     public function __construct(
         private readonly UploadService $uploadService
     )
@@ -99,32 +113,9 @@ class CategoryService extends BaseService
     public function createCategory(array $data): Category
     {
         return $this->transaction(function () use ($data) {
-            // Normalize data to match database schema
             $data = $this->normalizeCategoryData($data);
+            $data = $this->processFileUploads($data);
 
-            // Handle image file upload if present
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                $filePath = $this->uploadService->upload(
-                    $data['image'],
-                    'categories',
-                    'public'
-                );
-                $data['image'] = $filePath;
-                $data['image_url'] = $this->uploadService->url($filePath, 'public');
-            }
-
-            // Handle icon file upload if present
-            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
-                $iconPath = $this->uploadService->upload(
-                    $data['icon'],
-                    'categories/icons',
-                    'public'
-                );
-                $data['icon'] = $iconPath;
-                $data['icon_url'] = $this->uploadService->url($iconPath, 'public');
-            }
-
-            // Generate slug if not provided and name exists
             if (!isset($data['slug']) && isset($data['name'])) {
                 $data['slug'] = Category::generateSlug($data['name']);
             }
@@ -136,17 +127,18 @@ class CategoryService extends BaseService
     /**
      * Normalize category data to match database schema requirements.
      *
-     * - is_active: stored as boolean (true/false), defaults to true on create
-     * - featured: stored as tinyint (0/1)
-     * - is_sync_disable: stored as tinyint (0/1) or null
+     * Handles boolean conversions and default values:
+     * - is_active: boolean, defaults to true on create
+     * - featured: tinyint (0/1), defaults to 0 on create
+     * - is_sync_disable: tinyint (0/1) or null, only set if provided
      *
      * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation (affects default values)
+     * @param bool $isUpdate Whether this is an update operation
      * @return array<string, mixed>
      */
     private function normalizeCategoryData(array $data, bool $isUpdate = false): array
     {
-        // is_active defaults to true on create (matches old implementation: $lims_category_data['is_active'] = true;)
+        // is_active defaults to true on create
         if (!isset($data['is_active']) && !$isUpdate) {
             $data['is_active'] = true;
         } elseif (isset($data['is_active'])) {
@@ -157,7 +149,7 @@ class CategoryService extends BaseService
             );
         }
 
-        // featured: stored as 0/1 (tinyint) in database
+        // featured: stored as 0/1 (tinyint)
         if (isset($data['featured'])) {
             $data['featured'] = filter_var(
                 $data['featured'],
@@ -165,12 +157,10 @@ class CategoryService extends BaseService
                 FILTER_NULL_ON_FAILURE
             ) ? 1 : 0;
         } elseif (!$isUpdate) {
-            // On create, default to 0 if not provided
             $data['featured'] = 0;
         }
-        // On update, if not provided, leave it unset (will be handled in updateCategory method)
 
-        // is_sync_disable: only set if provided (matches old implementation)
+        // is_sync_disable: only set if provided
         if (isset($data['is_sync_disable'])) {
             $data['is_sync_disable'] = filter_var(
                 $data['is_sync_disable'],
@@ -178,10 +168,40 @@ class CategoryService extends BaseService
                 FILTER_NULL_ON_FAILURE
             ) ? 1 : 0;
         } elseif (!$isUpdate) {
-            // On create, don't set if not provided (leave as null in database)
             unset($data['is_sync_disable']);
         }
-        // On update, if not provided, leave it unset (will be handled in updateCategory method)
+
+        return $data;
+    }
+
+    /**
+     * Extracted file upload logic to reduce duplication across create/update
+     * Process and upload image and icon files.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function processFileUploads(array $data): array
+    {
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            $filePath = $this->uploadService->upload(
+                $data['image'],
+                'categories',
+                'public'
+            );
+            $data['image'] = $filePath;
+            $data['image_url'] = $this->uploadService->url($filePath, 'public');
+        }
+
+        if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
+            $iconPath = $this->uploadService->upload(
+                $data['icon'],
+                'categories/icons',
+                'public'
+            );
+            $data['icon'] = $iconPath;
+            $data['icon_url'] = $this->uploadService->url($iconPath, 'public');
+        }
 
         return $data;
     }
@@ -196,48 +216,23 @@ class CategoryService extends BaseService
     public function updateCategory(Category $category, array $data): Category
     {
         return $this->transaction(function () use ($category, $data) {
-            // Normalize data to match database schema (pass isUpdate=true for update operations)
             $data = $this->normalizeCategoryData($data, isUpdate: true);
 
-            // Handle image file upload if present
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                // Delete old image if exists
-                if ($category->image) {
-                    $this->uploadService->delete($category->image, 'public');
-                }
-
-                $filePath = $this->uploadService->upload(
-                    $data['image'],
-                    'categories',
-                    'public'
-                );
-                $data['image'] = $filePath;
-                $data['image_url'] = $this->uploadService->url($filePath, 'public');
+            // Delete old files before uploading new ones
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile && $category->image) {
+                $this->uploadService->delete($category->image, 'public');
             }
 
-            // Handle icon file upload if present
-            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
-                // Delete old icon if exists
-                if ($category->icon) {
-                    $this->uploadService->delete($category->icon, 'public');
-                }
-
-                $iconPath = $this->uploadService->upload(
-                    $data['icon'],
-                    'categories/icons',
-                    'public'
-                );
-                $data['icon'] = $iconPath;
-                $data['icon_url'] = $this->uploadService->url($iconPath, 'public');
+            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile && $category->icon) {
+                $this->uploadService->delete($category->icon, 'public');
             }
 
-            // Handle update-specific logic (matches old controller behavior)
-            // If featured is not provided, set it to 0 (matches old: if(!isset($request->featured) && \Schema::hasColumn('categories', 'featured') ){ $input['featured'] = 0; })
+            $data = $this->processFileUploads($data);
+
             if (!isset($data['featured']) && Schema::hasColumn('categories', 'featured')) {
                 $data['featured'] = 0;
             }
 
-            // If is_sync_disable is not provided, set it to null (matches old: if(!isset($input['is_sync_disable']) && \Schema::hasColumn('categories', 'is_sync_disable')) $input['is_sync_disable'] = null;)
             if (!isset($data['is_sync_disable']) && Schema::hasColumn('categories', 'is_sync_disable')) {
                 $data['is_sync_disable'] = null;
             }
@@ -248,31 +243,9 @@ class CategoryService extends BaseService
     }
 
     /**
-     * Bulk delete multiple categories.
+     * Delete a single category with validation.
      *
-     * @param array<int> $ids Array of category IDs to delete
-     * @return int Number of categories deleted
-     */
-    public function bulkDeleteCategories(array $ids): int
-    {
-        $deletedCount = 0;
-
-        foreach ($ids as $id) {
-            try {
-                $category = Category::findOrFail($id);
-                $this->deleteCategory($category);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete category {$id}: " . $e->getMessage());
-            }
-        }
-
-        return $deletedCount;
-    }
-
-    /**
-     * Delete a single category.
+     * Prevents deletion if category has children or associated products.
      *
      * @param Category $category Category instance to delete
      * @return bool
@@ -289,18 +262,58 @@ class CategoryService extends BaseService
                 abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete category: category has associated products');
             }
 
-            // Delete the image file if it exists
-            if ($category->image) {
-                $this->uploadService->delete($category->image, 'public');
-            }
-
-            // Delete icon file if exists
-            if ($category->icon) {
-                $this->uploadService->delete($category->icon, 'public');
-            }
-
+            $this->cleanupCategoryFiles($category);
             return $category->delete();
         });
+    }
+
+    /**
+     * Refactored from individual loop to batch processing with chunking
+     * Bulk delete multiple categories using efficient batch operations.
+     *
+     * @param array<int> $ids Array of category IDs to delete
+     * @return int Number of categories successfully deleted
+     */
+    public function bulkDeleteCategories(array $ids): int
+    {
+        return $this->transaction(function () use ($ids) {
+            $deletedCount = 0;
+
+            Category::whereIn('id', $ids)
+                ->chunk(100, function ($categories) use (&$deletedCount) {
+                    foreach ($categories as $category) {
+                        try {
+                            if (!$category->children()->exists() && !$category->products()->exists()) {
+                                $this->cleanupCategoryFiles($category);
+                                $category->delete();
+                                $deletedCount++;
+                            }
+                        } catch (Exception $e) {
+                            $this->logError("Failed to delete category {$category->id}: " . $e->getMessage());
+                        }
+                    }
+                });
+
+            return $deletedCount;
+        });
+    }
+
+    /**
+     * Extracted file cleanup logic to DRY principle
+     * Clean up associated files for a category.
+     *
+     * @param Category $category
+     * @return void
+     */
+    private function cleanupCategoryFiles(Category $category): void
+    {
+        if ($category->image) {
+            $this->uploadService->delete($category->image, 'public');
+        }
+
+        if ($category->icon) {
+            $this->uploadService->delete($category->icon, 'public');
+        }
     }
 
     /**
@@ -341,6 +354,21 @@ class CategoryService extends BaseService
     }
 
     /**
+     * Created private helper method to eliminate duplication across all bulk update methods
+     * Bulk update multiple categories with specified data.
+     *
+     * @param array<int> $ids Array of category IDs to update
+     * @param array<string, mixed> $updateData Data to update
+     * @return int Number of categories updated
+     */
+    private function bulkUpdateCategories(array $ids, array $updateData): int
+    {
+        return $this->transaction(function () use ($ids, $updateData) {
+            return Category::whereIn('id', $ids)->update($updateData);
+        });
+    }
+
+    /**
      * Bulk activate multiple categories.
      *
      * @param array<int> $ids Array of category IDs to activate
@@ -348,10 +376,7 @@ class CategoryService extends BaseService
      */
     public function bulkActivateCategories(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['is_active' => true]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_ACTIVATE);
     }
 
     /**
@@ -362,10 +387,7 @@ class CategoryService extends BaseService
      */
     public function bulkDeactivateCategories(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['is_active' => false]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_DEACTIVATE);
     }
 
     /**
@@ -376,10 +398,7 @@ class CategoryService extends BaseService
      */
     public function bulkEnableFeatured(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['featured' => 1]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_ENABLE_FEATURED);
     }
 
     /**
@@ -390,10 +409,7 @@ class CategoryService extends BaseService
      */
     public function bulkDisableFeatured(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['featured' => 0]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_DISABLE_FEATURED);
     }
 
     /**
@@ -404,10 +420,7 @@ class CategoryService extends BaseService
      */
     public function bulkEnableSync(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['is_sync_disable' => 0]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_ENABLE_SYNC);
     }
 
     /**
@@ -418,10 +431,7 @@ class CategoryService extends BaseService
      */
     public function bulkDisableSync(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Category::whereIn('id', $ids)
-                ->update(['is_sync_disable' => 1]);
-        });
+        return $this->bulkUpdateCategories($ids, self::BULK_DISABLE_SYNC);
     }
 
     /**
@@ -431,18 +441,43 @@ class CategoryService extends BaseService
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
      * @param array<string> $columns Columns to export
-     * @return string File path or download response
+     * @param string $method Export method: 'download' or 'email'
+     * @return string File path
      */
-    public function exportCategories(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = [], string $method = 'download'): string
-    {
+    public function exportCategories(
+        array $ids = [],
+        string $format = 'excel',
+        ?User $user = null,
+        array $columns = [],
+        string $method = 'download'
+    ): string {
         $fileName = 'categories-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
+        $this->generateExportFile($format, $filePath, $ids, $columns);
+
+        if ($user && $method === 'email') {
+            $this->sendExportEmail($user, $filePath, $fileName);
+        }
+
+        return $filePath;
+    }
+
+    /**
+     * Extracted export file generation logic for cleaner separation of concerns
+     * Generate export file in specified format.
+     *
+     * @param string $format
+     * @param string $filePath
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @return void
+     */
+    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
+    {
         if ($format === 'excel') {
-            // Always store file - needed for both download (temporary) and email (attachment)
             Excel::store(new CategoriesExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, export data first then create PDF view
             $categories = Category::with('parent:id,name')
                 ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
                 ->orderBy('name')
@@ -452,47 +487,52 @@ class CategoryService extends BaseService
                 'categories' => $categories,
                 'columns' => $columns,
             ]);
-            
-            // Always store file - needed for both download (temporary) and email (attachment)
+
             Storage::disk('public')->put($filePath, $pdf->output());
         }
+    }
 
-        // If user is provided, send email
-        if ($user && $method === 'email') {
-            // Check mail settings before attempting to send email
-            $mailSetting = MailSetting::latest()->first();
-            if (!$mailSetting) {
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Mail settings are not configured. Please contact the administrator.',
-                    ], Response::HTTP_BAD_REQUEST)
-                );
-            }
-
-            $generalSetting = GeneralSetting::latest()->first();
-
-            try {
-                $this->setMailInfo($mailSetting);
-                Mail::to($user->email)->send(new ExportMail(
-                    $user,
-                    $filePath,
-                    $fileName,
-                    'Categories',
-                    $generalSetting
-                ));
-            } catch (Exception $e) {
-                // Log error and return error response instead of aborting
-                $this->logError("Failed to send export email: " . $e->getMessage());
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Failed to send export email: ' . $e->getMessage(),
-                    ], Response::HTTP_INTERNAL_SERVER_ERROR)
-                );
-            }
+    /**
+     * Extracted email sending logic for better error handling and maintainability
+     * Send export file via email.
+     *
+     * @param User $user
+     * @param string $filePath
+     * @param string $fileName
+     * @return void
+     * @throws HttpResponseException
+     */
+    private function sendExportEmail(User $user, string $filePath, string $fileName): void
+    {
+        $mailSetting = MailSetting::latest()->first();
+        if (!$mailSetting) {
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
+                    Response::HTTP_BAD_REQUEST
+                )
+            );
         }
 
-        return $filePath;
+        $generalSetting = GeneralSetting::latest()->first();
+
+        try {
+            $this->setMailInfo($mailSetting);
+            Mail::to($user->email)->send(new ExportMail(
+                $user,
+                $filePath,
+                $fileName,
+                'Categories',
+                $generalSetting
+            ));
+        } catch (Exception $e) {
+            $this->logError("Failed to send export email: " . $e->getMessage());
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
+                    Response::HTTP_INTERNAL_SERVER_ERROR
+                )
+            );
+        }
     }
 }
-
-

@@ -34,28 +34,28 @@ class BrandIndexRequest extends BaseRequest
             /**
              * Number of items per page for pagination.
              *
-             * @var int|null @per_page
+             * @var int|null $per_page
              * @example 10
              */
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             /**
              * Page number for pagination.
              *
-             * @var int|null @page
+             * @var int|null $page
              * @example 1
              */
             'page' => ['nullable', 'integer', 'min:1'],
             /**
              * Filter brands by active status.
              *
-             * @var bool|null @is_active
+             * @var bool|null $is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],
             /**
              * Search term to filter brands by name, description, or slug.
              *
-             * @var string|null @search
+             * @var string|null $search
              * @example apple
              */
             'search' => ['nullable', 'string', 'max:255'],

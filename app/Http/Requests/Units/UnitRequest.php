@@ -39,7 +39,7 @@ class UnitRequest extends BaseRequest
             /**
              * Unique code identifier for the unit.
              *
-             * @var string @code
+             * @var string $code
              * @example KG
              */
             'code' => [
@@ -51,7 +51,7 @@ class UnitRequest extends BaseRequest
             /**
              * Display name of the unit.
              *
-             * @var string @name
+             * @var string $name
              * @example Kilogram
              */
             'name' => [
@@ -63,7 +63,7 @@ class UnitRequest extends BaseRequest
             /**
              * Base unit ID for conversion. If null, this is a base unit.
              *
-             * @var int|null @base_unit
+             * @var int|null $base_unit
              * @example 1
              */
             'base_unit' => [
@@ -78,21 +78,21 @@ class UnitRequest extends BaseRequest
             /**
              * Mathematical operator for conversion (*, /, +, -).
              *
-             * @var string|null @operator
+             * @var string|null $operator
              * @example *
              */
             'operator' => ['nullable', 'string', 'in:*,/,+,-'],
             /**
              * Value to use with operator for conversion.
              *
-             * @var float|null @operation_value
+             * @var float|null $operation_value
              * @example 1000
              */
             'operation_value' => ['nullable', 'numeric', 'min:0'],
             /**
              * Whether the unit is active and visible.
              *
-             * @var bool|null @is_active
+             * @var bool|null $is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],

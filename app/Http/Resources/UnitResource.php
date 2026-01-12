@@ -98,7 +98,7 @@ class UnitResource extends JsonResource
              * @var string|null $created_at
              * @example 2024-01-01T00:00:00.000000Z
              */
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->created_at?->toIso8601String(),
 
             /**
              * Timestamp when the unit was last updated.
@@ -106,7 +106,7 @@ class UnitResource extends JsonResource
              * @var string|null $updated_at
              * @example 2024-01-01T00:00:00.000000Z
              */
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

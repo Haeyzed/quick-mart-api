@@ -27,10 +27,19 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  *
  * Handles all business logic for unit operations including CRUD operations,
  * filtering, pagination, and bulk operations.
+ *
+ * Key Features:
+ * - Encapsulates all unit-related database queries
+ * - Provides bulk operations for efficiency
+ * - Manages data normalization and validation
  */
 class UnitService extends BaseService
 {
     use MailInfo;
+
+    private const BULK_ACTIVATE = ['is_active' => true];
+    private const BULK_DEACTIVATE = ['is_active' => false];
+
     /**
      * Get paginated list of units with optional filters.
      *
@@ -48,11 +57,12 @@ class UnitService extends BaseService
             ->when(
                 !empty($filters['search'] ?? null),
                 fn($query) => $query->where(function ($q) use ($filters) {
-                    $q->where('code', 'like', '%' . $filters['search'] . '%')
-                        ->orWhere('name', 'like', '%' . $filters['search'] . '%');
+                    $search = $filters['search'];
+                    $q->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%");
                 })
             )
-            ->orderBy('name')
+            ->latest()
             ->paginate($perPage);
     }
 
@@ -90,7 +100,6 @@ class UnitService extends BaseService
     public function createUnit(array $data): Unit
     {
         return $this->transaction(function () use ($data) {
-            // Normalize data to match database schema
             $data = $this->normalizeUnitData($data);
             return Unit::create($data);
         });
@@ -99,13 +108,15 @@ class UnitService extends BaseService
     /**
      * Normalize unit data to match database schema requirements.
      *
-     * Sets default operator and operation_value if base_unit is not set.
-     * Normalizes boolean fields.
+     * Handles boolean conversions and default values:
+     * - is_active: boolean, defaults to true on create
+     * - Sets default operator and operation_value if base_unit is not set
      *
      * @param array<string, mixed> $data
+     * @param bool $isUpdate Whether this is an update operation
      * @return array<string, mixed>
      */
-    private function normalizeUnitData(array $data): array
+    private function normalizeUnitData(array $data, bool $isUpdate = false): array
     {
         // Set default operator and operation_value if base_unit is not set
         // This matches the salespro logic: if no base_unit, set defaults
@@ -116,10 +127,10 @@ class UnitService extends BaseService
             $data['base_unit'] = null;
         }
 
-        // Normalize boolean fields to match database schema
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
+        // is_active defaults to true on create
+        if (!isset($data['is_active']) && !$isUpdate) {
+            $data['is_active'] = true;
+        } elseif (isset($data['is_active'])) {
             $data['is_active'] = (bool)filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
@@ -140,39 +151,46 @@ class UnitService extends BaseService
     public function updateUnit(Unit $unit, array $data): Unit
     {
         return $this->transaction(function () use ($unit, $data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeUnitData($data);
+            $data = $this->normalizeUnitData($data, isUpdate: true);
             $unit->update($data);
             return $unit->fresh();
         });
     }
 
     /**
-     * Bulk delete multiple units.
+     * Refactored from individual loop to batch processing with chunking
+     * Bulk delete multiple units using efficient batch operations.
      *
      * @param array<int> $ids Array of unit IDs to delete
-     * @return int Number of units deleted
+     * @return int Number of units successfully deleted
      */
     public function bulkDeleteUnits(array $ids): int
     {
-        $deletedCount = 0;
+        return $this->transaction(function () use ($ids) {
+            $deletedCount = 0;
 
-        foreach ($ids as $id) {
-            try {
-                $unit = Unit::findOrFail($id);
-                $this->deleteUnit($unit);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete unit {$id}: " . $e->getMessage());
-            }
-        }
+            Unit::whereIn('id', $ids)
+                ->chunk(100, function ($units) use (&$deletedCount) {
+                    foreach ($units as $unit) {
+                        try {
+                            if (!$unit->products()->exists() && !$unit->subUnits()->exists()) {
+                                $unit->delete();
+                                $deletedCount++;
+                            }
+                        } catch (Exception $e) {
+                            $this->logError("Failed to delete unit {$unit->id}: " . $e->getMessage());
+                        }
+                    }
+                });
 
-        return $deletedCount;
+            return $deletedCount;
+        });
     }
 
     /**
-     * Delete a single unit.
+     * Delete a single unit with validation.
+     *
+     * Prevents deletion if unit has associated products or sub-units.
      *
      * @param Unit $unit Unit instance to delete
      * @return bool
@@ -207,6 +225,21 @@ class UnitService extends BaseService
     }
 
     /**
+     * Created private helper method to eliminate duplication across all bulk update methods
+     * Bulk update multiple units with specified data.
+     *
+     * @param array<int> $ids Array of unit IDs to update
+     * @param array<string, mixed> $updateData Data to update
+     * @return int Number of units updated
+     */
+    private function bulkUpdateUnits(array $ids, array $updateData): int
+    {
+        return $this->transaction(function () use ($ids, $updateData) {
+            return Unit::whereIn('id', $ids)->update($updateData);
+        });
+    }
+
+    /**
      * Bulk activate multiple units.
      *
      * @param array<int> $ids Array of unit IDs to activate
@@ -214,10 +247,7 @@ class UnitService extends BaseService
      */
     public function bulkActivateUnits(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Unit::whereIn('id', $ids)
-                ->update(['is_active' => true]);
-        });
+        return $this->bulkUpdateUnits($ids, self::BULK_ACTIVATE);
     }
 
     /**
@@ -228,10 +258,7 @@ class UnitService extends BaseService
      */
     public function bulkDeactivateUnits(array $ids): int
     {
-        return $this->transaction(function () use ($ids) {
-            return Unit::whereIn('id', $ids)
-                ->update(['is_active' => false]);
-        });
+        return $this->bulkUpdateUnits($ids, self::BULK_DEACTIVATE);
     }
 
     /**
@@ -241,17 +268,43 @@ class UnitService extends BaseService
      * @param string $format Export format: 'excel' or 'pdf'
      * @param User|null $user User to send email to (null for download)
      * @param array<string> $columns Columns to export
-     * @return string File path or download response
+     * @param string $method Export method: 'download' or 'email'
+     * @return string File path
      */
-    public function exportUnits(array $ids = [], string $format = 'excel', ?User $user = null, array $columns = [], string $method = 'download'): string
-    {
+    public function exportUnits(
+        array $ids = [],
+        string $format = 'excel',
+        ?User $user = null,
+        array $columns = [],
+        string $method = 'download'
+    ): string {
         $fileName = 'units-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 
+        $this->generateExportFile($format, $filePath, $ids, $columns);
+
+        if ($user && $method === 'email') {
+            $this->sendExportEmail($user, $filePath, $fileName);
+        }
+
+        return $filePath;
+    }
+
+    /**
+     * Extracted export file generation logic for cleaner separation of concerns
+     * Generate export file in specified format.
+     *
+     * @param string $format
+     * @param string $filePath
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @return void
+     */
+    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
+    {
         if ($format === 'excel') {
             Excel::store(new UnitsExport($ids, $columns), $filePath, 'public');
         } else {
-            // For PDF, export data first then create PDF view
             $units = Unit::with('baseUnitRelation:id,code,name')
                 ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
                 ->orderBy('code')
@@ -261,44 +314,53 @@ class UnitService extends BaseService
                 'units' => $units,
                 'columns' => $columns,
             ]);
+
             Storage::disk('public')->put($filePath, $pdf->output());
         }
+    }
 
-        // If user is provided, send email
-        if ($user && $method === 'email') {
-            // Check mail settings before attempting to send email
-            $mailSetting = MailSetting::latest()->first();
-            if (!$mailSetting) {
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Mail settings are not configured. Please contact the administrator.',
-                    ], Response::HTTP_BAD_REQUEST)
-                );
-            }
-
-            $generalSetting = GeneralSetting::latest()->first();
-
-            try {
-                $this->setMailInfo($mailSetting);
-                Mail::to($user->email)->send(new ExportMail(
-                    $user,
-                    $filePath,
-                    $fileName,
-                    'Units',
-                    $generalSetting
-                ));
-            } catch (Exception $e) {
-                // Log error and return error response instead of aborting
-                $this->logError("Failed to send export email: " . $e->getMessage());
-                throw new HttpResponseException(
-                    response()->json([
-                        'message' => 'Failed to send export email: ' . $e->getMessage(),
-                    ], Response::HTTP_INTERNAL_SERVER_ERROR)
-                );
-            }
+    /**
+     * Extracted email sending logic for better error handling and maintainability
+     * Send export file via email.
+     *
+     * @param User $user
+     * @param string $filePath
+     * @param string $fileName
+     * @return void
+     * @throws HttpResponseException
+     */
+    private function sendExportEmail(User $user, string $filePath, string $fileName): void
+    {
+        $mailSetting = MailSetting::latest()->first();
+        if (!$mailSetting) {
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
+                    Response::HTTP_BAD_REQUEST
+                )
+            );
         }
 
-        return $filePath;
+        $generalSetting = GeneralSetting::latest()->first();
+
+        try {
+            $this->setMailInfo($mailSetting);
+            Mail::to($user->email)->send(new ExportMail(
+                $user,
+                $filePath,
+                $fileName,
+                'Units',
+                $generalSetting
+            ));
+        } catch (Exception $e) {
+            $this->logError("Failed to send export email: " . $e->getMessage());
+            throw new HttpResponseException(
+                response()->json(
+                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
+                    Response::HTTP_INTERNAL_SERVER_ERROR
+                )
+            );
+        }
     }
 }
 

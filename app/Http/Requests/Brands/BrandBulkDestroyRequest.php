@@ -35,14 +35,14 @@ class BrandBulkDestroyRequest extends BaseRequest
             /**
              * Array of brand IDs to delete.
              *
-             * @var array<int> @ids
+             * @var array<int> $ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
              * Each ID in the ids array must be a valid brand ID.
              *
-             * @var int @ids.*
+             * @var int $ids.*
              * @example 1
              */
             'ids.*' => ['required', 'integer', Rule::exists('brands', 'id')],

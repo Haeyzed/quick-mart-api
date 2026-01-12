@@ -40,7 +40,7 @@ class CategoryRequest extends BaseRequest
             /**
              * The category name. Must be unique across all categories.
              *
-             * @var string @name
+             * @var string $name
              * @example Electronics
              */
             'name' => [
@@ -52,7 +52,7 @@ class CategoryRequest extends BaseRequest
             /**
              * URL-friendly slug for the category. Auto-generated from name if not provided.
              *
-             * @var string|null @slug
+             * @var string|null $slug
              * @example electronics
              */
             'slug' => [
@@ -64,37 +64,37 @@ class CategoryRequest extends BaseRequest
             /**
              * Brief description of the category.
              *
-             * @var string|null @short_description
+             * @var string|null $short_description
              * @example High-end electronics and gadgets
              */
             'short_description' => ['nullable', 'string', 'max:1000'],
             /**
              * SEO page title for the category.
              *
-             * @var string|null @page_title
+             * @var string|null $page_title
              * @example Shop Electronics | Best Deals
              */
             'page_title' => ['nullable', 'string', 'max:255'],
             /**
              * Category image file. Accepts JPEG, PNG, JPG, GIF, or WebP format. Max 5MB.
-             * The full URL will be saved to the image field after upload.
+             * The full URL will be saved to the image_url field after upload.
              *
-             * @var UploadedFile|null @image
+             * @var UploadedFile|null $image
              * @example image.jpg
              */
             'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
              * Category icon file. Accepts JPEG, PNG, JPG, GIF, or WebP format. Max 5MB.
-             * The full URL will be saved to the icon field after upload.
+             * The full URL will be saved to the icon_url field after upload.
              *
-             * @var UploadedFile|null @icon
+             * @var UploadedFile|null $icon
              * @example icon.png
              */
             'icon' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
-             * Parent category ID for hierarchical structure. Must reference existing category.
+             * Parent category ID for hierarchical relationships. Cannot be set to self.
              *
-             * @var int|null @parent_id
+             * @var int|null $parent_id
              * @example 1
              */
             'parent_id' => [
@@ -107,30 +107,30 @@ class CategoryRequest extends BaseRequest
                 }),
             ],
             /**
-             * Whether the category is active and visible.
+             * Whether the category is active and visible to users.
              *
-             * @var bool|null @is_active
+             * @var bool|null $is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],
             /**
              * Whether the category is featured on the homepage.
              *
-             * @var bool|null @featured
+             * @var bool|null $featured
              * @example false
              */
             'featured' => ['nullable', 'boolean'],
             /**
              * Whether sync to external systems is disabled.
              *
-             * @var bool|null @is_sync_disable
+             * @var bool|null $is_sync_disable
              * @example false
              */
             'is_sync_disable' => ['nullable', 'boolean'],
             /**
-             * WooCommerce category ID for sync purposes. Must be unique.
+             * WooCommerce category ID for external system sync. Must be unique.
              *
-             * @var int|null @woocommerce_category_id
+             * @var int|null $woocommerce_category_id
              * @example 123
              */
             'woocommerce_category_id' => [
@@ -165,32 +165,20 @@ class CategoryRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * This method runs BEFORE validation and is the correct place to:
-     * - Normalize string inputs (trim, whitespace cleanup)
-     * - Set default null values for optional fields
-     * - Transform data that needs to be validated in a specific format
-     *
      * @return void
      */
     protected function prepareForValidation(): void
     {
-        // Normalize name (replace multiple whitespaces with single space)
         $name = $this->name ? preg_replace('/\s+/', ' ', trim($this->name)) : null;
 
-        // Convert is_active to boolean if present
-        // Handles strings like "true", "false", "1", "0", etc.
         $isActive = $this->has('is_active') && $this->is_active !== null
             ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        // Convert featured to boolean if present
-        // Handles strings like "true", "false", "1", "0", etc.
         $featured = $this->has('featured') && $this->featured !== null
             ? filter_var($this->featured, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
 
-        // Convert is_sync_disable to boolean if present
-        // Handles strings like "true", "false", "1", "0", etc.
         $isSyncDisable = $this->has('is_sync_disable') && $this->is_sync_disable !== null
             ? filter_var($this->is_sync_disable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
@@ -207,7 +195,6 @@ class CategoryRequest extends BaseRequest
             'woocommerce_category_id' => $this->woocommerce_category_id ?: null,
         ];
 
-        // Only merge icon if it's provided (for file uploads, don't set to null)
         if ($this->hasFile('icon')) {
             $mergeData['icon'] = $this->file('icon');
         }
@@ -215,4 +202,3 @@ class CategoryRequest extends BaseRequest
         $this->merge($mergeData);
     }
 }
-

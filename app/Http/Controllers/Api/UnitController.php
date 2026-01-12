@@ -23,14 +23,10 @@ use Illuminate\Support\Facades\Storage;
  * UnitController
  *
  * API controller for managing units with full CRUD operations.
+ * Keeps controller thin with all business logic delegated to UnitService.
  */
 class UnitController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @param UnitService $service
-     */
     public function __construct(
         private readonly UnitService $service
     )
@@ -141,7 +137,7 @@ class UnitController extends Controller
 
         return response()->success(
             ['deleted_count' => $count],
-            "Deleted {$count} units successfully"
+            $this->pluralizeMessage($count, 'Deleted {count} unit', 'successfully')
         );
     }
 
@@ -170,7 +166,7 @@ class UnitController extends Controller
 
         return response()->success(
             ['activated_count' => $count],
-            "Activated {$count} unit" . ($count !== 1 ? 's' : '') . " successfully"
+            $this->pluralizeMessage($count, 'Activated {count} unit', 'successfully')
         );
     }
 
@@ -186,7 +182,7 @@ class UnitController extends Controller
 
         return response()->success(
             ['deactivated_count' => $count],
-            "Deactivated {$count} unit" . ($count !== 1 ? 's' : '') . " successfully"
+            $this->pluralizeMessage($count, 'Deactivated {count} unit', 'successfully')
         );
     }
 
@@ -208,12 +204,26 @@ class UnitController extends Controller
         $filePath = $this->service->exportUnits($ids, $format, $user, $columns, $method);
 
         if ($method === 'download') {
-            // For download, return file response (frontend handles blob download)
             return Storage::disk('public')->download($filePath);
         }
 
-        // For email, file is stored and attached to email (no need to return file)
         return response()->success(null, 'Export file sent via email successfully');
+    }
+
+    /**
+     * Pluralize message with count.
+     *
+     * Utility helper to eliminate string concatenation duplication across bulk methods.
+     *
+     * @param int $count
+     * @param string $message Message with {count} placeholder (e.g., "Activated {count} unit")
+     * @param string $suffix Suffix to append (e.g., "successfully")
+     * @return string
+     */
+    private function pluralizeMessage(int $count, string $message, string $suffix): string
+    {
+        $pluralSuffix = $count !== 1 ? 's' : '';
+        return str_replace('{count}', (string)$count, $message) . $pluralSuffix . " {$suffix}";
     }
 }
 

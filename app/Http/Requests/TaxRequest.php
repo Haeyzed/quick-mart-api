@@ -38,7 +38,7 @@ class TaxRequest extends BaseRequest
             /**
              * Tax name. Must be unique across all taxes.
              *
-             * @var string @name
+             * @var string $name
              * @example VAT
              */
             'name' => [
@@ -50,21 +50,21 @@ class TaxRequest extends BaseRequest
             /**
              * Tax rate as a percentage (0-100).
              *
-             * @var float @rate
+             * @var float $rate
              * @example 15.5
              */
             'rate' => ['required', 'numeric', 'min:0', 'max:100'],
             /**
              * Whether the tax is active and visible.
              *
-             * @var bool|null @is_active
+             * @var bool|null $is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],
             /**
              * WooCommerce tax ID for sync purposes. Must be unique.
              *
-             * @var int|null @woocommerce_tax_id
+             * @var int|null $woocommerce_tax_id
              * @example 123
              */
             'woocommerce_tax_id' => [

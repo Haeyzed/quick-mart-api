@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  *
  * Validates bulk delete request for taxes.
  */
-class TaxBulkDestroyRequest extends FormRequest
+class TaxBulkDestroyRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -35,14 +35,14 @@ class TaxBulkDestroyRequest extends FormRequest
             /**
              * Array of tax IDs to delete.
              *
-             * @var array<int> @ids
+             * @var array<int> $ids
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
             /**
              * Each ID in the ids array must be a valid tax ID.
              *
-             * @var int @ids.*
+             * @var int $ids.*
              * @example 1
              */
             'ids.*' => ['required', 'integer', Rule::exists('taxes', 'id')],

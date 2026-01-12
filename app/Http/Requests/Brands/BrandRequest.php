@@ -40,7 +40,7 @@ class BrandRequest extends BaseRequest
             /**
              * The brand name. Must be unique across all brands.
              *
-             * @var string @name
+             * @var string $name
              * @example Apple
              */
             'name' => [
@@ -52,7 +52,7 @@ class BrandRequest extends BaseRequest
             /**
              * URL-friendly slug for the brand. Auto-generated from name if not provided.
              *
-             * @var string|null @slug
+             * @var string|null $slug
              * @example apple
              */
             'slug' => [
@@ -64,14 +64,14 @@ class BrandRequest extends BaseRequest
             /**
              * Brief description of the brand.
              *
-             * @var string|null @short_description
+             * @var string|null $short_description
              * @example Premium technology brand
              */
             'short_description' => ['nullable', 'string', 'max:1000'],
             /**
              * SEO page title for the brand.
              *
-             * @var string|null @page_title
+             * @var string|null $page_title
              * @example Shop Apple Products | Best Deals
              */
             'page_title' => ['nullable', 'string', 'max:255'],
@@ -79,14 +79,14 @@ class BrandRequest extends BaseRequest
              * Brand image file. Accepts JPEG, PNG, JPG, GIF, or WebP format. Max 5MB.
              * The full URL will be saved to the image_url field after upload.
              *
-             * @var UploadedFile|null @image
+             * @var UploadedFile|null $image
              * @example image.jpg
              */
             'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
              * Whether the brand is active and visible.
              *
-             * @var bool|null @is_active
+             * @var bool|null $is_active
              * @example true
              */
             'is_active' => ['nullable', 'boolean'],

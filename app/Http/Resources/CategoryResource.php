@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * CategoryResource
  *
- * Transforms a Category model instance into a JSON response with full documentation
- * for each field to ensure API documentation clarity.
+ * Transforms a Category model instance into a JSON response.
+ * Provides complete and consistent API response structure.
  */
 class CategoryResource extends JsonResource
 {
@@ -26,7 +26,7 @@ class CategoryResource extends JsonResource
     {
         return [
             /**
-             * The unique identifier for the category.
+             * Category ID.
              *
              * @var int $id
              * @example 1
@@ -34,7 +34,7 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
 
             /**
-             * The category name. Must be unique across all categories.
+             * Category name.
              *
              * @var string $name
              * @example Electronics
@@ -79,7 +79,7 @@ class CategoryResource extends JsonResource
              * @var string|null $image_url
              * @example https://example.com/images/category/category-image.jpg
              */
-            'image_url' => $this->image_url ?? ($this->image ? Storage::disk('public')->url('categories/' . $this->image) : null),
+            'image_url' => $this->image_url,
 
             /**
              * Category icon filename or path.
@@ -95,7 +95,7 @@ class CategoryResource extends JsonResource
              * @var string|null $icon_url
              * @example https://example.com/storage/categories/icons/category-icon.png
              */
-            'icon_url' => $this->icon_url ?? ($this->icon ? Storage::disk('public')->url('categories/icons/' . $this->icon) : null),
+            'icon_url' => $this->icon_url,
 
             /**
              * Parent category ID for hierarchical relationships.
@@ -154,29 +154,28 @@ class CategoryResource extends JsonResource
             'is_root' => $this->isRoot(),
 
             /**
-             * ISO 8601 formatted creation timestamp.
+             * Timestamp when the category was created.
              *
              * @var string|null $created_at
-             * @example 2024-01-15T10:30:00.000000Z
+             * @example 2024-01-01T00:00:00.000000Z
              */
             'created_at' => $this->created_at?->toIso8601String(),
 
             /**
-             * ISO 8601 formatted last update timestamp.
+             * Timestamp when the category was last updated.
              *
              * @var string|null $updated_at
-             * @example 2024-01-15T15:45:00.000000Z
+             * @example 2024-01-01T00:00:00.000000Z
              */
             'updated_at' => $this->updated_at?->toIso8601String(),
 
             /**
-             * ISO 8601 formatted deletion timestamp (if soft deleted).
+             * Timestamp when the category was deleted (if soft deleted).
              *
              * @var string|null $deleted_at
-             * @example 2024-01-20T12:00:00.000000Z
+             * @example 2024-01-01T00:00:00.000000Z
              */
             'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }
-
