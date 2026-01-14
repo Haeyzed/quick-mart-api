@@ -1018,5 +1018,42 @@ class ProductService extends BaseService
             Excel::import(new ProductsImport(), $file);
         });
     }
+
+    /**
+     * Reorder product images.
+     *
+     * @param Product $product
+     * @param array<string> $imageUrls Array of image URLs in the new order
+     * @return Product
+     */
+    public function reorderImages(Product $product, array $imageUrls): Product
+    {
+        // Extract filenames from URLs
+        $imageFilenames = [];
+        foreach ($imageUrls as $url) {
+            // Extract filename from URL (e.g., "http://domain.com/images/product/filename.jpg" -> "filename.jpg")
+            $filename = basename(parse_url($url, PHP_URL_PATH));
+            if ($filename && in_array($filename, $product->image ?? [])) {
+                $imageFilenames[] = $filename;
+            }
+        }
+
+        // Only update if we have valid filenames
+        if (count($imageFilenames) === count($product->image ?? [])) {
+            // Generate new image_url array in the new order
+            $newImageUrls = [];
+            foreach ($imageFilenames as $filename) {
+                $newImageUrls[] = $this->uploadService->url('images/product/' . $filename, 'public');
+            }
+
+            $product->image = $imageFilenames;
+            $product->image_url = $newImageUrls;
+            $product->save();
+
+            $this->forgetCache('products');
+        }
+
+        return $product->fresh();
+    }
 }
 

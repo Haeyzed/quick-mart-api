@@ -195,5 +195,27 @@ class ProductController extends Controller
 
         return response()->success(null, 'Products imported successfully');
     }
+
+    /**
+     * Reorder product images.
+     *
+     * @param Request $request
+     * @param Product $product
+     * @return JsonResponse
+     */
+    public function reorderImages(Request $request, Product $product): JsonResponse
+    {
+        $request->validate([
+            'image_urls' => ['required', 'array', 'min:1'],
+            'image_urls.*' => ['required', 'string'],
+        ]);
+
+        $product = $this->service->reorderImages($product, $request->validated()['image_urls']);
+
+        return response()->success(
+            new ProductResource($product),
+            'Product images reordered successfully'
+        );
+    }
 }
 
