@@ -55,6 +55,14 @@ class ResetPasswordRequest extends BaseRequest
              * @example newpassword123
              */
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+
+            /**
+             * Password confirmation. Must match password.
+             *
+             * @var string @password_confirmation
+             * @example newpassword123
+             */
+            'password_confirmation' => ['required', 'string', 'min:8'],
         ];
     }
 
