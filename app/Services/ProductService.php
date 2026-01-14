@@ -1049,8 +1049,6 @@ class ProductService extends BaseService
             $product->image = $imageFilenames;
             $product->image_url = $newImageUrls;
             $product->save();
-
-            $this->forgetCache('products');
         }
 
         return $product->fresh();

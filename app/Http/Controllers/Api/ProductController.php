@@ -205,12 +205,12 @@ class ProductController extends Controller
      */
     public function reorderImages(Request $request, Product $product): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'image_urls' => ['required', 'array', 'min:1'],
             'image_urls.*' => ['required', 'string'],
         ]);
 
-        $product = $this->service->reorderImages($product, $request->validated()['image_urls']);
+        $product = $this->service->reorderImages($product, $validated['image_urls']);
 
         return response()->success(
             new ProductResource($product),
