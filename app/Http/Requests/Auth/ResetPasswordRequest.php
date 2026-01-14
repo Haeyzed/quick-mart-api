@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * LoginRequest
+ * ResetPasswordRequest
  *
- * Validates incoming login data for user authentication.
+ * Validates incoming data for password reset.
  */
-class LoginRequest extends BaseRequest
+class ResetPasswordRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -32,20 +33,28 @@ class LoginRequest extends BaseRequest
     {
         return [
             /**
-             * User's name or email address for login.
+             * User's email address.
              *
-             * @var string @name
-             * @example john.doe@example.com or john_doe
+             * @var string @email
+             * @example john.doe@example.com
              */
-            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
 
             /**
-             * User's password.
+             * Password reset token.
+             *
+             * @var string @token
+             * @example abc123def456...
+             */
+            'token' => ['required', 'string'],
+
+            /**
+             * New password. Must be confirmed.
              *
              * @var string @password
-             * @example password123
+             * @example newpassword123
              */
-            'password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
 
@@ -57,7 +66,7 @@ class LoginRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'name' => $this->name ? trim($this->name) : null,
+            'email' => $this->email ? trim($this->email) : null,
         ]);
     }
 }

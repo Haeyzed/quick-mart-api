@@ -42,13 +42,26 @@ class EmailVerification extends Mailable
     {
         $generalSetting = $this->generalSetting ?? \App\Models\GeneralSetting::latest()->first();
 
-        // Generate verification URL for API
-        $verificationUrl = URL::temporarySignedRoute(
+        // Generate signed verification URL for API
+        $apiVerificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(config('auth.verification.expire', 60)),
             ['id' => $this->user->getKey(), 'hash' => sha1($this->user->getEmailForVerification())],
             absolute: true
         );
+
+        // Parse the signed URL to extract signature and expires
+        $parsedUrl = parse_url($apiVerificationUrl);
+        parse_str($parsedUrl['query'] ?? '', $queryParams);
+
+        // Generate frontend verification URL with all necessary parameters
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $verificationUrl = $frontendUrl . '/verify-email?' . http_build_query([
+            'id' => $this->user->getKey(),
+            'hash' => sha1($this->user->getEmailForVerification()),
+            'signature' => $queryParams['signature'] ?? '',
+            'expires' => $queryParams['expires'] ?? '',
+        ]);
 
         return $this->view('emails.email-verification', [
             'user' => $this->user,

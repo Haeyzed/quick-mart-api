@@ -44,8 +44,9 @@ class PasswordReset extends Mailable
     {
         $generalSetting = $this->generalSetting ?? \App\Models\GeneralSetting::latest()->first();
 
-        // Generate password reset URL (for API, use the auth reset password endpoint)
-        $resetUrl = config('app.frontend_url', config('app.url')) . '/reset-password?' . http_build_query([
+        // Generate password reset URL using frontend URL
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $resetUrl = $frontendUrl . '/reset-password?' . http_build_query([
             'token' => $this->token,
             'email' => $this->user->email,
         ]);
