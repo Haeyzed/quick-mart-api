@@ -355,34 +355,46 @@ class ProductService extends BaseService
             $data = $this->normalizeProductData($data, true);
 
             // Handle images
+            // First, extract new uploaded files from $data['image'] BEFORE processing prev_img
+            $newUploadedImages = [];
+            if (isset($data['image']) && is_array($data['image'])) {
+                foreach ($data['image'] as $image) {
+                    if ($image instanceof UploadedFile) {
+                        $newUploadedImages[] = $image;
+                    }
+                }
+            }
+
+            // Get previous images from prev_img array
             $previousImages = [];
             if (isset($data['prev_img']) && is_array($data['prev_img'])) {
                 foreach ($data['prev_img'] as $prevImg) {
-                    if (!in_array($prevImg, $previousImages)) {
+                    if (!empty($prevImg) && !in_array($prevImg, $previousImages)) {
                         $previousImages[] = $prevImg;
                     }
                 }
-                $data['image'] = $previousImages;
-            } elseif (!isset($data['prev_img'])) {
-                $data['image'] = null;
             }
 
-            if (isset($data['image']) && is_array($data['image'])) {
-                $newImages = [];
-                foreach ($data['image'] as $image) {
-                    if ($image instanceof UploadedFile) {
-                        $newImages[] = $image;
-                    }
-                }
-                if (!empty($newImages)) {
-                    $imagePaths = $this->handleImageUploads($newImages, count($previousImages ?? []));
-                    $data['image'] = array_merge($previousImages ?? [], $imagePaths['paths']);
-                    $data['image_url'] = $imagePaths['urls'];
-                } else {
-                    $data['image'] = $previousImages ?? $product->image;
-                }
+            // Process new uploads if any
+            if (!empty($newUploadedImages)) {
+                $imagePaths = $this->handleImageUploads($newUploadedImages, count($previousImages));
+                $data['image'] = array_merge($previousImages, $imagePaths['paths']);
+                // Generate URLs for previous images and merge with new image URLs
+                $previousImageUrls = array_map(function ($img) {
+                    return $this->uploadService->url('images/product/' . $img, 'public');
+                }, $previousImages);
+                $data['image_url'] = array_merge($previousImageUrls, $imagePaths['urls']);
+            } elseif (!empty($previousImages)) {
+                // Only previous images, no new uploads
+                $data['image'] = $previousImages;
+                // Generate URLs for previous images
+                $data['image_url'] = array_map(function ($img) {
+                    return $this->uploadService->url('images/product/' . $img, 'public');
+                }, $previousImages);
             } else {
-                $data['image'] = $previousImages ?? $product->image;
+                // No images provided, keep existing product images
+                $data['image'] = $product->image ?? [];
+                $data['image_url'] = $product->image_url ?? [];
             }
 
             // Handle file upload
