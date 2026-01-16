@@ -343,10 +343,10 @@ class ProductResource extends JsonResource
             /**
              * Whether product has different prices per warehouse.
              *
-             * @var bool $is_diffPrice
+             * @var bool $is_diff_price
              * @example false
              */
-            'is_diffPrice' => $this->is_diffPrice ? true : false,
+            'is_diff_price' => $this->is_diff_price ? true : false,
 
             /**
              * Whether product uses IMEI tracking.

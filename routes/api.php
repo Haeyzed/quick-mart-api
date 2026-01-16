@@ -147,6 +147,12 @@ Route::middleware('auth:sanctum')->group(function () {
     ->name('products.import');
     Route::post('products/{product}/reorder-images', [ProductController::class, 'reorderImages'])
     ->name('products.reorder-images');
+    Route::get('products/search', [ProductController::class, 'search'])
+    ->name('products.search');
+    Route::get('products/sale-unit/{unitId}', [ProductController::class, 'getSaleUnits'])
+    ->name('products.sale-unit');
+    Route::get('products/combo-search', [ProductController::class, 'searchComboProduct'])
+    ->name('products.combo-search');
     Route::apiResource('products', ProductController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);

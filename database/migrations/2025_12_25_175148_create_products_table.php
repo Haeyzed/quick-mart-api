@@ -43,7 +43,7 @@ return new class extends Migration
             $table->boolean('is_embeded')->nullable();
             $table->boolean('is_variant')->nullable();
             $table->boolean('is_batch')->nullable();
-            $table->boolean('is_diffPrice')->nullable();
+            $table->boolean('is_diff_price')->nullable();
             $table->boolean('is_imei')->nullable();
             $table->tinyInteger('featured')->nullable();
             $table->tinyInteger('is_online')->nullable();

@@ -50,7 +50,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool|null $is_embeded
  * @property bool $is_batch
  * @property bool $is_variant
- * @property bool $is_diffPrice
+ * @property bool $is_diff_price
  * @property bool $is_imei
  * @property bool|null $featured
  * @property string|null $product_list
@@ -149,7 +149,7 @@ class Product extends Model
         'is_embeded',
         'is_batch',
         'is_variant',
-        'is_diffPrice',
+        'is_diff_price',
         'is_imei',
         'featured',
         'product_list',
@@ -462,7 +462,7 @@ class Product extends Model
             'is_embeded' => 'boolean',
             'is_batch' => 'boolean',
             'is_variant' => 'boolean',
-            'is_diffPrice' => 'boolean',
+            'is_diff_price' => 'boolean',
             'is_imei' => 'boolean',
             'featured' => 'boolean',
             'is_addon' => 'boolean',

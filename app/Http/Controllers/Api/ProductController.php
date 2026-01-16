@@ -217,5 +217,56 @@ class ProductController extends Controller
             'Product images reordered successfully'
         );
     }
+
+    /**
+     * Search products by name or code (for related products and extras).
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $request->validate([
+            'term' => ['required', 'string', 'min:3'],
+        ]);
+
+        $products = $this->service->searchProducts($request->input('term'));
+
+        return response()->success($products, 'Products found successfully');
+    }
+
+    /**
+     * Get sale and purchase units based on base unit ID.
+     *
+     * @param int $unitId Base unit ID
+     * @return JsonResponse
+     */
+    public function getSaleUnits(int $unitId): JsonResponse
+    {
+        $units = $this->service->getSaleUnits($unitId);
+
+        return response()->success($units, 'Sale units fetched successfully');
+    }
+
+    /**
+     * Search product for combo products table.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function searchComboProduct(Request $request): JsonResponse
+    {
+        $request->validate([
+            'data' => ['required', 'string'],
+        ]);
+
+        $result = $this->service->searchComboProduct($request->input('data'));
+
+        if ($result === null) {
+            return response()->error('Product not found', 404);
+        }
+
+        return response()->success([$result], 'Product found successfully');
+    }
 }
 

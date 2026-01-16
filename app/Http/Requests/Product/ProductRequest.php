@@ -57,7 +57,7 @@ class ProductRequest extends BaseRequest
             'purchase_unit_id' => ['nullable', 'integer', 'exists:units,id'],
             'sale_unit_id' => ['nullable', 'integer', 'exists:units,id'],
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
-            'tax_method' => ['nullable', 'integer', Rule::in([0, 1])],
+            'tax_method' => ['nullable', 'integer', Rule::in([1, 2])],
             'kitchen_id' => ['nullable', 'integer', 'exists:kitchens,id'],
             
             // Pricing
@@ -94,7 +94,7 @@ class ProductRequest extends BaseRequest
             'is_variant' => ['nullable', 'boolean'],
             'is_batch' => ['nullable', 'boolean'],
             'is_imei' => ['nullable', 'boolean'],
-            'is_diffPrice' => ['nullable', 'boolean'],
+            'is_diff_price' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'featured' => ['nullable', 'boolean'],
             'is_online' => ['nullable', 'boolean'],
@@ -211,7 +211,7 @@ class ProductRequest extends BaseRequest
     {
         // Handle boolean fields from FormData (they come as strings "true"/"false")
         $booleanFields = [
-            'is_variant', 'is_batch', 'is_imei', 'is_diffPrice', 'is_active',
+            'is_variant', 'is_batch', 'is_imei', 'is_diff_price', 'is_active',
             'featured', 'promotion', 'is_online', 'in_stock', 'is_addon',
             'is_recipe', 'is_embeded', 'is_sync_disable', 'is_initial_stock',
             'track_inventory'

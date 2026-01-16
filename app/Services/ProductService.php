@@ -20,6 +20,7 @@ use App\Traits\TenantInfo;
 use App\Traits\CacheForget;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -296,7 +297,7 @@ class ProductService extends BaseService
             }
 
             // Handle different prices per warehouse
-            if (isset($data['is_diffPrice']) && isset($data['diff_price']) && is_array($data['diff_price'])) {
+            if (isset($data['is_diff_price']) && isset($data['diff_price']) && is_array($data['diff_price'])) {
                 foreach ($data['diff_price'] as $key => $diffPrice) {
                     if ($diffPrice) {
                         ProductWarehouse::firstOrCreate([
@@ -512,7 +513,7 @@ class ProductService extends BaseService
             }
 
             // Handle different prices per warehouse
-            if (isset($data['is_diffPrice']) && isset($data['diff_price']) && is_array($data['diff_price'])) {
+            if (isset($data['is_diff_price']) && isset($data['diff_price']) && is_array($data['diff_price'])) {
                 foreach ($data['diff_price'] as $key => $diffPrice) {
                     if ($diffPrice) {
                         $productWarehouse = ProductWarehouse::where('product_id', $product->id)
@@ -734,7 +735,7 @@ class ProductService extends BaseService
 
         // Handle boolean fields
         $booleanFields = [
-            'is_active', 'is_batch', 'is_variant', 'is_diffPrice', 'is_imei', 
+            'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei', 
             'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory', 
             'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion'
         ];
@@ -1052,6 +1053,159 @@ class ProductService extends BaseService
         }
 
         return $product->fresh();
+    }
+
+    /**
+     * Search products by name or code (for related products and extras).
+     *
+     * @param string $term Search term (minimum 3 characters)
+     * @return SupportCollection<int, array{id: int, name: string, code: string, image: string}>
+     */
+    public function searchProducts(string $term): SupportCollection
+    {
+        if (strlen($term) < 3) {
+            return collect([]);
+        }
+
+        $products = Product::where('is_active', true)
+            ->where(function ($query) use ($term) {
+                $query->where('name', 'LIKE', "%{$term}%")
+                    ->orWhere('code', 'LIKE', "%{$term}%");
+            })
+            ->select('id', 'name', 'code', 'image_url')
+            ->limit(50)
+            ->get();
+
+        return $products->map(function ($product) {
+            $image = $product->image_url ? (is_array($product->image_url) ? $product->image_url[0] : (is_string($product->image_url) ? explode(',', $product->image_url)[0] : null)) : null;
+            
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'code' => $product->code,
+                'image_url' => $image ?? 'zummXD2dvAtI.png',
+            ];
+        });
+    }
+
+    /**
+     * Get sale and purchase units based on base unit ID.
+     *
+     * @param int $unitId Base unit ID
+     * @return array<int, string>
+     */
+    public function getSaleUnits(int $unitId): array
+    {
+        $units = Unit::where(function ($query) use ($unitId) {
+                $query->where('base_unit', $unitId)
+                    ->orWhere('id', $unitId);
+            })
+            ->where('is_active', true)
+            ->pluck('name', 'id')
+            ->toArray();
+
+        return $units;
+    }
+
+    /**
+     * Search product for combo products table.
+     * Returns detailed product information including variant support.
+     *
+     * @param string $searchTerm Product code or item code (may include variant info in format "code (name)")
+     * @return array<string, mixed>|null
+     */
+    public function searchComboProduct(string $searchTerm): ?array
+    {
+        // Extract product code (remove everything after " (" or "|")
+        $productCode = trim(explode('(', $searchTerm)[0]);
+        $productCode = trim(explode('|', $productCode)[0]);
+
+        // First try to find product by code
+        $product = Product::where('code', $productCode)
+            ->where('is_active', true)
+            ->first();
+
+        $productId = $product ? $product->id : null;
+        $isVariantProduct = $product && $product->is_variant;
+
+        // If not found or product has variants, check variants
+        if (!$product || $isVariantProduct) {
+            $productVariant = ProductVariant::join('products', 'product_variants.product_id', '=', 'products.id')
+                ->where(function ($query) use ($productCode, $productId) {
+                    $query->where('product_variants.item_code', $productCode);
+                    if ($productId) {
+                        $query->orWhere('product_variants.product_id', $productId);
+                    }
+                })
+                ->where('products.is_active', true)
+                ->select(
+                    'products.*',
+                    'product_variants.item_code',
+                    'product_variants.variant_id',
+                    'product_variants.additional_price',
+                    'product_variants.cost as variant_cost'
+                )
+                ->first();
+
+            if ($productVariant) {
+                $product = $productVariant;
+                $variantId = $productVariant->variant_id;
+                $itemCode = $productVariant->item_code;
+                $additionalPrice = $productVariant->additional_price ?? 0;
+                $cost = $productVariant->variant_cost ?? $productVariant->cost ?? 0;
+            } else {
+                return null;
+            }
+        } else {
+            $variantId = null;
+            $itemCode = $product->code;
+            $additionalPrice = 0;
+            $cost = $product->cost ?? 0;
+        }
+
+        if (!$product) {
+            return null;
+        }
+
+        // Get brand name
+        $brand = $product->brand;
+        $brandName = $brand ? $brand->name : null;
+
+        // Get unit options as structured data
+        $units = Unit::where(function ($query) use ($product) {
+                $query->where('base_unit', $product->unit_id)
+                    ->orWhere('id', $product->unit_id);
+            })
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($unit) use ($product) {
+                return [
+                    'id' => $unit->id,
+                    'name' => $unit->name,
+                    'operation_value' => $unit->operation_value ?? 1,
+                    'operator' => $unit->operator ?? '*',
+                    'selected' => $product->unit_id == $unit->id,
+                ];
+            })
+            ->toArray();
+
+        $price = ($product->price ?? 0) + $additionalPrice;
+
+        // Return structured data
+        return [
+            'name' => $product->name,
+            'code' => $itemCode,
+            'price' => $price,
+            'promotion_price' => $product->promotion_price ?? 0,
+            'qty' => $product->qty ?? 0,
+            'id' => $product->id,
+            'variant_id' => $variantId,
+            'cost' => $cost,
+            'brand' => $brandName,
+            'unit_id' => $product->unit_id ?? null,
+            'units' => $units,
+            'additional_price' => $additionalPrice,
+        ];
     }
 }
 
