@@ -231,7 +231,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         $updatedUser = $this->service->updateProfile($user, $request->validated());
-        $updatedUser->load(['biller', 'warehouse', 'roles']);
+        $updatedUser->load(['biller', 'warehouse', 'roles', 'permissions']);
 
         return response()->success(
             new UserResource($updatedUser),

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Product\ProductHistoryRequest;
 use App\Http\Requests\Product\ProductIndexRequest;
 use App\Http\Requests\Product\ProductRequest;
 use App\Http\Resources\ProductResource;
@@ -267,6 +268,102 @@ class ProductController extends Controller
         }
 
         return response()->success([$result], 'Product found successfully');
+    }
+
+    /**
+     * Get sale history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function saleHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getSaleHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
+        ]));
+
+        return response()->success($history, 'Sale history fetched successfully');
+    }
+
+    /**
+     * Get purchase history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function purchaseHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getPurchaseHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
+        ]));
+
+        return response()->success($history, 'Purchase history fetched successfully');
+    }
+
+    /**
+     * Get sale return history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function saleReturnHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getSaleReturnHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
+        ]));
+
+        return response()->success($history, 'Sale return history fetched successfully');
+    }
+
+    /**
+     * Get purchase return history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function purchaseReturnHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getPurchaseReturnHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
+        ]));
+
+        return response()->success($history, 'Purchase return history fetched successfully');
+    }
+
+    /**
+     * Get adjustment history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function adjustmentHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getAdjustmentHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date'
+        ]));
+
+        return response()->success($history, 'Adjustment history fetched successfully');
+    }
+
+    /**
+     * Get transfer history for a product.
+     *
+     * @param Product $product
+     * @param ProductHistoryRequest $request
+     * @return JsonResponse
+     */
+    public function transferHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    {
+        $history = $this->service->getTransferHistory($product->id, $request->only([
+            'warehouse_id', 'starting_date', 'ending_date'
+        ]));
+
+        return response()->success($history, 'Transfer history fetched successfully');
     }
 }
 

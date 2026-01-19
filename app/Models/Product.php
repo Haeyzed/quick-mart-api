@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * Product Model
@@ -484,6 +485,49 @@ class Product extends Model
             'image_url' => 'array',
             'file_url' => 'string',
         ];
+    }
+
+    /**
+     * Boot the model and set up event listeners for slug generation.
+     *
+     * @return void
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saving(function (Product $product) {
+            $product->generateSlugIfNeeded();
+        });
+    }
+
+    /**
+     * Generate and normalize slug if ecommerce/restaurant module is enabled and slug is missing.
+     *
+     * @return void
+     */
+    protected function generateSlugIfNeeded(): void
+    {
+        // Check if ecommerce or restaurant module is enabled
+        $generalSetting = \App\Models\GeneralSetting::latest()->first();
+        $modules = explode(',', $generalSetting->modules ?? '');
+        $hasEcommerce = in_array('ecommerce', $modules);
+        $hasRestaurant = in_array('restaurant', $modules);
+
+        if (!$hasEcommerce && !$hasRestaurant) {
+            return;
+        }
+
+        // Generate slug if name exists and slug is missing
+        if ($this->name && !$this->slug) {
+            $this->slug = Str::slug($this->name, '-');
+        }
+
+        // Normalize slug if it exists
+        if ($this->slug) {
+            $this->slug = preg_replace('/[^A-Za-z0-9\-]/', '', $this->slug);
+            $this->slug = str_replace('\/', '/', $this->slug);
+        }
     }
 }
 

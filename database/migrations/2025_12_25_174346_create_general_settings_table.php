@@ -51,6 +51,7 @@ return new class extends Migration
             $table->integer('disable_signup')->default(0);
             $table->integer('disable_forgot_password')->default(0);
             $table->integer('margin_type')->default(0);
+            $table->string('storage_provider')->default('public')->comment('Storage provider name (public, s3, etc.)');
             $table->timestamps();
         });
     }

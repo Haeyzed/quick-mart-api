@@ -71,10 +71,11 @@ use Illuminate\Support\Carbon;
  * @property bool|null $disable_forgot_password
  * @property string|null $favicon
  * @property int|null $expiry_alert_days
- * @property string|null $margin_type
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- */
+     * @property string|null $margin_type
+     * @property string|null $storage_provider
+     * @property Carbon|null $created_at
+     * @property Carbon|null $updated_at
+     */
 class GeneralSetting extends Model
 {
     use HasFactory;
@@ -141,9 +142,10 @@ class GeneralSetting extends Model
         'disable_signup',
         'disable_forgot_password',
         'favicon',
-        'expiry_alert_days',
-        'margin_type',
-    ];
+            'expiry_alert_days',
+            'margin_type',
+            'storage_provider',
+        ];
 
     /**
      * Get the attributes that should be cast.

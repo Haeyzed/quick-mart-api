@@ -32,7 +32,7 @@ return new class extends Migration
             $table->double('qty')->nullable();
             $table->double('alert_quantity')->nullable();
             $table->double('daily_sale_objective')->nullable();
-            $table->tinyInteger('promotion')->nullable();
+            $table->boolean('promotion')->nullable();
             $table->string('promotion_price')->nullable();
             $table->string('starting_date', 200)->nullable();
             $table->date('last_date')->nullable();
@@ -45,10 +45,10 @@ return new class extends Migration
             $table->boolean('is_batch')->nullable();
             $table->boolean('is_diff_price')->nullable();
             $table->boolean('is_imei')->nullable();
-            $table->tinyInteger('featured')->nullable();
-            $table->tinyInteger('is_online')->nullable();
-            $table->tinyInteger('in_stock')->nullable();
-            $table->tinyInteger('track_inventory')->default(0);
+            $table->boolean('featured')->nullable();
+            $table->boolean('is_online')->nullable();
+            $table->boolean('in_stock')->nullable();
+            $table->boolean('track_inventory')->default(false);
             $table->string('product_list')->nullable();
             $table->string('variant_list')->nullable();
             $table->string('qty_list')->nullable();
@@ -62,7 +62,7 @@ return new class extends Migration
             $table->text('variant_option')->nullable();
             $table->text('variant_value')->nullable();
             $table->boolean('is_active')->nullable();
-            $table->tinyInteger('is_sync_disable')->nullable();
+            $table->boolean('is_sync_disable')->nullable();
             $table->integer('woocommerce_product_id')->nullable();
             $table->integer('woocommerce_media_id')->nullable();
             $table->integer('guarantee')->nullable();

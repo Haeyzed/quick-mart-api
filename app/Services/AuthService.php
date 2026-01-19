@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
+use App\Services\PermissionService;
 use App\Traits\MailInfo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -28,6 +29,12 @@ use Illuminate\Validation\ValidationException;
 class AuthService extends BaseService
 {
     use MailInfo;
+
+    public function __construct(
+        private readonly PermissionService $permissionService
+    ) {
+    }
+
     /**
      * Authenticate a user and generate a Sanctum token.
      *
@@ -76,6 +83,9 @@ class AuthService extends BaseService
 
         // Revoke all existing tokens (optional - for single device login)
         // $user->tokens()->delete();
+
+        // Load roles and permissions for frontend consumption
+        $user->load(['roles', 'permissions']);
 
         // Create new token
         $token = $user->createToken('auth-token')->plainTextToken;
@@ -223,14 +233,16 @@ class AuthService extends BaseService
     }
 
     /**
-     * Get the authenticated user with relationships.
+     * Get the authenticated user with relationships and permissions.
+     *
+     * Loads roles and permissions for frontend consumption.
      *
      * @param User $user
      * @return User
      */
     public function getAuthenticatedUser(User $user): User
     {
-        return $user->load(['biller', 'warehouse', 'roles']);
+        return $user->load(['biller', 'warehouse', 'roles', 'permissions']);
     }
 
     /**
@@ -330,6 +342,9 @@ class AuthService extends BaseService
         if ($revokeOldToken) {
             $user->currentAccessToken()?->delete();
         }
+
+        // Load roles and permissions for frontend consumption
+        $user->load(['roles', 'permissions']);
 
         // Create a new token
         $token = $user->createToken('auth-token')->plainTextToken;

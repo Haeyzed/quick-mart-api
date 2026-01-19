@@ -153,6 +153,18 @@ Route::middleware('auth:sanctum')->group(function () {
     ->name('products.sale-unit');
     Route::get('products/combo-search', [ProductController::class, 'searchComboProduct'])
     ->name('products.combo-search');
+    Route::get('products/{product}/history/sales', [ProductController::class, 'saleHistory'])
+    ->name('products.history.sales');
+    Route::get('products/{product}/history/purchases', [ProductController::class, 'purchaseHistory'])
+    ->name('products.history.purchases');
+    Route::get('products/{product}/history/sale-returns', [ProductController::class, 'saleReturnHistory'])
+    ->name('products.history.sale-returns');
+    Route::get('products/{product}/history/purchase-returns', [ProductController::class, 'purchaseReturnHistory'])
+    ->name('products.history.purchase-returns');
+    Route::get('products/{product}/history/adjustments', [ProductController::class, 'adjustmentHistory'])
+    ->name('products.history.adjustments');
+    Route::get('products/{product}/history/transfers', [ProductController::class, 'transferHistory'])
+    ->name('products.history.transfers');
     Route::apiResource('products', ProductController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);

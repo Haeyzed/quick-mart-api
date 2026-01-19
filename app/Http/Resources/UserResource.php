@@ -143,11 +143,60 @@ class UserResource extends JsonResource
             'warehouse' => $this->whenLoaded('warehouse'),
 
             /**
-             * Roles relationship (if loaded).
+             * Roles assigned to the user.
+             * Returns array of role objects with id and name only.
              *
-             * @var array<string, mixed>|null $roles
+             * @var array<int, array{id: int, name: string}>|null $roles
+             * @example [{"id": 1, "name": "Admin"}]
              */
-            'roles' => $this->whenLoaded('roles'),
+            'roles' => $this->whenLoaded('roles', function () {
+                return $this->roles->map(function ($role) {
+                    return [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                    ];
+                })->values();
+            }),
+
+            /**
+             * Direct permissions assigned to the user (excluding role-based permissions).
+             * Returns array of permission objects with id and name only.
+             *
+             * @var array<int, array{id: int, name: string}>|null $permissions
+             * @example [{"id": 4, "name": "products-edit"}]
+             */
+            'permissions' => $this->whenLoaded('permissions', function () {
+                return $this->permissions->map(function ($permission) {
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                    ];
+                })->values();
+            }),
+
+            /**
+             * All resolved permissions for the user (direct + role-based, deduplicated).
+             * This is the complete list of permissions the user has access to.
+             * Optimized for frontend authorization checks.
+             *
+             * @var array<string> $all_permissions
+             * @example ["products-index", "products-add", "products-edit", "products-delete", "category", "brand", "unit", "tax"]
+             */
+            'all_permissions' => $this->getAllUserPermissions()
+                ->pluck('name')
+                ->unique()
+                ->values()
+                ->toArray(),
+
+            /**
+             * Role names as a simple array for easy frontend consumption.
+             *
+             * @var array<string> $role_names
+             * @example ["Admin", "Owner"]
+             */
+            'role_names' => $this->whenLoaded('roles', function () {
+                return $this->roles->pluck('name')->toArray();
+            }),
         ];
     }
 }

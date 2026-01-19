@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -188,6 +189,50 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeNotDeleted(Builder $query): Builder
     {
         return $query->where('is_deleted', false)->orWhereNull('is_deleted');
+    }
+
+    /**
+     * Check if the user has a specific permission.
+     * This is a convenience wrapper around Spatie's hasPermissionTo method.
+     *
+     * @param string $permission Permission name
+     * @return bool
+     */
+    public function canPerform(string $permission): bool
+    {
+        return $this->hasPermissionTo($permission);
+    }
+
+    /**
+     * Check if the user has any of the given permissions.
+     *
+     * @param array<string> $permissions Array of permission names
+     * @return bool
+     */
+    public function canPerformAny(array $permissions): bool
+    {
+        return $this->hasAnyPermission($permissions);
+    }
+
+    /**
+     * Check if the user has all of the given permissions.
+     *
+     * @param array<string> $permissions Array of permission names
+     * @return bool
+     */
+    public function canPerformAll(array $permissions): bool
+    {
+        return $this->hasAllPermissions($permissions);
+    }
+
+    /**
+     * Get all permissions for this user (from roles + direct permissions).
+     *
+     * @return SupportCollection<int, \Spatie\Permission\Models\Permission>
+     */
+    public function getAllUserPermissions(): SupportCollection
+    {
+        return collect($this->getAllPermissions());
     }
 
     /**

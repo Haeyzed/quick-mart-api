@@ -11,6 +11,7 @@ use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\Tax;
 use App\Models\User;
+use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -32,9 +33,11 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  * - Encapsulates all tax-related database queries
  * - Provides bulk operations for efficiency
  * - Manages data normalization and validation
+ * - Enforces permission checks for all operations
  */
 class TaxService extends BaseService
 {
+    use CheckPermissionsTrait;
     use MailInfo;
 
     private const BULK_ACTIVATE = ['is_active' => true];
@@ -49,6 +52,9 @@ class TaxService extends BaseService
      */
     public function getTaxes(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        // Check permission: user needs 'tax' permission to view taxes
+        $this->requirePermission('tax');
+
         return Tax::query()
             ->when(
                 isset($filters['is_active']),
@@ -73,6 +79,9 @@ class TaxService extends BaseService
      */
     public function getTax(int $id): Tax
     {
+        // Check permission: user needs 'tax' permission to view taxes
+        $this->requirePermission('tax');
+
         return Tax::findOrFail($id);
     }
 
@@ -84,6 +93,9 @@ class TaxService extends BaseService
      */
     public function createTax(array $data): Tax
     {
+        // Check permission: user needs 'tax' permission to create taxes
+        $this->requirePermission('tax');
+
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeTaxData($data);
             return Tax::create($data);
@@ -125,6 +137,9 @@ class TaxService extends BaseService
      */
     public function updateTax(Tax $tax, array $data): Tax
     {
+        // Check permission: user needs 'tax' permission to update taxes
+        $this->requirePermission('tax');
+
         return $this->transaction(function () use ($tax, $data) {
             $data = $this->normalizeTaxData($data, isUpdate: true);
             $tax->update($data);
@@ -141,6 +156,9 @@ class TaxService extends BaseService
      */
     public function bulkDeleteTaxes(array $ids): int
     {
+        // Check permission: user needs 'tax' permission to delete taxes
+        $this->requirePermission('tax');
+
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
 
@@ -173,6 +191,9 @@ class TaxService extends BaseService
      */
     public function deleteTax(Tax $tax): bool
     {
+        // Check permission: user needs 'tax' permission to delete taxes
+        $this->requirePermission('tax');
+
         return $this->transaction(function () use ($tax) {
             if ($tax->products()->exists()) {
                 abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete tax: tax has associated products');
@@ -190,6 +211,9 @@ class TaxService extends BaseService
      */
     public function importTaxes(UploadedFile $file): void
     {
+        // Check permission: user needs 'tax' permission to import taxes
+        $this->requirePermission('tax');
+
         $this->transaction(function () use ($file) {
             Excel::import(new TaxesImport(), $file);
         });
@@ -218,6 +242,9 @@ class TaxService extends BaseService
      */
     public function bulkActivateTaxes(array $ids): int
     {
+        // Check permission: user needs 'tax' permission to update taxes
+        $this->requirePermission('tax');
+
         return $this->bulkUpdateTaxes($ids, self::BULK_ACTIVATE);
     }
 
@@ -229,6 +256,9 @@ class TaxService extends BaseService
      */
     public function bulkDeactivateTaxes(array $ids): int
     {
+        // Check permission: user needs 'tax' permission to update taxes
+        $this->requirePermission('tax');
+
         return $this->bulkUpdateTaxes($ids, self::BULK_DEACTIVATE);
     }
 
@@ -249,6 +279,9 @@ class TaxService extends BaseService
         array $columns = [],
         string $method = 'download'
     ): string {
+        // Check permission: user needs 'tax' permission to export taxes
+        $this->requirePermission('tax');
+
         $fileName = 'taxes-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 

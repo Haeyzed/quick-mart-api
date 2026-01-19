@@ -11,6 +11,8 @@ use Database\Seeders\Tenant\LanguagesTableSeeder;
 use Database\Seeders\Tenant\TranslationsTableSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Services\PermissionService;
+use App\Models\User;
 
 /**
  * Tenant Database Seeder
@@ -55,12 +57,12 @@ class TenantDatabaseSeeder extends Seeder
         // Seed core application data
         $this->seedGeneralSettings();
         $this->seedRoles(); // Must be before users (foreign key dependency)
+        $this->seedPermissions(); // Must be before role-permission mappings
+        $this->seedRolePermissions(); // Must be before users (for role assignment)
         $this->seedAccounts();
         $this->seedBillers(); // Must be before users (foreign key dependency)
         $this->seedWarehouses(); // Must be before users (foreign key dependency)
-        $this->seedUsers();
-        $this->seedPermissions();
-        $this->seedRolePermissions();
+        $this->seedUsers(); // Must be after roles and permissions are seeded
         $this->seedBrands(); // Must be before products (foreign key dependency)
         $this->seedCategories(); // Must be before products (foreign key dependency)
         $this->seedUnits(); // Must be before products (foreign key dependency)
@@ -116,6 +118,7 @@ class TenantDatabaseSeeder extends Seeder
                 'company_name' => null,
                 'vat_registration_number' => null,
                 'is_packing_slip' => 0,
+                'storage_provider' => 'public',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -124,6 +127,9 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Seed users.
+     *
+     * This method creates the initial admin user and assigns roles and permissions
+     * using the PermissionService to ensure proper deduplication and role resolution.
      *
      * @return void
      */
@@ -135,6 +141,7 @@ class TenantDatabaseSeeder extends Seeder
 
         $tenantData = self::$tenantData;
 
+        // Create the user
         DB::table('users')->insert([
             [
                 'id' => 1,
@@ -154,6 +161,30 @@ class TenantDatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
         ]);
+
+        // Assign roles and permissions using PermissionService
+        $user = User::find(1);
+        if ($user) {
+            $permissionService = app(PermissionService::class);
+
+            // Get roles to assign (default: Admin role with ID 1)
+            $rolesToAssign = ['Admin']; // Admin role name
+            if (isset($tenantData['user_roles']) && is_array($tenantData['user_roles'])) {
+                $rolesToAssign = $tenantData['user_roles'];
+            }
+
+            // Get all available permissions to assign to admin user
+            $allPermissions = $permissionService->getAllPermissions()->pluck('name')->toArray();
+            
+            // Merge with any tenant-specific direct permissions
+            $directPermissions = $tenantData['user_permissions'] ?? [];
+            if (!empty($directPermissions)) {
+                $allPermissions = array_merge($allPermissions, $directPermissions);
+            }
+
+            // Assign roles and all permissions with automatic deduplication
+            $permissionService->assignRolesAndPermissions($user, $rolesToAssign, $allPermissions);
+        }
     }
 
     /**

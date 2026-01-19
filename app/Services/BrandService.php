@@ -11,6 +11,7 @@ use App\Models\Brand;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
+use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -33,9 +34,11 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  * - Handles file uploads and deletions
  * - Provides bulk operations for efficiency
  * - Manages data normalization and validation
+ * - Enforces permission checks for all operations
  */
 class BrandService extends BaseService
 {
+    use CheckPermissionsTrait;
     use MailInfo;
 
     private const BULK_ACTIVATE = ['is_active' => true];
@@ -56,6 +59,10 @@ class BrandService extends BaseService
      */
     public function getBrands(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        // Check permission: user needs 'brand' permission to view brands
+        // Future: Consider using 'brands-index' for more granular control
+        $this->requirePermission('brand');
+
         return Brand::query()
             ->when(
                 isset($filters['is_active']),
@@ -82,6 +89,9 @@ class BrandService extends BaseService
      */
     public function getBrand(int $id): Brand
     {
+        // Check permission: user needs 'brand' permission to view brands
+        $this->requirePermission('brand');
+
         return Brand::findOrFail($id);
     }
 
@@ -93,6 +103,10 @@ class BrandService extends BaseService
      */
     public function createBrand(array $data): Brand
     {
+        // Check permission: user needs 'brand' permission to create brands
+        // Future: Consider using 'brands-add' for more granular control
+        $this->requirePermission('brand');
+
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeBrandData($data);
             $data = $this->processFileUploads($data);
@@ -143,11 +157,10 @@ class BrandService extends BaseService
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             $filePath = $this->uploadService->upload(
                 $data['image'],
-                'brands',
-                'public'
+                config('storage.brands.images')
             );
             $data['image'] = $filePath;
-            $data['image_url'] = $this->uploadService->url($filePath, 'public');
+            $data['image_url'] = $this->uploadService->url($filePath);
         }
 
         return $data;
@@ -162,12 +175,16 @@ class BrandService extends BaseService
      */
     public function updateBrand(Brand $brand, array $data): Brand
     {
+        // Check permission: user needs 'brand' permission to update brands
+        // Future: Consider using 'brands-edit' for more granular control
+        $this->requirePermission('brand');
+
         return $this->transaction(function () use ($brand, $data) {
             $data = $this->normalizeBrandData($data, isUpdate: true);
 
             // Delete old files before uploading new ones
             if (isset($data['image']) && $data['image'] instanceof UploadedFile && $brand->image) {
-                $this->uploadService->delete($brand->image, 'public');
+                $this->uploadService->delete($brand->image);
             }
 
             $data = $this->processFileUploads($data);
@@ -186,6 +203,10 @@ class BrandService extends BaseService
      */
     public function bulkDeleteBrands(array $ids): int
     {
+        // Check permission: user needs 'brand' permission to delete brands
+        // Future: Consider using 'brands-delete' for more granular control
+        $this->requirePermission('brand');
+
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
 
@@ -219,6 +240,10 @@ class BrandService extends BaseService
      */
     public function deleteBrand(Brand $brand): bool
     {
+        // Check permission: user needs 'brand' permission to delete brands
+        // Future: Consider using 'brands-delete' for more granular control
+        $this->requirePermission('brand');
+
         return $this->transaction(function () use ($brand) {
             if ($brand->products()->exists()) {
                 abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete brand: brand has associated products');
@@ -251,6 +276,10 @@ class BrandService extends BaseService
      */
     public function importBrands(UploadedFile $file): void
     {
+        // Check permission: user needs 'brand' permission to import brands
+        // Future: Consider using 'brands-import' for more granular control
+        $this->requirePermission('brand');
+
         $this->transaction(function () use ($file) {
             Excel::import(new BrandsImport(), $file);
         });
@@ -279,6 +308,9 @@ class BrandService extends BaseService
      */
     public function bulkActivateBrands(array $ids): int
     {
+        // Check permission: user needs 'brand' permission to update brands
+        $this->requirePermission('brand');
+
         return $this->bulkUpdateBrands($ids, self::BULK_ACTIVATE);
     }
 
@@ -290,6 +322,9 @@ class BrandService extends BaseService
      */
     public function bulkDeactivateBrands(array $ids): int
     {
+        // Check permission: user needs 'brand' permission to update brands
+        $this->requirePermission('brand');
+
         return $this->bulkUpdateBrands($ids, self::BULK_DEACTIVATE);
     }
 
@@ -310,6 +345,9 @@ class BrandService extends BaseService
         array $columns = [],
         string $method = 'download'
     ): string {
+        // Check permission: user needs 'brand' permission to export brands
+        $this->requirePermission('brand');
+
         $fileName = 'brands-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 

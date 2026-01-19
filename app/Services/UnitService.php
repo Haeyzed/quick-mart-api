@@ -11,6 +11,7 @@ use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\Unit;
 use App\Models\User;
+use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -32,9 +33,11 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
  * - Encapsulates all unit-related database queries
  * - Provides bulk operations for efficiency
  * - Manages data normalization and validation
+ * - Enforces permission checks for all operations
  */
 class UnitService extends BaseService
 {
+    use CheckPermissionsTrait;
     use MailInfo;
 
     private const BULK_ACTIVATE = ['is_active' => true];
@@ -49,6 +52,9 @@ class UnitService extends BaseService
      */
     public function getUnits(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        // Check permission: user needs 'unit' permission to view units
+        $this->requirePermission('unit');
+
         return Unit::query()
             ->when(
                 isset($filters['is_active']),
@@ -74,6 +80,9 @@ class UnitService extends BaseService
      */
     public function getUnit(int $id): Unit
     {
+        // Check permission: user needs 'unit' permission to view units
+        $this->requirePermission('unit');
+
         return Unit::findOrFail($id);
     }
 
@@ -85,6 +94,9 @@ class UnitService extends BaseService
      */
     public function getBaseUnits(): \Illuminate\Database\Eloquent\Collection
     {
+        // Check permission: user needs 'unit' permission to view units
+        $this->requirePermission('unit');
+
         return Unit::where('is_active', true)
             ->whereNull('base_unit')
             ->orderBy('name')
@@ -99,6 +111,9 @@ class UnitService extends BaseService
      */
     public function createUnit(array $data): Unit
     {
+        // Check permission: user needs 'unit' permission to create units
+        $this->requirePermission('unit');
+
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeUnitData($data);
             return Unit::create($data);
@@ -150,6 +165,9 @@ class UnitService extends BaseService
      */
     public function updateUnit(Unit $unit, array $data): Unit
     {
+        // Check permission: user needs 'unit' permission to update units
+        $this->requirePermission('unit');
+
         return $this->transaction(function () use ($unit, $data) {
             $data = $this->normalizeUnitData($data, isUpdate: true);
             $unit->update($data);
@@ -166,6 +184,9 @@ class UnitService extends BaseService
      */
     public function bulkDeleteUnits(array $ids): int
     {
+        // Check permission: user needs 'unit' permission to delete units
+        $this->requirePermission('unit');
+
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
 
@@ -198,6 +219,9 @@ class UnitService extends BaseService
      */
     public function deleteUnit(Unit $unit): bool
     {
+        // Check permission: user needs 'unit' permission to delete units
+        $this->requirePermission('unit');
+
         return $this->transaction(function () use ($unit) {
             if ($unit->products()->exists()) {
                 abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete unit: unit has associated products');
@@ -219,6 +243,9 @@ class UnitService extends BaseService
      */
     public function importUnits(UploadedFile $file): void
     {
+        // Check permission: user needs 'unit' permission to import units
+        $this->requirePermission('unit');
+
         $this->transaction(function () use ($file) {
             Excel::import(new UnitsImport(), $file);
         });
@@ -247,6 +274,9 @@ class UnitService extends BaseService
      */
     public function bulkActivateUnits(array $ids): int
     {
+        // Check permission: user needs 'unit' permission to update units
+        $this->requirePermission('unit');
+
         return $this->bulkUpdateUnits($ids, self::BULK_ACTIVATE);
     }
 
@@ -258,6 +288,9 @@ class UnitService extends BaseService
      */
     public function bulkDeactivateUnits(array $ids): int
     {
+        // Check permission: user needs 'unit' permission to update units
+        $this->requirePermission('unit');
+
         return $this->bulkUpdateUnits($ids, self::BULK_DEACTIVATE);
     }
 
@@ -278,6 +311,9 @@ class UnitService extends BaseService
         array $columns = [],
         string $method = 'download'
     ): string {
+        // Check permission: user needs 'unit' permission to export units
+        $this->requirePermission('unit');
+
         $fileName = 'units-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
 

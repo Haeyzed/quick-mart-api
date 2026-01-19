@@ -4,25 +4,36 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PaymentMethodEnum;
+use App\Enums\PaymentStatusEnum;
+use App\Enums\PurchaseStatusEnum;
+use App\Enums\TaxMethodEnum;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\CustomField;
 use App\Models\GeneralSetting;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductBatch;
+use App\Models\ProductPurchase;
 use App\Models\ProductVariant;
 use App\Models\ProductWarehouse;
+use App\Models\Purchase;
+use App\Models\Tax;
 use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Imports\ProductsImport;
+use App\Traits\CheckPermissionsTrait;
 use App\Traits\TenantInfo;
 use App\Traits\CacheForget;
+use App\Traits\GeneralSettingsTrait;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -38,11 +49,14 @@ use Exception;
  *
  * Handles all business logic for product operations including CRUD operations,
  * filtering, pagination, variants, batches, warehouses, images, and bulk operations.
+ * Enforces permission checks for all operations.
  */
 class ProductService extends BaseService
 {
+    use CheckPermissionsTrait;
     use CacheForget;
     use TenantInfo;
+    use GeneralSettingsTrait;
 
     public function __construct(
         private readonly UploadService $uploadService
@@ -58,6 +72,9 @@ class ProductService extends BaseService
      */
     public function getProducts(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        // Check permission: user needs 'products-index' permission to view products
+        $this->requirePermission('products-index');
+
         $warehouseId = $filters['warehouse_id'] ?? 0;
         $stockFilter = $filters['stock_filter'] ?? 'all';
         $isRecipe = $filters['is_recipe'] ?? false;
@@ -85,7 +102,7 @@ class ProductService extends BaseService
 
         // Recipe filter
         if ($isRecipe) {
-            $query->where('is_recipe', 1);
+            $query->where('is_recipe', true);
         }
 
         // Apply filters
@@ -111,36 +128,26 @@ class ProductService extends BaseService
             $query->where('is_variant', 1);
         }
 
-        // Search functionality
+        // Search functionality - using standard Laravel query builder
         if (!empty($filters['search'] ?? null)) {
             $search = $filters['search'];
             
-            $productIds = Product::where('name', 'LIKE', "%{$search}%")
-                ->orWhere('code', 'LIKE', "%{$search}%")
-                ->pluck('id');
-            
-            $variantIds = ProductVariant::where('item_code', 'LIKE', "%{$search}%")
-                ->pluck('product_id');
-            
-            $brandIds = Brand::where('name', 'LIKE', "%{$search}%")
-                ->pluck('id');
-            
-            $categoryIds = Category::where('name', 'LIKE', "%{$search}%")
-                ->pluck('id');
-            
-            $query->where(function ($q) use ($productIds, $variantIds, $brandIds, $categoryIds, $search) {
-                if ($productIds->isNotEmpty()) {
-                    $q->whereIn('products.id', $productIds);
-                }
-                if ($variantIds->isNotEmpty()) {
-                    $q->orWhereIn('products.id', $variantIds);
-                }
-                if ($brandIds->isNotEmpty()) {
-                    $q->orWhereIn('products.brand_id', $brandIds);
-                }
-                if ($categoryIds->isNotEmpty()) {
-                    $q->orWhereIn('products.category_id', $categoryIds);
-                }
+            $query->where(function ($q) use ($search) {
+                // Search in product name or code
+                $q->where('products.name', 'LIKE', "%{$search}%")
+                  ->orWhere('products.code', 'LIKE', "%{$search}%")
+                  // Search in product variants
+                  ->orWhereHas('productVariants', function ($variantQuery) use ($search) {
+                      $variantQuery->where('item_code', 'LIKE', "%{$search}%");
+                  })
+                  // Search in brand name
+                  ->orWhereHas('brand', function ($brandQuery) use ($search) {
+                      $brandQuery->where('name', 'LIKE', "%{$search}%");
+                  })
+                  // Search in category name
+                  ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                      $categoryQuery->where('name', 'LIKE', "%{$search}%");
+                  });
             });
         }
 
@@ -155,6 +162,9 @@ class ProductService extends BaseService
      */
     public function getProduct(int $id): Product
     {
+        // Check permission: user needs 'products-index' permission to view products
+        $this->requirePermission('products-index');
+
         return Product::with([
             'category:id,name',
             'brand:id,name',
@@ -175,6 +185,9 @@ class ProductService extends BaseService
      */
     public function createProduct(array $data): Product
     {
+        // Check permission: user needs 'products-add' permission to create products
+        $this->requirePermission('products-add');
+
         return $this->transaction(function () use ($data) {
             // Normalize data
             $data = $this->normalizeProductData($data, false);
@@ -185,7 +198,7 @@ class ProductService extends BaseService
                 $data['image'] = $imagePaths['paths'];
                 $data['image_url'] = $imagePaths['urls'];
             } else {
-                $data['image'] = ['zummXD2dvAtI.png'];
+                $data['image'] = ['placeholder.png'];
                 $data['image_url'] = null;
             }
 
@@ -193,15 +206,14 @@ class ProductService extends BaseService
             if (isset($data['file']) && $data['file'] instanceof UploadedFile) {
                 $filePath = $this->uploadService->upload(
                     $data['file'],
-                    'product/files',
-                    'public'
+                    config('storage.products.files')
                 );
                 $data['file'] = $filePath;
-                $data['file_url'] = $this->uploadService->url($filePath, 'public');
+                $data['file_url'] = $this->uploadService->url($filePath);
             }
 
             // Handle combo/recipe products
-            if (($data['type'] == 'combo' || (isset($data['is_recipe']) && $data['is_recipe'] == 1)) && isset($data['product_id'])) {
+            if (($data['type'] == 'combo' || (isset($data['is_recipe']) && $data['is_recipe'] === true)) && isset($data['product_id'])) {
                 $data['product_list'] = is_array($data['product_id']) ? implode(",", $data['product_id']) : $data['product_id'];
                 $data['variant_list'] = isset($data['variant_id']) && is_array($data['variant_id']) ? implode(",", $data['variant_id']) : ($data['variant_id'] ?? null);
                 $data['qty_list'] = isset($data['product_qty']) && is_array($data['product_qty']) ? implode(",", $data['product_qty']) : ($data['product_qty'] ?? null);
@@ -228,17 +240,8 @@ class ProductService extends BaseService
                 $data['variant_value'] = null;
             }
 
-            // Handle slug for ecommerce
-            $generalSetting = GeneralSetting::latest()->first();
-            if ($generalSetting && in_array('ecommerce', explode(',', $generalSetting->modules ?? ''))) {
-                if (!isset($data['slug'])) {
-                    $data['slug'] = Str::slug($data['name'], '-');
-                }
-                $data['slug'] = preg_replace('/[^A-Za-z0-9\-]/', '', $data['slug']);
-                $data['slug'] = str_replace('\/', '/', $data['slug']);
-            }
-
             // Handle menu type for restaurant
+            $generalSetting = GeneralSetting::latest()->first();
             if ($generalSetting && in_array('restaurant', explode(',', $generalSetting->modules ?? ''))) {
                 if (isset($data['menu_type']) && is_array($data['menu_type'])) {
                     $data['menu_type'] = implode(",", $data['menu_type']);
@@ -263,10 +266,15 @@ class ProductService extends BaseService
             if (!isset($data['profit_margin'])) {
                 $data['profit_margin'] = 0;
             }
+            if (!isset($data['profit_margin_type'])) {
+                $data['profit_margin_type'] = 'percentage';
+            }
+            if (!isset($data['is_batch'])) {
+                $data['is_batch'] = null;
+            }
             if (!isset($data['is_sync_disable']) && Schema::hasColumn('products', 'is_sync_disable')) {
                 $data['is_sync_disable'] = null;
             }
-
             // Create product
             $product = Product::create($data);
 
@@ -308,12 +316,18 @@ class ProductService extends BaseService
                         ]);
                     }
                 }
-            } elseif (!isset($data['is_initial_stock']) && !isset($data['is_batch'])) {
+            } elseif (!isset($data['is_initial_stock']) && !isset($data['is_batch']) && config('without_stock') == 'yes') {
                 // Create warehouse entries for variants if without_stock config is yes
                 $warehouseIds = Warehouse::where('is_active', true)->pluck('id');
+                $variantIds = [];
+                
+                // Track variant IDs if product has variants
                 if (isset($data['is_variant']) && $data['is_variant']) {
-                    $variantIds = ProductVariant::where('product_id', $product->id)->pluck('variant_id');
-                    foreach ($warehouseIds as $warehouseId) {
+                    $variantIds = ProductVariant::where('product_id', $product->id)->pluck('variant_id')->toArray();
+                }
+                
+                foreach ($warehouseIds as $warehouseId) {
+                    if (!empty($variantIds)) {
                         foreach ($variantIds as $variantId) {
                             ProductWarehouse::firstOrCreate([
                                 "product_id" => $product->id,
@@ -322,9 +336,7 @@ class ProductService extends BaseService
                                 "qty" => 0,
                             ]);
                         }
-                    }
-                } else {
-                    foreach ($warehouseIds as $warehouseId) {
+                    } else {
                         ProductWarehouse::firstOrCreate([
                             "product_id" => $product->id,
                             "warehouse_id" => $warehouseId,
@@ -351,6 +363,9 @@ class ProductService extends BaseService
      */
     public function updateProduct(Product $product, array $data): Product
     {
+        // Check permission: user needs 'products-edit' permission to update products
+        $this->requirePermission('products-edit');
+
         return $this->transaction(function () use ($product, $data) {
             // Normalize data
             $data = $this->normalizeProductData($data, true);
@@ -382,7 +397,7 @@ class ProductService extends BaseService
                 $data['image'] = array_merge($previousImages, $imagePaths['paths']);
                 // Generate URLs for previous images and merge with new image URLs
                 $previousImageUrls = array_map(function ($img) {
-                    return $this->uploadService->url('images/product/' . $img, 'public');
+                    return $this->uploadService->url(config('storage.products.images.base') . '/' . $img);
                 }, $previousImages);
                 $data['image_url'] = array_merge($previousImageUrls, $imagePaths['urls']);
             } elseif (!empty($previousImages)) {
@@ -390,7 +405,7 @@ class ProductService extends BaseService
                 $data['image'] = $previousImages;
                 // Generate URLs for previous images
                 $data['image_url'] = array_map(function ($img) {
-                    return $this->uploadService->url('images/product/' . $img, 'public');
+                    return $this->uploadService->url(config('storage.products.images.base') . '/' . $img);
                 }, $previousImages);
             } else {
                 // No images provided, keep existing product images
@@ -401,16 +416,15 @@ class ProductService extends BaseService
             // Handle file upload
             if (isset($data['file']) && $data['file'] instanceof UploadedFile) {
                 // Delete old file if exists
-                if ($product->file && $this->uploadService->exists($product->file, 'public')) {
-                    $this->uploadService->delete($product->file, 'public');
+                if ($product->file && $this->uploadService->exists($product->file)) {
+                    $this->uploadService->delete($product->file);
                 }
                 $filePath = $this->uploadService->upload(
                     $data['file'],
-                    'product/files',
-                    'public'
+                    config('storage.products.files')
                 );
                 $data['file'] = $filePath;
-                $data['file_url'] = $this->uploadService->url($filePath, 'public');
+                $data['file_url'] = $this->uploadService->url($filePath);
             }
 
             // Handle combo/recipe products
@@ -534,29 +548,29 @@ class ProductService extends BaseService
                         }
                     }
                 }
-            } elseif (isset($data['warehouse_id']) && is_array($data['warehouse_id'])) {
-                foreach ($data['warehouse_id'] as $warehouseId) {
-                    $productWarehouse = ProductWarehouse::where('product_id', $product->id)
-                        ->where('warehouse_id', $warehouseId)
-                        ->whereNull('variant_id')
-                        ->first();
-                    
-                    if ($productWarehouse) {
-                        $productWarehouse->price = null;
-                        $productWarehouse->save();
+            } else {
+                // Clear is_diff_price flag when not set
+                $data['is_diff_price'] = false;
+                
+                // Clear warehouse prices if warehouse_id is provided
+                if (isset($data['warehouse_id']) && is_array($data['warehouse_id'])) {
+                    foreach ($data['warehouse_id'] as $warehouseId) {
+                        $productWarehouse = ProductWarehouse::where('product_id', $product->id)
+                            ->where('warehouse_id', $warehouseId)
+                            ->whereNull('variant_id')
+                            ->first();
+                        
+                        if ($productWarehouse) {
+                            $productWarehouse->price = null;
+                            $productWarehouse->save();
+                        }
                     }
                 }
             }
 
-            // Handle slug for ecommerce
+            // Handle ecommerce module fields
             $generalSetting = GeneralSetting::latest()->first();
             if ($generalSetting && in_array('ecommerce', explode(',', $generalSetting->modules ?? ''))) {
-                if (!isset($data['slug'])) {
-                    $data['slug'] = Str::slug($data['name'], '-');
-                }
-                $data['slug'] = preg_replace('/[^A-Za-z0-9\-]/', '', $data['slug']);
-                $data['slug'] = str_replace('\/', '/', $data['slug']);
-                
                 if (isset($data['related_products'])) {
                     $data['related_products'] = is_array($data['related_products']) ? implode(",", $data['related_products']) : rtrim($data['related_products'], ",");
                 }
@@ -574,14 +588,8 @@ class ProductService extends BaseService
                 }
             }
 
-            // Handle restaurant module
+            // Handle restaurant module fields
             if ($generalSetting && in_array('restaurant', explode(',', $generalSetting->modules ?? ''))) {
-                if (!isset($data['slug'])) {
-                    $data['slug'] = Str::slug($data['name'], '-');
-                }
-                $data['slug'] = preg_replace('/[^A-Za-z0-9\-]/', '', $data['slug']);
-                $data['slug'] = str_replace('\/', '/', $data['slug']);
-                
                 if (isset($data['related_products'])) {
                     $data['related_products'] = is_array($data['related_products']) ? implode(",", $data['related_products']) : rtrim($data['related_products'], ",");
                 }
@@ -609,6 +617,8 @@ class ProductService extends BaseService
                     $data['menu_type'] = implode(",", $data['menu_type']);
                 }
             }
+            
+            // Note: Slug generation is handled by Product model's boot() method
 
             // Handle product details
             if (isset($data['product_details'])) {
@@ -624,6 +634,12 @@ class ProductService extends BaseService
             }
 
             // Handle default values
+            if (!isset($data['profit_margin_type'])) {
+                $data['profit_margin_type'] = 'percentage';
+            }
+            if (!isset($data['profit_margin'])) {
+                $data['profit_margin'] = 0;
+            }
             if (!isset($data['featured'])) {
                 $data['featured'] = false;
             }
@@ -675,11 +691,14 @@ class ProductService extends BaseService
      */
     public function deleteProduct(Product $product): bool
     {
+        // Check permission: user needs 'products-delete' permission to delete products
+        $this->requirePermission('products-delete');
+
         return $this->transaction(function () use ($product) {
             $product->is_active = false;
             
             // Delete images
-            if ($product->image && $product->image != 'zummXD2dvAtI.png') {
+            if ($product->image && $product->image != 'placeholder.png') {
                 $images = is_array($product->image) ? $product->image : explode(",", $product->image);
                 foreach ($images as $image) {
                     $this->deleteImageFromStorage($image);
@@ -704,6 +723,9 @@ class ProductService extends BaseService
      */
     public function bulkDeleteProducts(array $ids): int
     {
+        // Check permission: user needs 'products-delete' permission to delete products
+        $this->requirePermission('products-delete');
+
         $deletedCount = 0;
 
         foreach ($ids as $id) {
@@ -733,7 +755,9 @@ class ProductService extends BaseService
             $data['name'] = preg_replace('/[\n\r]/', "<br>", htmlspecialchars(trim($data['name']), ENT_QUOTES));
         }
 
-        // Handle boolean fields
+        // Handle boolean fields (per model casts)
+        // Note: Types are already normalized in ProductRequest::prepareForValidation()
+        // This serves as a safeguard and handles defaults
         $booleanFields = [
             'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei', 
             'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory', 
@@ -742,38 +766,40 @@ class ProductService extends BaseService
         
         foreach ($booleanFields as $field) {
             if (isset($data[$field])) {
-                $data[$field] = filter_var(
-                    $data[$field],
-                    FILTER_VALIDATE_BOOLEAN,
-                    FILTER_NULL_ON_FAILURE
-                );
+                // Only normalize if not already boolean (safeguard)
+                if (!is_bool($data[$field])) {
+                    $data[$field] = filter_var(
+                        $data[$field],
+                        FILTER_VALIDATE_BOOLEAN,
+                        FILTER_NULL_ON_FAILURE
+                    );
+                }
             } elseif (!$isUpdate && in_array($field, ['is_active', 'track_inventory'])) {
                 $data[$field] = true;
             }
         }
 
-        // Handle numeric fields
         $numericFields = [
             'cost', 'profit_margin', 'price', 'wholesale_price', 'qty', 
             'alert_quantity', 'daily_sale_objective', 'promotion_price', 
-            'warranty', 'guarantee', 'wastage_percent', 'production_cost'
+            'wastage_percent', 'production_cost'
         ];
         
         foreach ($numericFields as $field) {
-            if (isset($data[$field])) {
+            if (isset($data[$field]) && !is_float($data[$field])) {
                 $data[$field] = is_numeric($data[$field]) ? (float)$data[$field] : null;
             }
         }
 
-        // Handle integer fields
+        // Handle integer fields (per model casts)
         $integerFields = [
             'brand_id', 'category_id', 'unit_id', 'purchase_unit_id', 'sale_unit_id',
             'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id', 
-            'woocommerce_media_id', 'combo_unit_id'
+            'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee'
         ];
         
         foreach ($integerFields as $field) {
-            if (isset($data[$field])) {
+            if (isset($data[$field]) && !is_int($data[$field])) {
                 $data[$field] = is_numeric($data[$field]) ? (int)$data[$field] : null;
             }
         }
@@ -790,8 +816,8 @@ class ProductService extends BaseService
      */
     private function handleImageUploads(array $images, int $offset = 0): array
     {
-        $disk = 'public';
-        $baseDirectory = 'images/product';
+        $disk = $this->getStorageProvider();
+        $baseDirectory = config('storage.products.images.base');
         
         $imagePaths = [];
         $imageUrls = [];
@@ -831,7 +857,7 @@ class ProductService extends BaseService
             ];
             
             foreach ($sizes as $sizeName => [$width, $height]) {
-                $sizeDirectory = $baseDirectory . '/' . $sizeName;
+                $sizeDirectory = config("storage.products.images.{$sizeName}");
                 Storage::disk($disk)->makeDirectory($sizeDirectory);
                 
                 $resized = clone $img;
@@ -847,7 +873,7 @@ class ProductService extends BaseService
             
             // Store just the filename (not full path) for database compatibility
             $imagePaths[] = $imageName;
-            $imageUrls[] = Storage::disk($disk)->url($originalPath);
+            $imageUrls[] = $this->uploadService->url($originalPath);
         }
         
         return [
@@ -864,12 +890,20 @@ class ProductService extends BaseService
      */
     private function deleteImageFromStorage(string $imageName): void
     {
-        $disk = 'public';
-        $baseDirectory = 'images/product';
-        $sizes = ['', 'xlarge/', 'large/', 'medium/', 'small/'];
+        $disk = $this->getStorageProvider();
+        $baseDirectory = config('storage.products.images.base');
         
-        foreach ($sizes as $size) {
-            $path = $baseDirectory . '/' . $size . $imageName;
+        // Delete from base directory and all size directories
+        $sizes = [
+            '' => $baseDirectory,
+            'xlarge' => config('storage.products.images.xlarge'),
+            'large' => config('storage.products.images.large'),
+            'medium' => config('storage.products.images.medium'),
+            'small' => config('storage.products.images.small'),
+        ];
+        
+        foreach ($sizes as $sizeDirectory) {
+            $path = $sizeDirectory . '/' . $imageName;
             if (Storage::disk($disk)->exists($path)) {
                 Storage::disk($disk)->delete($path);
             }
@@ -941,6 +975,9 @@ class ProductService extends BaseService
     /**
      * Auto purchase for initial stock.
      *
+     * Creates a Purchase record with ProductPurchase pivot and Payment for initial stock.
+     * This ensures proper accounting and inventory tracking.
+     *
      * @param Product $product
      * @param int $warehouseId
      * @param float $stock
@@ -948,13 +985,59 @@ class ProductService extends BaseService
      */
     private function autoPurchase(Product $product, int $warehouseId, float $stock): void
     {
-        // This is a simplified version - the full implementation would create Purchase records
-        // For now, we'll just create the warehouse entry
+        // Prepare purchase data
+        $userId = Auth::check() ? Auth::id() : 1; // Fallback to 1 if no authenticated user
+        $purchasePrefix = config('references.purchase.prefix', 'pr');
+        $purchaseData = [
+            'reference_no' => $purchasePrefix . '-' . date("Ymd") . '-' . date("his"),
+            'user_id' => $userId,
+            'warehouse_id' => $warehouseId,
+            'supplier_id' => 0, // No supplier for auto purchase
+            'item' => 1,
+            'total_qty' => $stock,
+            'total_discount' => 0,
+            'status' => PurchaseStatusEnum::COMPLETED->value,
+            'payment_status' => PaymentStatusEnum::PAID->value,
+        ];
+
+        // Calculate tax and costs based on tax method
+        $taxRate = 0.00;
+        $tax = 0.00;
+        $netUnitCost = number_format((float)$product->cost, 2, '.', '');
+        
+        if ($product->tax_id) {
+            $taxData = Tax::find($product->tax_id);
+            if ($taxData) {
+                $taxRate = $taxData->rate;
+                
+                if ($product->tax_method == TaxMethodEnum::EXCLUSIVE->value) {
+                    // Exclusive tax: tax is added on top
+                    $netUnitCost = number_format((float)$product->cost, 2, '.', '');
+                    $tax = number_format((float)$product->cost * $stock * ($taxRate / 100), 2, '.', '');
+                    $cost = number_format((float)$product->cost * $stock + $tax, 2, '.', '');
+                } else {
+                    // Inclusive tax: tax is included in the cost
+                    $netUnitCost = number_format((100 / (100 + $taxRate)) * (float)$product->cost, 2, '.', '');
+                    $tax = number_format(((float)$product->cost - $netUnitCost) * $stock, 2, '.', '');
+                    $cost = number_format((float)$product->cost * $stock, 2, '.', '');
+                }
+                
+                $purchaseData['total_tax'] = $tax;
+                $purchaseData['total_cost'] = $cost;
+            }
+        } else {
+            // No tax
+            $purchaseData['total_tax'] = 0.00;
+            $purchaseData['total_cost'] = number_format((float)$product->cost * $stock, 2, '.', '');
+            $cost = $purchaseData['total_cost'];
+        }
+
+        // Update or create ProductWarehouse entry
         $productWarehouse = ProductWarehouse::where([
             ['product_id', $product->id],
             ['warehouse_id', $warehouseId]
         ])->first();
-        
+
         if ($productWarehouse) {
             $productWarehouse->qty += $stock;
             $productWarehouse->save();
@@ -965,6 +1048,42 @@ class ProductService extends BaseService
                 'qty' => $stock,
             ]);
         }
+
+        // Set additional purchase fields
+        $purchaseData['order_tax'] = 0;
+        $purchaseData['grand_total'] = $purchaseData['total_cost'];
+        $purchaseData['paid_amount'] = $purchaseData['grand_total'];
+
+        // Create Purchase record
+        $purchase = Purchase::create($purchaseData);
+
+        // Create ProductPurchase pivot record
+        ProductPurchase::create([
+            'purchase_id' => $purchase->id,
+            'product_id' => $product->id,
+            'qty' => $stock,
+            'recieved' => $stock,
+            'purchase_unit_id' => $product->unit_id ?? $product->purchase_unit_id ?? 1,
+            'net_unit_cost' => $netUnitCost,
+            'net_unit_price' => $netUnitCost, // Same as cost for auto purchase
+            'discount' => 0,
+            'tax_rate' => $taxRate,
+            'tax' => $tax,
+            'total' => $cost ?? $purchaseData['total_cost'],
+        ]);
+
+        // Create Payment record
+        $paymentPrefix = config('references.payment.purchase', 'ppr');
+        Payment::create([
+            'payment_reference' => $paymentPrefix . '-' . date("Ymd") . '-' . date("his"),
+            'user_id' => $userId,
+            'purchase_id' => $purchase->id,
+            'account_id' => 0, // Default account
+            'amount' => $purchaseData['grand_total'],
+            'change' => 0,
+            'paying_method' => PaymentMethodEnum::CASH->value,
+            'payment_at' => now(),
+        ]);
     }
 
     /**
@@ -974,6 +1093,9 @@ class ProductService extends BaseService
      */
     public function getProductsWithoutVariant(): Collection
     {
+        // Check permission: user needs 'products-index' permission to view products
+        $this->requirePermission('products-index');
+
         return Product::where('is_active', true)
             ->where('type', 'standard')
             ->whereNull('is_variant')
@@ -988,6 +1110,9 @@ class ProductService extends BaseService
      */
     public function getProductsWithVariant(): Collection
     {
+        // Check permission: user needs 'products-index' permission to view products
+        $this->requirePermission('products-index');
+
         return Product::join('product_variants', 'products.id', 'product_variants.product_id')
             ->where('products.is_active', true)
             ->where('products.type', 'standard')
@@ -1004,6 +1129,9 @@ class ProductService extends BaseService
      */
     public function generateCode(): string
     {
+        // Check permission: user needs 'products-add' permission to generate product codes
+        $this->requirePermission('products-add');
+
         return (string)rand(10000000, 99999999);
     }
 
@@ -1015,6 +1143,9 @@ class ProductService extends BaseService
      */
     public function importProducts(UploadedFile $file): void
     {
+        // Check permission: user needs 'products-add' permission to import products
+        $this->requirePermission('products-add');
+
         $this->transaction(function () use ($file) {
             Excel::import(new ProductsImport(), $file);
         });
@@ -1029,6 +1160,9 @@ class ProductService extends BaseService
      */
     public function reorderImages(Product $product, array $imageUrls): Product
     {
+        // Check permission: user needs 'products-edit' permission to reorder images
+        $this->requirePermission('products-edit');
+
         // Extract filenames from URLs
         $imageFilenames = [];
         foreach ($imageUrls as $url) {
@@ -1044,7 +1178,7 @@ class ProductService extends BaseService
             // Generate new image_url array in the new order
             $newImageUrls = [];
             foreach ($imageFilenames as $filename) {
-                $newImageUrls[] = $this->uploadService->url('images/product/' . $filename, 'public');
+                $newImageUrls[] = $this->uploadService->url(config('storage.products.images.base') . '/' . $filename);
             }
 
             $product->image = $imageFilenames;
@@ -1063,6 +1197,9 @@ class ProductService extends BaseService
      */
     public function searchProducts(string $term): SupportCollection
     {
+        // Check permission: user needs 'products-index' permission to search products
+        $this->requirePermission('products-index');
+
         if (strlen($term) < 3) {
             return collect([]);
         }
@@ -1077,13 +1214,13 @@ class ProductService extends BaseService
             ->get();
 
         return $products->map(function ($product) {
-            $image = $product->image_url ? (is_array($product->image_url) ? $product->image_url[0] : (is_string($product->image_url) ? explode(',', $product->image_url)[0] : null)) : null;
+            $imageUrl = $product->image_url ? (is_array($product->image_url) ? $product->image_url[0] : (is_string($product->image_url) ? explode(',', $product->image_url)[0] : null)) : null;
             
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'code' => $product->code,
-                'image_url' => $image ?? 'zummXD2dvAtI.png',
+                'image_url' => $imageUrl ?? 'placeholder.png',
             ];
         });
     }
@@ -1096,6 +1233,9 @@ class ProductService extends BaseService
      */
     public function getSaleUnits(int $unitId): array
     {
+        // Check permission: user needs 'products-index' permission to get sale units
+        $this->requirePermission('products-index');
+
         $units = Unit::where(function ($query) use ($unitId) {
                 $query->where('base_unit', $unitId)
                     ->orWhere('id', $unitId);
@@ -1116,6 +1256,9 @@ class ProductService extends BaseService
      */
     public function searchComboProduct(string $searchTerm): ?array
     {
+        // Check permission: user needs 'products-index' permission to search combo products
+        $this->requirePermission('products-index');
+
         // Extract product code (remove everything after " (" or "|")
         $productCode = trim(explode('(', $searchTerm)[0]);
         $productCode = trim(explode('|', $productCode)[0]);
@@ -1193,18 +1336,552 @@ class ProductService extends BaseService
 
         // Return structured data
         return [
+            'id' => $product->id,
             'name' => $product->name,
             'code' => $itemCode,
             'price' => $price,
             'promotion_price' => $product->promotion_price ?? 0,
             'qty' => $product->qty ?? 0,
-            'id' => $product->id,
             'variant_id' => $variantId,
             'cost' => $cost,
             'brand' => $brandName,
             'unit_id' => $product->unit_id ?? null,
             'units' => $units,
             'additional_price' => $additionalPrice,
+        ];
+    }
+
+    /**
+     * Get sale history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @return array<string, mixed> History data with pagination metadata
+     */
+    public function getSaleHistory(int $productId, array $filters = []): array
+    {
+        // Check permission: user needs 'product_history' permission to view product history
+        $this->requirePermission('product_history');
+
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+        $search = $filters['search'] ?? null;
+        $limit = $filters['limit'] ?? 10;
+        $offset = $filters['offset'] ?? 0;
+
+        $query = DB::table('sales')
+            ->join('product_sales', 'sales.id', '=', 'product_sales.sale_id')
+            ->whereNull('sales.deleted_at')
+            ->where('product_sales.product_id', $productId)
+            ->whereDate('sales.created_at', '>=', $startingDate)
+            ->whereDate('sales.created_at', '<=', $endingDate);
+
+        if ($warehouseId) {
+            $query->where('sales.warehouse_id', $warehouseId);
+        }
+
+        // Apply staff access filter
+        $generalSetting = $this->getGeneralSettings();
+        if (Auth::check() && $generalSetting && $generalSetting->staff_access === 'own') {
+            $query->where('sales.user_id', Auth::id());
+        }
+
+        $totalData = $query->count();
+        $totalFiltered = $totalData;
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereDate('sales.created_at', '=', date('Y-m-d', strtotime(str_replace('/', '-', $search))))
+                    ->orWhere('sales.reference_no', 'LIKE', "%{$search}%");
+            });
+            $totalFiltered = $query->count();
+        }
+
+        // Join related tables and apply pagination
+        $sales = $query->join('customers', 'sales.customer_id', '=', 'customers.id')
+            ->join('warehouses', 'sales.warehouse_id', '=', 'warehouses.id')
+            ->select(
+                'sales.id',
+                'sales.reference_no',
+                'sales.created_at',
+                'customers.name as customer_name',
+                'customers.phone_number as customer_number',
+                'warehouses.name as warehouse_name',
+                'product_sales.qty',
+                'product_sales.sale_unit_id',
+                'product_sales.total'
+            )
+            ->offset($offset)
+            ->limit($limit)
+            ->orderBy('sales.created_at', 'desc')
+            ->get();
+
+        $data = [];
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        foreach ($sales as $key => $sale) {
+            $unit = $sale->sale_unit_id ? Unit::find($sale->sale_unit_id) : null;
+            $qtyDisplay = number_format((float)$sale->qty, $decimal);
+            if ($unit) {
+                $qtyDisplay .= ' ' . $unit->code;
+            }
+
+            $data[] = [
+                'id' => $sale->id,
+                'key' => $key,
+                'date' => date(config('date_format', 'Y-m-d'), strtotime($sale->created_at)),
+                'reference_no' => $sale->reference_no,
+                'warehouse' => $sale->warehouse_name,
+                'customer' => $sale->customer_name . ' [' . ($sale->customer_number ?? 'N/A') . ']',
+                'qty' => $qtyDisplay,
+                'unit_price' => number_format((float)$sale->total / (float)$sale->qty, $decimal),
+                'sub_total' => number_format((float)$sale->total, $decimal),
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => $totalData,
+            'records_filtered' => $totalFiltered,
+        ];
+    }
+
+    /**
+     * Get purchase history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @return array<string, mixed> History data with pagination metadata
+     */
+    public function getPurchaseHistory(int $productId, array $filters = []): array
+    {
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+        $search = $filters['search'] ?? null;
+        $limit = $filters['limit'] ?? 10;
+        $offset = $filters['offset'] ?? 0;
+
+        $query = DB::table('purchases')
+            ->join('product_purchases', 'purchases.id', '=', 'product_purchases.purchase_id')
+            ->whereNull('purchases.deleted_at')
+            ->where('product_purchases.product_id', $productId)
+            ->whereDate('purchases.created_at', '>=', $startingDate)
+            ->whereDate('purchases.created_at', '<=', $endingDate);
+
+        if ($warehouseId) {
+            $query->where('purchases.warehouse_id', $warehouseId);
+        }
+
+        // Apply staff access filter
+        $generalSetting = $this->getGeneralSettings();
+        if (Auth::check() && $generalSetting && $generalSetting->staff_access === 'own') {
+            $query->where('purchases.user_id', Auth::id());
+        }
+
+        $totalData = $query->count();
+        $totalFiltered = $totalData;
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereDate('purchases.created_at', '=', date('Y-m-d', strtotime(str_replace('/', '-', $search))))
+                    ->orWhere('purchases.reference_no', 'LIKE', "%{$search}%");
+            });
+            $totalFiltered = $query->count();
+        }
+
+        // Join related tables and apply pagination
+        $purchases = $query->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
+            ->join('warehouses', 'purchases.warehouse_id', '=', 'warehouses.id')
+            ->select(
+                'purchases.id',
+                'purchases.reference_no',
+                'purchases.created_at',
+                'purchases.supplier_id',
+                'suppliers.name as supplier_name',
+                'suppliers.phone_number as supplier_number',
+                'warehouses.name as warehouse_name',
+                'product_purchases.qty',
+                'product_purchases.purchase_unit_id',
+                'product_purchases.total'
+            )
+            ->offset($offset)
+            ->limit($limit)
+            ->orderBy('purchases.created_at', 'desc')
+            ->get();
+
+        $data = [];
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        foreach ($purchases as $key => $purchase) {
+            $unit = $purchase->purchase_unit_id ? Unit::find($purchase->purchase_unit_id) : null;
+            $qtyDisplay = number_format((float)$purchase->qty, $decimal);
+            if ($unit) {
+                $qtyDisplay .= ' ' . $unit->code;
+            }
+
+            $data[] = [
+                'id' => $purchase->id,
+                'key' => $key,
+                'date' => date(config('date_format', 'Y-m-d'), strtotime($purchase->created_at)),
+                'reference_no' => $purchase->reference_no,
+                'warehouse' => $purchase->warehouse_name,
+                'supplier' => $purchase->supplier_id
+                    ? ($purchase->supplier_name . ' [' . ($purchase->supplier_number ?? 'N/A') . ']')
+                    : 'N/A',
+                'qty' => $qtyDisplay,
+                'unit_cost' => number_format((float)$purchase->total / (float)$purchase->qty, $decimal),
+                'sub_total' => number_format((float)$purchase->total, $decimal),
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => $totalData,
+            'records_filtered' => $totalFiltered,
+        ];
+    }
+
+    /**
+     * Get sale return history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @return array<string, mixed> History data with pagination metadata
+     */
+    public function getSaleReturnHistory(int $productId, array $filters = []): array
+    {
+        // Check permission: user needs 'product_history' permission to view product history
+        $this->requirePermission('product_history');
+
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+        $search = $filters['search'] ?? null;
+        $limit = $filters['limit'] ?? 10;
+        $offset = $filters['offset'] ?? 0;
+
+        $query = DB::table('returns')
+            ->join('product_returns', 'returns.id', '=', 'product_returns.return_id')
+            ->where('product_returns.product_id', $productId)
+            ->whereDate('returns.created_at', '>=', $startingDate)
+            ->whereDate('returns.created_at', '<=', $endingDate);
+
+        if ($warehouseId) {
+            $query->where('returns.warehouse_id', $warehouseId);
+        }
+
+        // Apply staff access filter
+        $generalSetting = $this->getGeneralSettings();
+        if (Auth::check() && $generalSetting && $generalSetting->staff_access === 'own') {
+            $query->where('returns.user_id', Auth::id());
+        }
+
+        $totalData = $query->count();
+        $totalFiltered = $totalData;
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereDate('returns.created_at', '=', date('Y-m-d', strtotime(str_replace('/', '-', $search))))
+                    ->orWhere('returns.reference_no', 'LIKE', "%{$search}%");
+            });
+            $totalFiltered = $query->count();
+        }
+
+        // Join related tables and apply pagination
+        $returns = $query->join('customers', 'returns.customer_id', '=', 'customers.id')
+            ->join('warehouses', 'returns.warehouse_id', '=', 'warehouses.id')
+            ->select(
+                'returns.id',
+                'returns.reference_no',
+                'returns.created_at',
+                'customers.name as customer_name',
+                'customers.phone_number as customer_number',
+                'warehouses.name as warehouse_name',
+                'product_returns.qty',
+                'product_returns.sale_unit_id',
+                'product_returns.total'
+            )
+            ->offset($offset)
+            ->limit($limit)
+            ->orderBy('returns.created_at', 'desc')
+            ->get();
+
+        $data = [];
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        foreach ($returns as $key => $return) {
+            $unit = $return->sale_unit_id ? Unit::find($return->sale_unit_id) : null;
+            $qtyDisplay = number_format((float)$return->qty, $decimal);
+            if ($unit) {
+                $qtyDisplay .= ' ' . $unit->code;
+            }
+
+            $data[] = [
+                'id' => $return->id,
+                'key' => $key,
+                'date' => date(config('date_format', 'Y-m-d'), strtotime($return->created_at)),
+                'reference_no' => $return->reference_no,
+                'warehouse' => $return->warehouse_name,
+                'customer' => $return->customer_name . ' [' . ($return->customer_number ?? 'N/A') . ']',
+                'qty' => $qtyDisplay,
+                'unit_price' => number_format((float)$return->total / (float)$return->qty, $decimal),
+                'sub_total' => number_format((float)$return->total, $decimal),
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => $totalData,
+            'records_filtered' => $totalFiltered,
+        ];
+    }
+
+    /**
+     * Get purchase return history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @return array<string, mixed> History data with pagination metadata
+     */
+    public function getPurchaseReturnHistory(int $productId, array $filters = []): array
+    {
+        // Check permission: user needs 'product_history' permission to view product history
+        $this->requirePermission('product_history');
+
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+        $search = $filters['search'] ?? null;
+        $limit = $filters['limit'] ?? 10;
+        $offset = $filters['offset'] ?? 0;
+
+        $query = DB::table('return_purchases')
+            ->join('purchase_product_return', 'return_purchases.id', '=', 'purchase_product_return.return_id')
+            ->where('purchase_product_return.product_id', $productId)
+            ->whereDate('return_purchases.created_at', '>=', $startingDate)
+            ->whereDate('return_purchases.created_at', '<=', $endingDate);
+
+        if ($warehouseId) {
+            $query->where('return_purchases.warehouse_id', $warehouseId);
+        }
+
+        // Apply staff access filter
+        $generalSetting = $this->getGeneralSettings();
+        if (Auth::check() && $generalSetting && $generalSetting->staff_access === 'own') {
+            $query->where('return_purchases.user_id', Auth::id());
+        }
+
+        $totalData = $query->count();
+        $totalFiltered = $totalData;
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereDate('return_purchases.created_at', '=', date('Y-m-d', strtotime(str_replace('/', '-', $search))))
+                    ->orWhere('return_purchases.reference_no', 'LIKE', "%{$search}%");
+            });
+            $totalFiltered = $query->count();
+        }
+
+        // Join related tables and apply pagination
+        $returnPurchases = $query->leftJoin('suppliers', 'return_purchases.supplier_id', '=', 'suppliers.id')
+            ->join('warehouses', 'return_purchases.warehouse_id', '=', 'warehouses.id')
+            ->select(
+                'return_purchases.id',
+                'return_purchases.reference_no',
+                'return_purchases.created_at',
+                'return_purchases.supplier_id',
+                'suppliers.name as supplier_name',
+                'suppliers.phone_number as supplier_number',
+                'warehouses.name as warehouse_name',
+                'purchase_product_return.qty',
+                'purchase_product_return.purchase_unit_id',
+                'purchase_product_return.total'
+            )
+            ->offset($offset)
+            ->limit($limit)
+            ->orderBy('return_purchases.created_at', 'desc')
+            ->get();
+
+        $data = [];
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        foreach ($returnPurchases as $key => $returnPurchase) {
+            $unit = $returnPurchase->purchase_unit_id ? Unit::find($returnPurchase->purchase_unit_id) : null;
+            $qtyDisplay = number_format((float)$returnPurchase->qty, $decimal);
+            if ($unit) {
+                $qtyDisplay .= ' ' . $unit->code;
+            }
+
+            $data[] = [
+                'id' => $returnPurchase->id,
+                'key' => $key,
+                'date' => date(config('date_format', 'Y-m-d'), strtotime($returnPurchase->created_at)),
+                'reference_no' => $returnPurchase->reference_no,
+                'warehouse' => $returnPurchase->warehouse_name,
+                'supplier' => $returnPurchase->supplier_id
+                    ? ($returnPurchase->supplier_name . ' [' . ($returnPurchase->supplier_number ?? 'N/A') . ']')
+                    : 'N/A',
+                'qty' => $qtyDisplay,
+                'unit_cost' => number_format((float)$returnPurchase->total / (float)$returnPurchase->qty, $decimal),
+                'sub_total' => number_format((float)$returnPurchase->total, $decimal),
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => $totalData,
+            'records_filtered' => $totalFiltered,
+        ];
+    }
+
+    /**
+     * Get adjustment history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date
+     * @return array<string, mixed> History data
+     */
+    public function getAdjustmentHistory(int $productId, array $filters = []): array
+    {
+        // Check permission: user needs 'product_history' permission to view product history
+        $this->requirePermission('product_history');
+
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+
+        $query = DB::table('adjustments as a')
+            ->join('product_adjustments as pa', 'pa.adjustment_id', '=', 'a.id')
+            ->where('pa.product_id', $productId)
+            ->whereBetween(DB::raw('DATE(a.created_at)'), [$startingDate, $endingDate]);
+
+        if ($warehouseId) {
+            $query->where('a.warehouse_id', $warehouseId);
+        }
+
+        $rows = $query->select(
+            'a.created_at',
+            'a.reference_no',
+            'a.warehouse_id',
+            'pa.qty',
+            'pa.action',
+            'a.note'
+        )
+            ->orderBy('a.created_at', 'desc')
+            ->get();
+
+        $warehouses = Warehouse::pluck('name', 'id');
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        $data = [];
+        $key = 1;
+
+        foreach ($rows as $row) {
+            $data[] = [
+                'key' => $key++,
+                'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
+                'reference' => $row->reference_no,
+                'warehouse' => $warehouses[$row->warehouse_id] ?? '',
+                'qty' => number_format((float)$row->qty, $decimal),
+                'type' => $row->action === 'addition' ? 'Adjustment +' : 'Adjustment -',
+                'note' => $row->note ?? 'N/A',
+            ];
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => count($data),
+            'records_filtered' => count($data),
+        ];
+    }
+
+    /**
+     * Get transfer history for a product.
+     *
+     * @param int $productId
+     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date
+     * @return array<string, mixed> History data
+     */
+    public function getTransferHistory(int $productId, array $filters = []): array
+    {
+        // Check permission: user needs 'product_history' permission to view product history
+        $this->requirePermission('product_history');
+
+        $warehouseId = $filters['warehouse_id'] ?? 0;
+        $startingDate = $filters['starting_date'] ?? date('Y-m-d', strtotime('-1 year'));
+        $endingDate = $filters['ending_date'] ?? date('Y-m-d');
+
+        $query = DB::table('transfers as t')
+            ->join('product_transfer as pt', 'pt.transfer_id', '=', 't.id')
+            ->where('pt.product_id', $productId)
+            ->whereBetween(DB::raw('DATE(t.created_at)'), [$startingDate, $endingDate]);
+
+        if ($warehouseId) {
+            $query->where(function ($q) use ($warehouseId) {
+                $q->where('t.from_warehouse_id', $warehouseId)
+                    ->orWhere('t.to_warehouse_id', $warehouseId);
+            });
+        }
+
+        $rows = $query->select(
+            't.created_at',
+            't.reference_no',
+            't.from_warehouse_id',
+            't.to_warehouse_id',
+            'pt.qty',
+            't.note'
+        )
+            ->orderBy('t.created_at', 'desc')
+            ->get();
+
+        $warehouses = Warehouse::pluck('name', 'id');
+        $generalSetting = $this->getGeneralSettings();
+        $decimal = $generalSetting->decimal ?? 2;
+
+        $data = [];
+        $key = 1;
+
+        foreach ($rows as $row) {
+            // OUT transaction (from warehouse)
+            if (!$warehouseId || $row->from_warehouse_id == $warehouseId) {
+                $data[] = [
+                    'key' => $key++,
+                    'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
+                    'reference' => $row->reference_no,
+                    'from' => $warehouses[$row->from_warehouse_id] ?? '',
+                    'to' => $warehouses[$row->to_warehouse_id] ?? '',
+                    'qty' => number_format(-(float)$row->qty, $decimal),
+                ];
+            }
+
+            // IN transaction (to warehouse)
+            if (!$warehouseId || $row->to_warehouse_id == $warehouseId) {
+                $data[] = [
+                    'key' => $key++,
+                    'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
+                    'reference' => $row->reference_no,
+                    'from' => $warehouses[$row->from_warehouse_id] ?? '',
+                    'to' => $warehouses[$row->to_warehouse_id] ?? '',
+                    'qty' => number_format((float)$row->qty, $decimal),
+                ];
+            }
+        }
+
+        return [
+            'data' => $data,
+            'records_total' => count($data),
+            'records_filtered' => count($data),
         ];
     }
 }
