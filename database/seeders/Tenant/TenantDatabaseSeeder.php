@@ -146,6 +146,7 @@ class TenantDatabaseSeeder extends Seeder
             [
                 'id' => 1,
                 'name' => $tenantData['name'] ?? 'admin',
+                'username' => $tenantData['username'] ?? 'admin',
                 'email' => $tenantData['email'] ?? 'admin@gmail.com',
                 'password' => $tenantData['password'] ?? '$2y$10$DWAHTfjcvwCpOCXaJg11MOhsqns03uvlwiSUOQwkHL2YYrtrXPcL6',
                 'remember_token' => '6mN44MyRiQZfCi0QvFFIYAU9LXIUz9CdNIlrRS5Lg8wBoJmxVu8auzTP42ZW',
