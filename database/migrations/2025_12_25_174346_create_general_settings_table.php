@@ -52,6 +52,14 @@ return new class extends Migration
             $table->integer('disable_forgot_password')->default(0);
             $table->integer('margin_type')->default(0);
             $table->string('storage_provider')->default('public')->comment('Storage provider name (public, s3, etc.)');
+            $table->string('google_client_id')->nullable()->comment('Google OAuth Client ID');
+            $table->string('google_client_secret')->nullable()->comment('Google OAuth Client Secret');
+            $table->string('google_redirect_url')->nullable()->comment('Google OAuth Redirect URL');
+            $table->boolean('google_login_enabled')->default(false)->comment('Enable Google login');
+            $table->string('facebook_client_id')->nullable()->comment('Facebook OAuth App ID');
+            $table->string('facebook_client_secret')->nullable()->comment('Facebook OAuth App Secret');
+            $table->string('facebook_redirect_url')->nullable()->comment('Facebook OAuth Redirect URL');
+            $table->boolean('facebook_login_enabled')->default(false)->comment('Enable Facebook login');
             $table->timestamps();
         });
     }

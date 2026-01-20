@@ -49,6 +49,20 @@ class UserRequest extends BaseRequest
             ],
 
             /**
+             * The user's username. Must be unique if provided.
+             *
+             * @var string|null $username
+             * @example john_doe
+             */
+            'username' => [
+                'nullable',
+                'string',
+                'max:255',
+                'alpha_dash',
+                Rule::unique('users', 'username')->ignore($userId),
+            ],
+
+            /**
              * The user's email address. Must be unique across all users.
              *
              * @var string $email

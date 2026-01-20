@@ -49,6 +49,22 @@ class RegisterRequest extends BaseRequest
             ],
 
             /**
+             * User's username. Must be unique if provided.
+             *
+             * @var string|null @username
+             * @example john_doe
+             */
+            'username' => [
+                'nullable',
+                'string',
+                'max:255',
+                'alpha_dash',
+                Rule::unique('users', 'username')->where(function ($query) {
+                    return $query->where('is_deleted', false);
+                }),
+            ],
+
+            /**
              * User's email address. Must be unique if provided.
              *
              * @var string|null @email
@@ -153,6 +169,7 @@ class RegisterRequest extends BaseRequest
     {
         $this->merge([
             'name' => $this->name ? trim($this->name) : null,
+            'username' => $this->username ? trim($this->username) : null,
             'email' => $this->email ? trim($this->email) : null,
             'phone_number' => $this->phone_number ? trim($this->phone_number) : null,
             'company_name' => $this->company_name ? trim($this->company_name) : null,

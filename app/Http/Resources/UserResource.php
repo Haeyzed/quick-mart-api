@@ -41,6 +41,14 @@ class UserResource extends JsonResource
             'name' => $this->name,
 
             /**
+             * The user's username.
+             *
+             * @var string|null $username
+             * @example john_doe
+             */
+            'username' => $this->username,
+
+            /**
              * The user's email address.
              *
              * @var string|null $email

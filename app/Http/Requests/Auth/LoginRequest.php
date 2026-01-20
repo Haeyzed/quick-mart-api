@@ -33,12 +33,12 @@ class LoginRequest extends BaseRequest
     {
         return [
             /**
-             * User's name or email address for login.
+             * User's username or email address for login.
              *
-             * @var string @name
+             * @var string @identifier
              * @example john.doe@example.com or john_doe
              */
-            'name' => ['required', 'string', 'max:255'],
+            'identifier' => ['required', 'string', 'max:255'],
 
             /**
              * User's password.
@@ -58,7 +58,7 @@ class LoginRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'name' => $this->name ? trim($this->name) : null,
+            'identifier' => $this->identifier ? trim($this->identifier) : null,
         ]);
     }
 }

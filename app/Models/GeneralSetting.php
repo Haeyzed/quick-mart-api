@@ -73,6 +73,14 @@ use Illuminate\Support\Carbon;
  * @property int|null $expiry_alert_days
      * @property string|null $margin_type
      * @property string|null $storage_provider
+     * @property string|null $google_client_id
+     * @property string|null $google_client_secret
+     * @property string|null $google_redirect_url
+     * @property bool $google_login_enabled
+     * @property string|null $facebook_client_id
+     * @property string|null $facebook_client_secret
+     * @property string|null $facebook_redirect_url
+     * @property bool $facebook_login_enabled
      * @property Carbon|null $created_at
      * @property Carbon|null $updated_at
      */
@@ -145,6 +153,14 @@ class GeneralSetting extends Model
             'expiry_alert_days',
             'margin_type',
             'storage_provider',
+            'google_client_id',
+            'google_client_secret',
+            'google_redirect_url',
+            'google_login_enabled',
+            'facebook_client_id',
+            'facebook_client_secret',
+            'facebook_redirect_url',
+            'facebook_login_enabled',
         ];
 
     /**
@@ -169,6 +185,8 @@ class GeneralSetting extends Model
             'disable_forgot_password' => 'boolean',
             'expiry_alert_days' => 'integer',
             'expiry_date' => 'date',
+            'google_login_enabled' => 'boolean',
+            'facebook_login_enabled' => 'boolean',
         ];
     }
 }

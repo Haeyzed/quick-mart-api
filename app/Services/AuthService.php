@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * AuthService
@@ -40,18 +41,21 @@ class AuthService extends BaseService
      *
      * @param array<string, mixed> $credentials
      * @return array<string, mixed>
-     * @throws ValidationException
+     * @throws HttpException
      */
     public function login(array $credentials): array
     {
-        // Determine if login is by email or name
-        $fieldType = filter_var($credentials['name'], FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $loginField = $credentials['identifier'];
+        
+        // Determine if login is by email or username (not name)
+        $fieldType = 'username'; // default to username
+        if (filter_var($loginField, FILTER_VALIDATE_EMAIL)) {
+            $fieldType = 'email';
+        }
 
         // Attempt authentication
-        if (!Auth::attempt([$fieldType => $credentials['name'], 'password' => $credentials['password']])) {
-            throw ValidationException::withMessages([
-                'name' => ['The provided credentials are incorrect.'],
-            ]);
+        if (!Auth::attempt([$fieldType => $loginField, 'password' => $credentials['password']])) {
+            throw new HttpException(401, 'The provided credentials are incorrect.');
         }
 
         $user = Auth::user();
@@ -76,9 +80,7 @@ class AuthService extends BaseService
         // If email is verified, check if user is active and not deleted
         if (!$user->isActive() || $user->isDeleted()) {
             Auth::logout();
-            throw ValidationException::withMessages([
-                'name' => ['Your account has been deactivated. Please contact the administrator.'],
-            ]);
+            throw new HttpException(403, 'Your account has been deactivated. Please contact the administrator.');
         }
 
         // Revoke all existing tokens (optional - for single device login)
@@ -108,6 +110,7 @@ class AuthService extends BaseService
             // Create user
             $user = User::create([
                 'name' => $data['name'],
+                'username' => $data['username'] ?? null,
                 'email' => $data['email'] ?? null,
                 'phone' => $data['phone_number'] ?? null,
                 'company_name' => $data['company_name'] ?? null,
@@ -131,6 +134,11 @@ class AuthService extends BaseService
                     'is_active' => true,
                 ]);
             }
+
+            // Assign all permissions to the newly registered user for testing
+            $allPermissions = $this->permissionService->getAllPermissions();
+            $permissionIds = $allPermissions->pluck('id')->toArray();
+            $this->permissionService->assignRolesAndPermissions($user, null, $permissionIds);
 
             return $user;
         });
@@ -366,7 +374,7 @@ class AuthService extends BaseService
     {
         return $this->transaction(function () use ($user, $data) {
             // Only update fields that are provided and allowed
-            $allowedFields = ['name', 'email', 'phone', 'company_name'];
+            $allowedFields = ['name', 'username', 'email', 'phone', 'company_name'];
             
             $updateData = [];
             foreach ($allowedFields as $field) {
