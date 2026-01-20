@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(WorldSeeder::class);
         $this->call(TenantDatabaseSeeder::class);
 
         // Seed module-specific data if modules are enabled

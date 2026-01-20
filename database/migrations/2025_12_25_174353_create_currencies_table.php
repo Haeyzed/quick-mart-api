@@ -11,19 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('currencies', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('code');
-            $table->string('symbol', 2)->nullable();
-            $table->double('exchange_rate');
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
+        // Schema::create('currencies', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('name');
+        //     $table->string('code');
+        //     $table->string('symbol', 2)->nullable();
+        //     $table->double('exchange_rate');
+        //     $table->boolean('is_active')->default(true);
+        //     $table->timestamps();
+        //     $table->softDeletes();
 
-            $table->index('code');
-            $table->index('is_active');
-        });
+        //     $table->index('code');
+        //     $table->index('is_active');
+        // });
     }
 
     /**
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('currencies');
+        // Schema::dropIfExists('currencies');
     }
 };

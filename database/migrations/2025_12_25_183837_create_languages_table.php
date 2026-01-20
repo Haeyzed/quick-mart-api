@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('languages', function (Blueprint $table) {
-            $table->id();
-            $table->string('language');
-            $table->string('name');
-            $table->boolean('is_default')->default(false);
-            $table->timestamps();
+        // Schema::create('languages', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('language');
+        //     $table->string('name');
+        //     $table->boolean('is_default')->default(false);
+        //     $table->timestamps();
 
-            $table->unique('language');
-            $table->index('is_default');
-        });
+        //     $table->unique('language');
+        //     $table->index('is_default');
+        // });
     }
 
     /**
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('languages');
+        // Schema::dropIfExists('languages');
     }
 };

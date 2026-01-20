@@ -50,8 +50,8 @@ class TenantDatabaseSeeder extends Seeder
         // Call other seeders first
         $this->call(BarcodeSeeder::class);
         $this->call(ExternalServicesSeeder::class);
-        $this->call(LanguagesTableSeeder::class);
-        $this->call(TranslationsTableSeeder::class);
+        // $this->call(LanguagesTableSeeder::class);
+        // $this->call(TranslationsTableSeeder::class);
         $this->call(InvoiceSettingsSeeder::class);
 
         // Seed core application data
@@ -67,7 +67,7 @@ class TenantDatabaseSeeder extends Seeder
         $this->seedCategories(); // Must be before products (foreign key dependency)
         $this->seedUnits(); // Must be before products (foreign key dependency)
         $this->seedTaxes(); // Must be before products (foreign key dependency)
-        $this->seedCurrencies();
+        // $this->seedCurrencies();
         $this->seedCustomerGroups();
         $this->seedCustomers();
         $this->seedSuppliers(); // Must be before purchases (foreign key dependency)
