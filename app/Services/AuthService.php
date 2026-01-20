@@ -11,7 +11,9 @@ use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\PermissionService;
+use App\Services\UploadService;
 use App\Traits\MailInfo;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +34,8 @@ class AuthService extends BaseService
     use MailInfo;
 
     public function __construct(
-        private readonly PermissionService $permissionService
+        private readonly PermissionService $permissionService,
+        private readonly UploadService $uploadService
     ) {
     }
 
@@ -107,11 +110,24 @@ class AuthService extends BaseService
     public function register(array $data): User
     {
         return $this->transaction(function () use ($data) {
+            // Handle avatar upload if provided
+            $avatarPath = null;
+            $avatarUrl = null;
+            if (isset($data['avatar']) && $data['avatar'] instanceof UploadedFile) {
+                $avatarPath = $this->uploadService->upload(
+                    $data['avatar'],
+                    config('storage.users.avatars')
+                );
+                $avatarUrl = $this->uploadService->url($avatarPath);
+            }
+
             // Create user
             $user = User::create([
                 'name' => $data['name'],
                 'username' => $data['username'] ?? null,
                 'email' => $data['email'] ?? null,
+                'avatar' => $avatarPath,
+                'avatar_url' => $avatarUrl,
                 'phone' => $data['phone_number'] ?? null,
                 'company_name' => $data['company_name'] ?? null,
                 'role_id' => $data['role_id'],
@@ -373,8 +389,24 @@ class AuthService extends BaseService
     public function updateProfile(User $user, array $data): User
     {
         return $this->transaction(function () use ($user, $data) {
+            // Handle avatar upload if provided
+            if (isset($data['avatar']) && $data['avatar'] instanceof UploadedFile) {
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    $this->uploadService->delete($user->avatar);
+                }
+                
+                // Upload new avatar
+                $avatarPath = $this->uploadService->upload(
+                    $data['avatar'],
+                    config('storage.users.avatars')
+                );
+                $data['avatar'] = $avatarPath;
+                $data['avatar_url'] = $this->uploadService->url($avatarPath);
+            }
+
             // Only update fields that are provided and allowed
-            $allowedFields = ['name', 'username', 'email', 'phone', 'company_name'];
+            $allowedFields = ['name', 'username', 'email', 'avatar', 'avatar_url', 'phone', 'company_name'];
             
             $updateData = [];
             foreach ($allowedFields as $field) {

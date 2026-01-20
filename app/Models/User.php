@@ -25,7 +25,10 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @property int $id
  * @property string $name
+ * @property string|null $username
  * @property string $email
+ * @property string|null $avatar
+ * @property string|null $avatar_url
  * @property string|null $phone
  * @property string|null $company_name
  * @property int $role_id
@@ -68,6 +71,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'username',
         'email',
+        'avatar',
+        'avatar_url',
         'password',
         'phone',
         'company_name',

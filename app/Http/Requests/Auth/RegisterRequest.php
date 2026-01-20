@@ -80,6 +80,14 @@ class RegisterRequest extends BaseRequest
             ],
 
             /**
+             * User's avatar image file.
+             *
+             * @var \Illuminate\Http\UploadedFile|null @avatar
+             * @example avatar.jpg
+             */
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+
+            /**
              * User's phone number.
              *
              * @var string|null @phone_number

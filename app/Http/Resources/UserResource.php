@@ -57,6 +57,22 @@ class UserResource extends JsonResource
             'email' => $this->email,
 
             /**
+             * The user's avatar image path.
+             *
+             * @var string|null $avatar
+             * @example images/user/avatar/avatar.jpg
+             */
+            'avatar' => $this->avatar,
+
+            /**
+             * The user's avatar image URL.
+             *
+             * @var string|null $avatar_url
+             * @example https://example.com/storage/images/user/avatar/avatar.jpg
+             */
+            'avatar_url' => $this->avatar_url,
+
+            /**
              * The user's phone number.
              *
              * @var string|null $phone
