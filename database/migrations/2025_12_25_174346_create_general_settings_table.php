@@ -60,6 +60,10 @@ return new class extends Migration
             $table->string('facebook_client_secret')->nullable()->comment('Facebook OAuth App Secret');
             $table->string('facebook_redirect_url')->nullable()->comment('Facebook OAuth Redirect URL');
             $table->boolean('facebook_login_enabled')->default(false)->comment('Enable Facebook login');
+            $table->string('github_client_id')->nullable()->comment('GitHub OAuth Client ID');
+            $table->string('github_client_secret')->nullable()->comment('GitHub OAuth Client Secret');
+            $table->string('github_redirect_url')->nullable()->comment('GitHub OAuth Redirect URL');
+            $table->boolean('github_login_enabled')->default(false)->comment('Enable GitHub login');
             $table->timestamps();
         });
     }

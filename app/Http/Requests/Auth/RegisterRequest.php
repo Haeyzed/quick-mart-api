@@ -90,10 +90,10 @@ class RegisterRequest extends BaseRequest
             /**
              * User's phone number.
              *
-             * @var string|null @phone_number
+             * @var string|null @phone
              * @example +1234567890
              */
-            'phone_number' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
 
             /**
              * Company name.
@@ -179,7 +179,7 @@ class RegisterRequest extends BaseRequest
             'name' => $this->name ? trim($this->name) : null,
             'username' => $this->username ? trim($this->username) : null,
             'email' => $this->email ? trim($this->email) : null,
-            'phone_number' => $this->phone_number ? trim($this->phone_number) : null,
+            'phone' => $this->phone ? trim($this->phone) : null,
             'company_name' => $this->company_name ? trim($this->company_name) : null,
             'customer_name' => $this->customer_name ? trim($this->customer_name) : null,
         ]);

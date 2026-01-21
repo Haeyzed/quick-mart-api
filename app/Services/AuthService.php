@@ -128,7 +128,7 @@ class AuthService extends BaseService
                 'email' => $data['email'] ?? null,
                 'avatar' => $avatarPath,
                 'avatar_url' => $avatarUrl,
-                'phone' => $data['phone_number'] ?? null,
+                'phone' => $data['phone'] ?? null,
                 'company_name' => $data['company_name'] ?? null,
                 'role_id' => $data['role_id'],
                 'biller_id' => $data['biller_id'] ?? null,

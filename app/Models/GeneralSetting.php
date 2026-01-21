@@ -81,6 +81,10 @@ use Illuminate\Support\Carbon;
      * @property string|null $facebook_client_secret
      * @property string|null $facebook_redirect_url
      * @property bool $facebook_login_enabled
+     * @property string|null $github_client_id
+     * @property string|null $github_client_secret
+     * @property string|null $github_redirect_url
+     * @property bool $github_login_enabled
      * @property Carbon|null $created_at
      * @property Carbon|null $updated_at
      */
@@ -161,6 +165,10 @@ class GeneralSetting extends Model
             'facebook_client_secret',
             'facebook_redirect_url',
             'facebook_login_enabled',
+            'github_client_id',
+            'github_client_secret',
+            'github_redirect_url',
+            'github_login_enabled',
         ];
 
     /**
@@ -187,6 +195,7 @@ class GeneralSetting extends Model
             'expiry_date' => 'date',
             'google_login_enabled' => 'boolean',
             'facebook_login_enabled' => 'boolean',
+            'github_login_enabled' => 'boolean',
         ];
     }
 }

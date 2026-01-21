@@ -47,7 +47,9 @@ class SocialAuthService extends BaseService
             throw new HttpException(400, ucfirst($provider) . ' login is not enabled or configured.');
         }
 
-        $redirectUrl = $settings->$redirectUrlField ?? url("/api/auth/{$provider}/callback");
+        // Default redirect URL should point to frontend callback page
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+        $redirectUrl = $settings->$redirectUrlField ?? "{$frontendUrl}/auth/callback/{$provider}";
 
         return [
             'client_id' => $settings->$clientIdField,
@@ -77,15 +79,15 @@ class SocialAuthService extends BaseService
     /**
      * Redirect to OAuth provider.
      *
-     * @param string $provider Provider name ('google' or 'facebook')
-     * @return \Illuminate\Http\RedirectResponse
+     * @param string $provider Provider name ('google', 'facebook', or 'github')
+     * @return string Redirect URL
      * @throws HttpException
      */
-    public function redirectToProvider(string $provider): \Illuminate\Http\RedirectResponse
+    public function redirectToProvider(string $provider): string
     {
         $this->configureSocialite($provider);
 
-        return Socialite::driver($provider)->stateless()->redirect();
+        return Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
     }
 
     /**

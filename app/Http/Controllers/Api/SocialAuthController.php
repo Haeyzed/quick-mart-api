@@ -24,13 +24,14 @@ class SocialAuthController extends Controller
     }
 
     /**
-     * Redirect to Google OAuth provider.
+     * Get Google OAuth redirect URL.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return JsonResponse
      */
-    public function redirectToGoogle()
+    public function redirectToGoogle(): JsonResponse
     {
-        return $this->service->redirectToProvider('google');
+        $url = $this->service->redirectToProvider('google');
+        return response()->json(['url' => $url]);
     }
 
     /**
@@ -43,20 +44,22 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback('google');
 
-        return response()->success([
+        return response()->json([
             'user' => new UserResource($result['user']),
-            'token' => $result['token'],
-        ], 'Login successful');
+            'access_token' => $result['token'],
+            'token_type' => 'Bearer',
+        ]);
     }
 
     /**
-     * Redirect to Facebook OAuth provider.
+     * Get Facebook OAuth redirect URL.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return JsonResponse
      */
-    public function redirectToFacebook()
+    public function redirectToFacebook(): JsonResponse
     {
-        return $this->service->redirectToProvider('facebook');
+        $url = $this->service->redirectToProvider('facebook');
+        return response()->json(['url' => $url]);
     }
 
     /**
@@ -69,9 +72,38 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback('facebook');
 
-        return response()->success([
+        return response()->json([
             'user' => new UserResource($result['user']),
-            'token' => $result['token'],
-        ], 'Login successful');
+            'access_token' => $result['token'],
+            'token_type' => 'Bearer',
+        ]);
+    }
+
+    /**
+     * Get GitHub OAuth redirect URL.
+     *
+     * @return JsonResponse
+     */
+    public function redirectToGithub(): JsonResponse
+    {
+        $url = $this->service->redirectToProvider('github');
+        return response()->json(['url' => $url]);
+    }
+
+    /**
+     * Handle GitHub OAuth callback.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function handleGithubCallback(Request $request): JsonResponse
+    {
+        $result = $this->service->handleProviderCallback('github');
+
+        return response()->json([
+            'user' => new UserResource($result['user']),
+            'access_token' => $result['token'],
+            'token_type' => 'Bearer',
+        ]);
     }
 }
