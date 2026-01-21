@@ -85,7 +85,7 @@ class SocialAuthService extends BaseService
     {
         $this->configureSocialite($provider);
 
-        return Socialite::driver($provider)->redirect();
+        return Socialite::driver($provider)->stateless()->redirect();
     }
 
     /**
@@ -105,7 +105,7 @@ class SocialAuthService extends BaseService
             $this->configureSocialite($provider);
 
             // Get user from provider
-            $socialUser = Socialite::driver($provider)->user();
+            $socialUser = Socialite::driver($provider)->stateless()->user();
 
             // Find or create user
             $user = $this->findOrCreateUser($socialUser, $provider);
