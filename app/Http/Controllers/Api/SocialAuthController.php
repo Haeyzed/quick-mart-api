@@ -31,7 +31,7 @@ class SocialAuthController extends Controller
     public function redirectToGoogle(): JsonResponse
     {
         $url = $this->service->redirectToProvider('google');
-        return response()->json(['url' => $url]);
+        return response()->success(['url' => $url], 'OAuth URL generated successfully');
     }
 
     /**
@@ -44,11 +44,10 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback('google');
 
-        return response()->json([
+        return response()->success([
             'user' => new UserResource($result['user']),
-            'access_token' => $result['token'],
-            'token_type' => 'Bearer',
-        ]);
+            'token' => $result['token'],
+        ], 'Login successful');
     }
 
     /**
@@ -59,7 +58,7 @@ class SocialAuthController extends Controller
     public function redirectToFacebook(): JsonResponse
     {
         $url = $this->service->redirectToProvider('facebook');
-        return response()->json(['url' => $url]);
+        return response()->success(['url' => $url], 'OAuth URL generated successfully');
     }
 
     /**
@@ -72,11 +71,10 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback('facebook');
 
-        return response()->json([
+        return response()->success([
             'user' => new UserResource($result['user']),
-            'access_token' => $result['token'],
-            'token_type' => 'Bearer',
-        ]);
+            'token' => $result['token'],
+        ], 'Login successful');
     }
 
     /**
@@ -87,7 +85,7 @@ class SocialAuthController extends Controller
     public function redirectToGithub(): JsonResponse
     {
         $url = $this->service->redirectToProvider('github');
-        return response()->json(['url' => $url]);
+        return response()->success(['url' => $url], 'OAuth URL generated successfully');
     }
 
     /**
@@ -100,10 +98,9 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback('github');
 
-        return response()->json([
+        return response()->success([
             'user' => new UserResource($result['user']),
-            'access_token' => $result['token'],
-            'token_type' => 'Bearer',
-        ]);
+            'token' => $result['token'],
+        ], 'Login successful');
     }
 }

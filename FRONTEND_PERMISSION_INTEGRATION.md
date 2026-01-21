@@ -1,3 +1,9 @@
+Ov23liasAt6sx2fl8tDi
+
+4cb8fe215dc1c611697235e0be6aa58e91ee44f8
+
+http://localhost:3000/auth/callback/github
+
 # Frontend Permission Integration Guide
 
 This document provides a comprehensive guide for integrating the permission system with the Next.js frontend application using NextAuth.
