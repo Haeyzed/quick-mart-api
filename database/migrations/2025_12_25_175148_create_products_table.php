@@ -38,8 +38,10 @@ return new class extends Migration
             $table->date('last_date')->nullable();
             $table->unsignedBigInteger('tax_id')->nullable();
             $table->integer('tax_method')->nullable();
-            $table->longText('image')->nullable();
+            $table->json('image')->nullable();
+            $table->json('image_url')->nullable();
             $table->string('file')->nullable();
+            $table->string('file_url')->nullable();
             $table->boolean('is_embeded')->nullable();
             $table->boolean('is_variant')->nullable();
             $table->boolean('is_batch')->nullable();
@@ -53,7 +55,7 @@ return new class extends Migration
             $table->string('variant_list')->nullable();
             $table->string('qty_list')->nullable();
             $table->string('price_list')->nullable();
-            $table->text('product_details')->nullable();
+            $table->json('product_details')->nullable();
             $table->text('short_description')->nullable();
             $table->text('specification')->nullable();
             $table->string('meta_title')->nullable();

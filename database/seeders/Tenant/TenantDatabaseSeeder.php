@@ -152,11 +152,14 @@ class TenantDatabaseSeeder extends Seeder
         }
 
         $tenantData = self::$tenantData;
+        $adminRoleId = DB::table('roles')->where('name', 'Admin')->where('guard_name', 'web')->value('id');
+        if ($adminRoleId === null) {
+            return;
+        }
 
-        // Create the user
+        $now = now();
         DB::table('users')->insert([
             [
-                'id' => 1,
                 'name' => $tenantData['name'] ?? 'admin',
                 'username' => $tenantData['username'] ?? 'admin',
                 'email' => $tenantData['email'] ?? 'admin@gmail.com',
@@ -164,24 +167,24 @@ class TenantDatabaseSeeder extends Seeder
                 'remember_token' => '6mN44MyRiQZfCi0QvFFIYAU9LXIUz9CdNIlrRS5Lg8wBoJmxVu8auzTP42ZW',
                 'phone' => $tenantData['phone'] ?? '12112',
                 'company_name' => $tenantData['company_name'] ?? 'Softmax Technologies',
-                'role_id' => 1,
+                'role_id' => $adminRoleId,
                 'biller_id' => null,
                 'warehouse_id' => null,
                 'is_active' => 1,
                 'is_deleted' => 0,
-                'email_verified_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'email_verified_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
         ]);
 
-        // Assign roles and permissions using PermissionService
-        $user = User::find(1);
+        $firstUserId = (int) DB::table('users')->orderBy('id')->value('id');
+        $user = User::find($firstUserId);
         if ($user) {
             $permissionService = app(PermissionService::class);
 
-            // Get roles to assign (default: Admin role with ID 1)
-            $rolesToAssign = ['Admin']; // Admin role name
+            // Get roles to assign (default: Admin role by name)
+            $rolesToAssign = ['Admin'];
             if (isset($tenantData['user_roles']) && is_array($tenantData['user_roles'])) {
                 $rolesToAssign = $tenantData['user_roles'];
             }
@@ -211,42 +214,39 @@ class TenantDatabaseSeeder extends Seeder
             return;
         }
 
+        $now = now();
         DB::table('roles')->insert([
             [
-                'id' => 1,
                 'name' => 'Admin',
                 'description' => 'admin can access all data...',
-                'is_active' => 1,
+                'is_active' => true,
                 'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'id' => 2,
                 'name' => 'Owner',
                 'description' => 'Staff of shop',
-                'is_active' => 1,
+                'is_active' => true,
                 'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'id' => 4,
                 'name' => 'staff',
                 'description' => 'staff has specific access...',
-                'is_active' => 1,
+                'is_active' => true,
                 'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
-                'id' => 5,
                 'name' => 'Customer',
                 'description' => null,
-                'is_active' => 1,
+                'is_active' => true,
                 'guard_name' => 'web',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
         ]);
     }
@@ -271,15 +271,18 @@ class TenantDatabaseSeeder extends Seeder
         }
 
         $permissionData = $this->getPermissionData();
+        $now = now();
 
         $insertData = [];
         foreach ($permissionData as $permission) {
             $lookupKey = "{$permission['name']}|{$permission['guard_name']}";
             if (!isset($existingMap[$lookupKey])) {
-                $insertData[] = array_merge($permission, [
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $insertData[] = [
+                    'name' => $permission['name'],
+                    'guard_name' => $permission['guard_name'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
         }
 
@@ -291,13 +294,26 @@ class TenantDatabaseSeeder extends Seeder
     /**
      * Seed role-permission mappings.
      *
+     * Uses permission and role names (no hardcoded IDs). Resolves names to IDs
+     * from the database after roles and permissions are seeded.
+     *
      * @return void
      */
     private function seedRolePermissions(): void
     {
         $tenantData = self::$tenantData;
+        $guard = 'web';
 
-        // Get existing role-permission mappings
+        $permissionIds = DB::table('permissions')
+            ->where('guard_name', $guard)
+            ->pluck('id', 'name')
+            ->all();
+
+        $roleIds = DB::table('roles')
+            ->where('guard_name', $guard)
+            ->pluck('id', 'name')
+            ->all();
+
         $existingRolePermissions = DB::table('role_has_permissions')
             ->select('permission_id', 'role_id')
             ->get();
@@ -307,36 +323,44 @@ class TenantDatabaseSeeder extends Seeder
             $existingMap["{$item->permission_id}|{$item->role_id}"] = true;
         }
 
-        // Build basic permissions based on configuration
-        $basicPermissionsRole = [];
-        if (!config('database.connections.saleprosaas_landlord')) {
-            // If not SaaS, assign all permissions to role 1
-            $permissionData = $this->getPermissionData();
-            foreach ($permissionData as $row) {
-                $basicPermissionsRole[] = [
-                    'permission_id' => $row['id'],
-                    'role_id' => 1,
-                ];
+        $isSaaS = config('database.connections.saleprosaas_landlord', false);
+
+        $nameBasedMappings = [];
+        if (!$isSaaS) {
+            foreach ($this->getPermissionData() as $p) {
+                $nameBasedMappings[] = ['permission' => $p['name'], 'role' => 'Admin'];
             }
         } else {
-            // SaaS mode - limited permissions
-            $basicPermissionsRole = $this->getBasicPermissionsRole();
+            $nameBasedMappings = $this->getBasicPermissionsRole();
         }
 
-        // Merge with package-specific permissions
         $packagePermissionsRole = $tenantData['package_permissions_role'] ?? [];
-        $mergedPermissionsRole = !empty($tenantData) 
-            ? array_merge($basicPermissionsRole, $packagePermissionsRole) 
-            : $basicPermissionsRole;
+        $allMappings = array_merge($nameBasedMappings, $packagePermissionsRole);
 
         $insertData = [];
-        foreach ($mergedPermissionsRole as $row) {
-            $lookupKey = "{$row['permission_id']}|{$row['role_id']}";
+        foreach ($allMappings as $row) {
+            $permissionId = null;
+            $roleId = null;
+
+            if (isset($row['permission_id'], $row['role_id'])) {
+                $permissionId = (int) $row['permission_id'];
+                $roleId = (int) $row['role_id'];
+            } elseif (isset($row['permission'], $row['role'])) {
+                $permissionId = $permissionIds[$row['permission']] ?? null;
+                $roleId = $roleIds[$row['role']] ?? null;
+            }
+
+            if ($permissionId === null || $roleId === null) {
+                continue;
+            }
+
+            $lookupKey = "{$permissionId}|{$roleId}";
             if (!isset($existingMap[$lookupKey])) {
                 $insertData[] = [
-                    'permission_id' => $row['permission_id'],
-                    'role_id' => $row['role_id'],
+                    'permission_id' => $permissionId,
+                    'role_id' => $roleId,
                 ];
+                $existingMap[$lookupKey] = true;
             }
         }
 
@@ -401,7 +425,7 @@ class TenantDatabaseSeeder extends Seeder
                 'state' => null,
                 'postal_code' => null,
                 'country' => null,
-                'is_active' => 1,
+                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -421,52 +445,68 @@ class TenantDatabaseSeeder extends Seeder
 
         $brands = [
             [
-                'id' => 1,
                 'name' => 'Apple',
+                'slug' => 'apple',
                 'image' => '20240114102326.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Apple is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 2,
                 'name' => 'Samsung',
+                'slug' => 'samsung',
                 'image' => '20240114102343.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Samsung is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 3,
                 'name' => 'Huawei',
+                'slug' => 'huawei',
                 'image' => '20240114102512.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Huawei is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 4,
                 'name' => 'Xiaomi',
+                'slug' => 'xiaomi',
                 'image' => '20240114103640.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Xiaomi is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 5,
                 'name' => 'Whirlpool',
+                'slug' => 'whirlpool',
                 'image' => '20240114103701.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Whirlpool is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 6,
                 'name' => 'Nestle',
+                'slug' => 'nestle',
                 'image' => '20240114103717.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Nestle is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 7,
                 'name' => 'Kraft',
+                'slug' => 'kraft',
                 'image' => '20240114103851.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Kraft is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ],
             [
-                'id' => 8,
                 'name' => 'Kellogs',
+                'slug' => 'kellogs',
                 'image' => '20240114103906.png',
-                'is_active' => 1,
+                'image_url' => $this->getRandomImageUrl(),
+                'short_description' => 'Kellogs is a technology company that designs and sells smartphones, tablets, and computers.',
+                'is_active' => true,
             ]
         ];
 
@@ -492,33 +532,33 @@ class TenantDatabaseSeeder extends Seeder
         }
 
         $categories = [
-            ['id' => 1, 'name' => 'Smartphone & Gadgets', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 2, 'name' => 'Phone Accessories', 'image' => null, 'parent_id' => 1, 'is_active' => 1],
-            ['id' => 3, 'name' => 'iPhone', 'image' => null, 'parent_id' => 1, 'is_active' => 1],
-            ['id' => 4, 'name' => 'Samsung', 'image' => null, 'parent_id' => 1, 'is_active' => 1],
-            ['id' => 5, 'name' => 'Phone Cases', 'image' => null, 'parent_id' => 1, 'is_active' => 1],
-            ['id' => 6, 'name' => 'Laptops & Computers', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 7, 'name' => 'Keyboards', 'image' => null, 'parent_id' => 6, 'is_active' => 1],
-            ['id' => 8, 'name' => 'Laptop Bags', 'image' => null, 'parent_id' => 6, 'is_active' => 1],
-            ['id' => 9, 'name' => 'Mouses', 'image' => null, 'parent_id' => 6, 'is_active' => 1],
-            ['id' => 10, 'name' => 'Webcams', 'image' => null, 'parent_id' => 6, 'is_active' => 1],
-            ['id' => 11, 'name' => 'Monitors', 'image' => null, 'parent_id' => 6, 'is_active' => 1],
-            ['id' => 12, 'name' => 'Smartwatches', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 13, 'name' => 'Sport Watches', 'image' => null, 'parent_id' => 12, 'is_active' => 1],
-            ['id' => 14, 'name' => 'Kids Watches', 'image' => null, 'parent_id' => 12, 'is_active' => 1],
-            ['id' => 15, 'name' => 'Women Watches', 'image' => null, 'parent_id' => 12, 'is_active' => 1],
-            ['id' => 16, 'name' => 'Men Watches', 'image' => null, 'parent_id' => 12, 'is_active' => 1],
-            ['id' => 23, 'name' => 'TVs, Audio & Video', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 24, 'name' => 'Television Accessories', 'image' => null, 'parent_id' => 23, 'is_active' => 1],
-            ['id' => 25, 'name' => 'HD, DVD Players', 'image' => null, 'parent_id' => 23, 'is_active' => 1],
-            ['id' => 26, 'name' => 'TV-DVD Combos', 'image' => null, 'parent_id' => 23, 'is_active' => 1],
-            ['id' => 27, 'name' => 'Projectors', 'image' => null, 'parent_id' => 23, 'is_active' => 1],
-            ['id' => 28, 'name' => 'Projection Screen', 'image' => null, 'parent_id' => 23, 'is_active' => 1],
-            ['id' => 29, 'name' => 'Fruits & Vegetables', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 30, 'name' => 'Dairy & Egg', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 31, 'name' => 'Meat & Fish', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 33, 'name' => 'Candy & Chocolates', 'image' => null, 'parent_id' => null, 'is_active' => 1],
-            ['id' => 39, 'name' => 'Clothing', 'image' => null, 'parent_id' => null, 'is_active' => 1],
+            ['id' => 1, 'name' => 'Smartphone & Gadgets', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 2, 'name' => 'Phone Accessories', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 1, 'is_active' => 1],
+            ['id' => 3, 'name' => 'iPhone', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 1, 'is_active' => 1],
+            ['id' => 4, 'name' => 'Samsung', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 1, 'is_active' => 1],
+            ['id' => 5, 'name' => 'Phone Cases', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 1, 'is_active' => 1],
+            ['id' => 6, 'name' => 'Laptops & Computers', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 7, 'name' => 'Keyboards', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 6, 'is_active' => 1],
+            ['id' => 8, 'name' => 'Laptop Bags', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 6, 'is_active' => 1],
+            ['id' => 9, 'name' => 'Mouses', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 6, 'is_active' => 1],
+            ['id' => 10, 'name' => 'Webcams', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 6, 'is_active' => 1],
+            ['id' => 11, 'name' => 'Monitors', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 6, 'is_active' => 1],
+            ['id' => 12, 'name' => 'Smartwatches', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 13, 'name' => 'Sport Watches', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 12, 'is_active' => 1],
+            ['id' => 14, 'name' => 'Kids Watches', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 12, 'is_active' => 1],
+            ['id' => 15, 'name' => 'Women Watches', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 12, 'is_active' => 1],
+            ['id' => 16, 'name' => 'Men Watches', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 12, 'is_active' => 1],
+            ['id' => 23, 'name' => 'TVs, Audio & Video', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 24, 'name' => 'Television Accessories', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 23, 'is_active' => 1],
+            ['id' => 25, 'name' => 'HD, DVD Players', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 23, 'is_active' => 1],
+            ['id' => 26, 'name' => 'TV-DVD Combos', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 23, 'is_active' => 1],
+            ['id' => 27, 'name' => 'Projectors', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 23, 'is_active' => 1],
+            ['id' => 28, 'name' => 'Projection Screen', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => 23, 'is_active' => 1],
+            ['id' => 29, 'name' => 'Fruits & Vegetables', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 30, 'name' => 'Dairy & Egg', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 31, 'name' => 'Meat & Fish', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 33, 'name' => 'Candy & Chocolates', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
+            ['id' => 39, 'name' => 'Clothing', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
         ];
 
         if(!empty($categories)) {
@@ -669,11 +709,29 @@ class TenantDatabaseSeeder extends Seeder
         if (!empty($products)) {
             foreach ($products as $product) {
                 DB::table('products')->insert(array_merge($product, [
+                    'image_url' => json_encode([$this->getRandomImageUrl(),$this->getRandomImageUrl(),$this->getRandomImageUrl()]),
+                    'file_url' => $this->getRandomFileUrl(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]));
             }
         }
+    }
+
+    /**
+     * 
+     */
+    private function getRandomImageUrl(): string
+    {
+        return 'https://picsum.photos/200/300';
+    }
+
+    /**
+     * 
+     */
+    private function getRandomFileUrl(): string
+    {
+        return 'https://www.rd.usda.gov/sites/default/files/pdf-sample_0.pdf';
     }
 
     /**
@@ -709,7 +767,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401081146401.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -721,8 +779,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -750,7 +807,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401081246041.png,202401081246062.png,202401081246063.png,202401081246064.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 0,
                 'is_variant' => NULL,
@@ -762,8 +819,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -791,7 +847,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401081255081.png,202401081255112.png,202401081255123.png,202401081255134.png,202401081255135.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -803,8 +859,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -832,7 +887,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401080121221.png,202401080121242.png,202401080121243.png,202401080121254.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -844,8 +899,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -873,7 +927,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401080124321.png,202401080124342.png,202401080124353.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -885,8 +939,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -914,7 +967,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401080127451.png,202401080127462.png,202401080127473.jpg,202401080127484.jpg,202401080127485.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -926,8 +979,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -955,7 +1007,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401080130241.png,202401080130242.png,202401080130253.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -967,8 +1019,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -996,7 +1047,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401080134061.png,202401080134072.png,202401080134073.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1008,8 +1059,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1037,7 +1087,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401080141091.png,202401080141102.png,202401080141103.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1049,8 +1099,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1078,7 +1127,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401080143591.png,202401080144002.png,202401080144013.png,202401080144014.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1090,8 +1139,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1131,8 +1179,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1160,7 +1207,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401130357131.png,202401130357152.png,202401130357153.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1172,8 +1219,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1201,7 +1247,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401130401491.png,202401130401522.png,202401130401533.png,202401130401544.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1213,8 +1259,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1242,7 +1287,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401130410191.png,202401130410222.jpg,202401130410233.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 0,
                 'is_variant' => NULL,
@@ -1254,8 +1299,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1283,7 +1327,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401150808421.jpg,202401150808432.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1295,10 +1339,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1326,7 +1367,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401150814131.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1338,10 +1379,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1369,7 +1407,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151009571.png,202401151009582.png,202401151009583.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1381,10 +1419,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1412,7 +1447,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151013061.png,202401151013062.png,202401151013073.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1424,10 +1459,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1455,7 +1487,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151019301.png,202401151019302.png,202401151019313.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1467,10 +1499,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1498,7 +1527,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151024231.png,202401151024232.png,202401151024233.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1510,10 +1539,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1541,7 +1567,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202401151026581.png,202401151026592.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1553,10 +1579,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1584,7 +1607,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151029321.png,202401151029332.jpg,202401151029343.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1596,10 +1619,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<div class=@item-description@>
-                    <p>Quisque varius diam vel metus mattis, id aliquam diam rhoncus. Proin vitae magna in dui finibus malesuada et at nulla. Morbi elit ex, viverra vitae ante vel, blandit feugiat ligula. Fusce fermentum iaculis nibh, at sodales leo maximus a. Nullam ultricies sodales nunc, in pellentesque lorem mattis quis. Cras imperdiet est in nunc tristique lacinia. Nullam aliquam mauris eu accumsan tincidunt. Suspendisse velit ex, aliquet vel ornare vel, dignissim a tortor.</p>
-                    <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                </div>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1627,7 +1647,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151115301.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1639,7 +1659,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Fresh Organic Navel Orange</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1667,7 +1687,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151118271.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1679,7 +1699,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1707,7 +1727,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151142511.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1719,7 +1739,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Water Melon ~ 3KG</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 0,
@@ -1747,7 +1767,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202401151144271.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1759,14 +1779,14 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Gala Original Apple - 1KG</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
             ],
             [
                 'id' => 31,
-                'name' => 'Men&#039;s Premium Egyptian Cotton T-shirt',
+                'name' => "Men's Premium Egyptian Cotton T-shirt",
                 'code' => '30282941',
                 'type' => 'standard',
                 'barcode_symbology' => 'C128',
@@ -1787,7 +1807,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => 1,
                 'tax_method' => 2,
-                'image' => '202402040508081.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 0,
                 'is_variant' => 1,
@@ -1799,7 +1819,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["Size","Color"]',
                 'variant_value' => '["S,M,L,XL,XXL","red,green,blue"]',
                 'is_active' => 1,
@@ -1827,7 +1847,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => 1,
@@ -1839,7 +1859,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["Color"]',
                 'variant_value' => '["Red,Yellow,Green,Bule"]',
                 'is_active' => 1,
@@ -1867,7 +1887,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1879,7 +1899,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1907,7 +1927,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1919,7 +1939,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1947,7 +1967,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202403080446151.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1959,7 +1979,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -1987,7 +2007,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202403080452061.JPG',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -1999,7 +2019,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => ',',
                 'qty_list' => '1,1',
                 'price_list' => '3500,1450',
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2027,7 +2047,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2039,7 +2059,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2067,7 +2087,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2079,7 +2099,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2107,7 +2127,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2119,7 +2139,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2147,7 +2167,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2159,7 +2179,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2187,7 +2207,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2199,7 +2219,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2227,7 +2247,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => NULL,
@@ -2239,7 +2259,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2267,7 +2287,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 2,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => NULL,
@@ -2279,7 +2299,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2307,7 +2327,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2319,7 +2339,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2347,7 +2367,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2359,7 +2379,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2387,7 +2407,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => 1,
@@ -2399,7 +2419,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["RAM | ROM","Color"]',
                 'variant_value' => '["128GB,256GB,512GB","SpaceBlack,Silver,Gold,DeepPurple"]',
                 'is_active' => 1,
@@ -2427,7 +2447,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202405130525171.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => 1,
@@ -2439,7 +2459,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["Condition","RAM | ROM","Color"]',
                 'variant_value' => '["Brand New,Pre-Owned","256GB,512GB","BlackTitanium,WhiteTitanium,BlueTitanium,NaturalTitanium"]',
                 'is_active' => 1,
@@ -2467,7 +2487,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202405180442251.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => 1,
@@ -2479,7 +2499,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["Quantity","Size","Price","Color"]',
                 'variant_value' => '["3KG,2KG,5KG","Large,Medium,Small","120,500,70","RED,GReen,Blue"]',
                 'is_active' => 1,
@@ -2507,7 +2527,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202406111018041.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2519,7 +2539,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2547,7 +2567,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => '2024-06-20',
                 'tax_id' => 1,
                 'tax_method' => 1,
-                'image' => '202406111023031.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => 1,
@@ -2559,7 +2579,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => '["BLANCO","NEGRO"]',
                 'variant_value' => '["199","299"]',
                 'is_active' => 1,
@@ -2587,7 +2607,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => '2024-06-25',
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202406111027511.png,202406111027512.jpg,202406111027513.jpg,202406111027514.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => 1,
@@ -2599,7 +2619,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>Prueba de imagenes easymax</p>',
+                'product_details' => NULL,
                 'variant_option' => '["NEGRO","NEGRO","NEGRO","NEGRO"]',
                 'variant_value' => '["255","255","255","255"]',
                 'is_active' => 1,
@@ -2627,7 +2647,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => '2024-06-25',
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202406111040331.jpg,202406111040342.jpg,202406111040343.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => 1,
@@ -2639,7 +2659,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p><a class=@sh-anchor@ href=@https://www.bing.com/ck/a?!&amp;&amp;p=3057d02af68c6961JmltdHM9MTcxODA2NDAwMCZpZ3VpZD0zZTNlNjhiMy1jOTY5LTZkYzYtMzJjMS03Y2Q0Yzg1NjZjMDUmaW5zaWQ9NjU4Mw&amp;ptn=3&amp;ver=2&amp;hsh=3&amp;fclid=3e3e68b3-c969-6dc6-32c1-7cd4c8566c05&amp;psq=apple+descripcion&amp;u=a1aHR0cHM6Ly9odW1hbmlkYWRlcy5jb20vYXBwbGUv&amp;ntb=1@ target=@_blank@ rel=@noopener@ data-tg-citations=@1;2@ data-tgpsgid=@d_anstgsen0@>Apple es una&nbsp;<strong>empresa multinacional estadounidense que dise&ntilde;a, fabrica y vende productos electr&oacute;nicos y de software</strong></a><a class=@sup-target@ href=@https://www.bing.com/ck/a?!&amp;&amp;p=d1b09c46723a5d2aJmltdHM9MTcxODA2NDAwMCZpZ3VpZD0zZTNlNjhiMy1jOTY5LTZkYzYtMzJjMS03Y2Q0Yzg1NjZjMDUmaW5zaWQ9NjU4NA&amp;ptn=3&amp;ver=2&amp;hsh=3&amp;fclid=3e3e68b3-c969-6dc6-32c1-7cd4c8566c05&amp;psq=apple+descripcion&amp;u=a1aHR0cHM6Ly9odW1hbmlkYWRlcy5jb20vYXBwbGUv&amp;ntb=1@ target=@_blank@ rel=@noopener@ data-tgpsgid=@d_anstgpsg1@><sup>1</sup></a><a class=@sup-target@ href=@https://www.bing.com/ck/a?!&amp;&amp;p=21491c7be3d7d5d9JmltdHM9MTcxODA2NDAwMCZpZ3VpZD0zZTNlNjhiMy1jOTY5LTZkYzYtMzJjMS03Y2Q0Yzg1NjZjMDUmaW5zaWQ9NjU4NQ&amp;ptn=3&amp;ver=2&amp;hsh=3&amp;fclid=3e3e68b3-c969-6dc6-32c1-7cd4c8566c05&amp;psq=apple+descripcion&amp;u=a1aHR0cHM6Ly93d3cuMTJjYXJhY3RlcmlzdGljYXMuY29tL2FwcGxlLw&amp;ntb=1@ target=@_blank@ rel=@noopener@ data-tgpsgid=@d_anstgpsg2@><sup>2</sup></a>.&nbsp;<a class=@sh-anchor@ href=@https://www.bing.com/ck/a?!&amp;&amp;p=c80ea6db0a534e3eJmltdHM9MTcxODA2NDAwMCZpZ3VpZD0zZTNlNjhiMy1jOTY5LTZkYzYtMzJjMS03Y2Q0Yzg1NjZjMDUmaW5zaWQ9NjU4Ng&amp;ptn=3&amp;ver=2&amp;hsh=3&amp;fclid=3e3e68b3-c969-6dc6-32c1-7cd4c8566c05&amp;psq=apple+descripcion&amp;u=a1aHR0cHM6Ly93d3cuMTJjYXJhY3RlcmlzdGljYXMuY29tL2FwcGxlLw&amp;ntb=1@ target=@_blank@ rel=@noopener@ data-tg-citations=@2@ data-tgpsgid=@d_anstgsen1@>Entre sus productos m&aacute;s conocidos se encuentran el iPhone, el iPad, el Mac, el iPod, el Apple Watch y el Apple TV. Tambi&eacute;n ofrece servicios en l&iacute;nea como iTunes, iCloud, Apple Music y Apple Pay. Apple tiene su sede en el Apple Park, en Cupertino, California, y su centro europeo en Cork, Irlanda</a></p>',
+                'product_details' => NULL,
                 'variant_option' => '["Color Blanco","Color Rosa","RAM","Almacenamiento","Color Blanco","Color Rosa","RAM","Almacenamiento","Color Blanco","Color Rosa","RAM","Almacenamiento"]',
                 'variant_value' => '["1600","1699","8,16,32","32,64,128","1600","1699","8,16,32","32,64,128","1600","1699","8,16,32","32,64,128"]',
                 'is_active' => 1,
@@ -2667,7 +2687,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202406210233561.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => NULL,
@@ -2679,7 +2699,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2707,7 +2727,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2719,7 +2739,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2747,7 +2767,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202407010954551.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => NULL,
@@ -2759,7 +2779,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2787,7 +2807,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => 1,
@@ -2799,7 +2819,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<p>test desc</p>',
+                'product_details' => NULL,
                 'variant_option' => '["Size","Colour"]',
                 'variant_value' => '["S,M,L","R,g,b"]',
                 'is_active' => 1,
@@ -2827,7 +2847,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202409080650101.jpg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2839,30 +2859,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '<h1 style=@text-align: right;@>هیدفۆنی وایەرلێس جی٧٠</h1>
-                <p style=@text-align: right;@>&nbsp;</p>
-                <h2 style=@text-align: right;@>تایبەتمەندیەکانی</h2>
-                <p style=@text-align: right;@>هیدفۆنی بێ وایەر</p>
-                <p style=@text-align: right;@>سیستەمی گونجاو :&nbsp;ئەندرۆید / ئی ئۆ ئێس / ویندۆس</p>
-                <p style=@text-align: right;@>وەشانی بلوتوز :&nbsp;٥.٣</p>
-                <p style=@text-align: right;@>توانای پاتری :&nbsp;٣٠ میلی ئەمپێر</p>
-                <p style=@text-align: right;@>توانای پاتری سندوقی شەحنکردنەوە :&nbsp;٢٥٠ میلی ئەمپێر</p>
-                <p style=@text-align: right;@>شێوازی شەحنکردنەوە :&nbsp;شەحنکردنەوەی جۆری سی</p>
-                <p style=@text-align: right;@>تەمەنی پاتری : نزیکەی ٤ بۆ ٥ کاتژمێر</p>
-                <p style=@text-align: right;@>&nbsp;</p>
-                <h1>Earphone True Wireless G70</h1>
-                <p style=@text-align: justify;@>&nbsp;</p>
-                <h2>Specification</h2>
-                <p>Product Type :&nbsp;Wireless Earbuds</p>
-                <p>Brand :&nbsp;UiiSii</p>
-                <p>Model :&nbsp;TWS-G70</p>
-                <p>Compatible Systems :&nbsp;ios/android/Windows</p>
-                <p>Bluetooth Version :&nbsp;5.3</p>
-                <p>Battery Capacity :&nbsp;30 mAh</p>
-                <p>Charging Box Battery Capacity :&nbsp;250 mAh</p>
-                <p>Charging Method :&nbsp;TYPE-C charging</p>
-                <p>Buds Battery Life :&nbsp;About 4 to 5 hours</p>
-                <p>&nbsp;</p>',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2890,7 +2887,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => 'zummXD2dvAtI.png',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => 1,
                 'is_variant' => NULL,
@@ -2902,7 +2899,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -2930,7 +2927,7 @@ class TenantDatabaseSeeder extends Seeder
                 'last_date' => NULL,
                 'tax_id' => NULL,
                 'tax_method' => 1,
-                'image' => '202410261213471.png,202410261213482.jpeg',
+                'image' => NULL,
                 'file' => NULL,
                 'is_embeded' => NULL,
                 'is_variant' => NULL,
@@ -2942,7 +2939,7 @@ class TenantDatabaseSeeder extends Seeder
                 'variant_list' => NULL,
                 'qty_list' => NULL,
                 'price_list' => NULL,
-                'product_details' => '',
+                'product_details' => NULL,
                 'variant_option' => NULL,
                 'variant_value' => NULL,
                 'is_active' => 1,
@@ -3172,872 +3169,710 @@ class TenantDatabaseSeeder extends Seeder
     {
         return [
             [
-                'id' => 4,
-                'name' => 'products-edit',
+                'name' => 'products-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 5,
                 'name' => 'products-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 6,
-                'name' => 'products-add',
+                'name' => 'products-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 7,
                 'name' => 'products-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 8,
                 'name' => 'purchases-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 9,
-                'name' => 'purchases-add',
+                'name' => 'purchases-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 10,
-                'name' => 'purchases-edit',
+                'name' => 'purchases-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 11,
                 'name' => 'purchases-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 12,
                 'name' => 'sales-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 13,
-                'name' => 'sales-add',
+                'name' => 'sales-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 14,
-                'name' => 'sales-edit',
+                'name' => 'sales-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 15,
                 'name' => 'sales-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 16,
                 'name' => 'quotes-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 17,
-                'name' => 'quotes-add',
+                'name' => 'quotes-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 18,
-                'name' => 'quotes-edit',
+                'name' => 'quotes-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 19,
                 'name' => 'quotes-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 20,
                 'name' => 'transfers-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 21,
-                'name' => 'transfers-add',
+                'name' => 'transfers-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 22,
-                'name' => 'transfers-edit',
+                'name' => 'transfers-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 23,
                 'name' => 'transfers-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 24,
                 'name' => 'returns-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 25,
-                'name' => 'returns-add',
+                'name' => 'returns-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 26,
-                'name' => 'returns-edit',
+                'name' => 'returns-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 27,
                 'name' => 'returns-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 28,
                 'name' => 'customers-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 29,
-                'name' => 'customers-add',
+                'name' => 'customers-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 30,
-                'name' => 'customers-edit',
+                'name' => 'customers-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 31,
                 'name' => 'customers-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 32,
                 'name' => 'suppliers-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 33,
-                'name' => 'suppliers-add',
+                'name' => 'suppliers-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 34,
-                'name' => 'suppliers-edit',
+                'name' => 'suppliers-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 35,
                 'name' => 'suppliers-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 36,
                 'name' => 'product-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 37,
                 'name' => 'purchase-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 38,
                 'name' => 'sale-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 39,
                 'name' => 'customer-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 40,
                 'name' => 'due-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 41,
                 'name' => 'users-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 42,
-                'name' => 'users-add',
+                'name' => 'users-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 43,
-                'name' => 'users-edit',
+                'name' => 'users-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 44,
                 'name' => 'users-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 45,
                 'name' => 'profit-loss',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 46,
                 'name' => 'best-seller',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 47,
                 'name' => 'daily-sale',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 48,
                 'name' => 'monthly-sale',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 49,
                 'name' => 'daily-purchase',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 50,
                 'name' => 'monthly-purchase',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 51,
                 'name' => 'payment-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 52,
                 'name' => 'warehouse-stock-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 53,
                 'name' => 'product-qty-alert',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 54,
                 'name' => 'supplier-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 55,
                 'name' => 'expenses-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 56,
-                'name' => 'expenses-add',
+                'name' => 'expenses-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 57,
-                'name' => 'expenses-edit',
+                'name' => 'expenses-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 58,
                 'name' => 'expenses-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 59,
                 'name' => 'general_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 60,
                 'name' => 'mail_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 61,
                 'name' => 'pos_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 62,
                 'name' => 'hrm_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 63,
                 'name' => 'purchase-return-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 64,
-                'name' => 'purchase-return-add',
+                'name' => 'purchase-return-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 65,
-                'name' => 'purchase-return-edit',
+                'name' => 'purchase-return-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 66,
                 'name' => 'purchase-return-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 67,
                 'name' => 'account-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 68,
                 'name' => 'balance-sheet',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 69,
                 'name' => 'account-statement',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 70,
                 'name' => 'department',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 71,
                 'name' => 'attendance',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 72,
                 'name' => 'payroll',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 73,
                 'name' => 'employees-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 74,
-                'name' => 'employees-add',
+                'name' => 'employees-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 75,
-                'name' => 'employees-edit',
+                'name' => 'employees-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 76,
                 'name' => 'employees-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 77,
                 'name' => 'user-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 78,
                 'name' => 'stock_count',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 79,
                 'name' => 'adjustment',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 80,
                 'name' => 'sms_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 81,
                 'name' => 'create_sms',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 82,
                 'name' => 'print_barcode',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 83,
                 'name' => 'empty_database',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 84,
                 'name' => 'customer_group',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 85,
                 'name' => 'unit',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 86,
                 'name' => 'tax',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 87,
                 'name' => 'gift_card',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 88,
                 'name' => 'coupon',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 89,
                 'name' => 'holiday',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 90,
                 'name' => 'warehouse-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 91,
                 'name' => 'warehouse',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 92,
-                'name' => 'brand',
+                'name' => 'brands-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 93,
+                'name' => 'brands-create',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'brands-update',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'brands-delete',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'billers-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 94,
-                'name' => 'billers-add',
+                'name' => 'billers-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 95,
-                'name' => 'billers-edit',
+                'name' => 'billers-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 96,
                 'name' => 'billers-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 97,
                 'name' => 'money-transfer',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 98,
                 'name' => 'category',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 99,
                 'name' => 'delivery',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 100,
                 'name' => 'send_notification',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 101,
                 'name' => 'today_sale',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 102,
                 'name' => 'today_profit',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 103,
                 'name' => 'currency',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 104,
                 'name' => 'backup_database',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 105,
                 'name' => 'reward_point_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 106,
                 'name' => 'revenue_profit_summary',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 107,
                 'name' => 'cash_flow',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 108,
                 'name' => 'monthly_summary',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 109,
                 'name' => 'yearly_report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 110,
                 'name' => 'discount_plan',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 111,
                 'name' => 'discount',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 112,
                 'name' => 'product-expiry-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 113,
                 'name' => 'purchase-payment-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 114,
-                'name' => 'purchase-payment-add',
+                'name' => 'purchase-payment-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 115,
-                'name' => 'purchase-payment-edit',
+                'name' => 'purchase-payment-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 116,
                 'name' => 'purchase-payment-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 117,
                 'name' => 'sale-payment-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 118,
-                'name' => 'sale-payment-add',
+                'name' => 'sale-payment-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 119,
-                'name' => 'sale-payment-edit',
+                'name' => 'sale-payment-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 120,
                 'name' => 'sale-payment-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 121,
                 'name' => 'all_notification',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 122,
                 'name' => 'sale-report-chart',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 123,
                 'name' => 'dso-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 124,
                 'name' => 'product_history',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 125,
                 'name' => 'supplier-due-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 126,
                 'name' => 'custom_field',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 127,
                 'name' => 'incomes-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 128,
-                'name' => 'incomes-add',
+                'name' => 'incomes-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 129,
-                'name' => 'incomes-edit',
+                'name' => 'incomes-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 130,
                 'name' => 'incomes-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 131,
                 'name' => 'packing_slip_challan',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 132,
                 'name' => 'biller-report',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 133,
                 'name' => 'payment_gateway_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 134,
                 'name' => 'barcode_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 135,
                 'name' => 'language_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 136,
                 'name' => 'addons',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 137,
                 'name' => 'account-selection',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 138,
                 'name' => 'invoice_setting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 139,
                 'name' => 'invoice_create_edit_delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 140,
                 'name' => 'handle_discount',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 145,
                 'name' => 'products-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 146,
                 'name' => 'purchases-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 147,
                 'name' => 'sales-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 148,
                 'name' => 'customers-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 149,
                 'name' => 'billers-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 150,
                 'name' => 'suppliers-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 151,
-                'name' => 'categories-add',
+                'name' => 'categories-create',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 152,
                 'name' => 'categories-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 153,
                 'name' => 'categories-index',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 154,
-                'name' => 'categories-edit',
+                'name' => 'categories-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 155,
                 'name' => 'categories-delete',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 156,
                 'name' => 'role_permission',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 157,
                 'name' => 'cart-product-update',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 158,
                 'name' => 'transfers-import',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 159,
                 'name' => 'change_sale_date',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 160,
                 'name' => 'sidebar_product',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 161,
                 'name' => 'sidebar_purchase',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 162,
                 'name' => 'sidebar_sale',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 163,
                 'name' => 'sidebar_quotation',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 164,
                 'name' => 'sidebar_transfer',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 165,
                 'name' => 'sidebar_expense',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 166,
                 'name' => 'sidebar_income',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 167,
                 'name' => 'sidebar_accounting',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 168,
                 'name' => 'sidebar_hrm',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 169,
                 'name' => 'sidebar_people',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 170,
                 'name' => 'sidebar_reports',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 171,
                 'name' => 'sidebar_settings',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 172,
                 'name' => 'sale_export',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 173,
                 'name' => 'product_export',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 174,
                 'name' => 'purchase_export',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 175,
                 'name' => 'designations',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 176,
                 'name' => 'shift',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 177,
                 'name' => 'overtime',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 178,
                 'name' => 'leave-type',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 179,
                 'name' => 'leave',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 180,
                 'name' => 'hrm-panel',
                 'guard_name' => 'web',
             ],
             [
-                'id' => 181,
                 'name' => 'sale-agents',
                 'guard_name' => 'web',
             ],
@@ -4045,101 +3880,45 @@ class TenantDatabaseSeeder extends Seeder
     }
 
     /**
-     * Get basic permissions role mappings for SaaS mode.
+     * Get basic permission–role mappings for SaaS mode (Admin role).
+     * Uses permission and role names; IDs are resolved when seeding.
      *
-     * @return array<int, array<string, int>> Basic permission-role mappings
+     * @return array<int, array{permission: string, role: string}>
      */
     private function getBasicPermissionsRole(): array
     {
-        return [
-            ['permission_id' => 4, 'role_id' => 1],
-            ['permission_id' => 5, 'role_id' => 1],
-            ['permission_id' => 6, 'role_id' => 1],
-            ['permission_id' => 7, 'role_id' => 1],
-            ['permission_id' => 8, 'role_id' => 1],
-            ['permission_id' => 9, 'role_id' => 1],
-            ['permission_id' => 10, 'role_id' => 1],
-            ['permission_id' => 11, 'role_id' => 1],
-            ['permission_id' => 12, 'role_id' => 1],
-            ['permission_id' => 13, 'role_id' => 1],
-            ['permission_id' => 14, 'role_id' => 1],
-            ['permission_id' => 15, 'role_id' => 1],
-            ['permission_id' => 28, 'role_id' => 1],
-            ['permission_id' => 29, 'role_id' => 1],
-            ['permission_id' => 30, 'role_id' => 1],
-            ['permission_id' => 31, 'role_id' => 1],
-            ['permission_id' => 32, 'role_id' => 1],
-            ['permission_id' => 33, 'role_id' => 1],
-            ['permission_id' => 34, 'role_id' => 1],
-            ['permission_id' => 35, 'role_id' => 1],
-            ['permission_id' => 41, 'role_id' => 1],
-            ['permission_id' => 42, 'role_id' => 1],
-            ['permission_id' => 43, 'role_id' => 1],
-            ['permission_id' => 44, 'role_id' => 1],
-            ['permission_id' => 59, 'role_id' => 1],
-            ['permission_id' => 60, 'role_id' => 1],
-            ['permission_id' => 61, 'role_id' => 1],
-            ['permission_id' => 80, 'role_id' => 1],
-            ['permission_id' => 81, 'role_id' => 1],
-            ['permission_id' => 82, 'role_id' => 1],
-            ['permission_id' => 83, 'role_id' => 1],
-            ['permission_id' => 84, 'role_id' => 1],
-            ['permission_id' => 85, 'role_id' => 1],
-            ['permission_id' => 86, 'role_id' => 1],
-            ['permission_id' => 87, 'role_id' => 1],
-            ['permission_id' => 88, 'role_id' => 1],
-            ['permission_id' => 91, 'role_id' => 1],
-            ['permission_id' => 92, 'role_id' => 1],
-            ['permission_id' => 93, 'role_id' => 1],
-            ['permission_id' => 94, 'role_id' => 1],
-            ['permission_id' => 95, 'role_id' => 1],
-            ['permission_id' => 96, 'role_id' => 1],
-            ['permission_id' => 98, 'role_id' => 1],
-            ['permission_id' => 100, 'role_id' => 1],
-            ['permission_id' => 101, 'role_id' => 1],
-            ['permission_id' => 102, 'role_id' => 1],
-            ['permission_id' => 103, 'role_id' => 1],
-            ['permission_id' => 104, 'role_id' => 1],
-            ['permission_id' => 105, 'role_id' => 1],
-            ['permission_id' => 106, 'role_id' => 1],
-            ['permission_id' => 107, 'role_id' => 1],
-            ['permission_id' => 108, 'role_id' => 1],
-            ['permission_id' => 109, 'role_id' => 1],
-            ['permission_id' => 110, 'role_id' => 1],
-            ['permission_id' => 111, 'role_id' => 1],
-            ['permission_id' => 113, 'role_id' => 1],
-            ['permission_id' => 114, 'role_id' => 1],
-            ['permission_id' => 115, 'role_id' => 1],
-            ['permission_id' => 116, 'role_id' => 1],
-            ['permission_id' => 117, 'role_id' => 1],
-            ['permission_id' => 118, 'role_id' => 1],
-            ['permission_id' => 119, 'role_id' => 1],
-            ['permission_id' => 120, 'role_id' => 1],
-            ['permission_id' => 121, 'role_id' => 1],
-            ['permission_id' => 124, 'role_id' => 1],
-            ['permission_id' => 126, 'role_id' => 1],
-            ['permission_id' => 131, 'role_id' => 1],
-            ['permission_id' => 133, 'role_id' => 1],
-            ['permission_id' => 134, 'role_id' => 1],
-            ['permission_id' => 135, 'role_id' => 1],
-            ['permission_id' => 137, 'role_id' => 1],
-            ['permission_id' => 138, 'role_id' => 1],
-            ['permission_id' => 139, 'role_id' => 1],
-            ['permission_id' => 140, 'role_id' => 1],
-            ['permission_id' => 145, 'role_id' => 1],
-            ['permission_id' => 146, 'role_id' => 1],
-            ['permission_id' => 147, 'role_id' => 1],
-            ['permission_id' => 148, 'role_id' => 1],
-            ['permission_id' => 149, 'role_id' => 1],
-            ['permission_id' => 150, 'role_id' => 1],
-            ['permission_id' => 151, 'role_id' => 1],
-            ['permission_id' => 152, 'role_id' => 1],
-            ['permission_id' => 153, 'role_id' => 1],
-            ['permission_id' => 154, 'role_id' => 1],
-            ['permission_id' => 155, 'role_id' => 1],
-            ['permission_id' => 156, 'role_id' => 1],
-            ['permission_id' => 157, 'role_id' => 1],
+        $role = 'Admin';
+        $permissions = [
+            'products-update', 'products-delete', 'products-create', 'products-index',
+            'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete',
+            'sales-index', 'sales-create', 'sales-update', 'sales-delete',
+            'customers-index', 'customers-create', 'customers-update', 'customers-delete',
+            'suppliers-index', 'suppliers-create', 'suppliers-update', 'suppliers-delete',
+            'users-index', 'users-create', 'users-update', 'users-delete',
+            'general_setting', 'mail_setting', 'pos_setting',
+            'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
+            'customer_group', 'unit', 'tax', 'gift_card', 'coupon',
+            'warehouse', 'brands-index', 'brands-create', 'brands-update', 'brands-delete',
+            'billers-index', 'billers-create', 'billers-delete', 'money-transfer',
+            'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
+            'currency', 'revenue_profit_summary', 'cash_flow', 'monthly_summary', 'yearly_report',
+            'discount_plan', 'discount',
+            'purchase-payment-index', 'purchase-payment-create', 'purchase-payment-update', 'purchase-payment-delete',
+            'sale-payment-index', 'sale-payment-create', 'sale-payment-update', 'sale-payment-delete',
+            'all_notification', 'product_history', 'custom_field',
+            'incomes-index', 'incomes-create', 'incomes-update', 'incomes-delete',
+            'packing_slip_challan', 'payment_gateway_setting', 'barcode_setting', 'language_setting',
+            'account-selection', 'invoice_setting', 'invoice_create_edit_delete', 'handle_discount',
+            'products-import', 'purchases-import', 'sales-import', 'customers-import', 'billers-import',
+            'categories-create', 'categories-import', 'categories-index', 'categories-update', 'categories-delete',
+            'role_permission', 'cart-product-update',
         ];
+
+        $mappings = [];
+        foreach ($permissions as $name) {
+            $mappings[] = ['permission' => $name, 'role' => $role];
+        }
+        return $mappings;
     }
 
     /**

@@ -281,10 +281,10 @@ class ProductRequest extends BaseRequest
             /**
              * Full product description/details. Long text content.
              *
-             * @var string|null $product_details
+             * @var json|null $product_details
              * @example This is a detailed description of the product...
              */
-            'product_details' => ['nullable', 'string'],
+            'product_details' => ['nullable', 'json'],
             /**
              * Short product description. Max 1000 characters.
              *

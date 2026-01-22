@@ -162,7 +162,6 @@ class ProductService extends BaseService
      */
     public function getProduct(int $id): Product
     {
-        // Check permission: user needs 'products-index' permission to view products
         $this->requirePermission('products-index');
 
         return Product::with([
@@ -185,8 +184,7 @@ class ProductService extends BaseService
      */
     public function createProduct(array $data): Product
     {
-        // Check permission: user needs 'products-add' permission to create products
-        $this->requirePermission('products-add');
+        $this->requirePermission('products-create');
 
         return $this->transaction(function () use ($data) {
             // Normalize data
@@ -250,7 +248,11 @@ class ProductService extends BaseService
 
             // Handle product details
             if (isset($data['product_details'])) {
-                $data['product_details'] = str_replace('"', '@', $data['product_details']);
+                // If it's a string (JSON), decode it; if it's already an array, use as-is
+                if (is_string($data['product_details'])) {
+                    $data['product_details'] = json_decode($data['product_details'], true);
+                }
+                // If it's already an array/object, keep it as-is (no need to decode)
             }
 
             // Handle dates
@@ -363,8 +365,7 @@ class ProductService extends BaseService
      */
     public function updateProduct(Product $product, array $data): Product
     {
-        // Check permission: user needs 'products-edit' permission to update products
-        $this->requirePermission('products-edit');
+        $this->requirePermission('products-update');
 
         return $this->transaction(function () use ($product, $data) {
             // Normalize data
@@ -622,7 +623,11 @@ class ProductService extends BaseService
 
             // Handle product details
             if (isset($data['product_details'])) {
-                $data['product_details'] = str_replace('"', '@', $data['product_details']);
+                // If it's a string (JSON), decode it; if it's already an array, use as-is
+                if (is_string($data['product_details'])) {
+                    $data['product_details'] = json_decode($data['product_details'], true);
+                }
+                // If it's already an array/object, keep it as-is (no need to decode)
             }
 
             // Handle dates
@@ -1078,7 +1083,7 @@ class ProductService extends BaseService
             'payment_reference' => $paymentPrefix . '-' . date("Ymd") . '-' . date("his"),
             'user_id' => $userId,
             'purchase_id' => $purchase->id,
-            'account_id' => 0, // Default account
+            'account_id' => 0,
             'amount' => $purchaseData['grand_total'],
             'change' => 0,
             'paying_method' => PaymentMethodEnum::CASH->value,
@@ -1093,7 +1098,6 @@ class ProductService extends BaseService
      */
     public function getProductsWithoutVariant(): Collection
     {
-        // Check permission: user needs 'products-index' permission to view products
         $this->requirePermission('products-index');
 
         return Product::where('is_active', true)
@@ -1129,9 +1133,6 @@ class ProductService extends BaseService
      */
     public function generateCode(): string
     {
-        // Check permission: user needs 'products-add' permission to generate product codes
-        $this->requirePermission('products-add');
-
         return (string)rand(10000000, 99999999);
     }
 
@@ -1143,8 +1144,7 @@ class ProductService extends BaseService
      */
     public function importProducts(UploadedFile $file): void
     {
-        // Check permission: user needs 'products-add' permission to import products
-        $this->requirePermission('products-add');
+        $this->requirePermission('products-create');
 
         $this->transaction(function () use ($file) {
             Excel::import(new ProductsImport(), $file);
@@ -1160,8 +1160,7 @@ class ProductService extends BaseService
      */
     public function reorderImages(Product $product, array $imageUrls): Product
     {
-        // Check permission: user needs 'products-edit' permission to reorder images
-        $this->requirePermission('products-edit');
+        $this->requirePermission('products-update');
 
         // Extract filenames from URLs
         $imageFilenames = [];

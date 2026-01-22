@@ -58,7 +58,7 @@ use Illuminate\Support\Str;
  * @property string|null $variant_list
  * @property string|null $qty_list
  * @property string|null $price_list
- * @property string|null $product_details
+ * @property array|null $product_details
  * @property string|null $short_description
  * @property string|null $specification
  * @property string|null $related_products
@@ -484,6 +484,7 @@ class Product extends Model
             'image' => 'array',
             'image_url' => 'array',
             'file_url' => 'string',
+            'product_details' => 'array',
         ];
     }
 

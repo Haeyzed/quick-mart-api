@@ -59,9 +59,7 @@ class BrandService extends BaseService
      */
     public function getBrands(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        // Check permission: user needs 'brand' permission to view brands
-        // Future: Consider using 'brands-index' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-index');
 
         return Brand::query()
             ->when(
@@ -89,8 +87,7 @@ class BrandService extends BaseService
      */
     public function getBrand(int $id): Brand
     {
-        // Check permission: user needs 'brand' permission to view brands
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-show');
 
         return Brand::findOrFail($id);
     }
@@ -103,9 +100,7 @@ class BrandService extends BaseService
      */
     public function createBrand(array $data): Brand
     {
-        // Check permission: user needs 'brand' permission to create brands
-        // Future: Consider using 'brands-add' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-create');
 
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeBrandData($data);
@@ -175,9 +170,7 @@ class BrandService extends BaseService
      */
     public function updateBrand(Brand $brand, array $data): Brand
     {
-        // Check permission: user needs 'brand' permission to update brands
-        // Future: Consider using 'brands-edit' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-update');
 
         return $this->transaction(function () use ($brand, $data) {
             $data = $this->normalizeBrandData($data, isUpdate: true);
@@ -203,9 +196,7 @@ class BrandService extends BaseService
      */
     public function bulkDeleteBrands(array $ids): int
     {
-        // Check permission: user needs 'brand' permission to delete brands
-        // Future: Consider using 'brands-delete' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-delete');
 
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
@@ -240,9 +231,7 @@ class BrandService extends BaseService
      */
     public function deleteBrand(Brand $brand): bool
     {
-        // Check permission: user needs 'brand' permission to delete brands
-        // Future: Consider using 'brands-delete' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-delete');
 
         return $this->transaction(function () use ($brand) {
             if ($brand->products()->exists()) {
@@ -276,9 +265,7 @@ class BrandService extends BaseService
      */
     public function importBrands(UploadedFile $file): void
     {
-        // Check permission: user needs 'brand' permission to import brands
-        // Future: Consider using 'brands-import' for more granular control
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-import');
 
         $this->transaction(function () use ($file) {
             Excel::import(new BrandsImport(), $file);
@@ -308,8 +295,7 @@ class BrandService extends BaseService
      */
     public function bulkActivateBrands(array $ids): int
     {
-        // Check permission: user needs 'brand' permission to update brands
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-update');
 
         return $this->bulkUpdateBrands($ids, self::BULK_ACTIVATE);
     }
@@ -322,8 +308,7 @@ class BrandService extends BaseService
      */
     public function bulkDeactivateBrands(array $ids): int
     {
-        // Check permission: user needs 'brand' permission to update brands
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-update');
 
         return $this->bulkUpdateBrands($ids, self::BULK_DEACTIVATE);
     }
@@ -345,8 +330,7 @@ class BrandService extends BaseService
         array $columns = [],
         string $method = 'download'
     ): string {
-        // Check permission: user needs 'brand' permission to export brands
-        $this->requirePermission('brand');
+        $this->requirePermission('brands-export');
 
         $fileName = 'brands-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;

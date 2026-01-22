@@ -30,9 +30,6 @@ class ProductResource extends JsonResource
         $warehouseId = $request->input('warehouse_id');
         $qty = $this->getQuantity($warehouseId);
 
-        // Format images
-        $images = $this->formatImages();
-
         return [
             /**
              * The unique identifier for the product.
@@ -290,7 +287,7 @@ class ProductResource extends JsonResource
              * @var array|null $image
              * @example ["image1.jpg", "image2.jpg"]
              */
-            'image' => $images['names'],
+            'image' => $this->image,
 
             /**
              * Product image URLs (array of full URLs).
@@ -298,7 +295,7 @@ class ProductResource extends JsonResource
              * @var array|null $image_url
              * @example ["https://example.com/images/product/image1.jpg"]
              */
-            'image_url' => $images['urls'],
+            'image_url' => $this->image_url,
 
             /**
              * Digital product file name.
@@ -399,10 +396,14 @@ class ProductResource extends JsonResource
             /**
              * Product details/description.
              *
-             * @var string|null $product_details
-             * @example "High-quality laptop with latest specifications"
+             * @var array|object|null $product_details
+             * @example SerializedEditorState object
              */
-            'product_details' => $this->product_details,
+            'product_details' => $this->product_details 
+                ? (is_string($this->product_details) 
+                    ? json_decode($this->product_details, true) 
+                    : $this->product_details)
+                : null,
 
             /**
              * Short description.
@@ -680,43 +681,5 @@ class ProductResource extends JsonResource
         }
 
         return $this->qty ? (float)$this->qty : null;
-    }
-
-    /**
-     * Format product images.
-     *
-     * @return array{names: array<string>, urls: array<string>}
-     */
-    private function formatImages(): array
-    {
-        $names = [];
-        $urls = [];
-
-        if ($this->image) {
-            if (is_array($this->image)) {
-                $imageArray = $this->image;
-            } else {
-                $imageArray = explode(',', $this->image);
-            }
-
-            foreach ($imageArray as $image) {
-                $image = trim($image);
-                if ($image && $image !== 'zummXD2dvAtI.png') {
-                    $names[] = $image;
-                    $urls[] = URL::asset('images/product/' . $image);
-                }
-            }
-        }
-
-        // If no images, add default
-        if (empty($names)) {
-            $names[] = 'zummXD2dvAtI.png';
-            $urls[] = URL::asset('images/zummXD2dvAtI.png');
-        }
-
-        return [
-            'names' => $names,
-            'urls' => $urls,
-        ];
     }
 }
