@@ -182,6 +182,22 @@ class GeneralSetting extends Model
             'aws_url',
             'aws_endpoint',
             'aws_use_path_style_endpoint',
+            // SFTP credentials
+            'sftp_host',
+            'sftp_username',
+            'sftp_password',
+            'sftp_private_key',
+            'sftp_passphrase',
+            'sftp_port',
+            'sftp_root',
+            // FTP credentials
+            'ftp_host',
+            'ftp_username',
+            'ftp_password',
+            'ftp_port',
+            'ftp_root',
+            'ftp_passive',
+            'ftp_ssl',
         ];
 
     /**
@@ -210,6 +226,8 @@ class GeneralSetting extends Model
             'facebook_login_enabled' => 'boolean',
             'github_login_enabled' => 'boolean',
             'aws_use_path_style_endpoint' => 'boolean',
+            'ftp_passive' => 'boolean',
+            'ftp_ssl' => 'boolean',
         ];
     }
 }

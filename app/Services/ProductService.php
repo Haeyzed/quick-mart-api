@@ -246,9 +246,16 @@ class ProductService extends BaseService
                 }
             }
 
-            // Handle product details and specification - store as JSON string (standard approach)
-            // No need to decode, just accept the JSON string from frontend and store it
-            // The database columns are JSON type which will validate them
+            // Handle product details and specification - decode JSON string to object before storing
+            // Laravel's JSON column type expects an array/object, not a JSON string
+            if (isset($data['product_details']) && is_string($data['product_details'])) {
+                $decoded = json_decode($data['product_details'], true);
+                $data['product_details'] = $decoded !== null ? $decoded : null;
+            }
+            if (isset($data['specification']) && is_string($data['specification'])) {
+                $decoded = json_decode($data['specification'], true);
+                $data['specification'] = $decoded !== null ? $decoded : null;
+            }
 
             // Handle dates
             if (isset($data['starting_date'])) {
@@ -616,9 +623,16 @@ class ProductService extends BaseService
             
             // Note: Slug generation is handled by Product model's boot() method
 
-            // Handle product details and specification - store as JSON string (standard approach)
-            // No need to decode, just accept the JSON string from frontend and store it
-            // The database columns are JSON type which will validate them
+            // Handle product details and specification - decode JSON string to object before storing
+            // Laravel's JSON column type expects an array/object, not a JSON string
+            if (isset($data['product_details']) && is_string($data['product_details'])) {
+                $decoded = json_decode($data['product_details'], true);
+                $data['product_details'] = $decoded !== null ? $decoded : null;
+            }
+            if (isset($data['specification']) && is_string($data['specification'])) {
+                $decoded = json_decode($data['specification'], true);
+                $data['specification'] = $decoded !== null ? $decoded : null;
+            }
 
             // Handle dates
             if (isset($data['starting_date'])) {

@@ -396,10 +396,10 @@ class ProductResource extends JsonResource
             /**
              * Product details/description.
              *
-             * @var string|null $product_details
-             * @example JSON string of SerializedEditorState
+             * @var object|null $product_details
+             * @example SerializedEditorState object
              */
-            'product_details' => $this->product_details,
+            'product_details' => $this->product_details ? (is_string($this->product_details) ? json_decode($this->product_details, true) : $this->product_details) : null,
 
             /**
              * Short description.
@@ -412,10 +412,10 @@ class ProductResource extends JsonResource
             /**
              * Product specifications.
              *
-             * @var string|null $specification
-             * @example JSON string of SerializedEditorState
+             * @var object|null $specification
+             * @example SerializedEditorState object
              */
-            'specification' => $this->specification,
+            'specification' => $this->specification ? (is_string($this->specification) ? json_decode($this->specification, true) : $this->specification) : null,
 
             /**
              * Related products (comma-separated product IDs).

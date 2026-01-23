@@ -43,6 +43,32 @@ function getStorageCredentialsFromDatabase(): array
             ];
         }
         
+        // SFTP credentials - include if any SFTP setting exists
+        if ($settings->sftp_host || $settings->sftp_username) {
+            $credentials['sftp'] = [
+                'host' => $settings->sftp_host ?? env('SFTP_HOST'),
+                'username' => $settings->sftp_username ?? env('SFTP_USERNAME'),
+                'password' => $settings->sftp_password ?? env('SFTP_PASSWORD'),
+                'privateKey' => $settings->sftp_private_key ?? env('SFTP_PRIVATE_KEY'),
+                'passphrase' => $settings->sftp_passphrase ?? env('SFTP_PASSPHRASE'),
+                'port' => $settings->sftp_port ?? env('SFTP_PORT', 22),
+                'root' => $settings->sftp_root ?? env('SFTP_ROOT', '/'),
+            ];
+        }
+        
+        // FTP credentials - include if any FTP setting exists
+        if ($settings->ftp_host || $settings->ftp_username) {
+            $credentials['ftp'] = [
+                'host' => $settings->ftp_host ?? env('FTP_HOST'),
+                'username' => $settings->ftp_username ?? env('FTP_USERNAME'),
+                'password' => $settings->ftp_password ?? env('FTP_PASSWORD'),
+                'port' => $settings->ftp_port ?? env('FTP_PORT', 21),
+                'root' => $settings->ftp_root ?? env('FTP_ROOT', '/'),
+                'passive' => $settings->ftp_passive ?? env('FTP_PASSIVE', true),
+                'ssl' => $settings->ftp_ssl ?? env('FTP_SSL', false),
+            ];
+        }
+        
         return $credentials;
     } catch (\Exception | \Error $e) {
         // If database is not available (e.g., during migrations or config:cache), 
@@ -125,13 +151,13 @@ return [
 
         'sftp' => [
             'driver' => 'sftp',
-            'host' => env('SFTP_HOST'),
-            'username' => env('SFTP_USERNAME'),
-            'password' => env('SFTP_PASSWORD'),
-            'privateKey' => env('SFTP_PRIVATE_KEY'),
-            'passphrase' => env('SFTP_PASSPHRASE'),
-            'port' => env('SFTP_PORT', 22),
-            'root' => env('SFTP_ROOT', '/'),
+            'host' => $dbCredentials['sftp']['host'] ?? env('SFTP_HOST'),
+            'username' => $dbCredentials['sftp']['username'] ?? env('SFTP_USERNAME'),
+            'password' => $dbCredentials['sftp']['password'] ?? env('SFTP_PASSWORD'),
+            'privateKey' => $dbCredentials['sftp']['privateKey'] ?? env('SFTP_PRIVATE_KEY'),
+            'passphrase' => $dbCredentials['sftp']['passphrase'] ?? env('SFTP_PASSPHRASE'),
+            'port' => $dbCredentials['sftp']['port'] ?? env('SFTP_PORT', 22),
+            'root' => $dbCredentials['sftp']['root'] ?? env('SFTP_ROOT', '/'),
             'timeout' => 30,
             'directoryPerm' => 0755,
             'throw' => false,
@@ -140,13 +166,13 @@ return [
 
         'ftp' => [
             'driver' => 'ftp',
-            'host' => env('FTP_HOST'),
-            'username' => env('FTP_USERNAME'),
-            'password' => env('FTP_PASSWORD'),
-            'port' => env('FTP_PORT', 21),
-            'root' => env('FTP_ROOT', '/'),
-            'passive' => env('FTP_PASSIVE', true),
-            'ssl' => env('FTP_SSL', false),
+            'host' => $dbCredentials['ftp']['host'] ?? env('FTP_HOST'),
+            'username' => $dbCredentials['ftp']['username'] ?? env('FTP_USERNAME'),
+            'password' => $dbCredentials['ftp']['password'] ?? env('FTP_PASSWORD'),
+            'port' => $dbCredentials['ftp']['port'] ?? env('FTP_PORT', 21),
+            'root' => $dbCredentials['ftp']['root'] ?? env('FTP_ROOT', '/'),
+            'passive' => $dbCredentials['ftp']['passive'] ?? env('FTP_PASSIVE', true),
+            'ssl' => $dbCredentials['ftp']['ssl'] ?? env('FTP_SSL', false),
             'timeout' => 30,
             'throw' => false,
             'report' => false,

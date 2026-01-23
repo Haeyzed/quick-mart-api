@@ -80,6 +80,24 @@ return new class extends Migration
             $table->string('aws_endpoint')->nullable()->comment('AWS S3 Endpoint (optional, for custom S3-compatible services)');
             $table->boolean('aws_use_path_style_endpoint')->default(false)->comment('Use path-style endpoint for S3');
             
+            // SFTP credentials
+            $table->string('sftp_host')->nullable()->comment('SFTP Host');
+            $table->string('sftp_username')->nullable()->comment('SFTP Username');
+            $table->text('sftp_password')->nullable()->comment('SFTP Password');
+            $table->text('sftp_private_key')->nullable()->comment('SFTP Private Key (optional, for key-based authentication)');
+            $table->string('sftp_passphrase')->nullable()->comment('SFTP Passphrase (optional, for encrypted private keys)');
+            $table->integer('sftp_port')->default(22)->comment('SFTP Port');
+            $table->string('sftp_root')->default('/')->comment('SFTP Root Directory');
+            
+            // FTP credentials
+            $table->string('ftp_host')->nullable()->comment('FTP Host');
+            $table->string('ftp_username')->nullable()->comment('FTP Username');
+            $table->text('ftp_password')->nullable()->comment('FTP Password');
+            $table->integer('ftp_port')->default(21)->comment('FTP Port');
+            $table->string('ftp_root')->default('/')->comment('FTP Root Directory');
+            $table->boolean('ftp_passive')->default(true)->comment('FTP Passive Mode');
+            $table->boolean('ftp_ssl')->default(false)->comment('FTP SSL/TLS');
+            
             $table->timestamps();
         });
     }
