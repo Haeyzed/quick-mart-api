@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Traits\GeneralSettingsTrait;
+use App\Traits\StorageProviderInfo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ use Illuminate\Support\Str;
 class UploadService
 {
     use GeneralSettingsTrait;
+    use StorageProviderInfo;
 
     /**
      * Upload a file and return its public URL.
@@ -37,6 +39,10 @@ class UploadService
     ): string
     {
         $disk = $disk ?? $this->getStorageProvider();
+        
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+        
         $filePath = $this->upload($file, $directory, $disk, $fileName);
 
         return Storage::disk($disk)->url($filePath);
@@ -108,6 +114,9 @@ class UploadService
     {
         $disk = $disk ?? $this->getStorageProvider();
 
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+
         if (!Storage::disk($disk)->exists($filePath)) {
             return null;
         }
@@ -126,6 +135,9 @@ class UploadService
     {
         $disk = $disk ?? $this->getStorageProvider();
 
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+
         return Storage::disk($disk)->exists($filePath);
     }
 
@@ -139,6 +151,9 @@ class UploadService
     public function delete(string $filePath, ?string $disk = null): bool
     {
         $disk = $disk ?? $this->getStorageProvider();
+
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
 
         if (Storage::disk($disk)->exists($filePath)) {
             return Storage::disk($disk)->delete($filePath);

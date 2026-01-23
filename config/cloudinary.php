@@ -1,11 +1,17 @@
 <?php
 
-/*
- * This file is part of the Laravel Cloudinary package.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
+// Build Cloudinary URL from environment variables if not set
+// Format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+$cloudinaryUrl = env('CLOUDINARY_URL');
+if (empty($cloudinaryUrl)) {
+    $cloudName = env('CLOUDINARY_CLOUD_NAME');
+    $apiKey = env('CLOUDINARY_API_KEY') ?? env('CLOUDINARY_KEY');
+    $apiSecret = env('CLOUDINARY_API_SECRET') ?? env('CLOUDINARY_SECRET');
+    
+    if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
+        $cloudinaryUrl = "cloudinary://{$apiKey}:{$apiSecret}@{$cloudName}";
+    }
+}
 
 return [
 
@@ -29,9 +35,11 @@ return [
     | Here you may configure your Cloudinary settings. Cloudinary is a cloud hosted
     | media management service for all file uploads, storage, delivery and transformation needs.
     |
+    | Note: For dynamic configuration from database, use the CloudinaryInfo trait in your services.
+    | The cloud_url is built in format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
     |
     */
-    'cloud_url' => env('CLOUDINARY_URL', 'cloudinary://'.env('CLOUDINARY_KEY').':'.env('CLOUDINARY_SECRET').'@'.env('CLOUDINARY_CLOUD_NAME')),
+    'cloud_url' => $cloudinaryUrl,
 
     /**
      * Upload Preset From Cloudinary Dashboard

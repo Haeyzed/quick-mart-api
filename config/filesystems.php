@@ -71,13 +71,24 @@ function getStorageCredentialsFromDatabase(): array
         
         return $credentials;
     } catch (\Exception | \Error $e) {
-        // If database is not available (e.g., during migrations or config:cache), 
-        // return empty array to allow fallback to environment variables
         return [];
     }
 }
 
 $dbCredentials = getStorageCredentialsFromDatabase();
+
+// Build Cloudinary URL from environment variables if not set
+// Format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+$cloudinaryUrl = env('CLOUDINARY_URL');
+if (empty($cloudinaryUrl)) {
+    $cloudName = env('CLOUDINARY_CLOUD_NAME');
+    $apiKey = env('CLOUDINARY_API_KEY') ?? env('CLOUDINARY_KEY');
+    $apiSecret = env('CLOUDINARY_API_SECRET') ?? env('CLOUDINARY_SECRET');
+    
+    if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
+        $cloudinaryUrl = "cloudinary://{$apiKey}:{$apiSecret}@{$cloudName}";
+    }
+}
 
 return [
 
@@ -141,10 +152,15 @@ return [
 
         'cloudinary' => [
             'driver' => 'cloudinary',
-            'cloud_name' => $dbCredentials['cloudinary']['cloud_name'] ?? env('CLOUDINARY_CLOUD_NAME'),
-            'api_key' => $dbCredentials['cloudinary']['api_key'] ?? env('CLOUDINARY_API_KEY'),
-            'api_secret' => $dbCredentials['cloudinary']['api_secret'] ?? env('CLOUDINARY_API_SECRET'),
-            'secure_url' => $dbCredentials['cloudinary']['secure_url'] ?? env('CLOUDINARY_SECURE_URL', true),
+            'url' => $cloudinaryUrl,
+            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
+            'key' => env('CLOUDINARY_API_KEY') ?? env('CLOUDINARY_KEY'),
+            'secret' => env('CLOUDINARY_API_SECRET') ?? env('CLOUDINARY_SECRET'),
+            'secure' => env('CLOUDINARY_SECURE_URL', true),
+            'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+            'api_key' => env('CLOUDINARY_API_KEY') ?? env('CLOUDINARY_KEY'),
+            'api_secret' => env('CLOUDINARY_API_SECRET') ?? env('CLOUDINARY_SECRET'),
+            'secure_url' => env('CLOUDINARY_SECURE_URL', true),
             'throw' => false,
             'report' => false,
         ],

@@ -28,6 +28,7 @@ use App\Traits\CheckPermissionsTrait;
 use App\Traits\TenantInfo;
 use App\Traits\CacheForget;
 use App\Traits\GeneralSettingsTrait;
+use App\Traits\StorageProviderInfo;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
@@ -57,6 +58,7 @@ class ProductService extends BaseService
     use CacheForget;
     use TenantInfo;
     use GeneralSettingsTrait;
+    use StorageProviderInfo;
 
     public function __construct(
         private readonly UploadService $uploadService
@@ -131,7 +133,7 @@ class ProductService extends BaseService
         // Search functionality - using standard Laravel query builder
         if (!empty($filters['search'] ?? null)) {
             $search = $filters['search'];
-            
+
             $query->where(function ($q) use ($search) {
                 // Search in product name or code
                 $q->where('products.name', 'LIKE', "%{$search}%")
@@ -324,12 +326,12 @@ class ProductService extends BaseService
                 // Create warehouse entries for variants if without_stock config is yes
                 $warehouseIds = Warehouse::where('is_active', true)->pluck('id');
                 $variantIds = [];
-                
+
                 // Track variant IDs if product has variants
                 if (isset($data['is_variant']) && $data['is_variant']) {
                     $variantIds = ProductVariant::where('product_id', $product->id)->pluck('variant_id')->toArray();
                 }
-                
+
                 foreach ($warehouseIds as $warehouseId) {
                     if (!empty($variantIds)) {
                         foreach ($variantIds as $variantId) {
@@ -448,13 +450,13 @@ class ProductService extends BaseService
             // Handle variants
             $oldProductVariantIds = ProductVariant::where('product_id', $product->id)->pluck('id')->toArray();
             $newProductVariantIds = [];
-            
+
             if (isset($data['is_variant']) && $data['is_variant']) {
                 if (isset($data['variant_option']) && is_array($data['variant_option']) && isset($data['variant_value']) && is_array($data['variant_value'])) {
                     $data['variant_option'] = json_encode(array_unique($data['variant_option']));
                     $data['variant_value'] = json_encode(array_unique($data['variant_value']));
                 }
-                
+
                 if (isset($data['variant_name']) && is_array($data['variant_name'])) {
                     foreach ($data['variant_name'] as $key => $variantName) {
                         $variant = Variant::firstOrCreate(['name' => $variantName]);
@@ -462,7 +464,7 @@ class ProductService extends BaseService
                             ['product_id', $product->id],
                             ['variant_id', $variant->id]
                         ])->first();
-                        
+
                         if ($productVariant) {
                             $productVariant->update([
                                 'position' => $key + 1,
@@ -481,15 +483,15 @@ class ProductService extends BaseService
                                 'position' => $key + 1,
                             ]);
                         }
-                        
+
                         $newProductVariantIds[] = $productVariant->id;
-                        
+
                         // Ensure warehouse entries exist for this variant
                         $productWarehouses = ProductWarehouse::where([
                             'product_id' => $product->id,
                             'variant_id' => $variant->id
                         ])->get();
-                        
+
                         if ($productWarehouses->isEmpty()) {
                             $warehouseIds = Warehouse::pluck('id')->toArray();
                             foreach ($warehouseIds as $wId) {
@@ -508,7 +510,7 @@ class ProductService extends BaseService
                 $data['variant_option'] = null;
                 $data['variant_value'] = null;
             }
-            
+
             // Delete old product variants that are no longer in the list
             foreach ($oldProductVariantIds as $productVariantId) {
                 if (!in_array($productVariantId, $newProductVariantIds)) {
@@ -537,7 +539,7 @@ class ProductService extends BaseService
                             ->where('warehouse_id', $data['warehouse_id'][$key] ?? null)
                             ->whereNull('variant_id')
                             ->first();
-                        
+
                         if ($productWarehouse) {
                             $productWarehouse->price = $diffPrice;
                             $productWarehouse->save();
@@ -554,7 +556,7 @@ class ProductService extends BaseService
             } else {
                 // Clear is_diff_price flag when not set
                 $data['is_diff_price'] = false;
-                
+
                 // Clear warehouse prices if warehouse_id is provided
                 if (isset($data['warehouse_id']) && is_array($data['warehouse_id'])) {
                     foreach ($data['warehouse_id'] as $warehouseId) {
@@ -562,7 +564,7 @@ class ProductService extends BaseService
                             ->where('warehouse_id', $warehouseId)
                             ->whereNull('variant_id')
                             ->first();
-                        
+
                         if ($productWarehouse) {
                             $productWarehouse->price = null;
                             $productWarehouse->save();
@@ -577,13 +579,13 @@ class ProductService extends BaseService
                 if (isset($data['related_products'])) {
                     $data['related_products'] = is_array($data['related_products']) ? implode(",", $data['related_products']) : rtrim($data['related_products'], ",");
                 }
-                
+
                 if (isset($data['in_stock'])) {
                     $data['in_stock'] = (bool)$data['in_stock'];
                 } else {
                     $data['in_stock'] = false;
                 }
-                
+
                 if (isset($data['is_online'])) {
                     $data['is_online'] = (bool)$data['is_online'];
                 } else {
@@ -599,28 +601,28 @@ class ProductService extends BaseService
                 if (isset($data['extras'])) {
                     $data['extras'] = is_array($data['extras']) ? implode(",", $data['extras']) : rtrim($data['extras'], ",");
                 }
-                
+
                 if (isset($data['is_online'])) {
                     $data['is_online'] = (bool)$data['is_online'];
                 } else {
                     $data['is_online'] = false;
                 }
-                
+
                 if (isset($data['is_addon'])) {
                     $data['is_addon'] = (bool)$data['is_addon'];
                 } else {
                     $data['is_addon'] = false;
                 }
-                
+
                 if (isset($data['kitchen_id'])) {
                     $data['kitchen_id'] = $data['kitchen_id'];
                 }
-                
+
                 if (isset($data['menu_type']) && is_array($data['menu_type'])) {
                     $data['menu_type'] = implode(",", $data['menu_type']);
                 }
             }
-            
+
             // Note: Slug generation is handled by Product model's boot() method
 
             // Handle product details and specification - decode JSON string to object before storing
@@ -705,7 +707,7 @@ class ProductService extends BaseService
 
         return $this->transaction(function () use ($product) {
             $product->is_active = false;
-            
+
             // Delete images
             if ($product->image && $product->image != 'placeholder.png') {
                 $images = is_array($product->image) ? $product->image : explode(",", $product->image);
@@ -713,13 +715,13 @@ class ProductService extends BaseService
                     $this->deleteImageFromStorage($image);
                 }
             }
-            
+
             $product->save();
-            
+
             // Clear cache
             $this->cacheForget('product_list');
             $this->cacheForget('product_list_with_variant');
-            
+
             return true;
         });
     }
@@ -768,11 +770,11 @@ class ProductService extends BaseService
         // Note: Types are already normalized in ProductRequest::prepareForValidation()
         // This serves as a safeguard and handles defaults
         $booleanFields = [
-            'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei', 
-            'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory', 
+            'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei',
+            'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory',
             'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion'
         ];
-        
+
         foreach ($booleanFields as $field) {
             if (isset($data[$field])) {
                 // Only normalize if not already boolean (safeguard)
@@ -789,11 +791,11 @@ class ProductService extends BaseService
         }
 
         $numericFields = [
-            'cost', 'profit_margin', 'price', 'wholesale_price', 'qty', 
-            'alert_quantity', 'daily_sale_objective', 'promotion_price', 
+            'cost', 'profit_margin', 'price', 'wholesale_price', 'qty',
+            'alert_quantity', 'daily_sale_objective', 'promotion_price',
             'wastage_percent', 'production_cost'
         ];
-        
+
         foreach ($numericFields as $field) {
             if (isset($data[$field]) && !is_float($data[$field])) {
                 $data[$field] = is_numeric($data[$field]) ? (float)$data[$field] : null;
@@ -803,10 +805,10 @@ class ProductService extends BaseService
         // Handle integer fields (per model casts)
         $integerFields = [
             'brand_id', 'category_id', 'unit_id', 'purchase_unit_id', 'sale_unit_id',
-            'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id', 
+            'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id',
             'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee'
         ];
-        
+
         foreach ($integerFields as $field) {
             if (isset($data[$field]) && !is_int($data[$field])) {
                 $data[$field] = is_numeric($data[$field]) ? (int)$data[$field] : null;
@@ -826,37 +828,41 @@ class ProductService extends BaseService
     private function handleImageUploads(array $images, int $offset = 0): array
     {
         $disk = $this->getStorageProvider();
+
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+
         $baseDirectory = config('storage.products.images.base');
-        
+
         $imagePaths = [];
         $imageUrls = [];
-        
+
         foreach ($images as $key => $image) {
             if (!$image instanceof UploadedFile) {
                 continue;
             }
-            
+
             $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
             $imageName = date("Ymdhis") . ($offset + $key + 1);
-            
+
             // Handle multi-tenant logic
             if (config('database.connections.saleprosaas_landlord', false)) {
                 $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
             } else {
                 $imageName = $imageName . '.' . $ext;
             }
-            
+
             // Ensure base directory exists
             Storage::disk($disk)->makeDirectory($baseDirectory);
-            
+
             // Store original image
             $originalPath = $baseDirectory . '/' . $imageName;
             Storage::disk($disk)->putFileAs($baseDirectory, $image, $imageName);
-            
+
             // Create different sizes using Intervention Image
             $manager = new ImageManager(new GdDriver());
             $img = $manager->read($image->getRealPath());
-            
+
             // Create size directories and save resized images
             $sizes = [
                 'xlarge' => [1000, 1250],
@@ -864,27 +870,42 @@ class ProductService extends BaseService
                 'medium' => [250, 250],
                 'small' => [100, 100],
             ];
-            
+
             foreach ($sizes as $sizeName => [$width, $height]) {
                 $sizeDirectory = config("storage.products.images.{$sizeName}");
                 Storage::disk($disk)->makeDirectory($sizeDirectory);
-                
+
                 $resized = clone $img;
                 $resized->resize($width, $height);
-                
+
                 // Save to temporary file first, then put to storage
                 $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $imageName;
                 $resized->save($tempPath);
                 
-                Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
+                if ($disk === 'cloudinary') {
+                    // Create a temporary UploadedFile instance for Cloudinary
+                    $mimeType = mime_content_type($tempPath) ?: 'image/jpeg';
+                    $tempFile = new UploadedFile(
+                        $tempPath,
+                        $imageName,
+                        $mimeType,
+                        null,
+                        true
+                    );
+                    Storage::disk($disk)->putFileAs($sizeDirectory, $tempFile, $imageName);
+                } else {
+                    // For other storage providers, use put() with file contents
+                    Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
+                }
+
                 unlink($tempPath);
             }
-            
+
             // Store just the filename (not full path) for database compatibility
             $imagePaths[] = $imageName;
             $imageUrls[] = $this->uploadService->url($originalPath);
         }
-        
+
         return [
             'paths' => $imagePaths,
             'urls' => $imageUrls
@@ -900,8 +921,12 @@ class ProductService extends BaseService
     private function deleteImageFromStorage(string $imageName): void
     {
         $disk = $this->getStorageProvider();
+
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+
         $baseDirectory = config('storage.products.images.base');
-        
+
         // Delete from base directory and all size directories
         $sizes = [
             '' => $baseDirectory,
@@ -910,7 +935,7 @@ class ProductService extends BaseService
             'medium' => config('storage.products.images.medium'),
             'small' => config('storage.products.images.small'),
         ];
-        
+
         foreach ($sizes as $sizeDirectory) {
             $path = $sizeDirectory . '/' . $imageName;
             if (Storage::disk($disk)->exists($path)) {
@@ -930,20 +955,20 @@ class ProductService extends BaseService
     {
         $customFields = CustomField::where('belongs_to', 'product')->select('name', 'type')->get();
         $customFieldData = [];
-        
+
         foreach ($customFields as $customField) {
             $fieldName = str_replace(' ', '_', strtolower($customField->name));
             if (isset($data[$fieldName])) {
                 if ($customField->type == 'checkbox' || $customField->type == 'multi_select') {
-                    $customFieldData[$fieldName] = is_array($data[$fieldName]) 
-                        ? implode(",", $data[$fieldName]) 
+                    $customFieldData[$fieldName] = is_array($data[$fieldName])
+                        ? implode(",", $data[$fieldName])
                         : $data[$fieldName];
                 } else {
                     $customFieldData[$fieldName] = $data[$fieldName];
                 }
             }
         }
-        
+
         if (!empty($customFieldData)) {
             DB::table('products')->where('id', $product->id)->update($customFieldData);
         }
@@ -961,10 +986,10 @@ class ProductService extends BaseService
         if (!isset($data['variant_name']) || !is_array($data['variant_name'])) {
             return;
         }
-        
+
         foreach ($data['variant_name'] as $key => $variantName) {
             $variant = Variant::firstOrCreate(['name' => $variantName]);
-            
+
             ProductVariant::firstOrCreate(
                 [
                     'product_id' => $product->id,
@@ -1013,12 +1038,12 @@ class ProductService extends BaseService
         $taxRate = 0.00;
         $tax = 0.00;
         $netUnitCost = number_format((float)$product->cost, 2, '.', '');
-        
+
         if ($product->tax_id) {
             $taxData = Tax::find($product->tax_id);
             if ($taxData) {
                 $taxRate = $taxData->rate;
-                
+
                 if ($product->tax_method == TaxMethodEnum::EXCLUSIVE->value) {
                     // Exclusive tax: tax is added on top
                     $netUnitCost = number_format((float)$product->cost, 2, '.', '');
@@ -1030,7 +1055,7 @@ class ProductService extends BaseService
                     $tax = number_format(((float)$product->cost - $netUnitCost) * $stock, 2, '.', '');
                     $cost = number_format((float)$product->cost * $stock, 2, '.', '');
                 }
-                
+
                 $purchaseData['total_tax'] = $tax;
                 $purchaseData['total_cost'] = $cost;
             }
@@ -1218,7 +1243,7 @@ class ProductService extends BaseService
 
         return $products->map(function ($product) {
             $imageUrl = $product->image_url ? (is_array($product->image_url) ? $product->image_url[0] : (is_string($product->image_url) ? explode(',', $product->image_url)[0] : null)) : null;
-            
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -1888,4 +1913,3 @@ class ProductService extends BaseService
         ];
     }
 }
-
