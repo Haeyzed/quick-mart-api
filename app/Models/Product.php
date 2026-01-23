@@ -484,7 +484,7 @@ class Product extends Model
             'image' => 'array',
             'image_url' => 'array',
             'file_url' => 'string',
-            'product_details' => 'array',
+            // product_details is stored as JSON string, not cast to array
         ];
     }
 

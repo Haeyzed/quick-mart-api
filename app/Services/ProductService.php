@@ -246,14 +246,9 @@ class ProductService extends BaseService
                 }
             }
 
-            // Handle product details
-            if (isset($data['product_details'])) {
-                // If it's a string (JSON), decode it; if it's already an array, use as-is
-                if (is_string($data['product_details'])) {
-                    $data['product_details'] = json_decode($data['product_details'], true);
-                }
-                // If it's already an array/object, keep it as-is (no need to decode)
-            }
+            // Handle product details - store as JSON string (standard approach)
+            // No need to decode, just accept the JSON string from frontend and store it
+            // The database column is JSON type which will validate it
 
             // Handle dates
             if (isset($data['starting_date'])) {
@@ -621,14 +616,9 @@ class ProductService extends BaseService
             
             // Note: Slug generation is handled by Product model's boot() method
 
-            // Handle product details
-            if (isset($data['product_details'])) {
-                // If it's a string (JSON), decode it; if it's already an array, use as-is
-                if (is_string($data['product_details'])) {
-                    $data['product_details'] = json_decode($data['product_details'], true);
-                }
-                // If it's already an array/object, keep it as-is (no need to decode)
-            }
+            // Handle product details - store as JSON string (standard approach)
+            // No need to decode, just accept the JSON string from frontend and store it
+            // The database column is JSON type which will validate it
 
             // Handle dates
             if (isset($data['starting_date'])) {

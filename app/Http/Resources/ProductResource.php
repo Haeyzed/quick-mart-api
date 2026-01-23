@@ -396,14 +396,10 @@ class ProductResource extends JsonResource
             /**
              * Product details/description.
              *
-             * @var array|object|null $product_details
-             * @example SerializedEditorState object
+             * @var string|null $product_details
+             * @example JSON string of SerializedEditorState
              */
-            'product_details' => $this->product_details 
-                ? (is_string($this->product_details) 
-                    ? json_decode($this->product_details, true) 
-                    : $this->product_details)
-                : null,
+            'product_details' => $this->product_details,
 
             /**
              * Short description.
