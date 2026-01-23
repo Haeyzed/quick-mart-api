@@ -71,23 +71,23 @@ use Illuminate\Support\Carbon;
  * @property bool|null $disable_forgot_password
  * @property string|null $favicon
  * @property int|null $expiry_alert_days
-     * @property string|null $margin_type
-     * @property string|null $storage_provider
-     * @property string|null $google_client_id
-     * @property string|null $google_client_secret
-     * @property string|null $google_redirect_url
-     * @property bool $google_login_enabled
-     * @property string|null $facebook_client_id
-     * @property string|null $facebook_client_secret
-     * @property string|null $facebook_redirect_url
-     * @property bool $facebook_login_enabled
-     * @property string|null $github_client_id
-     * @property string|null $github_client_secret
-     * @property string|null $github_redirect_url
-     * @property bool $github_login_enabled
-     * @property Carbon|null $created_at
-     * @property Carbon|null $updated_at
-     */
+* @property string|null $margin_type
+* @property string|null $storage_provider
+* @property string|null $google_client_id
+* @property string|null $google_client_secret
+* @property string|null $google_redirect_url
+* @property bool $google_login_enabled
+* @property string|null $facebook_client_id
+* @property string|null $facebook_client_secret
+* @property string|null $facebook_redirect_url
+* @property bool $facebook_login_enabled
+* @property string|null $github_client_id
+* @property string|null $github_client_secret
+* @property string|null $github_redirect_url
+* @property bool $github_login_enabled
+* @property Carbon|null $created_at
+* @property Carbon|null $updated_at
+*/
 class GeneralSetting extends Model
 {
     use HasFactory;
