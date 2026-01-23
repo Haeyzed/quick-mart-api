@@ -57,7 +57,7 @@ return new class extends Migration
             $table->string('price_list')->nullable();
             $table->json('product_details')->nullable();
             $table->text('short_description')->nullable();
-            $table->text('specification')->nullable();
+            $table->json('specification')->nullable();
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
             $table->longText('related_products')->nullable();

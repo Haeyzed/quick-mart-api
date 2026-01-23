@@ -293,12 +293,19 @@ class ProductRequest extends BaseRequest
              */
             'short_description' => ['nullable', 'string', 'max:1000'],
             /**
-             * Product specifications. Technical details and specifications.
+             * Product specifications. JSON string of SerializedEditorState.
              *
-             * @var string|null $specification
-             * @example Dimensions: 10x5x2cm, Weight: 200g
+             * @var json|null $specification
+             * @example JSON string of SerializedEditorState
              */
-            'specification' => ['nullable', 'string'],
+            'specification' => ['nullable', 'json'],
+            /**
+             * Product specifications. JSON string of SerializedEditorState.
+             *
+             * @var json|null $specification
+             * @example JSON string of SerializedEditorState
+             */
+            'specification' => ['nullable', 'json'],
             
             /**
              * Whether the product has variants.

@@ -169,6 +169,19 @@ class GeneralSetting extends Model
             'github_client_secret',
             'github_redirect_url',
             'github_login_enabled',
+            // Cloudinary v3 credentials
+            'cloudinary_cloud_name',
+            'cloudinary_api_key',
+            'cloudinary_api_secret',
+            'cloudinary_secure_url',
+            // AWS S3 credentials
+            'aws_access_key_id',
+            'aws_secret_access_key',
+            'aws_default_region',
+            'aws_bucket',
+            'aws_url',
+            'aws_endpoint',
+            'aws_use_path_style_endpoint',
         ];
 
     /**
@@ -196,6 +209,7 @@ class GeneralSetting extends Model
             'google_login_enabled' => 'boolean',
             'facebook_login_enabled' => 'boolean',
             'github_login_enabled' => 'boolean',
+            'aws_use_path_style_endpoint' => 'boolean',
         ];
     }
 }

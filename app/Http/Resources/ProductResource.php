@@ -413,7 +413,7 @@ class ProductResource extends JsonResource
              * Product specifications.
              *
              * @var string|null $specification
-             * @example "Intel i7, 16GB RAM, 512GB SSD"
+             * @example JSON string of SerializedEditorState
              */
             'specification' => $this->specification,
 

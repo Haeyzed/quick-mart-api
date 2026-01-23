@@ -64,6 +64,22 @@ return new class extends Migration
             $table->string('github_client_secret')->nullable()->comment('GitHub OAuth Client Secret');
             $table->string('github_redirect_url')->nullable()->comment('GitHub OAuth Redirect URL');
             $table->boolean('github_login_enabled')->default(false)->comment('Enable GitHub login');
+            
+            // Cloudinary v3 credentials
+            $table->string('cloudinary_cloud_name')->nullable()->comment('Cloudinary Cloud Name');
+            $table->string('cloudinary_api_key')->nullable()->comment('Cloudinary API Key');
+            $table->string('cloudinary_api_secret')->nullable()->comment('Cloudinary API Secret');
+            $table->string('cloudinary_secure_url')->nullable()->comment('Cloudinary Secure URL (optional)');
+            
+            // AWS S3 credentials
+            $table->string('aws_access_key_id')->nullable()->comment('AWS Access Key ID');
+            $table->string('aws_secret_access_key')->nullable()->comment('AWS Secret Access Key');
+            $table->string('aws_default_region')->nullable()->comment('AWS Default Region');
+            $table->string('aws_bucket')->nullable()->comment('AWS S3 Bucket Name');
+            $table->string('aws_url')->nullable()->comment('AWS S3 URL (optional)');
+            $table->string('aws_endpoint')->nullable()->comment('AWS S3 Endpoint (optional, for custom S3-compatible services)');
+            $table->boolean('aws_use_path_style_endpoint')->default(false)->comment('Use path-style endpoint for S3');
+            
             $table->timestamps();
         });
     }

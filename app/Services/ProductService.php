@@ -246,9 +246,9 @@ class ProductService extends BaseService
                 }
             }
 
-            // Handle product details - store as JSON string (standard approach)
+            // Handle product details and specification - store as JSON string (standard approach)
             // No need to decode, just accept the JSON string from frontend and store it
-            // The database column is JSON type which will validate it
+            // The database columns are JSON type which will validate them
 
             // Handle dates
             if (isset($data['starting_date'])) {
@@ -616,9 +616,9 @@ class ProductService extends BaseService
             
             // Note: Slug generation is handled by Product model's boot() method
 
-            // Handle product details - store as JSON string (standard approach)
+            // Handle product details and specification - store as JSON string (standard approach)
             // No need to decode, just accept the JSON string from frontend and store it
-            // The database column is JSON type which will validate it
+            // The database columns are JSON type which will validate them
 
             // Handle dates
             if (isset($data['starting_date'])) {
