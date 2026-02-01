@@ -436,5 +436,23 @@ class AuthService extends BaseService
             $user->save();
         });
     }
+
+    /**
+     * Verify the user's password for lock screen unlock.
+     * Used when the user is already authenticated and must re-enter password to unlock.
+     *
+     * @param User $user
+     * @param string $password
+     * @return bool
+     * @throws HttpException
+     */
+    public function unlock(User $user, string $password): bool
+    {
+        if (!Hash::check($password, $user->password)) {
+            throw new HttpException(401, 'The provided password is incorrect.');
+        }
+
+        return true;
+    }
 }
 

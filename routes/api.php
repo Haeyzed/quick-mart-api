@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/user', [AuthController::class, 'user'])->name('auth.user');
     Route::put('auth/profile', [AuthController::class, 'updateProfile'])->name('auth.update-profile');
     Route::post('auth/change-password', [AuthController::class, 'changePassword'])->name('auth.change-password');
+    Route::post('auth/unlock', [AuthController::class, 'unlock'])->name('auth.unlock');
     Route::post('auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
     Route::post('auth/logout-all', [AuthController::class, 'logoutAll'])->name('auth.logout-all');
@@ -58,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
 
     // All other API routes require authentication
+    Route::get('categories/parents', [CategoryController::class, 'parents'])
+        ->name('categories.parents');
     Route::patch('categories/bulk-activate', [CategoryController::class, 'bulkActivate'])
         ->name('categories.bulkActivate');
     Route::patch('categories/bulk-deactivate', [CategoryController::class, 'bulkDeactivate'])

@@ -11,6 +11,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RefreshTokenRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\UnlockRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -253,6 +254,24 @@ class AuthController extends Controller
         return response()->success(
             null,
             'Password changed successfully'
+        );
+    }
+
+    /**
+     * Unlock the screen by verifying the user's password.
+     * Requires authentication; used after lock screen / idle.
+     *
+     * @param UnlockRequest $request
+     * @return JsonResponse
+     */
+    public function unlock(UnlockRequest $request): JsonResponse
+    {
+        $user = Auth::user();
+        $this->service->unlock($user, $request->validated()['password']);
+
+        return response()->success(
+            null,
+            'Unlocked successfully'
         );
     }
 }

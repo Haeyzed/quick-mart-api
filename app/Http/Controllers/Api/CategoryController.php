@@ -11,6 +11,7 @@ use App\Http\Requests\Categories\CategoryIndexRequest;
 use App\Http\Requests\Categories\CategoryRequest;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
+use App\Http\Resources\CategoryOptionResource;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Models\User;
@@ -31,6 +32,21 @@ class CategoryController extends Controller
         private readonly CategoryService $service
     )
     {
+    }
+
+    /**
+     * Get parent category options (value/label) for combobox/select.
+     *
+     * @return JsonResponse
+     */
+    public function parents(): JsonResponse
+    {
+        $categories = $this->service->getParentCategoriesForSelect();
+
+        return response()->success(
+            CategoryOptionResource::collection($categories),
+            'Parent categories fetched successfully'
+        );
     }
 
     /**

@@ -349,6 +349,21 @@ class CategoryService extends BaseService
     }
 
     /**
+     * Get active categories suitable for parent selection (value/label for combobox/select).
+     *
+     * @return Collection<int, Category>
+     */
+    public function getParentCategoriesForSelect(): Collection
+    {
+        $this->requirePermission('category');
+
+        return Category::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    /**
      * Get categories with their children (nested structure).
      *
      * @return Collection<int, Category>

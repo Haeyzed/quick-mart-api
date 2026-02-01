@@ -39,7 +39,7 @@ class ResponseServiceProvider extends ServiceProvider
 
         if ($data instanceof LengthAwarePaginator) {
             $response['data'] = $data->getCollection();
-            $response['pagination'] = [
+            $response['meta'] = [
                 'current_page' => $data->currentPage(),
                 'per_page' => $data->perPage(),
                 'total' => $data->total(),
@@ -182,7 +182,7 @@ class ResponseServiceProvider extends ServiceProvider
 
                 if ($data instanceof LengthAwarePaginator) {
                     $response['data'] = $data->getCollection();
-                    $response['pagination'] = [
+                    $response['meta'] = [
                         'current_page' => $data->currentPage(),
                         'per_page' => $data->perPage(),
                         'total' => $data->total(),
