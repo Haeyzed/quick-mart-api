@@ -90,7 +90,11 @@ class UnitController extends Controller
     public function getBaseUnits(): JsonResponse
     {
         $baseUnits = $this->service->getBaseUnits()
-            ->map(fn($unit) => new UnitResource($unit));
+            ->map(fn($unit) => [
+                'value' => $unit->id,
+                'label' => $unit->name . ' (' . $unit->code . ')',
+                'code'  => $unit->code,
+            ]);
 
         return response()->success($baseUnits, 'Base units fetched successfully');
     }
