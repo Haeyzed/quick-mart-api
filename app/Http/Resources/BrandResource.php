@@ -80,12 +80,20 @@ class BrandResource extends JsonResource
             'image_url' => $this->image_url,
 
             /**
-             * Whether the brand is active.
+             * Active status of the brand.
              *
              * @var bool $is_active
-             * @example true
+             * @example active
              */
             'is_active' => $this->is_active,
+
+            /**
+             * Active status of the brand.
+             *
+             * @var string $status
+             * @example active
+             */
+            'status' => $this->status,
 
             /**
              * Timestamp when the brand was created.

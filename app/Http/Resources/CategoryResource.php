@@ -114,28 +114,52 @@ class CategoryResource extends JsonResource
             'parent_name' => $this->parent?->name,
 
             /**
-             * Whether the category is active and visible to users.
+            * Active status of the category.
              *
              * @var bool $is_active
              * @example true
              */
-            'is_active' => (bool)$this->is_active,
+            'is_active' => $this->is_active,
 
             /**
-             * Whether the category is featured on the homepage.
+            * Active status of the category.
              *
-             * @var bool $featured
-             * @example false
+             * @var string $status
+             * @example active
              */
-            'featured' => (bool)$this->featured,
-
+            'status' => $this->status,
+            
             /**
-             * Whether sync to external systems is disabled.
-             *
-             * @var bool $is_sync_disable
-             * @example false
-             */
-            'is_sync_disable' => (bool)$this->is_sync_disable,
+            * Featured status of the category.
+            *
+            * @var bool $is_featured
+            * @example true
+            */
+           'is_featured' => $this->is_featured,
+            
+           /**
+           * Featured status of the category.
+           *
+           * @var string $featured_status
+           * @example featured
+           */
+          'featured_status' => $this->featured_status,
+
+           /**
+            * Sync status of the category.
+            *
+            * @var bool $is_sync_disable
+            * @example true
+            */
+           'is_sync_disable'   => $this->is_sync_disable,
+
+           /**
+            * Sync status of the category.
+            *
+            * @var string $sync_status
+            * @example enabled
+            */
+           'sync_status'   => $this->sync_status,
 
             /**
              * WooCommerce category ID for external system sync.

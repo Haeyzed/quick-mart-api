@@ -444,12 +444,14 @@ class AuthService extends BaseService
      * @param User $user
      * @param string $password
      * @return bool
-     * @throws HttpException
+     * @throws ValidationException
      */
     public function unlock(User $user, string $password): bool
     {
         if (!Hash::check($password, $user->password)) {
-            throw new HttpException(401, 'The provided password is incorrect.');
+            throw ValidationException::withMessages([
+                'password' => ['The provided password is incorrect.'],
+            ]);
         }
 
         return true;

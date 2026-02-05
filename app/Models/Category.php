@@ -21,11 +21,11 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $name
  * @property string|null $image
-     * @property string|null $image_url
-     * @property string|null $icon
-     * @property string|null $icon_url
-     * @property int|null $parent_id
-     * @property bool $is_active
+ * @property string|null $image_url
+ * @property string|null $icon
+ * @property string|null $icon_url
+ * @property int|null $parent_id
+ * @property bool $is_active
  * @property bool|null $is_sync_disable
  * @property int|null $woocommerce_category_id
  * @property string|null $slug
@@ -35,6 +35,9 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
+ * @property-read string $status
+ * @property-read string $featured_status
+ * @property-read string $sync_status
  * @property-read Category|null $parent
  * @property-read Collection<int, Category> $children
  * @property-read Collection<int, Product> $products
@@ -200,6 +203,36 @@ class Category extends Model
             'woocommerce_category_id' => 'integer',
             'featured' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the category's active status.
+     *
+     * @return string
+     */
+    protected function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
+    }
+    
+    /**
+     * Get the category's featured status.
+     *
+     * @return string 'featured'|'not featured'
+     */
+    protected function getFeaturedStatusAttribute(): string
+    {
+        return $this->featured ? 'featured' : 'not featured';
+    }
+
+    /**
+     * Get the category's sync status.
+     *
+     * @return string 'enabled'|'disabled'
+     */
+    protected function getSyncStatusAttribute(): string
+    {
+        return $this->is_sync_disable ? 'disabled' : 'enabled';
     }
 }
 

@@ -85,12 +85,20 @@ class UnitResource extends JsonResource
             'operation_value' => $this->operation_value,
 
             /**
-             * Whether the unit is active.
+             * Active status of the brand.
              *
              * @var bool $is_active
              * @example true
              */
             'is_active' => $this->is_active,
+
+            /**
+             * Active status of the unit.
+             *
+             * @var string $status
+             * @example active
+             */
+            'status' => $this->status,
 
             /**
              * Timestamp when the unit was created.

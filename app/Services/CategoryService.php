@@ -71,16 +71,16 @@ class CategoryService extends BaseService
         return Category::query()
             ->with('parent:id,name')
             ->when(
-                isset($filters['is_active']),
-                fn($query) => $query->where('is_active', (bool)$filters['is_active'])
+                isset($filters['status']),
+                fn($query) => $query->where('is_active', $filters['status'] === 'active')
             )
             ->when(
-                isset($filters['featured']),
-                fn($query) => $query->where('featured', (bool)$filters['featured'])
+                isset($filters['featured_status']),
+                fn($query) => $query->where('featured', $filters['featured_status'] === 'featured')
             )
             ->when(
-                isset($filters['is_sync_disable']),
-                fn($query) => $query->where('is_sync_disable', (bool)$filters['is_sync_disable'])
+                isset($filters['sync_status']),
+                fn($query) => $query->where('is_sync_disable', $filters['sync_status'] === 'disabled')
             )
             ->when(
                 isset($filters['parent_id']),

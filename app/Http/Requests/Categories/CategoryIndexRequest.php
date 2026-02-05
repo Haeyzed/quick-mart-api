@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Categories;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * CategoryIndexRequest
@@ -48,24 +49,24 @@ class CategoryIndexRequest extends BaseRequest
             /**
              * Filter categories by active status.
              *
-             * @var bool|null $is_active
-             * @example true
+             * @var string|null $status
+             * @example active
              */
-            'is_active' => ['nullable', 'boolean'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
             /**
              * Filter categories by featured status.
              *
-             * @var bool|null $featured
-             * @example false
+             * @var string|null $featured_status
+             * @example featured
              */
-            'featured' => ['nullable', 'boolean'],
+            'featured_status' => ['nullable', Rule::in(['featured', 'not featured'])],
             /**
              * Filter categories by sync disable status.
              *
-             * @var bool|null $is_sync_disable
-             * @example false
+             * @var string|null $sync_status
+             * @example enabled
              */
-            'is_sync_disable' => ['nullable', 'boolean'],
+            'sync_status' => ['nullable', Rule::in(['enabled', 'disabled'])],
             /**
              * Filter categories by parent category ID.
              *
@@ -93,9 +94,6 @@ class CategoryIndexRequest extends BaseRequest
         $this->merge([
             'per_page' => $this->per_page ? (int) $this->per_page : null,
             'page' => $this->page ? (int) $this->page : null,
-            'is_active' => $this->is_active !== null ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
-            'featured' => $this->featured !== null ? filter_var($this->featured, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
-            'is_sync_disable' => $this->is_sync_disable !== null ? filter_var($this->is_sync_disable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
         ]);
     }
 }

@@ -29,7 +29,8 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
+ * 
+ * @property-read string $status
  * @property-read Collection<int, Product> $products
  *
  * @method static Builder|Brand active()
@@ -129,6 +130,16 @@ class Brand extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the brand's active status.
+     *
+     * @return string
+     */
+    protected function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
     }
 }
 

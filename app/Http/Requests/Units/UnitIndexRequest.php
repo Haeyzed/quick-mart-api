@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Units;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * UnitIndexRequest
@@ -48,10 +49,10 @@ class UnitIndexRequest extends BaseRequest
             /**
              * Filter units by active status.
              *
-             * @var bool|null $is_active
-             * @example true
+             * @var string|null $status
+             * @example active
              */
-            'is_active' => ['nullable', 'boolean'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
             /**
              * Search term to filter units by code or name.
              *
@@ -72,7 +73,6 @@ class UnitIndexRequest extends BaseRequest
         $this->merge([
             'per_page' => $this->per_page ? (int) $this->per_page : null,
             'page' => $this->page ? (int) $this->page : null,
-            'is_active' => $this->is_active !== null ? filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null,
         ]);
     }
 }

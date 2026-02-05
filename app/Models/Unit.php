@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
+ * @property-read string $status
  * @property-read Unit|null $baseUnitRelation
  * @property-read Collection<int, Unit> $subUnits
  * @property-read Collection<int, Product> $products
@@ -136,6 +137,16 @@ class Unit extends Model
             'operation_value' => 'float',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the unit's active status.
+     *
+     * @return string
+     */
+    protected function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
     }
 }
 

@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
+ * @property-read string $status
  * @property-read Collection<int, Product> $products
  *
  * @method static Builder|Tax active()
@@ -89,6 +90,16 @@ class Tax extends Model
             'is_active' => 'boolean',
             'woocommerce_tax_id' => 'integer',
         ];
+    }
+
+    /**
+     * Get the tax's active status.
+     *
+     * @return string
+     */
+    protected function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
     }
 }
 

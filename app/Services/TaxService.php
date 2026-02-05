@@ -57,8 +57,8 @@ class TaxService extends BaseService
 
         return Tax::query()
             ->when(
-                isset($filters['is_active']),
-                fn($query) => $query->where('is_active', (bool)$filters['is_active'])
+                isset($filters['status']),
+                fn($query) => $query->where('is_active', $filters['status'] === 'active')
             )
             ->when(
                 !empty($filters['search'] ?? null),
