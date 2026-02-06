@@ -101,7 +101,7 @@ trait CheckPermissionsTrait
             $message = $message ?? "You do not have permission to perform this action: {$permission}";
             throw new HttpResponseException(
                 response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => $message,
                     'permission' => $permission,
                 ], $statusCode)
@@ -128,7 +128,7 @@ trait CheckPermissionsTrait
             $message = $message ?? "You do not have any of the required permissions to perform this action.";
             throw new HttpResponseException(
                 response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => $message,
                     'required_permissions' => $permissions,
                 ], $statusCode)
@@ -155,7 +155,7 @@ trait CheckPermissionsTrait
             $message = $message ?? "You do not have all of the required permissions to perform this action.";
             throw new HttpResponseException(
                 response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => $message,
                     'required_permissions' => $permissions,
                 ], $statusCode)
@@ -218,7 +218,7 @@ trait CheckPermissionsTrait
             $message = $message ?? "You do not have the required role to perform this action: {$role}";
             throw new HttpResponseException(
                 response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => $message,
                     'required_role' => $role,
                 ], $statusCode)
@@ -245,7 +245,7 @@ trait CheckPermissionsTrait
             $message = $message ?? "You do not have any of the required roles to perform this action.";
             throw new HttpResponseException(
                 response()->json([
-                    'status' => false,
+                    'success' => false,
                     'message' => $message,
                     'required_roles' => $roles,
                 ], $statusCode)

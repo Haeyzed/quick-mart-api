@@ -3537,6 +3537,10 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
+                'name' => 'brands-import',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'billers-index',
                 'guard_name' => 'web',
             ],
@@ -3894,7 +3898,7 @@ class TenantDatabaseSeeder extends Seeder
             'general_setting', 'mail_setting', 'pos_setting',
             'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
             'customer_group', 'unit', 'tax', 'gift_card', 'coupon',
-            'warehouse', 'brands-index', 'brands-create', 'brands-update', 'brands-delete',
+            'warehouse', 'brands-index', 'brands-create', 'brands-update', 'brands-delete', 'brands-import',
             'billers-index', 'billers-create', 'billers-delete', 'money-transfer',
             'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
             'currency', 'revenue_profit_summary', 'cash_flow', 'monthly_summary', 'yearly_report',
