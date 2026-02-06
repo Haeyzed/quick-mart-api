@@ -55,7 +55,7 @@ class UnitService extends BaseService
         // Check permission: user needs 'unit' permission to view units
         $this->requirePermission('unit');
 
-        return Unit::query()
+        return Unit::query()->with('baseUnitRelation')
             ->when(
                 isset($filters['status']),
                 fn($query) => $query->where('is_active', $filters['status'] === 'active')
