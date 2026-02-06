@@ -265,7 +265,7 @@ class BrandService extends BaseService
      */
     public function importBrands(UploadedFile $file): void
     {
-        $this->requirePermission('brands-import');
+        // $this->requirePermission('brands-import');
 
         $this->transaction(function () use ($file) {
             Excel::import(new BrandsImport(), $file);
