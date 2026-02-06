@@ -224,11 +224,11 @@ class UnitService extends BaseService
 
         return $this->transaction(function () use ($unit) {
             if ($unit->products()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete unit: unit has associated products');
+                abort(Response::HTTP_BAD_REQUEST, 'Cannot delete unit: unit has associated products');
             }
 
             if ($unit->subUnits()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete unit: unit has associated sub-units');
+                abort(Response::HTTP_BAD_REQUEST, 'Cannot delete unit: unit has associated sub-units');
             }
 
             return $unit->delete();
