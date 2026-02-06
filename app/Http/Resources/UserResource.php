@@ -203,10 +203,10 @@ class UserResource extends JsonResource
              * This is the complete list of permissions the user has access to.
              * Optimized for frontend authorization checks.
              *
-             * @var array<string> $all_permissions
+             * @var array<string> $user_permissions
              * @example ["products-index", "products-add", "products-edit", "products-delete", "category", "brand", "unit", "tax"]
              */
-            'all_permissions' => $this->getAllUserPermissions()
+            'user_permissions' => $this->getAllUserPermissions()
                 ->pluck('name')
                 ->unique()
                 ->values()
