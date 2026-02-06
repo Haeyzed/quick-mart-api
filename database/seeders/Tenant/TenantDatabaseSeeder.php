@@ -56,24 +56,24 @@ class TenantDatabaseSeeder extends Seeder
 
         // Seed core application data
         $this->seedGeneralSettings();
-        $this->seedRoles(); // Must be before users (foreign key dependency)
-        $this->seedPermissions(); // Must be before role-permission mappings
-        $this->seedRolePermissions(); // Must be before users (for role assignment)
+        $this->seedRoles();
+        $this->seedPermissions();
+        $this->seedRolePermissions();
         $this->seedAccounts();
-        $this->seedBillers(); // Must be before users (foreign key dependency)
-        $this->seedWarehouses(); // Must be before users (foreign key dependency)
-        $this->seedUsers(); // Must be after roles and permissions are seeded
-        $this->seedBrands(); // Must be before products (foreign key dependency)
-        $this->seedCategories(); // Must be before products (foreign key dependency)
-        $this->seedUnits(); // Must be before products (foreign key dependency)
-        $this->seedTaxes(); // Must be before products (foreign key dependency)
+        $this->seedBillers();
+        $this->seedWarehouses();
+        $this->seedUsers();
+        $this->seedBrands();
+        $this->seedCategories();
+        $this->seedUnits();
+        $this->seedTaxes();
         // $this->seedCurrencies();
         $this->seedCustomerGroups();
         $this->seedCustomers();
-        $this->seedSuppliers(); // Must be before purchases (foreign key dependency)
+        $this->seedSuppliers();
         $this->seedPosSettings();
         $this->seedProducts();
-        $this->seedPurchases(); // Must be before product_purchases (foreign key dependency)
+        $this->seedPurchases();
         $this->seedProductPurchases();
         $this->seedProductWarehouse();
         $this->seedMailSettings();
