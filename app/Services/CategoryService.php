@@ -66,7 +66,7 @@ class CategoryService extends BaseService
     public function getCategories(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         // Check permission: user needs 'category' permission to view categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-index');
 
         return Category::query()
             ->with('parent:id,name')
@@ -108,7 +108,7 @@ class CategoryService extends BaseService
     public function getCategory(int $id): Category
     {
         // Check permission: user needs 'category' permission to view categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-index');
 
         return Category::with('parent:id,name')->findOrFail($id);
     }
@@ -122,7 +122,7 @@ class CategoryService extends BaseService
     public function createCategory(array $data): Category
     {
         // Check permission: user needs 'category' permission to create categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-create');
 
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeCategoryData($data);
@@ -226,7 +226,7 @@ class CategoryService extends BaseService
     public function updateCategory(Category $category, array $data): Category
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->transaction(function () use ($category, $data) {
             $data = $this->normalizeCategoryData($data, isUpdate: true);
@@ -267,7 +267,7 @@ class CategoryService extends BaseService
     public function deleteCategory(Category $category): bool
     {
         // Check permission: user needs 'category' permission to delete categories
-        $this->requirePermission('category');
+        $this->requirePermission('category-delete');
 
         return $this->transaction(function () use ($category) {
             if ($category->children()->exists()) {
@@ -293,7 +293,7 @@ class CategoryService extends BaseService
     public function bulkDeleteCategories(array $ids): int
     {
         // Check permission: user needs 'category' permission to delete categories
-        $this->requirePermission('category');
+        $this->requirePermission('category-delete');
 
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
@@ -343,7 +343,7 @@ class CategoryService extends BaseService
     public function getRootCategories(): Collection
     {
         // Check permission: user needs 'category' permission to view categories
-        $this->requirePermission('category');
+        $this->requirePermission('category-index');
 
         return Category::root()->active()->get();
     }
@@ -355,7 +355,7 @@ class CategoryService extends BaseService
      */
     public function getParentCategoriesForSelect(): Collection
     {
-        $this->requirePermission('category');
+        $this->requirePermission('category-index');
 
         return Category::query()
             ->where('is_active', true)
@@ -371,7 +371,7 @@ class CategoryService extends BaseService
     public function getCategoriesWithChildren(): Collection
     {
         // Check permission: user needs 'category' permission to view categories
-        $this->requirePermission('category');
+        $this->requirePermission('category-index');
 
         return Category::with('children')
             ->whereNull('parent_id')
@@ -389,7 +389,7 @@ class CategoryService extends BaseService
     public function importCategories(UploadedFile $file): void
     {
         // Check permission: user needs 'category' permission to import categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-import');
 
         $this->transaction(function () use ($file) {
             Excel::import(new CategoriesImport(), $file);
@@ -420,7 +420,7 @@ class CategoryService extends BaseService
     public function bulkActivateCategories(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_ACTIVATE);
     }
@@ -434,7 +434,7 @@ class CategoryService extends BaseService
     public function bulkDeactivateCategories(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_DEACTIVATE);
     }
@@ -448,7 +448,7 @@ class CategoryService extends BaseService
     public function bulkEnableFeatured(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_ENABLE_FEATURED);
     }
@@ -462,7 +462,7 @@ class CategoryService extends BaseService
     public function bulkDisableFeatured(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_DISABLE_FEATURED);
     }
@@ -476,7 +476,7 @@ class CategoryService extends BaseService
     public function bulkEnableSync(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_ENABLE_SYNC);
     }
@@ -490,7 +490,7 @@ class CategoryService extends BaseService
     public function bulkDisableSync(array $ids): int
     {
         // Check permission: user needs 'category' permission to update categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-update');
 
         return $this->bulkUpdateCategories($ids, self::BULK_DISABLE_SYNC);
     }
@@ -513,7 +513,7 @@ class CategoryService extends BaseService
         string $method = 'download'
     ): string {
         // Check permission: user needs 'category' permission to export categories
-        $this->requirePermission('category');
+        $this->requirePermission('categories-index');
 
         $fileName = 'categories-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;

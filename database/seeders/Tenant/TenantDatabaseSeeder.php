@@ -3557,10 +3557,6 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
-                'name' => 'category',
-                'guard_name' => 'web',
-            ],
-            [
                 'name' => 'delivery',
                 'guard_name' => 'web',
             ],
