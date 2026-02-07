@@ -3169,6 +3169,26 @@ class TenantDatabaseSeeder extends Seeder
     {
         return [
             [
+                'name' => 'taxes-import',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'taxes-update',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'taxes-delete',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'taxes-create',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'taxes-index',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'units-import',
                 'guard_name' => 'web',
             ],
@@ -3514,14 +3534,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             [
                 'name' => 'customer_group',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'unit',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'tax',
                 'guard_name' => 'web',
             ],
             [
@@ -3911,6 +3923,7 @@ class TenantDatabaseSeeder extends Seeder
         $permissions = [
             'products-update', 'products-delete', 'products-create', 'products-index', 'products-import',
             'units-update', 'units-delete', 'units-create', 'units-index', 'units-import',
+            'taxes-update', 'taxes-delete', 'taxes-create', 'taxes-index', 'taxes-import',
             'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete',
             'sales-index', 'sales-create', 'sales-update', 'sales-delete',
             'customers-index', 'customers-create', 'customers-update', 'customers-delete',
@@ -3918,7 +3931,7 @@ class TenantDatabaseSeeder extends Seeder
             'users-index', 'users-create', 'users-update', 'users-delete',
             'general_setting', 'mail_setting', 'pos_setting',
             'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
-            'customer_group', 'unit', 'tax', 'gift_card', 'coupon',
+            'customer_group', 'gift_card', 'coupon',
             'warehouse', 'brands-index', 'brands-create', 'brands-update', 'brands-delete', 'brands-import',
             'billers-index', 'billers-create', 'billers-delete', 'money-transfer',
             'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
