@@ -3169,6 +3169,30 @@ class TenantDatabaseSeeder extends Seeder
     {
         return [
             [
+                'name' => 'units-import',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'units-update',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'units-delete',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'units-create',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'units-index',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'products-import',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'products-update',
                 'guard_name' => 'web',
             ],
@@ -3889,7 +3913,8 @@ class TenantDatabaseSeeder extends Seeder
     {
         $role = 'Admin';
         $permissions = [
-            'products-update', 'products-delete', 'products-create', 'products-index',
+            'products-update', 'products-delete', 'products-create', 'products-index', 'products-import',
+            'units-update', 'units-delete', 'units-create', 'units-index', 'units-import',
             'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete',
             'sales-index', 'sales-create', 'sales-update', 'sales-delete',
             'customers-index', 'customers-create', 'customers-update', 'customers-delete',
