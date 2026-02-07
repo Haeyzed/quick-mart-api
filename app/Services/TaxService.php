@@ -53,7 +53,7 @@ class TaxService extends BaseService
     public function getTaxes(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         // Check permission: user needs 'tax' permission to view taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-index');
 
         return Tax::query()
             ->when(
@@ -80,7 +80,7 @@ class TaxService extends BaseService
     public function getTax(int $id): Tax
     {
         // Check permission: user needs 'tax' permission to view taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-index');
 
         return Tax::findOrFail($id);
     }
@@ -94,7 +94,7 @@ class TaxService extends BaseService
     public function createTax(array $data): Tax
     {
         // Check permission: user needs 'tax' permission to create taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-create');
 
         return $this->transaction(function () use ($data) {
             $data = $this->normalizeTaxData($data);
@@ -138,7 +138,7 @@ class TaxService extends BaseService
     public function updateTax(Tax $tax, array $data): Tax
     {
         // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-update');
 
         return $this->transaction(function () use ($tax, $data) {
             $data = $this->normalizeTaxData($data, isUpdate: true);
@@ -157,7 +157,7 @@ class TaxService extends BaseService
     public function bulkDeleteTaxes(array $ids): int
     {
         // Check permission: user needs 'tax' permission to delete taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-delete');
 
         return $this->transaction(function () use ($ids) {
             $deletedCount = 0;
@@ -192,7 +192,7 @@ class TaxService extends BaseService
     public function deleteTax(Tax $tax): bool
     {
         // Check permission: user needs 'tax' permission to delete taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-delete');
 
         return $this->transaction(function () use ($tax) {
             if ($tax->products()->exists()) {
@@ -212,7 +212,7 @@ class TaxService extends BaseService
     public function importTaxes(UploadedFile $file): void
     {
         // Check permission: user needs 'tax' permission to import taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-import');
 
         $this->transaction(function () use ($file) {
             Excel::import(new TaxesImport(), $file);
@@ -243,7 +243,7 @@ class TaxService extends BaseService
     public function bulkActivateTaxes(array $ids): int
     {
         // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-update');
 
         return $this->bulkUpdateTaxes($ids, self::BULK_ACTIVATE);
     }
@@ -257,7 +257,7 @@ class TaxService extends BaseService
     public function bulkDeactivateTaxes(array $ids): int
     {
         // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-update');
 
         return $this->bulkUpdateTaxes($ids, self::BULK_DEACTIVATE);
     }
@@ -280,7 +280,7 @@ class TaxService extends BaseService
         string $method = 'download'
     ): string {
         // Check permission: user needs 'tax' permission to export taxes
-        $this->requirePermission('tax');
+        $this->requirePermission('taxes-index');
 
         $fileName = 'taxes-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $filePath = 'exports/' . $fileName;
