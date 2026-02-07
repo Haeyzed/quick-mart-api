@@ -3753,10 +3753,6 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
-                'name' => 'products-import',
-                'guard_name' => 'web',
-            ],
-            [
                 'name' => 'purchases-import',
                 'guard_name' => 'web',
             ],
@@ -3934,7 +3930,7 @@ class TenantDatabaseSeeder extends Seeder
             'incomes-index', 'incomes-create', 'incomes-update', 'incomes-delete',
             'packing_slip_challan', 'payment_gateway_setting', 'barcode_setting', 'language_setting',
             'account-selection', 'invoice_setting', 'invoice_create_edit_delete', 'handle_discount',
-            'products-import', 'purchases-import', 'sales-import', 'customers-import', 'billers-import',
+            'purchases-import', 'sales-import', 'customers-import', 'billers-import',
             'categories-create', 'categories-import', 'categories-index', 'categories-update', 'categories-delete',
             'role_permission', 'cart-product-update',
         ];
