@@ -19,23 +19,25 @@ use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * CategoryController
+ * Class CategoryController
  *
- * API controller for managing categories with full CRUD operations.
- * Keeps controller thin with all business logic delegated to CategoryService.
+ * API controller for managing categories.
+ * Delegates business logic to CategoryService.
  */
 class CategoryController extends Controller
 {
+    /**
+     * @param CategoryService $service
+     */
     public function __construct(
         private readonly CategoryService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Get parent category options (value/label) for combobox/select.
+     * Get parent category options for select inputs.
      *
      * @return JsonResponse
      */
@@ -57,12 +59,13 @@ class CategoryController extends Controller
      */
     public function index(CategoryIndexRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = $validated['per_page'] ?? 10;
-        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
+        $categories = $this->service->getCategories(
+            $request->validated(),
+            (int) $request->input('per_page', 10)
+        );
 
-        $categories = $this->service->getCategories($filters, $perPage)
-            ->through(fn($category) => new CategoryResource($category));
+        // Transform collection while keeping pagination metadata for the Response Macro
+        $categories->through(fn (Category $category) => new CategoryResource($category));
 
         return response()->success($categories, 'Categories fetched successfully');
     }
@@ -80,7 +83,7 @@ class CategoryController extends Controller
         return response()->success(
             new CategoryResource($category),
             'Category created successfully',
-            201
+            Response::HTTP_CREATED
         );
     }
 
@@ -107,16 +110,16 @@ class CategoryController extends Controller
      */
     public function update(CategoryRequest $request, Category $category): JsonResponse
     {
-        $category = $this->service->updateCategory($category, $request->validated());
+        $updatedCategory = $this->service->updateCategory($category, $request->validated());
 
         return response()->success(
-            new CategoryResource($category),
+            new CategoryResource($updatedCategory),
             'Category updated successfully'
         );
     }
 
     /**
-     * Remove the specified category from storage.
+     * Remove the specified category.
      *
      * @param Category $category
      * @return JsonResponse
@@ -129,7 +132,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk delete multiple categories.
+     * Bulk delete categories.
      *
      * @param CategoryBulkDestroyRequest $request
      * @return JsonResponse
@@ -140,25 +143,12 @@ class CategoryController extends Controller
 
         return response()->success(
             ['deleted_count' => $count],
-            $this->pluralizeMessage($count, 'Deleted {count} categor', 'successfully')
+            "Successfully deleted {$count} " . str('category')->plural($count)
         );
     }
 
     /**
-     * Import categories from a file.
-     *
-     * @param ImportRequest $request
-     * @return JsonResponse
-     */
-    public function import(ImportRequest $request): JsonResponse
-    {
-        $this->service->importCategories($request->file('file'));
-
-        return response()->success(null, 'Categories imported successfully');
-    }
-
-    /**
-     * Bulk activate multiple categories.
+     * Bulk activate categories.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -166,15 +156,11 @@ class CategoryController extends Controller
     public function bulkActivate(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkActivateCategories($request->validated()['ids']);
-
-        return response()->success(
-            ['activated_count' => $count],
-            $this->pluralizeMessage($count, 'Activated {count} categor', 'successfully')
-        );
+        return response()->success(['activated_count' => $count], "{$count} categories activated");
     }
 
     /**
-     * Bulk deactivate multiple categories.
+     * Bulk deactivate categories.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -182,15 +168,11 @@ class CategoryController extends Controller
     public function bulkDeactivate(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkDeactivateCategories($request->validated()['ids']);
-
-        return response()->success(
-            ['deactivated_count' => $count],
-            $this->pluralizeMessage($count, 'Deactivated {count} categor', 'successfully')
-        );
+        return response()->success(['deactivated_count' => $count], "{$count} categories deactivated");
     }
 
     /**
-     * Bulk enable featured status for multiple categories.
+     * Bulk enable featured status.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -198,15 +180,11 @@ class CategoryController extends Controller
     public function bulkEnableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkEnableFeatured($request->validated()['ids']);
-
-        return response()->success(
-            ['updated_count' => $count],
-            $this->pluralizeMessage($count, 'Enabled featured for {count} categor', 'successfully')
-        );
+        return response()->success(['updated_count' => $count], "Enabled featured for {$count} categories");
     }
 
     /**
-     * Bulk disable featured status for multiple categories.
+     * Bulk disable featured status.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -214,15 +192,11 @@ class CategoryController extends Controller
     public function bulkDisableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkDisableFeatured($request->validated()['ids']);
-
-        return response()->success(
-            ['updated_count' => $count],
-            $this->pluralizeMessage($count, 'Disabled featured for {count} categor', 'successfully')
-        );
+        return response()->success(['updated_count' => $count], "Disabled featured for {$count} categories");
     }
 
     /**
-     * Bulk enable sync for multiple categories.
+     * Bulk enable sync.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -230,15 +204,11 @@ class CategoryController extends Controller
     public function bulkEnableSync(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkEnableSync($request->validated()['ids']);
-
-        return response()->success(
-            ['updated_count' => $count],
-            $this->pluralizeMessage($count, 'Enabled sync for {count} categor', 'successfully')
-        );
+        return response()->success(['updated_count' => $count], "Enabled sync for {$count} categories");
     }
 
     /**
-     * Bulk disable sync for multiple categories.
+     * Bulk disable sync.
      *
      * @param CategoryBulkUpdateRequest $request
      * @return JsonResponse
@@ -246,50 +216,49 @@ class CategoryController extends Controller
     public function bulkDisableSync(CategoryBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkDisableSync($request->validated()['ids']);
-
-        return response()->success(
-            ['updated_count' => $count],
-            $this->pluralizeMessage($count, 'Disabled sync for {count} categor', 'successfully')
-        );
+        return response()->success(['updated_count' => $count], "Disabled sync for {$count} categories");
     }
 
     /**
-     * Export categories to Excel or PDF.
+     * Import categories.
+     *
+     * @param ImportRequest $request
+     * @return JsonResponse
+     */
+    public function import(ImportRequest $request): JsonResponse
+    {
+        $this->service->importCategories($request->file('file'));
+        return response()->success(null, 'Categories imported successfully');
+    }
+
+    /**
+     * Export categories.
      *
      * @param ExportRequest $request
-     * @return JsonResponse|Response
+     * @return JsonResponse|BinaryFileResponse
      */
-    public function export(ExportRequest $request): JsonResponse|Response
+    public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
         $validated = $request->validated();
-        $ids = $validated['ids'] ?? [];
-        $format = $validated['format'];
-        $method = $validated['method'];
-        $columns = $validated['columns'] ?? [];
-        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+        
+        $user = ($validated['method'] === 'email') 
+            ? User::findOrFail($validated['user_id']) 
+            : null;
 
-        $filePath = $this->service->exportCategories($ids, $format, $user, $columns, $method);
+        $filePath = $this->service->exportCategories(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $user,
+            $validated['columns'] ?? [],
+            $validated['method']
+        );
 
-        if ($method === 'download') {
-            return Storage::disk('public')->download($filePath);
+        if ($validated['method'] === 'download') {
+            return response()->download(
+                Storage::disk('public')->path($filePath)
+            );
         }
 
-        return response()->success(null, 'Export file sent via email successfully');
-    }
-
-    /**
-     * Pluralize message with count.
-     *
-     * Utility helper to eliminate string concatenation duplication across bulk methods.
-     *
-     * @param int $count
-     * @param string $message Message with {count} placeholder (e.g., "Activated {count} categor")
-     * @param string $suffix Suffix to append (e.g., "successfully")
-     * @return string
-     */
-    private function pluralizeMessage(int $count, string $message, string $suffix): string
-    {
-        $pluralSuffix = $count !== 1 ? 'ies' : 'y';
-        return str_replace('{count}', (string)$count, $message) . $pluralSuffix . " {$suffix}";
+        return response()->success(null, 'Export processed and sent via email');
     }
 }

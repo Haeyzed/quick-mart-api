@@ -14,46 +14,37 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 /**
  * Class BrandsExport
  *
- * Handles memory-efficient exporting of Brands using database-level chunking.
- * Supports dynamic column selection and standardized date formatting.
+ * Handles database-level chunked export of brands.
  */
 class BrandsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
     /**
-     * BrandsExport constructor.
-     *
-     * @param array<int> $ids Specific Brand IDs to export. If empty, all brands are exported.
-     * @param array<string> $columns List of specific columns to include in the export.
+     * @param array<int> $ids
+     * @param array<string> $columns
      */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {
-    }
+    ) {}
 
     /**
-     * Prepare the query for the export.
-     * Using FromQuery instead of FromCollection prevents memory exhaustion for large datasets.
-     *
      * @return Builder
      */
     public function query(): Builder
     {
         return Brand::query()
-            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('name');
     }
 
     /**
-     * Define the headings for the Excel file based on selected columns.
-     *
-     * @return array<int, string>
+     * @return array<string>
      */
     public function headings(): array
     {
-        $allLabels = [
+        $labelMap = [
             'id'                => 'ID',
             'name'              => 'Brand Name',
             'slug'              => 'URL Slug',
@@ -66,37 +57,34 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
         ];
 
         if (empty($this->columns)) {
-            return array_values($allLabels);
+            return array_values($labelMap);
         }
 
         return array_map(
-            fn($col) => $allLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }
 
     /**
-     * Map each Brand model instance to a row in the export.
-     *
-     * @param Brand $brand
-     * @return array<int, mixed>
+     * @param mixed $brand
+     * @return array<mixed>
      */
     public function map($brand): array
     {
+        // Ensure $brand is typed properly for IDE, though abstract requires mixed
+        /** @var Brand $brand */
+
         $columnsToExport = $this->columns ?: [
-            'id', 'name', 'slug', 'short_description', 'page_title', 'image_url', 'is_active', 'created_at', 'updated_at'
+            'id', 'name', 'slug', 'short_description', 'page_title', 
+            'image_url', 'is_active', 'created_at', 'updated_at'
         ];
 
-        $row = [];
-        foreach ($columnsToExport as $column) {
-            $row[] = match ($column) {
-                'is_active'  => $brand->is_active ? 'Active' : 'Inactive',
-                'created_at' => $brand->created_at?->toDateTimeString(),
-                'updated_at' => $brand->updated_at?->toDateTimeString(),
-                default      => $brand->{$column} ?? '',
-            };
-        }
-
-        return $row;
+        return array_map(fn ($col) => match ($col) {
+            'is_active'  => $brand->is_active ? 'Active' : 'Inactive',
+            'created_at' => $brand->created_at?->toDateTimeString(),
+            'updated_at' => $brand->updated_at?->toDateTimeString(),
+            default      => $brand->{$col} ?? '',
+        }, $columnsToExport);
     }
 }

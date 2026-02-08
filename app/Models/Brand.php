@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,66 +13,113 @@ use Illuminate\Support\Str;
 
 /**
  * Class Brand
- * * @property int $id
+ *
+ * Represents a product brand in the catalog.
+ *
+ * @property int $id
  * @property string $name
- * @property string|null $slug
+ * @property string $slug
+ * @property string|null $short_description
+ * @property string|null $page_title
+ * @property string|null $image
+ * @property string|null $image_url
  * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read string $status
  */
 class Brand extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    /** @var array */
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'name', 'image', 'image_url', 'page_title', 'short_description', 'slug', 'is_active'
+        'name',
+        'slug',
+        'short_description',
+        'page_title',
+        'image',
+        'image_url',
+        'is_active',
     ];
 
-    /** @var array */
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    /** @var array */
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
     protected $appends = ['status'];
 
     /**
-     * Automate logic during model lifecycle.
+     * The "booted" method of the model.
+     *
+     * @return void
      */
-    protected static function boot(): void
+    protected static function booted(): void
     {
-        parent::boot();
-        // Ensure slug is generated for both creates and updates if missing
-        static::saving(fn($brand) => $brand->ensureSlugExists());
+        // Automatically generate slug on saving if not present
+        static::saving(function (Brand $brand) {
+            $brand->slug = $brand->generateUniqueSlug($brand->name, $brand->slug);
+        });
     }
 
     /**
-     * Ensure a unique slug is generated.
+     * Generate a unique slug for the brand.
+     * Replaces recursion with a performant loop.
+     *
+     * @param string $name
+     * @param string|null $existingSlug
+     * @return string
      */
-    public function ensureSlugExists(): void
+    public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
-        if (empty($this->slug)) {
-            $this->slug = static::generateUniqueSlug($this->name);
+        $slug = $existingSlug ?: Str::slug($name);
+        
+        if (!$this->slugExists($slug)) {
+            return $slug;
         }
-    }
 
-    /**
-     * Recursive unique slug generator.
-     */
-    public static function generateUniqueSlug(string $name): string
-    {
-        $slug = Str::slug($name);
-        $original = $slug;
+        $originalSlug = $slug;
         $count = 1;
 
-        while (static::where('slug', $slug)->where('id', '!=', request()->route('brand')?->id)->exists()) {
-            $slug = "{$original}-" . $count++;
+        while ($this->slugExists($slug)) {
+            $slug = "{$originalSlug}-" . $count++;
         }
 
         return $slug;
     }
 
     /**
-     * Accessor for human-readable status.
+     * Check if the slug exists, excluding the current model.
+     *
+     * @param string $slug
+     * @return bool
+     */
+    protected function slugExists(string $slug): bool
+    {
+        return static::where('slug', $slug)
+            ->where('id', '!=', $this->id)
+            ->exists();
+    }
+
+    /**
+     * Get the human-readable status.
+     *
+     * @return string
      */
     public function getStatusAttribute(): string
     {
@@ -78,6 +127,8 @@ class Brand extends Model
     }
 
     /**
+     * Get the products for the brand.
+     *
      * @return HasMany
      */
     public function products(): HasMany

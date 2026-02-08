@@ -5,62 +5,36 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Category;
-use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Row;
 
-/**
- * CategoriesImport
- *
- * Handles importing categories from CSV/Excel files.
- */
-class CategoriesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class CategoriesImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows
 {
-    /**
-     * Process the collection of rows.
-     *
-     * @param Collection $collection
-     * @return void
-     */
-    public function collection(Collection $collection): void
+    public function onRow(Row $row): void
     {
-        foreach ($collection as $row) {
-            // Skip if name is empty
-            if (empty($row['name'] ?? null)) {
-                continue;
-            }
+        $data = $row->toArray();
+        $name = trim((string) ($data['name'] ?? ''));
 
-            $name = trim($row['name'] ?? '');
-            $parentCategoryName = trim($row['parentcategory'] ?? '');
-
-            // Find or create parent category if provided
-            $parentId = null;
-            if (!empty($parentCategoryName)) {
-                $parentCategory = Category::firstOrNew(
-                    ['name' => $parentCategoryName, 'is_active' => true]
-                );
-                if (!$parentCategory->exists) {
-                    $parentCategory->is_active = true;
-                    $parentCategory->save();
-                }
-                $parentId = $parentCategory->id;
-            }
-
-            // Find or create category
-            $category = Category::firstOrNew(
-                ['name' => $name, 'is_active' => true]
-            );
-
-            $category->parent_id = $parentId;
-            $category->is_active = true;
-
-            // Generate slug if not set
-            if (!$category->slug) {
-                $category->slug = Category::generateUniqueSlug($name);
-            }
-
-            $category->save();
+        if ($name === '') {
+            return;
         }
+
+        $parentId = null;
+        if (!empty($data['parentcategory'])) {
+            $parentName = trim((string) $data['parentcategory']);
+            $parent = Category::firstOrCreate(['name' => $parentName], ['is_active' => true]);
+            $parentId = $parent->id;
+        }
+
+        Category::updateOrCreate(
+            ['name' => $name],
+            [
+                'parent_id' => $parentId,
+                'short_description' => isset($data['short_description']) ? trim((string)$data['short_description']) : null,
+                'is_active' => true,
+            ]
+        );
     }
 }

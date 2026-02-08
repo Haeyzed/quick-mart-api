@@ -6,200 +6,81 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
- * CategoryResource
+ * Class CategoryResource
  *
- * Transforms a Category model instance into a JSON response.
- * Provides complete and consistent API response structure.
+ * @property int $id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $short_description
+ * @property string|null $page_title
+ * @property string|null $image
+ * @property string|null $image_url
+ * @property string|null $icon
+ * @property string|null $icon_url
+ * @property int|null $parent_id
+ * @property bool $is_active
+ * @property string $status
+ * @property bool $featured
+ * @property string $featured_status
+ * @property bool $is_sync_disable
+ * @property string $sync_status
+ * @property int|null $woocommerce_category_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  */
 class CategoryResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray($request): array
     {
         return [
-            /**
-             * Category ID.
-             *
-             * @var int $id
-             * @example 1
-             */
+            /** @example 1 */
             'id' => $this->id,
-
-            /**
-             * Category name.
-             *
-             * @var string $name
-             * @example Electronics
-             */
+            /** @example "Electronics" */
             'name' => $this->name,
-
-            /**
-             * URL-friendly slug for the category.
-             *
-             * @var string|null $slug
-             * @example electronics
-             */
+            /** @example "electronics" */
             'slug' => $this->slug,
-
-            /**
-             * Brief description of the category.
-             *
-             * @var string|null $short_description
-             * @example High-end electronics and gadgets
-             */
+            /** @example "Gadgets and more" */
             'short_description' => $this->short_description,
-
-            /**
-             * SEO page title for the category.
-             *
-             * @var string|null $page_title
-             * @example Shop Electronics | Best Deals
-             */
+            /** @example "Buy Electronics" */
             'page_title' => $this->page_title,
-
-            /**
-             * Category image filename or path.
-             *
-             * @var string|null $image
-             * @example category-image.jpg
-             */
+            /** @example "cat.jpg" */
             'image' => $this->image,
-
-            /**
-             * Full URL to the category image.
-             *
-             * @var string|null $image_url
-             * @example https://example.com/images/category/category-image.jpg
-             */
+            /** @example "https://site.com/storage/cat.jpg" */
             'image_url' => $this->image_url,
-
-            /**
-             * Category icon filename or path.
-             *
-             * @var string|null $icon
-             * @example category-icon.png
-             */
+            /** @example "icon.png" */
             'icon' => $this->icon,
-
-            /**
-             * Full URL to the category icon.
-             *
-             * @var string|null $icon_url
-             * @example https://example.com/storage/categories/icons/category-icon.png
-             */
+            /** @example "https://site.com/storage/icon.png" */
             'icon_url' => $this->icon_url,
-
-            /**
-             * Parent category ID for hierarchical relationships.
-             *
-             * @var int|null $parent_id
-             * @example 1
-             */
+            /** @example 5 */
             'parent_id' => $this->parent_id,
-
-            /**
-             * Parent category name (if parent exists).
-             *
-             * @var string|null $parent_name
-             * @example Electronics
-             */
+            /** @example "Computers" */
             'parent_name' => $this->parent?->name,
-
-            /**
-            * Active status of the category.
-             *
-             * @var bool $is_active
-             * @example true
-             */
+            /** @example true */
             'is_active' => $this->is_active,
-
-            /**
-            * Active status of the category.
-             *
-             * @var string $status
-             * @example active
-             */
+            /** @example "active" */
             'status' => $this->status,
-            
-            /**
-            * Featured status of the category.
-            *
-            * @var bool $is_featured
-            * @example true
-            */
-           'is_featured' => $this->is_featured,
-            
-           /**
-           * Featured status of the category.
-           *
-           * @var string $featured_status
-           * @example featured
-           */
-          'featured_status' => $this->featured_status,
-
-           /**
-            * Sync status of the category.
-            *
-            * @var bool $is_sync_disable
-            * @example true
-            */
-           'is_sync_disable'   => $this->is_sync_disable,
-
-           /**
-            * Sync status of the category.
-            *
-            * @var string $sync_status
-            * @example enabled
-            */
-           'sync_status'   => $this->sync_status,
-
-            /**
-             * WooCommerce category ID for external system sync.
-             *
-             * @var int|null $woocommerce_category_id
-             * @example 123
-             */
+            /** @example true */
+            'is_featured' => $this->featured,
+            /** @example "featured" */
+            'featured_status' => $this->featured_status,
+            /** @example false */
+            'is_sync_disable' => $this->is_sync_disable,
+            /** @example "enabled" */
+            'sync_status' => $this->sync_status,
+            /** @example 120 */
             'woocommerce_category_id' => $this->woocommerce_category_id,
-
-            /**
-             * Whether this is a root category (no parent).
-             *
-             * @var bool $is_root
-             * @example true
-             */
+            /** @example true */
             'is_root' => $this->isRoot(),
-
-            /**
-             * Timestamp when the category was created.
-             *
-             * @var string|null $created_at
-             * @example 2024-01-01T00:00:00.000000Z
-             */
+            /** @example "2024-01-01T12:00:00+00:00" */
             'created_at' => $this->created_at?->toIso8601String(),
-
-            /**
-             * Timestamp when the category was last updated.
-             *
-             * @var string|null $updated_at
-             * @example 2024-01-01T00:00:00.000000Z
-             */
+            /** @example "2024-01-02T12:00:00+00:00" */
             'updated_at' => $this->updated_at?->toIso8601String(),
-
-            /**
-             * Timestamp when the category was deleted (if soft deleted).
-             *
-             * @var string|null $deleted_at
-             * @example 2024-01-01T00:00:00.000000Z
-             */
-            'deleted_at' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }

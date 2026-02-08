@@ -14,24 +14,24 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * Category Model
+ * Class Category
  *
- * Represents a product category with support for hierarchical structure.
+ * Represents a product category with hierarchical structure support.
  *
  * @property int $id
  * @property string $name
+ * @property string $slug
+ * @property string|null $short_description
+ * @property string|null $page_title
  * @property string|null $image
  * @property string|null $image_url
  * @property string|null $icon
  * @property string|null $icon_url
  * @property int|null $parent_id
  * @property bool $is_active
- * @property bool|null $is_sync_disable
+ * @property bool $featured
+ * @property bool $is_sync_disable
  * @property int|null $woocommerce_category_id
- * @property string|null $slug
- * @property bool|null $featured
- * @property string|null $page_title
- * @property string|null $short_description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -57,69 +57,100 @@ class Category extends Model
      */
     protected $fillable = [
         'name',
+        'slug',
+        'short_description',
+        'page_title',
         'image',
         'image_url',
         'icon',
         'icon_url',
         'parent_id',
         'is_active',
+        'featured',
         'is_sync_disable',
         'woocommerce_category_id',
-        'slug',
-        'featured',
-        'page_title',
-        'short_description',
     ];
 
     /**
-     * Boot the model.
+     * The attributes that should be cast.
      *
-     * @return void
+     * @var array<string, string>
      */
-    protected static function boot(): void
+    protected $casts = [
+        'parent_id'               => 'integer',
+        'is_active'               => 'boolean',
+        'featured'                => 'boolean',
+        'is_sync_disable'         => 'boolean',
+        'woocommerce_category_id' => 'integer',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['status'];
+
+    /**
+     * Boot the model.
+     */
+    protected static function booted(): void
     {
-        parent::boot();
-
-        static::creating(function ($category) {
-            if (empty($category->slug) && !empty($category->name)) {
-                $category->slug = static::generateSlug($category->name);
-            }
-        });
-
-        static::updating(function ($category) {
-            if ($category->isDirty('name') && empty($category->slug)) {
-                $category->slug = static::generateSlug($category->name, $category->id);
-            }
+        // Automatically generate slug on saving if not present
+        static::saving(function (Category $category) {
+            $category->slug = $category->generateUniqueSlug(
+                $category->name, 
+                $category->slug
+            );
         });
     }
 
     /**
-     * Generate a unique slug from a category name.
+     * Generate a unique slug for the category.
+     * Uses iterative loop to avoid recursion stack overflow.
      *
-     * @param string $name Category name
-     * @param int|null $excludeId Category ID to exclude from uniqueness check
-     * @return string Unique slug
+     * @param string $name
+     * @param string|null $existingSlug
+     * @return string
      */
-    public static function generateSlug(string $name, ?int $excludeId = null): string
+    public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
-        $slug = Str::slug($name);
-        $originalSlug = $slug;
-        $counter = 1;
+        $slug = $existingSlug ?: Str::slug($name);
 
-        while (static::where('slug', $slug)
-            ->when($excludeId, fn($query) => $query->where('id', '!=', $excludeId))
-            ->exists()) {
-            $slug = "{$originalSlug}-{$counter}";
-            $counter++;
+        if (!$this->slugExists($slug)) {
+            return $slug;
+        }
+
+        $originalSlug = $slug;
+        $count = 1;
+
+        while ($this->slugExists($slug)) {
+            $slug = "{$originalSlug}-" . $count++;
         }
 
         return $slug;
     }
 
     /**
-     * Get the parent category.
+     * Check if the slug exists, excluding current model.
      *
-     * @return BelongsTo<Category, self>
+     * @param string $slug
+     * @return bool
+     */
+    protected function slugExists(string $slug): bool
+    {
+        return static::where('slug', $slug)
+            ->where('id', '!=', $this->id)
+            ->exists();
+    }
+
+    /* -----------------------------------------------------------------
+     |  Relationships
+     | -----------------------------------------------------------------
+     */
+
+    /**
+     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -127,9 +158,7 @@ class Category extends Model
     }
 
     /**
-     * Get the child categories.
-     *
-     * @return HasMany<Category>
+     * @return HasMany
      */
     public function children(): HasMany
     {
@@ -137,17 +166,20 @@ class Category extends Model
     }
 
     /**
-     * Get the products in this category.
-     *
-     * @return HasMany<Product>
+     * @return HasMany
      */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
 
+    /* -----------------------------------------------------------------
+     |  Scopes & Helpers
+     | -----------------------------------------------------------------
+     */
+
     /**
-     * Check if this is a root category (no parent).
+     * Check if this is a root category.
      *
      * @return bool
      */
@@ -189,50 +221,23 @@ class Category extends Model
         return $query->whereNull('parent_id');
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+    /* -----------------------------------------------------------------
+     |  Accessors
+     | -----------------------------------------------------------------
      */
-    protected function casts(): array
-    {
-        return [
-            'parent_id' => 'integer',
-            'is_active' => 'boolean',
-            'is_sync_disable' => 'boolean',
-            'woocommerce_category_id' => 'integer',
-            'featured' => 'boolean',
-        ];
-    }
 
-    /**
-     * Get the category's active status.
-     *
-     * @return string
-     */
-    protected function getStatusAttribute(): string
+    public function getStatusAttribute(): string
     {
         return $this->is_active ? 'active' : 'inactive';
     }
-    
-    /**
-     * Get the category's featured status.
-     *
-     * @return string 'featured'|'not featured'
-     */
-    protected function getFeaturedStatusAttribute(): string
+
+    public function getFeaturedStatusAttribute(): string
     {
         return $this->featured ? 'featured' : 'not featured';
     }
 
-    /**
-     * Get the category's sync status.
-     *
-     * @return string 'enabled'|'disabled'
-     */
-    protected function getSyncStatusAttribute(): string
+    public function getSyncStatusAttribute(): string
     {
         return $this->is_sync_disable ? 'disabled' : 'enabled';
     }
 }
-

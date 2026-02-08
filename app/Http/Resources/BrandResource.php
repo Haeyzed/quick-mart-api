@@ -8,9 +8,21 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * BrandResource
+ * Class BrandResource
  *
- * API resource for transforming Brand model data.
+ * API Resource for formatting Brand data.
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $short_description
+ * @property string|null $page_title
+ * @property string|null $image
+ * @property string|null $image_url
+ * @property bool $is_active
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  */
 class BrandResource extends JsonResource
 {
@@ -24,93 +36,70 @@ class BrandResource extends JsonResource
     {
         return [
             /**
-             * Brand ID.
-             *
-             * @var int $id
+             * The unique identifier of the brand.
              * @example 1
              */
             'id' => $this->id,
 
             /**
-             * Brand name.
-             *
-             * @var string $name
-             * @example Apple
+             * The display name of the brand.
+             * @example "Nike"
              */
             'name' => $this->name,
 
             /**
-             * URL-friendly slug for the brand.
-             *
-             * @var string|null $slug
-             * @example apple
+             * The URL-friendly slug.
+             * @example "nike"
              */
             'slug' => $this->slug,
 
             /**
-             * Brief description of the brand.
-             *
-             * @var string|null $short_description
-             * @example Premium technology brand
+             * A short summary of the brand.
+             * @example "Just Do It"
              */
             'short_description' => $this->short_description,
 
             /**
-             * SEO page title for the brand.
-             *
-             * @var string|null $page_title
-             * @example Shop Apple Products | Best Deals
+             * The SEO page title.
+             * @example "Nike Shoes & Apparel"
              */
             'page_title' => $this->page_title,
 
             /**
-             * Brand image filename or path.
-             *
-             * @var string|null $image
-             * @example brand-image.jpg
+             * The image filename.
+             * @example "brands/nike.jpg"
              */
             'image' => $this->image,
 
             /**
-             * Full URL to the brand image.
-             *
-             * @var string|null $image_url
-             * @example https://example.com/images/brand/brand-image.jpg
+             * The full URL to the brand image.
+             * @example "https://api.example.com/storage/brands/nike.jpg"
              */
             'image_url' => $this->image_url,
 
             /**
-             * Active status of the brand.
-             *
-             * @var bool $is_active
-             * @example active
+             * The boolean active status.
+             * @example true
              */
             'is_active' => $this->is_active,
 
             /**
-             * Active status of the brand.
-             *
-             * @var string $status
-             * @example active
+             * The human-readable status.
+             * @example "active"
              */
             'status' => $this->status,
 
             /**
-             * Timestamp when the brand was created.
-             *
-             * @var string|null $created_at
-             * @example 2024-01-01T00:00:00.000000Z
+             * Creation timestamp in ISO 8601.
+             * @example "2024-01-01T12:00:00+00:00"
              */
             'created_at' => $this->created_at?->toIso8601String(),
 
             /**
-             * Timestamp when the brand was last updated.
-             *
-             * @var string|null $updated_at
-             * @example 2024-01-01T00:00:00.000000Z
+             * Last update timestamp in ISO 8601.
+             * @example "2024-01-02T12:00:00+00:00"
              */
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }
-
