@@ -201,7 +201,7 @@ class AuthService extends BaseService
         }
 
         // Get mail settings
-        $mailSetting = MailSetting::latest()->first();
+        $mailSetting = MailSetting::default()->first();
         if (!$mailSetting) {
             throw ValidationException::withMessages([
                 'email' => ['Mail settings are not configured. Please contact the administrator.'],
@@ -285,7 +285,7 @@ class AuthService extends BaseService
         }
 
         // Get mail settings
-        $mailSetting = MailSetting::latest()->first();
+        $mailSetting = MailSetting::default()->first();
         if (!$mailSetting) {
             throw ValidationException::withMessages([
                 'email' => ['Mail settings are not configured. Please contact the administrator.'],

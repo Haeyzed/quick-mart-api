@@ -818,7 +818,7 @@ class SaleService extends BaseService
      */
     protected function sendSaleEmail(Sale $sale): void
     {
-        $mailSetting = MailSetting::latest()->first();
+        $mailSetting = MailSetting::default()->first();
         if (!$mailSetting) {
             throw ValidationException::withMessages([
                 'email' => ['Mail settings are not configured. Please contact the administrator.'],

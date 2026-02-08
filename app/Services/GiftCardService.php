@@ -143,7 +143,7 @@ class GiftCardService extends BaseService
      */
     private function sendGiftCardCreateEmail(GiftCard $giftCard): void
     {
-        $mailSetting = MailSetting::latest()->first();
+        $mailSetting = MailSetting::default()->first();
         if (!$mailSetting) {
             abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
         }
@@ -297,7 +297,7 @@ class GiftCardService extends BaseService
      */
     private function sendGiftCardRechargeEmail(GiftCard $giftCard, float $rechargeAmount): void
     {
-        $mailSetting = MailSetting::latest()->first();
+        $mailSetting = MailSetting::default()->first();
         if (!$mailSetting) {
             abort(Response::HTTP_BAD_REQUEST, 'Mail settings are not configured. Please contact the administrator.');
         }

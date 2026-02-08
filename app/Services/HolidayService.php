@@ -218,7 +218,7 @@ class HolidayService extends BaseService
 
             // Send approval email
             if ($holiday->user && $holiday->user->email) {
-                $mailSetting = MailSetting::latest()->first();
+                $mailSetting = MailSetting::default()->first();
                 if (!$mailSetting) {
                     throw ValidationException::withMessages([
                         'email' => ['Mail settings are not configured. Please contact the administrator.'],

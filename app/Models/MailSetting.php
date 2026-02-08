@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
  * MailSetting Model
  *
  * Represents email/mail server configuration settings.
+ * Supports multiple mail configurations with one marked as default.
  *
  * @property int $id
  * @property string $driver
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $username
  * @property string $password
  * @property string|null $encryption
+ * @property bool $is_default
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -43,6 +45,7 @@ class MailSetting extends Model
         'username',
         'password',
         'encryption',
+        'is_default',
     ];
 
     /**
@@ -54,7 +57,32 @@ class MailSetting extends Model
     {
         return [
             'port' => 'integer',
+            'is_default' => 'boolean',
         ];
+    }
+
+    /**
+     * Scope to get the default mail setting.
+     */
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (MailSetting $model) {
+            if ($model->is_default) {
+                $query = static::query()->where('is_default', true);
+                if ($model->exists) {
+                    $query->whereKeyNot($model->getKey());
+                }
+                $query->update(['is_default' => false]);
+            }
+        });
     }
 }
 

@@ -295,7 +295,7 @@ class TaxService extends BaseService
      */
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
-        $mailSetting = MailSetting::latest()->firstOr(
+        $mailSetting = MailSetting::default()->firstOr(
             fn () => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();

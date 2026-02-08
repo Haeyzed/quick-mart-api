@@ -163,11 +163,11 @@ class DataRetrievalService
     /**
      * Get mail settings.
      *
-     * @return MailSetting|null Latest mail settings or null if not found
+     * @return MailSetting|null Default mail settings or null if not found
      */
     public function mailSetting(): ?MailSetting
     {
-        return MailSetting::latest()->first();
+        return MailSetting::default()->first();
     }
 
     /**

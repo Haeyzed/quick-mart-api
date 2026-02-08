@@ -4008,6 +4008,7 @@ class TenantDatabaseSeeder extends Seeder
                 'username' => $smtpConfig['username'] ?? '',
                 'password' => $smtpConfig['password'] ?? '',
                 'encryption' => $smtpConfig['encryption'] ?? 'tls',
+                'is_default' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
