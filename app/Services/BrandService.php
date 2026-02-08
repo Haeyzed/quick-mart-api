@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Brand;
+use App\Models\User;
+use App\Models\MailSetting;
+use App\Models\GeneralSetting;
+use App\Traits\CheckPermissionsTrait;
+use App\Traits\MailInfo;
 use App\Exports\BrandsExport;
 use App\Imports\BrandsImport;
 use App\Mail\ExportMail;
-use App\Models\Brand;
-use App\Models\GeneralSetting;
-use App\Models\MailSetting;
-use App\Models\User;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\MailInfo;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -24,78 +22,49 @@ use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 /**
- * BrandService
- *
- * Handles all business logic for brand operations including CRUD operations,
- * filtering, pagination, and bulk operations.
- *
- * Key Features:
- * - Encapsulates all brand-related database queries
- * - Handles file uploads and deletions
- * - Provides bulk operations for efficiency
- * - Manages data normalization and validation
- * - Enforces permission checks for all operations
+ * Class BrandService
+ * * Centralizes Brand business logic, file storage orchestration, and export/import workflows.
  */
 class BrandService extends BaseService
 {
-    use CheckPermissionsTrait;
-    use MailInfo;
-
-    private const BULK_ACTIVATE = ['is_active' => true];
-    private const BULK_DEACTIVATE = ['is_active' => false];
-
-    public function __construct(
-        private readonly UploadService $uploadService
-    )
-    {
-    }
+    use CheckPermissionsTrait, MailInfo;
 
     /**
-     * Get paginated list of brands with optional filters.
-     *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Brand>
+     * @param UploadService $uploadService
+     */
+    public function __construct(
+        private readonly UploadService $uploadService
+    ) {}
+
+    /**
+     * Retrieve brands with criteria-based filtering and pagination.
+     * * @param array $filters Query parameters (status, search).
+     * @param int $perPage Results per page.
+     * @return LengthAwarePaginator
      */
     public function getBrands(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $this->requirePermission('brands-index');
 
         return Brand::query()
-            ->when(
-                isset($filters['status']),
-                fn($query) => $query->where('is_active', $filters['status'] === 'active')
-            )
-            ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where(function ($q) use ($filters) {
-                    $search = $filters['search'];
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('slug', 'like', "%{$search}%")
-                        ->orWhere('short_description', 'like', "%{$search}%");
-                })
-            )
+            ->when(isset($filters['status']), function ($query) use ($filters) {
+                return $query->where('is_active', $filters['status'] === 'active');
+            })
+            ->when(!empty($filters['search']), function ($query) use ($filters) {
+                $term = "%{$filters['search']}%";
+                return $query->where(fn($q) => 
+                    $q->where('name', 'like', $term)
+                      ->orWhere('slug', 'like', $term)
+                      ->orWhere('short_description', 'like', $term)
+                );
+            })
             ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get a single brand by ID.
-     *
-     * @param int $id Brand ID
-     * @return Brand
-     */
-    public function getBrand(int $id): Brand
-    {
-        $this->requirePermission('brands-show');
-
-        return Brand::findOrFail($id);
-    }
-
-    /**
-     * Create a new brand.
-     *
-     * @param array<string, mixed> $data Validated brand data
+     * Orchestrate brand creation including file upload.
+     * * @param array $data Validated data from request.
      * @return Brand
      */
     public function createBrand(array $data): Brand
@@ -103,11 +72,8 @@ class BrandService extends BaseService
         $this->requirePermission('brands-create');
 
         return $this->transaction(function () use ($data) {
-            $data = $this->normalizeBrandData($data);
-            $data = $this->processFileUploads($data);
-
-            if (!isset($data['slug']) && isset($data['name'])) {
-                $data['slug'] = Brand::generateUniqueSlug($data['name']);
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                $data = $this->handleImageUpload($data);
             }
 
             return Brand::create($data);
@@ -115,57 +81,9 @@ class BrandService extends BaseService
     }
 
     /**
-     * Normalize brand data to match database schema requirements.
-     *
-     * Handles boolean conversions and default values:
-     * - is_active: boolean, defaults to true on create
-     *
-     * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation
-     * @return array<string, mixed>
-     */
-    private function normalizeBrandData(array $data, bool $isUpdate = false): array
-    {
-        // is_active defaults to true on create
-        if (!isset($data['is_active']) && !$isUpdate) {
-            $data['is_active'] = true;
-        } elseif (isset($data['is_active'])) {
-            $data['is_active'] = (bool)filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
-    }
-
-    /**
-     * Extracted file upload logic to reduce duplication across create/update
-     * Process and upload image file.
-     *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function processFileUploads(array $data): array
-    {
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            $filePath = $this->uploadService->upload(
-                $data['image'],
-                config('storage.brands.images')
-            );
-            $data['image'] = $filePath;
-            $data['image_url'] = $this->uploadService->url($filePath);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Update an existing brand.
-     *
-     * @param Brand $brand Brand instance to update
-     * @param array<string, mixed> $data Validated brand data
+     * Update brand and perform storage cleanup of old images.
+     * * @param Brand $brand Existing brand instance.
+     * @param array $data Updated fields.
      * @return Brand
      */
     public function updateBrand(Brand $brand, array $data): Brand
@@ -173,14 +91,12 @@ class BrandService extends BaseService
         $this->requirePermission('brands-update');
 
         return $this->transaction(function () use ($brand, $data) {
-            $data = $this->normalizeBrandData($data, isUpdate: true);
-
-            // Delete old files before uploading new ones
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile && $brand->image) {
-                $this->uploadService->delete($brand->image);
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                if ($brand->image) {
+                    $this->uploadService->delete($brand->image);
+                }
+                $data = $this->handleImageUpload($data);
             }
-
-            $data = $this->processFileUploads($data);
 
             $brand->update($data);
             return $brand->fresh();
@@ -188,233 +104,132 @@ class BrandService extends BaseService
     }
 
     /**
-     * Refactored from individual loop to batch processing with chunking
-     * Bulk delete multiple brands using efficient batch operations.
-     *
-     * @param array<int> $ids Array of brand IDs to delete
-     * @return int Number of brands successfully deleted
+     * Delete a brand and its associated assets after product check.
+     * * @param Brand $brand
+     * @throws Exception If brand has active products.
+     */
+    public function deleteBrand(Brand $brand): void
+    {
+        $this->requirePermission('brands-delete');
+
+        if ($brand->products()->exists()) {
+            throw new Exception("Cannot delete brand: associated products exist.");
+        }
+
+        $this->transaction(function () use ($brand) {
+            if ($brand->image) {
+                $this->uploadService->delete($brand->image);
+            }
+            $brand->delete();
+        });
+    }
+
+    /**
+     * Perform bulk deletion with individual file cleanup.
+     * * @param array<int> $ids
+     * @return int Count of deleted brands.
      */
     public function bulkDeleteBrands(array $ids): int
     {
         $this->requirePermission('brands-delete');
 
         return $this->transaction(function () use ($ids) {
+            $brands = Brand::whereIn('id', $ids)->withCount('products')->get();
             $deletedCount = 0;
 
-            Brand::whereIn('id', $ids)
-                ->chunk(100, function ($brands) use (&$deletedCount) {
-                    foreach ($brands as $brand) {
-                        try {
-                            if (!$brand->products()->exists()) {
-                                $this->cleanupBrandFiles($brand);
-                                $brand->delete();
-                                $deletedCount++;
-                            }
-                        } catch (Exception $e) {
-                            $this->logError("Failed to delete brand {$brand->id}: " . $e->getMessage());
-                        }
+            foreach ($brands as $brand) {
+                if ($brand->products_count === 0) {
+                    if ($brand->image) {
+                        $this->uploadService->delete($brand->image);
                     }
-                });
-
+                    $brand->delete();
+                    $deletedCount++;
+                }
+            }
             return $deletedCount;
         });
     }
 
     /**
-     * Delete a single brand with validation.
-     *
-     * Prevents deletion if brand has associated products.
-     *
-     * @param Brand $brand Brand instance to delete
-     * @return bool
-     * @throws HttpResponseException
-     */
-    public function deleteBrand(Brand $brand): bool
-    {
-        $this->requirePermission('brands-delete');
-
-        return $this->transaction(function () use ($brand) {
-            if ($brand->products()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete brand: brand has associated products');
-            }
-
-            $this->cleanupBrandFiles($brand);
-            return $brand->delete();
-        });
-    }
-
-    /**
-     * Extracted file cleanup logic to DRY principle
-     * Clean up associated files for a brand.
-     *
-     * @param Brand $brand
-     * @return void
-     */
-    private function cleanupBrandFiles(Brand $brand): void
-    {
-        if ($brand->image) {
-            $this->uploadService->delete($brand->image, 'public');
-        }
-    }
-
-    /**
-     * Import brands from a file.
-     *
-     * @param UploadedFile $file
-     * @return void
-     */
-    public function importBrands(UploadedFile $file): void
-    {
-        $this->requirePermission('brands-import');
-
-        $this->transaction(function () use ($file) {
-            Excel::import(new BrandsImport(), $file);
-        });
-    }
-
-    /**
-     * Created private helper method to eliminate duplication across all bulk update methods
-     * Bulk update multiple brands with specified data.
-     *
-     * @param array<int> $ids Array of brand IDs to update
-     * @param array<string, mixed> $updateData Data to update
-     * @return int Number of brands updated
-     */
-    private function bulkUpdateBrands(array $ids, array $updateData): int
-    {
-        return $this->transaction(function () use ($ids, $updateData) {
-            return Brand::whereIn('id', $ids)->update($updateData);
-        });
-    }
-
-    /**
-     * Bulk activate multiple brands.
-     *
-     * @param array<int> $ids Array of brand IDs to activate
-     * @return int Number of brands activated
+     * @param array $ids
+     * @return int
      */
     public function bulkActivateBrands(array $ids): int
     {
         $this->requirePermission('brands-update');
-
-        return $this->bulkUpdateBrands($ids, self::BULK_ACTIVATE);
+        return Brand::whereIn('id', $ids)->update(['is_active' => true]);
     }
 
     /**
-     * Bulk deactivate multiple brands.
-     *
-     * @param array<int> $ids Array of brand IDs to deactivate
-     * @return int Number of brands deactivated
+     * @param array $ids
+     * @return int
      */
     public function bulkDeactivateBrands(array $ids): int
     {
         $this->requirePermission('brands-update');
-
-        return $this->bulkUpdateBrands($ids, self::BULK_DEACTIVATE);
+        return Brand::whereIn('id', $ids)->update(['is_active' => false]);
     }
 
     /**
-     * Export brands to Excel or PDF.
-     *
-     * @param array<int> $ids Array of brand IDs to export (empty for all)
-     * @param string $format Export format: 'excel' or 'pdf'
-     * @param User|null $user User to send email to (null for download)
-     * @param array<string> $columns Columns to export
-     * @param string $method Export method: 'download' or 'email'
-     * @return string File path
+     * Map image upload into the data array using UploadService.
+     * * @param array $data
+     * @return array
      */
-    public function exportBrands(
-        array $ids = [],
-        string $format = 'excel',
-        ?User $user = null,
-        array $columns = [],
-        string $method = 'download'
-    ): string {
+    private function handleImageUpload(array $data): array
+    {
+        $file = $data['image'];
+        $path = $this->uploadService->upload($file, config('storage.brands.images', 'brands'));
+        
+        $data['image'] = $path;
+        $data['image_url'] = $this->uploadService->url($path);
+
+        return $data;
+    }
+
+    /**
+     * Generate export file and handle delivery method.
+     * * @return string File path on public disk.
+     */
+    public function exportBrands(array $ids, string $format, ?User $user, array $columns, string $method): string
+    {
         $this->requirePermission('brands-export');
+        
+        $fileName = 'brands_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $path = 'exports/' . $fileName;
 
-        $fileName = 'brands-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $filePath = 'exports/' . $fileName;
-
-        $this->generateExportFile($format, $filePath, $ids, $columns);
-
-        if ($user && $method === 'email') {
-            $this->sendExportEmail($user, $filePath, $fileName);
-        }
-
-        return $filePath;
-    }
-
-    /**
-     * Extracted export file generation logic for cleaner separation of concerns
-     * Generate export file in specified format.
-     *
-     * @param string $format
-     * @param string $filePath
-     * @param array<int> $ids
-     * @param array<string> $columns
-     * @return void
-     */
-    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
-    {
         if ($format === 'excel') {
-            Excel::store(new BrandsExport($ids, $columns), $filePath, 'public');
+            Excel::store(new BrandsExport($ids, $columns), $path, 'public');
         } else {
-            $brands = Brand::query()
-                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
-                ->orderBy('name')
-                ->get();
-
-            $pdf = PDF::loadView('exports.brands-pdf', [
-                'brands' => $brands,
-                'columns' => $columns,
-            ]);
-
-            Storage::disk('public')->put($filePath, $pdf->output());
+            $brands = Brand::when(!empty($ids), fn($q) => $q->whereIn('id', $ids))->get();
+            $pdf = PDF::loadView('exports.brands-pdf', compact('brands', 'columns'));
+            Storage::disk('public')->put($path, $pdf->output());
         }
+
+        if ($method === 'email' && $user) {
+            $this->sendExportEmail($user, $path, $fileName);
+        }
+
+        return $path;
     }
 
     /**
-     * Extracted email sending logic for better error handling and maintainability
-     * Send export file via email.
-     *
-     * @param User $user
-     * @param string $filePath
-     * @param string $fileName
-     * @return void
-     * @throws HttpResponseException
+     * Private helper for export email delivery.
      */
-    private function sendExportEmail(User $user, string $filePath, string $fileName): void
+    private function sendExportEmail(User $user, string $path, string $fileName): void
     {
-        $mailSetting = MailSetting::latest()->first();
-        if (!$mailSetting) {
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
-                    Response::HTTP_BAD_REQUEST
-                )
-            );
-        }
-
+        $mailSetting = MailSetting::latest()->first() ?? throw new Exception("Mail settings not found.");
         $generalSetting = GeneralSetting::latest()->first();
 
-        try {
-            $this->setMailInfo($mailSetting);
-            Mail::to($user->email)->send(new ExportMail(
-                $user,
-                $filePath,
-                $fileName,
-                'Brands',
-                $generalSetting
-            ));
-        } catch (Exception $e) {
-            $this->logError("Failed to send export email: " . $e->getMessage());
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
-                    Response::HTTP_INTERNAL_SERVER_ERROR
-                )
-            );
-        }
+        $this->setMailInfo($mailSetting);
+        Mail::to($user->email)->send(new ExportMail($user, $path, $fileName, 'Brands', $generalSetting));
+    }
+
+    /**
+     * @param UploadedFile $file
+     */
+    public function importBrands(UploadedFile $file): void
+    {
+        $this->requirePermission('brands-import');
+        Excel::import(new BrandsImport(), $file);
     }
 }
-

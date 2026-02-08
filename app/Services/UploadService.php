@@ -11,11 +11,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * UploadService
- *
- * A general-purpose file upload service that works with all Laravel storage providers.
- * Supports images, videos, documents, and any other file type.
- * Retrieves storage provider from general settings.
+ * Class UploadService
+ * * A robust, provider-agnostic file management service supporting dynamic 
+ * disk resolution (S3, Local, DigitalOcean) based on application settings.
  */
 class UploadService
 {
@@ -23,143 +21,79 @@ class UploadService
     use StorageProviderInfo;
 
     /**
-     * Upload a file and return its public URL.
+     * Store a file and return the public URL in one call.
      *
-     * @param UploadedFile $file The file to upload
-     * @param string $directory Directory path where the file should be stored
-     * @param string|null $disk Storage disk name (defaults to general settings storage_provider)
-     * @param string|null $fileName Custom file name (without extension). If null, generates unique name
-     * @return string The public URL of the uploaded file
+     * @param UploadedFile $file
+     * @param string $directory
+     * @param string|null $disk
+     * @param string|null $fileName
+     * @return string
      */
-    public function uploadAndGetUrl(
-        UploadedFile $file,
-        string       $directory = 'uploads',
-        ?string      $disk = null,
-        ?string      $fileName = null
-    ): string
+    public function uploadAndGetUrl(UploadedFile $file, string $directory = 'uploads', ?string $disk = null, ?string $fileName = null): string
     {
-        $disk = $disk ?? $this->getStorageProvider();
-        
-        // Set storage provider configuration from database
-        $this->setStorageProviderInfo($disk);
-        
-        $filePath = $this->upload($file, $directory, $disk, $fileName);
+        $resolvedDisk = $this->resolveDisk($disk);
+        $filePath = $this->upload($file, $directory, $resolvedDisk, $fileName);
 
-        return Storage::disk($disk)->url($filePath);
+        return Storage::disk($resolvedDisk)->url($filePath);
     }
 
     /**
-     * Upload a file to storage.
-     *
-     * @param UploadedFile $file The file to upload
-     * @param string $directory Directory path where the file should be stored
-     * @param string|null $disk Storage disk name (defaults to general settings storage_provider)
-     * @param string|null $fileName Custom file name (without extension). If null, generates unique name
-     * @return string The stored file path
+     * Pure file storage logic.
+     * * @return string The relative file path.
      */
-    public function upload(
-        UploadedFile $file,
-        string       $directory = 'uploads',
-        ?string      $disk = null,
-        ?string      $fileName = null
-    ): string
+    public function upload(UploadedFile $file, string $directory = 'uploads', ?string $disk = null, ?string $fileName = null): string
     {
-        $disk = $disk ?? $this->getStorageProvider();
+        $resolvedDisk = $this->resolveDisk($disk);
+        $extension = $file->getClientOriginalExtension();
 
-        // Generate filename with original extension if not provided
-        if ($fileName === null) {
-            $extension = $file->getClientOriginalExtension();
-            $fileName = $this->generateFileName($extension);
-        } else {
-            // If fileName is provided without extension, add original extension
-            $extension = $file->getClientOriginalExtension();
-            if (!str_contains($fileName, '.')) {
-                $fileName .= '.' . $extension;
-            }
-        }
+        $finalFileName = $fileName 
+            ? (str_contains($fileName, '.') ? $fileName : "{$fileName}.{$extension}")
+            : $this->generateFileName($extension);
 
-        // Ensure directory exists
-        Storage::disk($disk)->makeDirectory($directory);
+        Storage::disk($resolvedDisk)->putFileAs($directory, $file, $finalFileName);
 
-        // Upload file
-        Storage::disk($disk)->putFileAs(
-            $directory,
-            $file,
-            $fileName
-        );
-
-        return $directory . '/' . $fileName;
+        return "{$directory}/{$finalFileName}";
     }
 
+    /**
+     * Get the public URL with disk verification.
+     */
+    public function url(?string $filePath, ?string $disk = null): ?string
+    {
+        if (!$filePath) return null;
+        $resolvedDisk = $this->resolveDisk($disk);
+
+        return Storage::disk($resolvedDisk)->exists($filePath)
+            ? Storage::disk($resolvedDisk)->url($filePath)
+            : null;
+    }
 
     /**
-     * Generate a unique file name.
-     *
-     * @param string $extension File extension
-     * @return string Unique file name with extension
+     * Delete file from storage.
+     */
+    public function delete(?string $filePath, ?string $disk = null): bool
+    {
+        if (!$filePath) return false;
+        $resolvedDisk = $this->resolveDisk($disk);
+
+        return Storage::disk($resolvedDisk)->exists($filePath) && Storage::disk($resolvedDisk)->delete($filePath);
+    }
+
+    /**
+     * Centralized disk resolution logic.
+     */
+    private function resolveDisk(?string $disk): string
+    {
+        $resolved = $disk ?? $this->getStorageProvider();
+        $this->setStorageProviderInfo($resolved);
+        return $resolved;
+    }
+
+    /**
+     * Generate a collision-resistant filename.
      */
     protected function generateFileName(string $extension): string
     {
         return Str::uuid() . '.' . $extension;
     }
-
-    /**
-     * Get the public URL of a file.
-     *
-     * @param string $filePath Path to the file
-     * @param string|null $disk Storage disk name (defaults to general settings storage_provider)
-     * @return string|null The public URL or null if file doesn't exist
-     */
-    public function url(string $filePath, ?string $disk = null): ?string
-    {
-        $disk = $disk ?? $this->getStorageProvider();
-
-        // Set storage provider configuration from database
-        $this->setStorageProviderInfo($disk);
-
-        if (!Storage::disk($disk)->exists($filePath)) {
-            return null;
-        }
-
-        return Storage::disk($disk)->url($filePath);
-    }
-
-    /**
-     * Check if a file exists in storage.
-     *
-     * @param string $filePath Path to the file
-     * @param string|null $disk Storage disk name (defaults to general settings storage_provider)
-     * @return bool True if file exists, false otherwise
-     */
-    public function exists(string $filePath, ?string $disk = null): bool
-    {
-        $disk = $disk ?? $this->getStorageProvider();
-
-        // Set storage provider configuration from database
-        $this->setStorageProviderInfo($disk);
-
-        return Storage::disk($disk)->exists($filePath);
-    }
-
-    /**
-     * Delete a file from storage.
-     *
-     * @param string $filePath Path to the file
-     * @param string|null $disk Storage disk name (defaults to general settings storage_provider)
-     * @return bool True if file was deleted, false otherwise
-     */
-    public function delete(string $filePath, ?string $disk = null): bool
-    {
-        $disk = $disk ?? $this->getStorageProvider();
-
-        // Set storage provider configuration from database
-        $this->setStorageProviderInfo($disk);
-
-        if (Storage::disk($disk)->exists($filePath)) {
-            return Storage::disk($disk)->delete($filePath);
-        }
-
-        return false;
-    }
 }
-

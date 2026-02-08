@@ -20,39 +20,41 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * BrandController
- *
- * API controller for managing brands with full CRUD operations.
- * Keeps controller thin with all business logic delegated to BrandService.
+ * Class BrandController
+ * * Handles high-performance Brand lifecycle operations including bulk actions, 
+ * imports, and multi-format exports.
+ * * @group Brand Management
  */
 class BrandController extends Controller
 {
+    /**
+     * @param BrandService $service
+     */
     public function __construct(
         private readonly BrandService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of brands.
+     * Display a paginated listing of brands with filters.
      *
      * @param BrandIndexRequest $request
      * @return JsonResponse
      */
     public function index(BrandIndexRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = $validated['per_page'] ?? 10;
-        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
+        $brands = $this->service->getBrands(
+            $request->validated(), 
+            (int) $request->input('per_page', 10)
+        );
 
-        $brands = $this->service->getBrands($filters, $perPage)
-            ->through(fn($brand) => new BrandResource($brand));
-
-        return response()->success($brands, 'Brands fetched successfully');
+        return response()->success(
+            BrandResource::collection($brands)->resource,
+            'Brands fetched successfully'
+        );
     }
 
     /**
-     * Store a newly created brand.
+     * Store a newly created brand with automatic slug generation.
      *
      * @param BrandRequest $request
      * @return JsonResponse
@@ -64,7 +66,7 @@ class BrandController extends Controller
         return response()->success(
             new BrandResource($brand),
             'Brand created successfully',
-            201
+            Response::HTTP_CREATED
         );
     }
 
@@ -83,7 +85,7 @@ class BrandController extends Controller
     }
 
     /**
-     * Update the specified brand.
+     * Update the specified brand and manage file cleanup.
      *
      * @param BrandRequest $request
      * @param Brand $brand
@@ -91,16 +93,16 @@ class BrandController extends Controller
      */
     public function update(BrandRequest $request, Brand $brand): JsonResponse
     {
-        $brand = $this->service->updateBrand($brand, $request->validated());
+        $updatedBrand = $this->service->updateBrand($brand, $request->validated());
 
         return response()->success(
-            new BrandResource($brand),
+            new BrandResource($updatedBrand),
             'Brand updated successfully'
         );
     }
 
     /**
-     * Remove the specified brand from storage.
+     * Remove the specified brand (checks for product constraints).
      *
      * @param Brand $brand
      * @return JsonResponse
@@ -113,7 +115,7 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk delete multiple brands.
+     * Bulk delete brands efficiently.
      *
      * @param BrandBulkDestroyRequest $request
      * @return JsonResponse
@@ -124,12 +126,12 @@ class BrandController extends Controller
 
         return response()->success(
             ['deleted_count' => $count],
-            $this->pluralizeMessage($count, 'Deleted {count} brand', 'successfully')
+            "Successfully deleted {$count} brands"
         );
     }
 
     /**
-     * Import brands from a file.
+     * Bulk import brands from CSV/Excel using batch processing.
      *
      * @param ImportRequest $request
      * @return JsonResponse
@@ -142,39 +144,31 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk activate multiple brands.
-     *
-     * @param BrandBulkUpdateRequest $request
+     * Activate multiple brands in a single database trip.
+     * * @param BrandBulkUpdateRequest $request
      * @return JsonResponse
      */
     public function bulkActivate(BrandBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkActivateBrands($request->validated()['ids']);
 
-        return response()->success(
-            ['activated_count' => $count],
-            $this->pluralizeMessage($count, 'Activated {count} brand', 'successfully')
-        );
+        return response()->success(['activated_count' => $count], "{$count} brands activated");
     }
 
     /**
-     * Bulk deactivate multiple brands.
-     *
-     * @param BrandBulkUpdateRequest $request
+     * Deactivate multiple brands in a single database trip.
+     * * @param BrandBulkUpdateRequest $request
      * @return JsonResponse
      */
     public function bulkDeactivate(BrandBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkDeactivateBrands($request->validated()['ids']);
 
-        return response()->success(
-            ['deactivated_count' => $count],
-            $this->pluralizeMessage($count, 'Deactivated {count} brand', 'successfully')
-        );
+        return response()->success(['deactivated_count' => $count], "{$count} brands deactivated");
     }
 
     /**
-     * Export brands to Excel or PDF.
+     * Export brands to Excel/PDF with optional email delivery.
      *
      * @param ExportRequest $request
      * @return JsonResponse|Response
@@ -182,35 +176,20 @@ class BrandController extends Controller
     public function export(ExportRequest $request): JsonResponse|Response
     {
         $validated = $request->validated();
-        $ids = $validated['ids'] ?? [];
-        $format = $validated['format'];
-        $method = $validated['method'];
-        $columns = $validated['columns'] ?? [];
-        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
+        $user = ($validated['method'] === 'email') ? User::findOrFail($validated['user_id']) : null;
 
-        $filePath = $this->service->exportBrands($ids, $format, $user, $columns, $method);
+        $filePath = $this->service->exportBrands(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $user,
+            $validated['columns'] ?? [],
+            $validated['method']
+        );
 
-        if ($method === 'download') {
+        if ($validated['method'] === 'download') {
             return Storage::disk('public')->download($filePath);
         }
 
-        return response()->success(null, 'Export file sent via email successfully');
-    }
-
-    /**
-     * Pluralize message with count.
-     *
-     * Utility helper to eliminate string concatenation duplication across bulk methods.
-     *
-     * @param int $count
-     * @param string $message Message with {count} placeholder (e.g., "Activated {count} brand")
-     * @param string $suffix Suffix to append (e.g., "successfully")
-     * @return string
-     */
-    private function pluralizeMessage(int $count, string $message, string $suffix): string
-    {
-        $pluralSuffix = $count !== 1 ? 's' : '';
-        return str_replace('{count}', (string)$count, $message) . $pluralSuffix . " {$suffix}";
+        return response()->success(null, 'Export sent via email');
     }
 }
-

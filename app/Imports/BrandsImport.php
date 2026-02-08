@@ -5,54 +5,69 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Brand;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
- * BrandsImport
- *
- * Handles importing brands from CSV/Excel files.
+ * Class BrandsImport
+ * * High-performance import using upserts (Update on collision, Insert on new).
  */
-class BrandsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class BrandsImport implements 
+    ToModel, 
+    WithHeadingRow, 
+    SkipsEmptyRows, 
+    WithBatchInserts, 
+    WithUpserts,
+    WithValidation
 {
     /**
-     * Process the collection of rows.
-     *
-     * @param Collection $collection
-     * @return void
+     * Transform row into Model instance.
+     * * @param array $row
+     * @return Model|null
      */
-    public function collection(Collection $collection): void
+    public function model(array $row): ?Model
     {
-        foreach ($collection as $row) {
-            // Skip if name is empty
-            if (empty($row['name'] ?? null)) {
-                continue;
-            }
+        return new Brand([
+            'name'              => trim((string) ($row['name'] ?? '')),
+            'short_description' => trim((string) ($row['short_description'] ?? '')),
+            'image_url'         => trim((string) ($row['image_url'] ?? '')) ?: null,
+            'page_title'        => trim((string) ($row['page_title'] ?? '')) ?: null,
+            'is_active'         => true,
+        ]);
+    }
 
-            $name = trim($row['name'] ?? '');
-            $shortDescription = trim($row['short_description'] ?? '');
-            $imageUrl = trim($row['image_url'] ?? '');
-            $pageTitle = trim($row['page_title'] ?? '');
+    /**
+     * Unique key for Upsert logic.
+     * @return string
+     */
+    public function uniqueBy(): string
+    {
+        return 'name';
+    }
 
-            // Find or create brand
-            $brand = Brand::firstOrNew(
-                ['name' => $name, 'is_active' => true]
-            );
+    /**
+     * Bulk validation rules.
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'image_url' => ['nullable', 'url'],
+        ];
+    }
 
-            $brand->name = $name;
-            $brand->image_url = $imageUrl ?: null;
-            $brand->page_title = $pageTitle ?: null;
-            $brand->short_description = $shortDescription;
-            $brand->is_active = true;
-
-            // Generate slug if not set
-            if (!$brand->slug && $brand->name) {
-                $brand->slug = Brand::generateUniqueSlug($brand->name);
-            }
-
-            $brand->save();
-        }
+    /**
+     * Rows per database trip.
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 1000;
     }
 }

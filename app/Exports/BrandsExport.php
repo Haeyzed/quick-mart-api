@@ -5,17 +5,28 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\Brand;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * BrandsExport
+ * Class BrandsExport
  *
- * Handles exporting brands to Excel.
+ * Handles memory-efficient exporting of Brands using database-level chunking.
+ * Supports dynamic column selection and standardized date formatting.
  */
-class BrandsExport implements FromCollection, WithHeadings, WithMapping
+class BrandsExport implements FromQuery, WithHeadings, WithMapping
 {
+    use Exportable;
+
+    /**
+     * BrandsExport constructor.
+     *
+     * @param array<int> $ids Specific Brand IDs to export. If empty, all brands are exported.
+     * @param array<string> $columns List of specific columns to include in the export.
+     */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
@@ -23,75 +34,69 @@ class BrandsExport implements FromCollection, WithHeadings, WithMapping
     }
 
     /**
-     * Get the collection of brands to export.
+     * Prepare the query for the export.
+     * Using FromQuery instead of FromCollection prevents memory exhaustion for large datasets.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Builder
      */
-    public function collection()
+    public function query(): Builder
     {
-        $query = Brand::query();
-
-        if (!empty($this->ids)) {
-            $query->whereIn('id', $this->ids);
-        }
-
-        return $query->orderBy('name')->get();
+        return Brand::query()
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->orderBy('name');
     }
 
     /**
-     * Define the headings for the Excel file.
+     * Define the headings for the Excel file based on selected columns.
      *
-     * @return array
+     * @return array<int, string>
      */
     public function headings(): array
     {
-        $columnLabels = [
-            'id' => 'ID',
-            'name' => 'Name',
-            'slug' => 'Slug',
-            'short_description' => 'Short Description',
-            'page_title' => 'Page Title',
-            'image_url' => 'Image URL',
-            'is_active' => 'Is Active',
-            'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
+        $allLabels = [
+            'id'                => 'ID',
+            'name'              => 'Brand Name',
+            'slug'              => 'URL Slug',
+            'short_description' => 'Description',
+            'page_title'        => 'SEO Title',
+            'image_url'         => 'Image Source',
+            'is_active'         => 'Status',
+            'created_at'        => 'Date Created',
+            'updated_at'        => 'Last Updated',
         ];
 
         if (empty($this->columns)) {
-            return array_values($columnLabels);
+            return array_values($allLabels);
         }
 
-        return array_map(fn($col) => $columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
+        return array_map(
+            fn($col) => $allLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            $this->columns
+        );
     }
 
     /**
-     * Map each brand to a row in the Excel file.
+     * Map each Brand model instance to a row in the export.
      *
      * @param Brand $brand
-     * @return array
+     * @return array<int, mixed>
      */
     public function map($brand): array
     {
-        $defaultColumns = ['id', 'name', 'slug', 'short_description', 'page_title', 'image_url', 'is_active', 'created_at', 'updated_at'];
-        $columnsToExport = empty($this->columns) ? $defaultColumns : $this->columns;
+        $columnsToExport = $this->columns ?: [
+            'id', 'name', 'slug', 'short_description', 'page_title', 'image_url', 'is_active', 'created_at', 'updated_at'
+        ];
 
-        $data = [];
+        $row = [];
         foreach ($columnsToExport as $column) {
-            match ($column) {
-                'id' => $data[] = $brand->id,
-                'name' => $data[] = $brand->name,
-                'slug' => $data[] = $brand->slug ?? '',
-                'short_description' => $data[] = $brand->short_description ?? '',
-                'page_title' => $data[] = $brand->page_title ?? '',
-                'image_url' => $data[] = $brand->image_url ?? '',
-                'is_active' => $data[] = $brand->is_active ? 'Yes' : 'No',
-                'created_at' => $data[] = $brand->created_at?->format('Y-m-d H:i:s') ?? '',
-                'updated_at' => $data[] = $brand->updated_at?->format('Y-m-d H:i:s') ?? '',
-                default => $data[] = '',
+            $row[] = match ($column) {
+                'is_active'  => $brand->is_active ? 'Active' : 'Inactive',
+                'created_at' => $brand->created_at?->toDateTimeString(),
+                'updated_at' => $brand->updated_at?->toDateTimeString(),
+                default      => $brand->{$column} ?? '',
             };
         }
 
-        return $data;
+        return $row;
     }
 }
-
