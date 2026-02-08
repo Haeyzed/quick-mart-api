@@ -14,10 +14,7 @@ use Illuminate\Support\Str;
  * * @property int $id
  * @property string $name
  * @property string|null $slug
- * @property string|null $image
- * @property string|null $image_url
  * @property bool $is_active
- * @property-read string $status Virtual attribute
  */
 class Brand extends Model
 {
@@ -33,20 +30,18 @@ class Brand extends Model
         'is_active' => 'boolean',
     ];
 
-    /** @var array */
-    protected $appends = ['status'];
-
     /**
      * Automate logic during model lifecycle.
      */
     protected static function boot(): void
     {
         parent::boot();
-        static::creating(fn($brand) => $brand->ensureSlugExists());
+        // Ensure slug is generated for both creates and updates if missing
+        static::saving(fn($brand) => $brand->ensureSlugExists());
     }
 
     /**
-     * Ensure a unique slug is generated if none provided.
+     * Ensure a unique slug is generated.
      */
     public function ensureSlugExists(): void
     {
@@ -64,19 +59,11 @@ class Brand extends Model
         $original = $slug;
         $count = 1;
 
-        while (static::where('slug', $slug)->exists()) {
+        while (static::where('slug', $slug)->where('id', '!=', request()->route('brand')?->id)->exists()) {
             $slug = "{$original}-" . $count++;
         }
 
         return $slug;
-    }
-
-    /**
-     * Accessor for human-readable status.
-     */
-    public function getStatusAttribute(): string
-    {
-        return $this->is_active ? 'active' : 'inactive';
     }
 
     /**
