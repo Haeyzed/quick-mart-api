@@ -8,32 +8,42 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Response as ResponseFacade;
 
 /**
- * ResponseServiceProvider
+ * Class ResponseServiceProvider
  *
- * Registers response macros for consistent JSON API responses.
- * Macros automatically detect and handle both normal data and paginated results.
+ * Registers standardized JSON response helpers for the application.
+ * Provides both legacy static methods and modern response macros.
  */
 class ResponseServiceProvider extends ServiceProvider
 {
+    /* -----------------------------------------------------------------
+     |  Legacy Static Methods (Backward Compatibility)
+     | -----------------------------------------------------------------
+     */
+
     /**
-     * Create a successful JSON response (legacy static method for backward compatibility).
+     * Create a successful JSON response.
      *
-     * @param mixed $data
-     * @param string $message
-     * @param int $statusCode
+     * Automatically detects paginated data and appends
+     * pagination metadata and navigation links.
+     *
+     * @param mixed  $data       Response payload
+     * @param string $message    Human-readable success message
+     * @param int    $statusCode HTTP status code
+     *
      * @return JsonResponse
-     * @deprecated Use response()->success() macro instead
+     *
+     * @deprecated Use response()->success() macro instead.
      */
     public static function success(
-        mixed  $data = null,
+        mixed $data = null,
         string $message = 'Success',
-        int    $statusCode = Response::HTTP_OK
-    ): JsonResponse
-    {
+        int $statusCode = Response::HTTP_OK
+    ): JsonResponse {
         $response = [
-            'status' => true,
+            'success' => true,
             'message' => $message,
         ];
 
@@ -62,38 +72,40 @@ class ResponseServiceProvider extends ServiceProvider
     }
 
     /**
-     * Create a validation error JSON response (legacy static method for backward compatibility).
+     * Create a validation error JSON response.
      *
      * @param array<string, array<int, string>> $errors
      * @param string $message
+     *
      * @return JsonResponse
-     * @deprecated Use response()->error() macro instead
+     *
+     * @deprecated Use response()->error() macro instead.
      */
     public static function validationError(
-        array  $errors,
+        array $errors,
         string $message = 'Validation failed'
-    ): JsonResponse
-    {
+    ): JsonResponse {
         return self::error($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**
-     * Create an error JSON response (legacy static method for backward compatibility).
+     * Create an error JSON response.
      *
-     * @param string $message
-     * @param mixed $errors
-     * @param int $statusCode
+     * @param string $message    Error message
+     * @param mixed  $errors     Optional error details
+     * @param int    $statusCode HTTP status code
+     *
      * @return JsonResponse
-     * @deprecated Use response()->error() macro instead
+     *
+     * @deprecated Use response()->error() macro instead.
      */
     public static function error(
         string $message = 'An error occurred',
-        mixed  $errors = null,
-        int    $statusCode = Response::HTTP_BAD_REQUEST
-    ): JsonResponse
-    {
+        mixed $errors = null,
+        int $statusCode = Response::HTTP_BAD_REQUEST
+    ): JsonResponse {
         $response = [
-            'status' => false,
+            'success' => false,
             'message' => $message,
         ];
 
@@ -105,11 +117,11 @@ class ResponseServiceProvider extends ServiceProvider
     }
 
     /**
-     * Create a not found JSON response (legacy static method for backward compatibility).
+     * Create a "not found" JSON response.
      *
      * @param string $message
+     *
      * @return JsonResponse
-     * @deprecated Use response()->error() macro instead
      */
     public static function notFound(string $message = 'Resource not found'): JsonResponse
     {
@@ -117,11 +129,11 @@ class ResponseServiceProvider extends ServiceProvider
     }
 
     /**
-     * Create an unauthorized JSON response (legacy static method for backward compatibility).
+     * Create an unauthorized JSON response.
      *
      * @param string $message
+     *
      * @return JsonResponse
-     * @deprecated Use response()->error() macro instead
      */
     public static function unauthorized(string $message = 'Unauthorized'): JsonResponse
     {
@@ -129,16 +141,21 @@ class ResponseServiceProvider extends ServiceProvider
     }
 
     /**
-     * Create a forbidden JSON response (legacy static method for backward compatibility).
+     * Create a forbidden JSON response.
      *
      * @param string $message
+     *
      * @return JsonResponse
-     * @deprecated Use response()->error() macro instead
      */
     public static function forbidden(string $message = 'Forbidden'): JsonResponse
     {
         return self::error($message, null, Response::HTTP_FORBIDDEN);
     }
+
+    /* -----------------------------------------------------------------
+     |  Service Provider Lifecycle
+     | -----------------------------------------------------------------
+     */
 
     /**
      * Register services.
@@ -158,82 +175,75 @@ class ResponseServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /**
-         * Success response macro.
+         * Return a standardized success JSON response.
          *
-         * Automatically detects if data is a LengthAwarePaginator and includes
-         * pagination metadata and links. Otherwise returns standard response.
+         * Automatically detects paginated responses and appends
+         * pagination metadata and navigation links.
          *
-         * @param mixed $data The response data (can be array, collection, or paginator)
-         * @param string $message Success message
-         * @param int $statusCode HTTP status code (default 200)
+         * @param mixed  $data       Response payload
+         * @param string $message    Success message
+         * @param int    $statusCode HTTP status code
+         *
          * @return JsonResponse
-         *
-         * @example
-         * return response()->success($categories, 'Categories fetched successfully');
-         * return response()->success($category, 'Category created successfully', 201);
          */
-        \Illuminate\Support\Facades\Response::macro(
-            'success',
-            function ($data = null, string $message = 'Success', int $statusCode = 200) {
-                $response = [
-                    'status' => true,
-                    'message' => $message,
+        ResponseFacade::macro('success', function (
+            mixed $data = null,
+            string $message = 'Success',
+            int $statusCode = Response::HTTP_OK
+        ): JsonResponse {
+            $response = [
+                'success' => true,
+                'message' => $message,
+            ];
+
+            if ($data instanceof LengthAwarePaginator) {
+                $response['data'] = $data->getCollection();
+                $response['meta'] = [
+                    'current_page' => $data->currentPage(),
+                    'per_page' => $data->perPage(),
+                    'total' => $data->total(),
+                    'last_page' => $data->lastPage(),
+                    'from' => $data->firstItem(),
+                    'to' => $data->lastItem(),
+                    'has_more' => $data->hasMorePages(),
                 ];
-
-                if ($data instanceof LengthAwarePaginator) {
-                    $response['data'] = $data->getCollection();
-                    $response['meta'] = [
-                        'current_page' => $data->currentPage(),
-                        'per_page' => $data->perPage(),
-                        'total' => $data->total(),
-                        'last_page' => $data->lastPage(),
-                        'from' => $data->firstItem(),
-                        'to' => $data->lastItem(),
-                        'has_more' => $data->hasMorePages(),
-                    ];
-                    $response['links'] = [
-                        'first' => $data->url(1),
-                        'last' => $data->url($data->lastPage()),
-                        'prev' => $data->previousPageUrl(),
-                        'next' => $data->nextPageUrl(),
-                    ];
-                } else {
-                    $response['data'] = $data;
-                }
-
-                return response()->json($response, $statusCode);
+                $response['links'] = [
+                    'first' => $data->url(1),
+                    'last' => $data->url($data->lastPage()),
+                    'prev' => $data->previousPageUrl(),
+                    'next' => $data->nextPageUrl(),
+                ];
+            } else {
+                $response['data'] = $data;
             }
-        );
+
+            return response()->json($response, $statusCode);
+        });
 
         /**
-         * Error response macro.
+         * Return a standardized error JSON response.
          *
-         * Returns a standardized error response with optional error details.
+         * @param string $message    Error message
+         * @param int    $statusCode HTTP status code
+         * @param mixed  $errors     Optional error details
          *
-         * @param string $message Error message
-         * @param int $statusCode HTTP status code (default 400)
-         * @param mixed $errors Additional error details (optional)
          * @return JsonResponse
-         *
-         * @example
-         * return response()->error('Category not found', 404);
-         * return response()->error('Validation failed', 422, $validator->errors());
          */
-        \Illuminate\Support\Facades\Response::macro(
-            'error',
-            function (string $message = 'Error', int $statusCode = 400, $errors = null) {
-                $response = [
-                    'status' => false,
-                    'message' => $message,
-                ];
+        ResponseFacade::macro('error', function (
+            string $message = 'Error',
+            int $statusCode = Response::HTTP_BAD_REQUEST,
+            mixed $errors = null
+        ): JsonResponse {
+            $response = [
+                'success' => false,
+                'message' => $message,
+            ];
 
-                if ($errors !== null) {
-                    $response['errors'] = $errors;
-                }
-
-                return response()->json($response, $statusCode);
+            if ($errors !== null) {
+                $response['errors'] = $errors;
             }
-        );
+
+            return response()->json($response, $statusCode);
+        });
     }
 }
-
