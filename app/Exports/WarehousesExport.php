@@ -40,6 +40,8 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
     public function query(): Builder
     {
         return Warehouse::query()
+            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
             ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('name');
     }
@@ -57,6 +59,8 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
             'phone' => 'Phone',
             'email' => 'Email',
             'address' => 'Address',
+            'number_of_products' => 'Number of Products',
+            'stock_quantity' => 'Stock Quantity',
             'is_active' => 'Status',
             'created_at' => 'Date Created',
             'updated_at' => 'Last Updated',
@@ -84,11 +88,17 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
 
         $columnsToExport = $this->columns ?: [
             'id', 'name', 'phone', 'email', 'address',
+            'number_of_products', 'stock_quantity',
             'is_active', 'created_at', 'updated_at',
         ];
 
+        $numberOfProducts = $warehouse->number_of_products ?? $warehouse->productWarehouses()->where('qty', '>', 0)->count();
+        $stockQuantity = $warehouse->stock_quantity ?? $warehouse->productWarehouses()->where('qty', '>', 0)->sum('qty');
+
         return array_map(fn ($col) => match ($col) {
             'is_active' => $warehouse->is_active ? 'Active' : 'Inactive',
+            'number_of_products' => $numberOfProducts,
+            'stock_quantity' => $stockQuantity,
             'created_at' => $warehouse->created_at?->toDateTimeString(),
             'updated_at' => $warehouse->updated_at?->toDateTimeString(),
             default => $warehouse->{$col} ?? '',

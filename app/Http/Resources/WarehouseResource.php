@@ -72,6 +72,22 @@ class WarehouseResource extends JsonResource
             'is_active' => $this->is_active,
 
             /**
+             * Number of products with stock (qty > 0) in this warehouse.
+             *
+             * @var int $number_of_products
+             * @example 42
+             */
+            'number_of_products' => $this->number_of_products ?? $this->productWarehouses()->where('qty', '>', 0)->count(),
+
+            /**
+             * Total stock quantity (sum of qty where qty > 0) in this warehouse.
+             *
+             * @var float $stock_quantity
+             * @example 1500.5
+             */
+            'stock_quantity' => (float) ($this->stock_quantity ?? $this->productWarehouses()->where('qty', '>', 0)->sum('qty')),
+
+            /**
              * Timestamp when the warehouse was created.
              *
              * @var string|null $created_at

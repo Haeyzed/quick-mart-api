@@ -67,6 +67,8 @@ class WarehouseService extends BaseService
         $this->requirePermission('warehouses-index');
 
         return Warehouse::query()
+            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
             ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
             ->when(! empty($filters['search'] ?? null), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
@@ -244,6 +246,8 @@ class WarehouseService extends BaseService
             Excel::store(new WarehousesExport($ids, $columns), $relativePath, 'public');
         } else {
             $warehouses = Warehouse::query()
+                ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
+                ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
                 ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
                 ->orderBy('name')
                 ->get();
@@ -297,13 +301,17 @@ class WarehouseService extends BaseService
 
         $user = $user ?? Auth::user();
 
+        $query = Warehouse::query()
+            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty');
+
         if ($user && $user->role_id > 2 && $user->warehouse_id) {
-            return Warehouse::where('is_active', true)
+            return $query->where('is_active', true)
                 ->where('id', $user->warehouse_id)
                 ->get();
         }
 
-        return Warehouse::where('is_active', true)->get();
+        return $query->where('is_active', true)->get();
     }
 
     /**

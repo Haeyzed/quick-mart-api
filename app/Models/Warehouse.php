@@ -53,6 +53,16 @@ class Warehouse extends Model
     ];
 
     /**
+     * Get the product-warehouse pivot records for this warehouse.
+     *
+     * @return HasMany<ProductWarehouse>
+     */
+    public function productWarehouses(): HasMany
+    {
+        return $this->hasMany(ProductWarehouse::class);
+    }
+
+    /**
      * Get the products in this warehouse.
      *
      * @return BelongsToMany<Product>

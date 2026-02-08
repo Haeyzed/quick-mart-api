@@ -128,6 +128,8 @@
                             'phone' => 'Phone',
                             'email' => 'Email',
                             'address' => 'Address',
+                            'number_of_products' => 'Number of Products',
+                            'stock_quantity' => 'Stock Quantity',
                             'is_active' => 'Is Active',
                             'created_at' => 'Created At',
                             'updated_at' => 'Updated At',
@@ -159,6 +161,12 @@
                                         @break
                                     @case('address')
                                         {{ Str::limit($warehouse->address ?? '-', 50) }}
+                                        @break
+                                    @case('number_of_products')
+                                        {{ $warehouse->number_of_products ?? 0 }}
+                                        @break
+                                    @case('stock_quantity')
+                                        {{ $warehouse->stock_quantity ?? 0 }}
                                         @break
                                     @case('is_active')
                                         <span class="badge {{ $warehouse->is_active ? 'badge-yes' : 'badge-no' }}">
