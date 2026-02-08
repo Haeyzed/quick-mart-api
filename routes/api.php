@@ -119,13 +119,19 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('taxes.export');
     Route::apiResource('taxes', TaxController::class);
 
-    Route::apiResource('warehouses', WarehouseController::class);
+    Route::patch('warehouses/bulk-activate', [WarehouseController::class, 'bulkActivate'])
+        ->name('warehouses.bulkActivate');
+    Route::patch('warehouses/bulk-deactivate', [WarehouseController::class, 'bulkDeactivate'])
+        ->name('warehouses.bulkDeactivate');
     Route::delete('warehouses/bulk-destroy', [WarehouseController::class, 'bulkDestroy'])
         ->name('warehouses.bulkDestroy');
     Route::post('warehouses/import', [WarehouseController::class, 'import'])
         ->name('warehouses.import');
+    Route::post('warehouses/export', [WarehouseController::class, 'export'])
+        ->name('warehouses.export');
     Route::get('warehouses/all/active', [WarehouseController::class, 'getAllActive'])
         ->name('warehouses.all-active');
+    Route::apiResource('warehouses', WarehouseController::class);
 
     Route::apiResource('customer-groups', CustomerGroupController::class);
     Route::delete('customer-groups/bulk-destroy', [CustomerGroupController::class, 'bulkDestroy'])
