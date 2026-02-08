@@ -30,6 +30,9 @@ class Brand extends Model
         'is_active' => 'boolean',
     ];
 
+    /** @var array */
+    protected $appends = ['status'];
+
     /**
      * Automate logic during model lifecycle.
      */
