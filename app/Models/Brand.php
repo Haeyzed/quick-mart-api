@@ -70,6 +70,14 @@ class Brand extends Model
     }
 
     /**
+     * Accessor for human-readable status.
+     */
+    public function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
+    }
+
+    /**
      * @return HasMany
      */
     public function products(): HasMany
