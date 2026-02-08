@@ -22,14 +22,18 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Class CategoryController
+ * API Controller for Category CRUD and bulk operations.
  *
- * API controller for managing categories.
- * Delegates business logic to CategoryService.
+ * Handles index, store, show, update, destroy, bulk activate/deactivate/featured/sync/destroy,
+ * import, and export. All responses use the ResponseServiceProvider macros.
+ *
+ * @group Category Management
  */
 class CategoryController extends Controller
 {
     /**
+     * CategoryController constructor.
+     *
      * @param CategoryService $service
      */
     public function __construct(
@@ -90,11 +94,15 @@ class CategoryController extends Controller
     /**
      * Display the specified category.
      *
-     * @param Category $category
+     * Requires categories-index permission. Returns the category as a resource.
+     *
+     * @param Category $category The category instance resolved via route model binding.
      * @return JsonResponse
      */
     public function show(Category $category): JsonResponse
     {
+        $category = $this->service->getCategory($category);
+
         return response()->success(
             new CategoryResource($category),
             'Category retrieved successfully'

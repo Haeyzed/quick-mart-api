@@ -5,66 +5,79 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Unit;
-use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Row;
 
 /**
- * UnitsImport
+ * Excel/CSV import for Unit entities.
  *
- * Handles importing units from CSV/Excel files.
+ * Uses upsert logic: creates new units or updates existing ones by code.
+ * Base unit lookup by code. Skips empty rows.
  */
-class UnitsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class UnitsImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows, WithValidation
 {
     /**
-     * Process the collection of rows.
+     * Process a single row from the import file.
      *
-     * @param Collection $collection
-     * @return void
+     * Skips rows with empty code. Uses updateOrCreate on code for upsert behavior.
+     *
+     * @param Row $row The current row being imported.
      */
-    public function collection(Collection $collection): void
+    public function onRow(Row $row): void
     {
-        foreach ($collection as $row) {
-            // Skip if code is empty
-            if (empty($row['code'] ?? null)) {
-                continue;
-            }
+        $data = $row->toArray();
+        $code = trim((string) ($data['code'] ?? ''));
 
-            $code = trim($row['code'] ?? '');
-            $name = trim($row['name'] ?? '');
-            $baseUnitCode = trim($row['baseunit'] ?? '');
-            $operator = trim($row['operator'] ?? '*');
-            $operationValue = !empty($row['operationvalue'] ?? null) ? (float)$row['operationvalue'] : 1;
-
-            // Find base unit if provided
-            $baseUnitId = null;
-            if (!empty($baseUnitCode)) {
-                $baseUnit = Unit::where('code', $baseUnitCode)->first();
-                if ($baseUnit) {
-                    $baseUnitId = $baseUnit->id;
-                }
-            }
-
-            // If no base unit, set default operator and operation value
-            if (!$baseUnitId) {
-                $operator = '*';
-                $operationValue = 1;
-            }
-
-            // Find or create unit
-            $unit = Unit::firstOrNew(
-                ['code' => $code, 'is_active' => true]
-            );
-
-            $unit->code = $code;
-            $unit->name = $name;
-            $unit->base_unit = $baseUnitId;
-            $unit->operator = $operator;
-            $unit->operation_value = $operationValue;
-            $unit->is_active = true;
-
-            $unit->save();
+        if ($code === '') {
+            return;
         }
+
+        $name = trim((string) ($data['name'] ?? ''));
+        $baseUnitCode = trim((string) ($data['baseunit'] ?? ''));
+        $operator = trim((string) ($data['operator'] ?? '*'));
+        $operationValue = ! empty($data['operationvalue'] ?? null) ? (float) $data['operationvalue'] : 1.0;
+
+        $baseUnitId = null;
+        if ($baseUnitCode !== '') {
+            $baseUnit = Unit::where('code', $baseUnitCode)->first();
+            if ($baseUnit) {
+                $baseUnitId = $baseUnit->id;
+            }
+        }
+
+        if ($baseUnitId === null) {
+            $operator = '*';
+            $operationValue = 1;
+        }
+
+        Unit::updateOrCreate(
+            ['code' => $code],
+            [
+                'name' => $name ?: $code,
+                'base_unit' => $baseUnitId,
+                'operator' => $operator,
+                'operation_value' => $operationValue,
+                'is_active' => true,
+            ]
+        );
+    }
+
+    /**
+     * Get validation rules for each row.
+     *
+     * @return array<string, array<int, string>> Validation rules keyed by column heading.
+     */
+    public function rules(): array
+    {
+        return [
+            'code' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'baseunit' => ['nullable', 'string', 'max:255'],
+            'operator' => ['nullable', 'string', 'in:*,/,+,-'],
+            'operationvalue' => ['nullable', 'numeric', 'min:0'],
+        ];
     }
 }

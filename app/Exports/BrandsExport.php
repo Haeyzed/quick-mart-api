@@ -12,17 +12,20 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Class BrandsExport
+ * Excel export for Brand entities.
  *
- * Handles database-level chunked export of brands.
+ * Exports brands by ID or all when ids is empty. Supports column selection.
+ * Uses query-based chunking for memory efficiency.
  */
 class BrandsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
     /**
-     * @param array<int> $ids
-     * @param array<string> $columns
+     * Create a new BrandsExport instance.
+     *
+     * @param array<int> $ids Brand IDs to export. Empty array exports all.
+     * @param array<string> $columns Column keys to include. Empty uses defaults.
      */
     public function __construct(
         private readonly array $ids = [],
@@ -30,7 +33,9 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
     ) {}
 
     /**
-     * @return Builder
+     * Build the query for the export.
+     *
+     * @return Builder<Brand>
      */
     public function query(): Builder
     {
@@ -40,7 +45,9 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
     }
 
     /**
-     * @return array<string>
+     * Get the column headings for the export.
+     *
+     * @return array<string> Column header labels.
      */
     public function headings(): array
     {
@@ -67,12 +74,13 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
     }
 
     /**
-     * @param mixed $brand
-     * @return array<mixed>
+     * Map a brand model to an export row.
+     *
+     * @param Brand $brand The brand instance to map.
+     * @return array<string|int|null> Row data matching the headings order.
      */
     public function map($brand): array
     {
-        // Ensure $brand is typed properly for IDE, though abstract requires mixed
         /** @var Brand $brand */
 
         $columnsToExport = $this->columns ?: [

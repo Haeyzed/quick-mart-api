@@ -18,44 +18,53 @@ use App\Services\UnitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * UnitController
+ * API Controller for Unit CRUD and bulk operations.
  *
- * API controller for managing units with full CRUD operations.
- * Keeps controller thin with all business logic delegated to UnitService.
+ * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
+ * import, and export. All responses use the ResponseServiceProvider macros.
+ *
+ * @group Unit Management
  */
 class UnitController extends Controller
 {
+    /**
+     * UnitController constructor.
+     *
+     * @param UnitService $service
+     */
     public function __construct(
         private readonly UnitService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display a paginated listing of units.
      *
-     * @param UnitIndexRequest $request
-     * @return JsonResponse
+     * @param UnitIndexRequest $request Validated query params: per_page, page, status, search.
+     * @return JsonResponse Paginated units with meta and links.
      */
     public function index(UnitIndexRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = $validated['per_page'] ?? 10;
-        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
+        $units = $this->service->getUnits(
+            $request->validated(),
+            (int) $request->input('per_page', 10)
+        );
 
-        $units = $this->service->getUnits($filters, $perPage)
-            ->through(fn($unit) => new UnitResource($unit));
+        $units->through(fn (Unit $unit) => new UnitResource($unit));
 
-        return response()->success($units, 'Units fetched successfully');
+        return response()->success(
+            $units,
+            'Units fetched successfully'
+        );
     }
 
     /**
      * Store a newly created unit.
      *
-     * @param UnitRequest $request
-     * @return JsonResponse
+     * @param UnitRequest $request Validated unit attributes.
+     * @return JsonResponse Created unit with 201 status.
      */
     public function store(UnitRequest $request): JsonResponse
     {
@@ -64,18 +73,22 @@ class UnitController extends Controller
         return response()->success(
             new UnitResource($unit),
             'Unit created successfully',
-            201
+            Response::HTTP_CREATED
         );
     }
 
     /**
      * Display the specified unit.
      *
-     * @param Unit $unit
+     * Requires units-index permission. Returns the unit as a resource.
+     *
+     * @param Unit $unit The unit instance resolved via route model binding.
      * @return JsonResponse
      */
     public function show(Unit $unit): JsonResponse
     {
+        $unit = $this->service->getUnit($unit);
+
         return response()->success(
             new UnitResource($unit),
             'Unit retrieved successfully'
@@ -90,10 +103,10 @@ class UnitController extends Controller
     public function getBaseUnits(): JsonResponse
     {
         $baseUnits = $this->service->getBaseUnits()
-            ->map(fn($unit) => [
+            ->map(fn (Unit $unit) => [
                 'value' => $unit->id,
                 'label' => $unit->name . ' (' . $unit->code . ')',
-                'code'  => $unit->code,
+                'code' => $unit->code,
             ]);
 
         return response()->success($baseUnits, 'Base units fetched successfully');
@@ -102,25 +115,25 @@ class UnitController extends Controller
     /**
      * Update the specified unit.
      *
-     * @param UnitRequest $request
-     * @param Unit $unit
-     * @return JsonResponse
+     * @param UnitRequest $request Validated unit attributes.
+     * @param Unit $unit The unit instance to update.
+     * @return JsonResponse Updated unit.
      */
     public function update(UnitRequest $request, Unit $unit): JsonResponse
     {
-        $unit = $this->service->updateUnit($unit, $request->validated());
+        $updatedUnit = $this->service->updateUnit($unit, $request->validated());
 
         return response()->success(
-            new UnitResource($unit),
+            new UnitResource($updatedUnit),
             'Unit updated successfully'
         );
     }
 
     /**
-     * Remove the specified unit from storage.
+     * Remove the specified unit (soft delete).
      *
-     * @param Unit $unit
-     * @return JsonResponse
+     * @param Unit $unit The unit instance to delete.
+     * @return JsonResponse Success message.
      */
     public function destroy(Unit $unit): JsonResponse
     {
@@ -130,10 +143,10 @@ class UnitController extends Controller
     }
 
     /**
-     * Bulk delete multiple units.
+     * Bulk delete units (soft delete). Skips units with products or sub-units.
      *
-     * @param UnitBulkDestroyRequest $request
-     * @return JsonResponse
+     * @param UnitBulkDestroyRequest $request Validated ids array.
+     * @return JsonResponse Deleted count and message.
      */
     public function bulkDestroy(UnitBulkDestroyRequest $request): JsonResponse
     {
@@ -141,15 +154,41 @@ class UnitController extends Controller
 
         return response()->success(
             ['deleted_count' => $count],
-            $this->pluralizeMessage($count, 'Deleted {count} unit', 'successfully')
+            "Successfully deleted {$count} units"
         );
     }
 
     /**
-     * Import units from a file.
+     * Bulk activate units by ID.
      *
-     * @param ImportRequest $request
-     * @return JsonResponse
+     * @param UnitBulkUpdateRequest $request Validated ids array.
+     * @return JsonResponse Activated count and message.
+     */
+    public function bulkActivate(UnitBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateUnits($request->validated()['ids']);
+
+        return response()->success(['activated_count' => $count], "{$count} units activated");
+    }
+
+    /**
+     * Bulk deactivate units by ID.
+     *
+     * @param UnitBulkUpdateRequest $request Validated ids array.
+     * @return JsonResponse Deactivated count and message.
+     */
+    public function bulkDeactivate(UnitBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateUnits($request->validated()['ids']);
+
+        return response()->success(['deactivated_count' => $count], "{$count} units deactivated");
+    }
+
+    /**
+     * Import units from Excel/CSV file.
+     *
+     * @param ImportRequest $request Validated file upload.
+     * @return JsonResponse Success message.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -159,75 +198,36 @@ class UnitController extends Controller
     }
 
     /**
-     * Bulk activate multiple units.
-     *
-     * @param UnitBulkUpdateRequest $request
-     * @return JsonResponse
-     */
-    public function bulkActivate(UnitBulkUpdateRequest $request): JsonResponse
-    {
-        $count = $this->service->bulkActivateUnits($request->validated()['ids']);
-
-        return response()->success(
-            ['activated_count' => $count],
-            $this->pluralizeMessage($count, 'Activated {count} unit', 'successfully')
-        );
-    }
-
-    /**
-     * Bulk deactivate multiple units.
-     *
-     * @param UnitBulkUpdateRequest $request
-     * @return JsonResponse
-     */
-    public function bulkDeactivate(UnitBulkUpdateRequest $request): JsonResponse
-    {
-        $count = $this->service->bulkDeactivateUnits($request->validated()['ids']);
-
-        return response()->success(
-            ['deactivated_count' => $count],
-            $this->pluralizeMessage($count, 'Deactivated {count} unit', 'successfully')
-        );
-    }
-
-    /**
      * Export units to Excel or PDF.
      *
-     * @param ExportRequest $request
-     * @return JsonResponse|Response
+     * Supports download or email delivery based on method.
+     *
+     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
+     * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
-    public function export(ExportRequest $request): JsonResponse|Response
+    public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
         $validated = $request->validated();
-        $ids = $validated['ids'] ?? [];
-        $format = $validated['format'];
-        $method = $validated['method'];
-        $columns = $validated['columns'] ?? [];
-        $user = $method === 'email' ? User::findOrFail($validated['user_id']) : null;
 
-        $filePath = $this->service->exportUnits($ids, $format, $user, $columns, $method);
+        $user = ($validated['method'] === 'email')
+            ? User::findOrFail($validated['user_id'])
+            : null;
 
-        if ($method === 'download') {
-            return Storage::disk('public')->download($filePath);
+        $filePath = $this->service->exportUnits(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $user,
+            $validated['columns'] ?? [],
+            $validated['method']
+        );
+
+        if ($validated['method'] === 'download') {
+            return response()->download(
+                Storage::disk('public')->path($filePath)
+            );
         }
 
-        return response()->success(null, 'Export file sent via email successfully');
-    }
-
-    /**
-     * Pluralize message with count.
-     *
-     * Utility helper to eliminate string concatenation duplication across bulk methods.
-     *
-     * @param int $count
-     * @param string $message Message with {count} placeholder (e.g., "Activated {count} unit")
-     * @param string $suffix Suffix to append (e.g., "successfully")
-     * @return string
-     */
-    private function pluralizeMessage(int $count, string $message, string $suffix): string
-    {
-        $pluralSuffix = $count !== 1 ? 's' : '';
-        return str_replace('{count}', (string)$count, $message) . $pluralSuffix . " {$suffix}";
+        return response()->success(null, 'Export processed and sent via email');
     }
 }
 

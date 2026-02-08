@@ -5,87 +5,93 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\Tax;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * TaxesExport
+ * Excel export for Tax entities.
  *
- * Handles exporting taxes to Excel.
+ * Exports taxes by ID or all when ids is empty. Supports column selection.
+ * Uses query-based chunking for memory efficiency.
  */
-class TaxesExport implements FromCollection, WithHeadings, WithMapping
+class TaxesExport implements FromQuery, WithHeadings, WithMapping
 {
+    use Exportable;
+
+    /**
+     * Create a new TaxesExport instance.
+     *
+     * @param array<int> $ids Tax IDs to export. Empty array exports all.
+     * @param array<string> $columns Column keys to include. Empty uses defaults.
+     */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {
-    }
+    ) {}
 
     /**
-     * Get the collection of taxes to export.
+     * Build the query for the export.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Builder<Tax>
      */
-    public function collection()
+    public function query(): Builder
     {
-        $query = Tax::query();
-
-        if (!empty($this->ids)) {
-            $query->whereIn('id', $this->ids);
-        }
-
-        return $query->orderBy('name')->get();
+        return Tax::query()
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->orderBy('name');
     }
 
     /**
-     * Define the headings for the Excel file.
+     * Get the column headings for the export.
      *
-     * @return array
+     * @return array<string> Column header labels.
      */
     public function headings(): array
     {
-        $columnLabels = [
+        $labelMap = [
             'id' => 'ID',
             'name' => 'Name',
             'rate' => 'Rate (%)',
-            'is_active' => 'Is Active',
-            'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
+            'is_active' => 'Status',
+            'woocommerce_tax_id' => 'WooCommerce ID',
+            'created_at' => 'Date Created',
+            'updated_at' => 'Last Updated',
         ];
 
         if (empty($this->columns)) {
-            return array_values($columnLabels);
+            return array_values($labelMap);
         }
 
-        return array_map(fn($col) => $columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
+        return array_map(
+            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            $this->columns
+        );
     }
 
     /**
-     * Map each tax to a row in the Excel file.
+     * Map a tax model to an export row.
      *
-     * @param Tax $tax
-     * @return array
+     * @param Tax $tax The tax instance to map.
+     * @return array<string|int|float|null> Row data matching the headings order.
      */
     public function map($tax): array
     {
-        $defaultColumns = ['id', 'name', 'rate', 'is_active', 'created_at', 'updated_at'];
-        $columnsToExport = empty($this->columns) ? $defaultColumns : $this->columns;
+        /** @var Tax $tax */
 
-        $data = [];
-        foreach ($columnsToExport as $column) {
-            match ($column) {
-                'id' => $data[] = $tax->id,
-                'name' => $data[] = $tax->name,
-                'rate' => $data[] = $tax->rate ?? 0,
-                'is_active' => $data[] = $tax->is_active ? 'Yes' : 'No',
-                'created_at' => $data[] = $tax->created_at?->format('Y-m-d H:i:s') ?? '',
-                'updated_at' => $data[] = $tax->updated_at?->format('Y-m-d H:i:s') ?? '',
-                default => $data[] = '',
-            };
-        }
+        $columnsToExport = $this->columns ?: [
+            'id', 'name', 'rate', 'is_active', 'woocommerce_tax_id',
+            'created_at', 'updated_at',
+        ];
 
-        return $data;
+        return array_map(fn ($col) => match ($col) {
+            'is_active' => $tax->is_active ? 'Active' : 'Inactive',
+            'created_at' => $tax->created_at?->toDateTimeString(),
+            'updated_at' => $tax->updated_at?->toDateTimeString(),
+            default => $tax->{$col} ?? '',
+        }, $columnsToExport);
     }
 }
 

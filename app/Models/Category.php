@@ -132,16 +132,24 @@ class Category extends Model
     }
 
     /**
-     * Check if the slug exists, excluding current model.
+     * Check if the slug exists for another category, excluding the current model when persisted.
      *
-     * @param string $slug
-     * @return bool
+     * Handles both new (unsaved) and existing records. For new records,
+     * where('id', '!=', null) would produce invalid SQL semantics, so we only
+     * exclude the current model when it has been persisted.
+     *
+     * @param string $slug The slug to check for uniqueness.
+     * @return bool True if another category already uses this slug.
      */
     protected function slugExists(string $slug): bool
     {
-        return static::where('slug', $slug)
-            ->where('id', '!=', $this->id)
-            ->exists();
+        $query = static::where('slug', $slug);
+
+        if ($this->exists) {
+            $query->whereKeyNot($this->getKey());
+        }
+
+        return $query->exists();
     }
 
     /* -----------------------------------------------------------------

@@ -20,18 +20,19 @@ abstract class BaseRequest extends FormRequest
     /**
      * Handle a failed validation attempt.
      *
-     * @param Validator $validator
-     * @return void
+     * Uses the ResponseServiceProvider error macro for consistent API responses.
+     *
+     * @param Validator $validator The validator instance.
      * @throws HttpResponseException
      */
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(
-            response()->json([
-                'status' => false,
-                'message' => 'Validation failed. Please check your input and try again.',
-                'errors' => $validator->errors(),
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY)
+            response()->error(
+                'Validation failed. Please check your input and try again.',
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+                $validator->errors()
+            )
         );
     }
 }

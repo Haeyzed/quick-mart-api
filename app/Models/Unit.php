@@ -140,11 +140,11 @@ class Unit extends Model
     }
 
     /**
-     * Get the unit's active status.
+     * Get the human-readable status.
      *
      * @return string
      */
-    protected function getStatusAttribute(): string
+    public function getStatusAttribute(): string
     {
         return $this->is_active ? 'active' : 'inactive';
     }

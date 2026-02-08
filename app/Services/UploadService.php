@@ -17,8 +17,7 @@ use Illuminate\Support\Str;
  */
 class UploadService
 {
-    use GeneralSettingsTrait;
-    use StorageProviderInfo;
+    use GeneralSettingsTrait, StorageProviderInfo;
 
     /**
      * Store a file and return the public URL in one call.

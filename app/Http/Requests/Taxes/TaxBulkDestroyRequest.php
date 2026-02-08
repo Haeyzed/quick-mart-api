@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Brands;
+namespace App\Http\Requests\Taxes;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Form request for bulk brand delete validation.
+ * Form request for bulk tax delete validation.
  *
- * Validates that ids array contains valid non-soft-deleted brand IDs.
+ * Validates that ids array contains valid non-soft-deleted tax IDs.
  */
-class BrandBulkDestroyRequest extends BaseRequest
+class TaxBulkDestroyRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -33,7 +33,7 @@ class BrandBulkDestroyRequest extends BaseRequest
     {
         return [
             'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['required', 'integer', Rule::exists('brands', 'id')->whereNull('deleted_at')],
+            'ids.*' => ['required', 'integer', Rule::exists('taxes', 'id')->whereNull('deleted_at')],
         ];
     }
 }

@@ -11,23 +11,45 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
+/**
+ * Excel export for Category entities.
+ *
+ * Exports categories by ID or all when ids is empty. Supports column selection.
+ * Uses query-based chunking for memory efficiency. Includes parent relationship.
+ */
 class CategoriesExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    /**
+     * Create a new CategoriesExport instance.
+     *
+     * @param array<int> $ids Category IDs to export. Empty array exports all.
+     * @param array<string> $columns Column keys to include. Empty uses defaults.
+     */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
     ) {}
 
+    /**
+     * Build the query for the export.
+     *
+     * @return Builder<Category>
+     */
     public function query(): Builder
     {
         return Category::query()
             ->with('parent:id,name')
-            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('name');
     }
 
+    /**
+     * Get the column headings for the export.
+     *
+     * @return array<string> Column header labels.
+     */
     public function headings(): array
     {
         $allLabels = [
@@ -47,9 +69,15 @@ class CategoriesExport implements FromQuery, WithHeadings, WithMapping
             return array_values($allLabels);
         }
 
-        return array_map(fn($col) => $allLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
+        return array_map(fn ($col) => $allLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)), $this->columns);
     }
 
+    /**
+     * Map a category model to an export row.
+     *
+     * @param Category $category The category instance to map.
+     * @return array<string|int|null> Row data matching the headings order.
+     */
     public function map($category): array
     {
         /** @var Category $category */
@@ -58,7 +86,7 @@ class CategoriesExport implements FromQuery, WithHeadings, WithMapping
             'featured', 'is_active', 'is_sync_disable', 'created_at', 'updated_at'
         ];
 
-        return array_map(fn($col) => match ($col) {
+        return array_map(fn ($col) => match ($col) {
             'parent_name'     => $category->parent?->name ?? '',
             'featured'        => $category->featured ? 'Yes' : 'No',
             'is_active'       => $category->is_active ? 'Yes' : 'No',

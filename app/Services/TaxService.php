@@ -13,112 +13,269 @@ use App\Models\Tax;
 use App\Models\User;
 use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
-use Exception;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * TaxService
+ * Service class for Tax entity lifecycle operations.
  *
- * Handles all business logic for tax operations including CRUD operations,
- * filtering, pagination, and bulk operations.
- *
- * Key Features:
- * - Encapsulates all tax-related database queries
- * - Provides bulk operations for efficiency
- * - Manages data normalization and validation
- * - Enforces permission checks for all operations
+ * Centralizes business logic for Tax CRUD, bulk actions, imports/exports.
+ * Delegates permission checks to CheckPermissionsTrait.
  */
 class TaxService extends BaseService
 {
-    use CheckPermissionsTrait;
-    use MailInfo;
-
-    private const BULK_ACTIVATE = ['is_active' => true];
-    private const BULK_DEACTIVATE = ['is_active' => false];
+    use CheckPermissionsTrait, MailInfo;
 
     /**
-     * Get paginated list of taxes with optional filters.
+     * Create a new TaxService instance.
+     */
+    public function __construct() {}
+
+    /**
+     * Retrieve a single tax by instance.
      *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Tax>
+     * Requires taxes-index permission. Use for show/display operations.
+     *
+     * @param Tax $tax The tax instance to retrieve.
+     * @return Tax The refreshed tax instance.
+     */
+    public function getTax(Tax $tax): Tax
+    {
+        $this->requirePermission('taxes-index');
+
+        return $tax->fresh();
+    }
+
+    /**
+     * Retrieve taxes with optional filters and pagination.
+     *
+     * Supports filtering by status (active/inactive) and search term.
+     * Requires taxes-index permission.
+     *
+     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
+     * @param int $perPage Number of items per page.
+     * @return LengthAwarePaginator<Tax> Paginated tax collection.
      */
     public function getTaxes(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        // Check permission: user needs 'tax' permission to view taxes
         $this->requirePermission('taxes-index');
 
         return Tax::query()
-            ->when(
-                isset($filters['status']),
-                fn($query) => $query->where('is_active', $filters['status'] === 'active')
+            ->when(isset($filters['status']), fn ($q) =>
+                $q->where('is_active', $filters['status'] === 'active')
             )
-            ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where(function ($q) use ($filters) {
-                    $search = $filters['search'];
-                    $q->where('name', 'like', "%{$search}%");
-                })
-            )
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
+                $term = "%{$filters['search']}%";
+                $q->where('name', 'like', $term);
+            })
             ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get a single tax by ID.
-     *
-     * @param int $id Tax ID
-     * @return Tax
-     */
-    public function getTax(int $id): Tax
-    {
-        // Check permission: user needs 'tax' permission to view taxes
-        $this->requirePermission('taxes-index');
-
-        return Tax::findOrFail($id);
-    }
-
-    /**
      * Create a new tax.
      *
-     * @param array<string, mixed> $data Validated tax data
-     * @return Tax
+     * Requires taxes-create permission.
+     *
+     * @param array<string, mixed> $data Validated tax data.
+     * @return Tax The created tax instance.
      */
     public function createTax(array $data): Tax
     {
-        // Check permission: user needs 'tax' permission to create taxes
         $this->requirePermission('taxes-create');
 
-        return $this->transaction(function () use ($data) {
+        return DB::transaction(function () use ($data) {
             $data = $this->normalizeTaxData($data);
+
             return Tax::create($data);
         });
     }
 
     /**
+     * Update an existing tax.
+     *
+     * Requires taxes-update permission.
+     *
+     * @param Tax $tax The tax instance to update.
+     * @param array<string, mixed> $data Validated tax data.
+     * @return Tax The updated tax instance (refreshed).
+     */
+    public function updateTax(Tax $tax, array $data): Tax
+    {
+        $this->requirePermission('taxes-update');
+
+        return DB::transaction(function () use ($tax, $data) {
+            $data = $this->normalizeTaxData($data, isUpdate: true);
+            $tax->update($data);
+
+            return $tax->fresh();
+        });
+    }
+
+    /**
+     * Soft-delete a tax.
+     *
+     * Fails if the tax has associated products.
+     * Requires taxes-delete permission.
+     *
+     * @param Tax $tax The tax instance to delete.
+     * @throws ConflictHttpException When tax has associated products (409 Conflict).
+     */
+    public function deleteTax(Tax $tax): void
+    {
+        $this->requirePermission('taxes-delete');
+
+        if ($tax->products()->exists()) {
+            throw new ConflictHttpException(
+                "Cannot delete tax '{$tax->name}' because it has associated products."
+            );
+        }
+
+        $tax->delete();
+    }
+
+    /**
+     * Bulk soft-delete taxes that have no associated products.
+     *
+     * Skips taxes with products. Returns the count of successfully deleted taxes.
+     * Requires taxes-delete permission.
+     *
+     * @param array<int> $ids Tax IDs to delete.
+     * @return int Number of taxes successfully deleted.
+     */
+    public function bulkDeleteTaxes(array $ids): int
+    {
+        $this->requirePermission('taxes-delete');
+
+        return DB::transaction(function () use ($ids) {
+            $taxes = Tax::whereIn('id', $ids)
+                ->withCount('products')
+                ->get();
+
+            $deletedCount = 0;
+
+            foreach ($taxes as $tax) {
+                if ($tax->products_count > 0) {
+                    continue;
+                }
+
+                $tax->delete();
+                $deletedCount++;
+            }
+
+            return $deletedCount;
+        });
+    }
+
+    /**
+     * Bulk activate taxes by ID.
+     *
+     * Sets is_active to true for all matching taxes. Requires taxes-update permission.
+     *
+     * @param array<int> $ids Tax IDs to activate.
+     * @return int Number of taxes updated.
+     */
+    public function bulkActivateTaxes(array $ids): int
+    {
+        $this->requirePermission('taxes-update');
+
+        return Tax::whereIn('id', $ids)->update(['is_active' => true]);
+    }
+
+    /**
+     * Bulk deactivate taxes by ID.
+     *
+     * Sets is_active to false for all matching taxes. Requires taxes-update permission.
+     *
+     * @param array<int> $ids Tax IDs to deactivate.
+     * @return int Number of taxes updated.
+     */
+    public function bulkDeactivateTaxes(array $ids): int
+    {
+        $this->requirePermission('taxes-update');
+
+        return Tax::whereIn('id', $ids)->update(['is_active' => false]);
+    }
+
+    /**
+     * Import taxes from an Excel or CSV file.
+     *
+     * Requires taxes-import permission.
+     *
+     * @param UploadedFile $file The uploaded import file.
+     */
+    public function importTaxes(UploadedFile $file): void
+    {
+        $this->requirePermission('taxes-import');
+        Excel::import(new TaxesImport(), $file);
+    }
+
+    /**
+     * Export taxes to Excel or PDF file.
+     *
+     * Supports download or email delivery. Requires taxes-export permission.
+     *
+     * @param array<int> $ids Tax IDs to export. Empty array exports all.
+     * @param string $format Export format: 'excel' or 'pdf'.
+     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
+     * @param array<string> $columns Column keys to include in export.
+     * @param string $method Delivery method: 'download' or 'email'.
+     * @return string Relative storage path of the generated file.
+     * @throws RuntimeException When mail settings are not configured and method is 'email'.
+     */
+    public function exportTaxes(
+        array $ids,
+        string $format,
+        ?User $user,
+        array $columns,
+        string $method
+    ): string {
+        $this->requirePermission('taxes-export');
+
+        $fileName = 'taxes_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new TaxesExport($ids, $columns), $relativePath, 'public');
+        } else {
+            $taxes = Tax::query()
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->orderBy('name')
+                ->get();
+
+            $pdf = PDF::loadView('exports.taxes-pdf', compact('taxes', 'columns'));
+            Storage::disk('public')->put($relativePath, $pdf->output());
+        }
+
+        if ($method === 'email' && $user) {
+            $this->sendExportEmail($user, $relativePath, $fileName);
+        }
+
+        return $relativePath;
+    }
+
+    /**
      * Normalize tax data to match database schema requirements.
      *
-     * Handles boolean conversions and default values:
-     * - is_active: boolean, defaults to true on create
+     * Handles boolean conversions and default values for is_active.
      *
-     * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation
-     * @return array<string, mixed>
+     * @param array<string, mixed> $data Input data.
+     * @param bool $isUpdate Whether this is an update operation.
+     * @return array<string, mixed> Normalized data.
      */
     private function normalizeTaxData(array $data, bool $isUpdate = false): array
     {
-        // is_active defaults to true on create
-        if (!isset($data['is_active']) && !$isUpdate) {
+        if (! isset($data['is_active']) && ! $isUpdate) {
             $data['is_active'] = true;
         } elseif (isset($data['is_active'])) {
-            $data['is_active'] = (bool)filter_var(
+            $data['is_active'] = (bool) filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
@@ -129,242 +286,24 @@ class TaxService extends BaseService
     }
 
     /**
-     * Update an existing tax.
+     * Send export completion email to the user.
      *
-     * @param Tax $tax Tax instance to update
-     * @param array<string, mixed> $data Validated tax data
-     * @return Tax
+     * @param User $user Recipient of the export email.
+     * @param string $path Relative storage path of the export file.
+     * @param string $fileName Display filename for the attachment.
+     * @throws RuntimeException When mail settings are not configured.
      */
-    public function updateTax(Tax $tax, array $data): Tax
+    private function sendExportEmail(User $user, string $path, string $fileName): void
     {
-        // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('taxes-update');
-
-        return $this->transaction(function () use ($tax, $data) {
-            $data = $this->normalizeTaxData($data, isUpdate: true);
-            $tax->update($data);
-            return $tax->fresh();
-        });
-    }
-
-    /**
-     * Refactored from individual loop to batch processing with chunking
-     * Bulk delete multiple taxes using efficient batch operations.
-     *
-     * @param array<int> $ids Array of tax IDs to delete
-     * @return int Number of taxes successfully deleted
-     */
-    public function bulkDeleteTaxes(array $ids): int
-    {
-        // Check permission: user needs 'tax' permission to delete taxes
-        $this->requirePermission('taxes-delete');
-
-        return $this->transaction(function () use ($ids) {
-            $deletedCount = 0;
-
-            Tax::whereIn('id', $ids)
-                ->chunk(100, function ($taxes) use (&$deletedCount) {
-                    foreach ($taxes as $tax) {
-                        try {
-                            if (!$tax->products()->exists()) {
-                                $tax->delete();
-                                $deletedCount++;
-                            }
-                        } catch (Exception $e) {
-                            $this->logError("Failed to delete tax {$tax->id}: " . $e->getMessage());
-                        }
-                    }
-                });
-
-            return $deletedCount;
-        });
-    }
-
-    /**
-     * Delete a single tax with validation.
-     *
-     * Prevents deletion if tax has associated products.
-     *
-     * @param Tax $tax Tax instance to delete
-     * @return bool
-     * @throws HttpResponseException
-     */
-    public function deleteTax(Tax $tax): bool
-    {
-        // Check permission: user needs 'tax' permission to delete taxes
-        $this->requirePermission('taxes-delete');
-
-        return $this->transaction(function () use ($tax) {
-            if ($tax->products()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete tax: tax has associated products');
-            }
-
-            return $tax->delete();
-        });
-    }
-
-    /**
-     * Import taxes from a file.
-     *
-     * @param UploadedFile $file
-     * @return void
-     */
-    public function importTaxes(UploadedFile $file): void
-    {
-        // Check permission: user needs 'tax' permission to import taxes
-        $this->requirePermission('taxes-import');
-
-        $this->transaction(function () use ($file) {
-            Excel::import(new TaxesImport(), $file);
-        });
-    }
-
-    /**
-     * Created private helper method to eliminate duplication across all bulk update methods
-     * Bulk update multiple taxes with specified data.
-     *
-     * @param array<int> $ids Array of tax IDs to update
-     * @param array<string, mixed> $updateData Data to update
-     * @return int Number of taxes updated
-     */
-    private function bulkUpdateTaxes(array $ids, array $updateData): int
-    {
-        return $this->transaction(function () use ($ids, $updateData) {
-            return Tax::whereIn('id', $ids)->update($updateData);
-        });
-    }
-
-    /**
-     * Bulk activate multiple taxes.
-     *
-     * @param array<int> $ids Array of tax IDs to activate
-     * @return int Number of taxes activated
-     */
-    public function bulkActivateTaxes(array $ids): int
-    {
-        // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('taxes-update');
-
-        return $this->bulkUpdateTaxes($ids, self::BULK_ACTIVATE);
-    }
-
-    /**
-     * Bulk deactivate multiple taxes.
-     *
-     * @param array<int> $ids Array of tax IDs to deactivate
-     * @return int Number of taxes deactivated
-     */
-    public function bulkDeactivateTaxes(array $ids): int
-    {
-        // Check permission: user needs 'tax' permission to update taxes
-        $this->requirePermission('taxes-update');
-
-        return $this->bulkUpdateTaxes($ids, self::BULK_DEACTIVATE);
-    }
-
-    /**
-     * Export taxes to Excel or PDF.
-     *
-     * @param array<int> $ids Array of tax IDs to export (empty for all)
-     * @param string $format Export format: 'excel' or 'pdf'
-     * @param User|null $user User to send email to (null for download)
-     * @param array<string> $columns Columns to export
-     * @param string $method Export method: 'download' or 'email'
-     * @return string File path
-     */
-    public function exportTaxes(
-        array $ids = [],
-        string $format = 'excel',
-        ?User $user = null,
-        array $columns = [],
-        string $method = 'download'
-    ): string {
-        // Check permission: user needs 'tax' permission to export taxes
-        $this->requirePermission('taxes-index');
-
-        $fileName = 'taxes-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $filePath = 'exports/' . $fileName;
-
-        $this->generateExportFile($format, $filePath, $ids, $columns);
-
-        if ($user && $method === 'email') {
-            $this->sendExportEmail($user, $filePath, $fileName);
-        }
-
-        return $filePath;
-    }
-
-    /**
-     * Extracted export file generation logic for cleaner separation of concerns
-     * Generate export file in specified format.
-     *
-     * @param string $format
-     * @param string $filePath
-     * @param array<int> $ids
-     * @param array<string> $columns
-     * @return void
-     */
-    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
-    {
-        if ($format === 'excel') {
-            Excel::store(new TaxesExport($ids, $columns), $filePath, 'public');
-        } else {
-            $taxes = Tax::query()
-                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
-                ->orderBy('name')
-                ->get();
-
-            $pdf = PDF::loadView('exports.taxes-pdf', [
-                'taxes' => $taxes,
-                'columns' => $columns,
-            ]);
-
-            Storage::disk('public')->put($filePath, $pdf->output());
-        }
-    }
-
-    /**
-     * Extracted email sending logic for better error handling and maintainability
-     * Send export file via email.
-     *
-     * @param User $user
-     * @param string $filePath
-     * @param string $fileName
-     * @return void
-     * @throws HttpResponseException
-     */
-    private function sendExportEmail(User $user, string $filePath, string $fileName): void
-    {
-        $mailSetting = MailSetting::latest()->first();
-        if (!$mailSetting) {
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
-                    Response::HTTP_BAD_REQUEST
-                )
-            );
-        }
-
+        $mailSetting = MailSetting::latest()->firstOr(
+            fn () => throw new RuntimeException('Mail settings are not configured.')
+        );
         $generalSetting = GeneralSetting::latest()->first();
 
-        try {
-            $this->setMailInfo($mailSetting);
-            Mail::to($user->email)->send(new ExportMail(
-                $user,
-                $filePath,
-                $fileName,
-                'Taxes',
-                $generalSetting
-            ));
-        } catch (Exception $e) {
-            $this->logError("Failed to send export email: " . $e->getMessage());
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
-                    Response::HTTP_INTERNAL_SERVER_ERROR
-                )
-            );
-        }
+        $this->setMailInfo($mailSetting);
+
+        Mail::to($user->email)->send(
+            new ExportMail($user, $path, $fileName, 'Taxes List', $generalSetting)
+        );
     }
 }
-

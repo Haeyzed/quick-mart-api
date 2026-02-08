@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Brands;
+namespace App\Http\Requests\Taxes;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Form request for brand index/listing query parameters.
+ * Form request for tax index/listing query parameters.
  *
  * Validates per_page, page, status (active/inactive), and search term.
  */
-class BrandIndexRequest extends BaseRequest
+class TaxIndexRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -33,9 +33,9 @@ class BrandIndexRequest extends BaseRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'page'     => ['nullable', 'integer', 'min:1'],
-            'status'   => ['nullable', Rule::in(['active', 'inactive'])],
-            'search'   => ['nullable', 'string', 'max:255'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'search' => ['nullable', 'string', 'max:255'],
         ];
     }
 

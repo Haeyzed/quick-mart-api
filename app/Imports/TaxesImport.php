@@ -5,45 +5,57 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Tax;
-use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithValidation;
+use Maatwebsite\Excel\Row;
 
 /**
- * TaxesImport
+ * Excel/CSV import for Tax entities.
  *
- * Handles importing taxes from CSV/Excel files.
+ * Uses upsert logic: creates new taxes or updates existing ones by name.
+ * Skips empty rows.
  */
-class TaxesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class TaxesImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows, WithValidation
 {
     /**
-     * Process the collection of rows.
+     * Process a single row from the import file.
      *
-     * @param Collection $collection
-     * @return void
+     * Skips rows with empty name. Uses updateOrCreate on name for upsert behavior.
+     *
+     * @param Row $row The current row being imported.
      */
-    public function collection(Collection $collection): void
+    public function onRow(Row $row): void
     {
-        foreach ($collection as $row) {
-            // Skip if name is empty
-            if (empty($row['name'] ?? null)) {
-                continue;
-            }
+        $data = $row->toArray();
+        $name = trim((string) ($data['name'] ?? ''));
 
-            $name = trim($row['name'] ?? '');
-            $rate = !empty($row['rate'] ?? null) ? (float)$row['rate'] : 0;
-
-            // Find or create tax
-            $tax = Tax::firstOrNew(
-                ['name' => $name, 'is_active' => true]
-            );
-
-            $tax->name = $name;
-            $tax->rate = $rate;
-            $tax->is_active = true;
-
-            $tax->save();
+        if ($name === '') {
+            return;
         }
+
+        $rate = ! empty($data['rate'] ?? null) ? (float) $data['rate'] : 0.0;
+
+        Tax::updateOrCreate(
+            ['name' => $name],
+            [
+                'rate' => $rate,
+                'is_active' => true,
+            ]
+        );
+    }
+
+    /**
+     * Get validation rules for each row.
+     *
+     * @return array<string, array<int, string>> Validation rules keyed by column heading.
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ];
     }
 }

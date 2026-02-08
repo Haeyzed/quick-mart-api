@@ -33,68 +33,33 @@ class UnitRequest extends BaseRequest
      */
     public function rules(): array
     {
-        $unitId = $this->route('unit');
+        $unit = $this->route('unit');
+        $unitId = $unit?->id ?? $unit;
 
         return [
-            /**
-             * Unique code identifier for the unit.
-             *
-             * @var string $code
-             * @example KG
-             */
             'code' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('units', 'code')->ignore($unitId),
+                Rule::unique('units', 'code')->ignore($unitId)->whereNull('deleted_at'),
             ],
-            /**
-             * Display name of the unit.
-             *
-             * @var string $name
-             * @example Kilogram
-             */
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('units', 'name')->ignore($unitId),
+                Rule::unique('units', 'name')->ignore($unitId)->whereNull('deleted_at'),
             ],
-            /**
-             * Base unit ID for conversion. If null, this is a base unit.
-             *
-             * @var int|null $base_unit
-             * @example 1
-             */
             'base_unit' => [
                 'nullable',
                 'integer',
-                Rule::exists('units', 'id')->where(function ($query) use ($unitId) {
+                Rule::exists('units', 'id')->whereNull('deleted_at')->where(function ($query) use ($unitId) {
                     if ($unitId) {
                         $query->where('id', '!=', $unitId);
                     }
                 }),
             ],
-            /**
-             * Mathematical operator for conversion (*, /, +, -).
-             *
-             * @var string|null $operator
-             * @example *
-             */
             'operator' => ['nullable', 'string', 'in:*,/,+,-'],
-            /**
-             * Value to use with operator for conversion.
-             *
-             * @var float|null $operation_value
-             * @example 1000
-             */
             'operation_value' => ['nullable', 'numeric', 'min:0'],
-            /**
-             * Whether the unit is active and visible.
-             *
-             * @var bool|null $is_active
-             * @example true
-             */
             'is_active' => ['nullable', 'boolean'],
         ];
     }

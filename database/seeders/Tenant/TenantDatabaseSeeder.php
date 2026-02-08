@@ -323,7 +323,7 @@ class TenantDatabaseSeeder extends Seeder
             $existingMap["{$item->permission_id}|{$item->role_id}"] = true;
         }
 
-        $isSaaS = config('database.connections.saleprosaas_landlord', false);
+        $isSaaS = config('database.connections.saleprosaas_landlord') !== null;
 
         $nameBasedMappings = [];
         if (!$isSaaS) {
@@ -501,23 +501,21 @@ class TenantDatabaseSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Kellogs',
-                'slug' => 'kellogs',
+                'name' => "Kellogg's",
+                'slug' => 'kelloggs',
                 'image' => '20240114103906.png',
                 'image_url' => $this->getRandomImageUrl(),
-                'short_description' => 'Kellogs is a technology company that designs and sells smartphones, tablets, and computers.',
+                'short_description' => "Kellogg's is a multinational food manufacturing company.",
                 'is_active' => true,
             ]
         ];
 
-        if(!empty($brands)) {
-        foreach ($brands as $brand) {
-            DB::table('brands')->insert(array_merge($brand, [
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]));
-            }
-        }
+        $now = now();
+        $rows = array_map(
+            fn ($brand) => array_merge($brand, ['created_at' => $now, 'updated_at' => $now]),
+            $brands
+        );
+        DB::table('brands')->insert($rows);
     }
 
     /**
@@ -561,14 +559,12 @@ class TenantDatabaseSeeder extends Seeder
             ['id' => 39, 'name' => 'Clothing', 'image' => null, 'image_url' => $this->getRandomImageUrl(), 'parent_id' => null, 'is_active' => 1],
         ];
 
-        if(!empty($categories)) {
-            foreach ($categories as $category) {
-                DB::table('categories')->insert(array_merge($category, [
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]));
-            }
-        }
+        $now = now();
+        $rows = array_map(
+            fn ($category) => array_merge($category, ['created_at' => $now, 'updated_at' => $now]),
+            $categories
+        );
+        DB::table('categories')->insert($rows);
     }
 
     /**
@@ -706,20 +702,33 @@ class TenantDatabaseSeeder extends Seeder
 
         $products = $this->getProductData();
 
-        if (!empty($products)) {
-            foreach ($products as $product) {
-                DB::table('products')->insert(array_merge($product, [
-                    'image_url' => json_encode([$this->getRandomImageUrl(),$this->getRandomImageUrl(),$this->getRandomImageUrl()]),
-                    'file_url' => $this->getRandomFileUrl(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]));
-            }
+        if (empty($products)) {
+            return;
         }
+
+        $now = now();
+        $imageUrl = json_encode([$this->getRandomImageUrl(), $this->getRandomImageUrl(), $this->getRandomImageUrl()]);
+        $fileUrl = $this->getRandomFileUrl();
+
+        $rows = array_map(
+            fn ($product) => array_merge($product, [
+                'image_url' => $imageUrl,
+                'file_url' => $fileUrl,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]),
+            $products
+        );
+        DB::table('products')->insert($rows);
     }
 
     /**
-     * 
+     * Return a placeholder image URL for seeded data.
+     *
+     * Uses picsum.photos as a placeholder service. For production, consider
+     * using local assets or null to avoid external dependencies.
+     *
+     * @return string Placeholder image URL
      */
     private function getRandomImageUrl(): string
     {
@@ -727,7 +736,9 @@ class TenantDatabaseSeeder extends Seeder
     }
 
     /**
-     * 
+     * Return a placeholder file URL for seeded product data.
+     *
+     * @return string Placeholder PDF URL
      */
     private function getRandomFileUrl(): string
     {
@@ -3173,6 +3184,10 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
+                'name' => 'taxes-export',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'taxes-update',
                 'guard_name' => 'web',
             ],
@@ -3190,6 +3205,10 @@ class TenantDatabaseSeeder extends Seeder
             ],
             [
                 'name' => 'units-import',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'units-export',
                 'guard_name' => 'web',
             ],
             [
@@ -3577,6 +3596,10 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
+                'name' => 'brands-export',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'billers-index',
                 'guard_name' => 'web',
             ],
@@ -3805,6 +3828,10 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
+                'name' => 'categories-export',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'role_permission',
                 'guard_name' => 'web',
             ],
@@ -3921,18 +3948,20 @@ class TenantDatabaseSeeder extends Seeder
     {
         $role = 'Admin';
         $permissions = [
-            'products-update', 'products-delete', 'products-create', 'products-index', 'products-import',
-            'units-update', 'units-delete', 'units-create', 'units-index', 'units-import',
-            'taxes-update', 'taxes-delete', 'taxes-create', 'taxes-index', 'taxes-import',
-            'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete',
-            'sales-index', 'sales-create', 'sales-update', 'sales-delete',
-            'customers-index', 'customers-create', 'customers-update', 'customers-delete',
-            'suppliers-index', 'suppliers-create', 'suppliers-update', 'suppliers-delete',
+            'units-update', 'units-delete', 'units-create', 'units-index', 'units-import', 'units-export',
+            'taxes-update', 'taxes-delete', 'taxes-create', 'taxes-index', 'taxes-import', 'taxes-export',
+            'brands-index', 'brands-create', 'brands-update', 'brands-delete', 'brands-import', 'brands-export',
+            'categories-index', 'categories-create', 'categories-import', 'categories-update', 'categories-delete', 'categories-export',
+            'products-index', 'products-create', 'products-update', 'products-delete', 'products-import', 'products-export',
+            'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete', 'purchases-import', 'purchases-export',
+            'sales-index', 'sales-create', 'sales-update', 'sales-delete', 'sales-import', 'sales-export',
+            'customers-index', 'customers-create', 'customers-update', 'customers-delete', 'customers-import', 'customers-export',
+            'suppliers-index', 'suppliers-create', 'suppliers-update', 'suppliers-delete', 'suppliers-import', 'suppliers-export',
             'users-index', 'users-create', 'users-update', 'users-delete',
             'general_setting', 'mail_setting', 'pos_setting',
             'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
             'customer_group', 'gift_card', 'coupon',
-            'warehouse', 'brands-index', 'brands-create', 'brands-update', 'brands-delete', 'brands-import',
+            'warehouse', 
             'billers-index', 'billers-create', 'billers-delete', 'money-transfer',
             'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
             'currency', 'revenue_profit_summary', 'cash_flow', 'monthly_summary', 'yearly_report',
@@ -3944,7 +3973,6 @@ class TenantDatabaseSeeder extends Seeder
             'packing_slip_challan', 'payment_gateway_setting', 'barcode_setting', 'language_setting',
             'account-selection', 'invoice_setting', 'invoice_create_edit_delete', 'handle_discount',
             'purchases-import', 'sales-import', 'customers-import', 'billers-import',
-            'categories-create', 'categories-import', 'categories-index', 'categories-update', 'categories-delete',
             'role_permission', 'cart-product-update',
         ];
 
@@ -3966,17 +3994,20 @@ class TenantDatabaseSeeder extends Seeder
             return;
         }
 
+        $tenantData = self::$tenantData;
+        $smtpConfig = config('mail.mailers.smtp');
+
         DB::table('mail_settings')->insert([
             [
                 'id' => 1,
                 'driver' => 'smtp',
-                'host' => 'sandbox.smtp.mailtrap.io',
-                'port' => '2525',
-                'from_address' => !empty(self::$tenantData) && isset(self::$tenantData['email']) ? self::$tenantData['email'] : 'noreply@example.com',
-                'from_name' => !empty(self::$tenantData) && isset(self::$tenantData['site_title']) ? self::$tenantData['site_title'] : 'Quick Mart',
-                'username' => '8d661dcb3a4c86',
-                'password' => '2d709401322e9a',
-                'encryption' => 'tls',
+                'host' => $smtpConfig['host'] ?? '127.0.0.1',
+                'port' => (string) ($smtpConfig['port'] ?? 2525),
+                'from_address' => (! empty($tenantData) && isset($tenantData['email'])) ? $tenantData['email'] : config('mail.from.address', 'noreply@example.com'),
+                'from_name' => (! empty($tenantData) && isset($tenantData['site_title'])) ? $tenantData['site_title'] : config('mail.from.name', 'Quick Mart'),
+                'username' => $smtpConfig['username'] ?? '',
+                'password' => $smtpConfig['password'] ?? '',
+                'encryption' => $smtpConfig['encryption'] ?? 'tls',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

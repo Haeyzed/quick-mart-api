@@ -13,77 +13,74 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
-use Exception;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * UnitService
+ * Service class for Unit entity lifecycle operations.
  *
- * Handles all business logic for unit operations including CRUD operations,
- * filtering, pagination, and bulk operations.
- *
- * Key Features:
- * - Encapsulates all unit-related database queries
- * - Provides bulk operations for efficiency
- * - Manages data normalization and validation
- * - Enforces permission checks for all operations
+ * Centralizes business logic for Unit CRUD, bulk actions, imports/exports.
+ * Delegates permission checks to CheckPermissionsTrait.
  */
 class UnitService extends BaseService
 {
-    use CheckPermissionsTrait;
-    use MailInfo;
-
-    private const BULK_ACTIVATE = ['is_active' => true];
-    private const BULK_DEACTIVATE = ['is_active' => false];
+    use CheckPermissionsTrait, MailInfo;
 
     /**
-     * Get paginated list of units with optional filters.
-     *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Unit>
+     * Create a new UnitService instance.
      */
-    public function getUnits(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function __construct() {}
+
+    /**
+     * Retrieve a single unit by instance.
+     *
+     * Requires units-index permission. Use for show/display operations.
+     *
+     * @param Unit $unit The unit instance to retrieve.
+     * @return Unit The refreshed unit instance.
+     */
+    public function getUnit(Unit $unit): Unit
     {
-        // Check permission: user needs 'unit' permission to view units
         $this->requirePermission('units-index');
 
-        return Unit::query()->with('baseUnitRelation')
-            ->when(
-                isset($filters['status']),
-                fn($query) => $query->where('is_active', $filters['status'] === 'active')
-            )
-            ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where(function ($q) use ($filters) {
-                    $search = $filters['search'];
-                    $q->where('code', 'like', "%{$search}%")
-                        ->orWhere('name', 'like', "%{$search}%");
-                })
-            )
-            ->latest()
-            ->paginate($perPage);
+        return $unit->fresh(['baseUnitRelation']);
     }
 
     /**
-     * Get a single unit by ID.
+     * Retrieve units with optional filters and pagination.
      *
-     * @param int $id Unit ID
-     * @return Unit
+     * Supports filtering by status (active/inactive) and search term.
+     * Requires units-index permission.
+     *
+     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
+     * @param int $perPage Number of items per page.
+     * @return LengthAwarePaginator<Unit> Paginated unit collection.
      */
-    public function getUnit(int $id): Unit
+    public function getUnits(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        // Check permission: user needs 'unit' permission to view units
         $this->requirePermission('units-index');
 
-        return Unit::findOrFail($id);
+        return Unit::query()
+            ->with('baseUnitRelation')
+            ->when(isset($filters['status']), fn ($q) =>
+                $q->where('is_active', $filters['status'] === 'active')
+            )
+            ->when(!empty($filters['search']), function ($q) use ($filters) {
+                $term = "%{$filters['search']}%";
+                $q->where(fn ($subQ) => $subQ
+                    ->where('code', 'like', $term)
+                    ->orWhere('name', 'like', $term)
+                );
+            })
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**
@@ -94,7 +91,6 @@ class UnitService extends BaseService
      */
     public function getBaseUnits(): \Illuminate\Database\Eloquent\Collection
     {
-        // Check permission: user needs 'unit' permission to view units
         $this->requirePermission('units-index');
 
         return Unit::where('is_active', true)
@@ -106,47 +102,213 @@ class UnitService extends BaseService
     /**
      * Create a new unit.
      *
-     * @param array<string, mixed> $data Validated unit data
-     * @return Unit
+     * Requires units-create permission.
+     *
+     * @param array<string, mixed> $data Validated unit data.
+     * @return Unit The created unit instance.
      */
     public function createUnit(array $data): Unit
     {
-        // Check permission: user needs 'unit' permission to create units
         $this->requirePermission('units-create');
 
-        return $this->transaction(function () use ($data) {
+        return DB::transaction(function () use ($data) {
             $data = $this->normalizeUnitData($data);
+
             return Unit::create($data);
         });
     }
 
     /**
+     * Update an existing unit.
+     *
+     * Requires units-update permission.
+     *
+     * @param Unit $unit The unit instance to update.
+     * @param array<string, mixed> $data Validated unit data.
+     * @return Unit The updated unit instance (refreshed).
+     */
+    public function updateUnit(Unit $unit, array $data): Unit
+    {
+        $this->requirePermission('units-update');
+
+        return DB::transaction(function () use ($unit, $data) {
+            $data = $this->normalizeUnitData($data, isUpdate: true);
+            $unit->update($data);
+
+            return $unit->fresh();
+        });
+    }
+
+    /**
+     * Soft-delete a unit.
+     *
+     * Fails if the unit has associated products or sub-units.
+     * Requires units-delete permission.
+     *
+     * @param Unit $unit The unit instance to delete.
+     * @throws ConflictHttpException When unit has associated products or sub-units (409 Conflict).
+     */
+    public function deleteUnit(Unit $unit): void
+    {
+        $this->requirePermission('units-delete');
+
+        if ($unit->products()->exists()) {
+            throw new ConflictHttpException(
+                "Cannot delete unit '{$unit->name}' because it has associated products."
+            );
+        }
+
+        if ($unit->subUnits()->exists()) {
+            throw new ConflictHttpException(
+                "Cannot delete unit '{$unit->name}' because it has associated sub-units."
+            );
+        }
+
+        $unit->delete();
+    }
+
+    /**
+     * Bulk soft-delete units that have no associated products or sub-units.
+     *
+     * Skips units with products or sub-units. Returns the count of successfully deleted units.
+     * Requires units-delete permission.
+     *
+     * @param array<int> $ids Unit IDs to delete.
+     * @return int Number of units successfully deleted.
+     */
+    public function bulkDeleteUnits(array $ids): int
+    {
+        $this->requirePermission('units-delete');
+
+        return DB::transaction(function () use ($ids) {
+            $units = Unit::whereIn('id', $ids)
+                ->withCount(['products', 'subUnits'])
+                ->get();
+
+            $deletedCount = 0;
+
+            foreach ($units as $unit) {
+                if ($unit->products_count > 0 || $unit->sub_units_count > 0) {
+                    continue;
+                }
+
+                $unit->delete();
+                $deletedCount++;
+            }
+
+            return $deletedCount;
+        });
+    }
+
+    /**
+     * Bulk activate units by ID.
+     *
+     * Sets is_active to true for all matching units. Requires units-update permission.
+     *
+     * @param array<int> $ids Unit IDs to activate.
+     * @return int Number of units updated.
+     */
+    public function bulkActivateUnits(array $ids): int
+    {
+        $this->requirePermission('units-update');
+
+        return Unit::whereIn('id', $ids)->update(['is_active' => true]);
+    }
+
+    /**
+     * Bulk deactivate units by ID.
+     *
+     * Sets is_active to false for all matching units. Requires units-update permission.
+     *
+     * @param array<int> $ids Unit IDs to deactivate.
+     * @return int Number of units updated.
+     */
+    public function bulkDeactivateUnits(array $ids): int
+    {
+        $this->requirePermission('units-update');
+
+        return Unit::whereIn('id', $ids)->update(['is_active' => false]);
+    }
+
+    /**
+     * Import units from an Excel or CSV file.
+     *
+     * Requires units-import permission.
+     *
+     * @param UploadedFile $file The uploaded import file.
+     */
+    public function importUnits(UploadedFile $file): void
+    {
+        $this->requirePermission('units-import');
+        Excel::import(new UnitsImport(), $file);
+    }
+
+    /**
+     * Export units to Excel or PDF file.
+     *
+     * Supports download or email delivery. Requires units-export permission.
+     *
+     * @param array<int> $ids Unit IDs to export. Empty array exports all.
+     * @param string $format Export format: 'excel' or 'pdf'.
+     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
+     * @param array<string> $columns Column keys to include in export.
+     * @param string $method Delivery method: 'download' or 'email'.
+     * @return string Relative storage path of the generated file.
+     * @throws RuntimeException When mail settings are not configured and method is 'email'.
+     */
+    public function exportUnits(
+        array $ids,
+        string $format,
+        ?User $user,
+        array $columns,
+        string $method
+    ): string {
+        $this->requirePermission('units-export');
+
+        $fileName = 'units_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new UnitsExport($ids, $columns), $relativePath, 'public');
+        } else {
+            $units = Unit::query()
+                ->with('baseUnitRelation:id,code,name')
+                ->when(!empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->orderBy('code')
+                ->get();
+
+            $pdf = PDF::loadView('exports.units-pdf', compact('units', 'columns'));
+            Storage::disk('public')->put($relativePath, $pdf->output());
+        }
+
+        if ($method === 'email' && $user) {
+            $this->sendExportEmail($user, $relativePath, $fileName);
+        }
+
+        return $relativePath;
+    }
+
+    /**
      * Normalize unit data to match database schema requirements.
      *
-     * Handles boolean conversions and default values:
-     * - is_active: boolean, defaults to true on create
-     * - Sets default operator and operation_value if base_unit is not set
+     * Handles boolean conversions and default values: is_active, operator, operation_value.
      *
-     * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation
-     * @return array<string, mixed>
+     * @param array<string, mixed> $data Input data.
+     * @param bool $isUpdate Whether this is an update operation.
+     * @return array<string, mixed> Normalized data.
      */
     private function normalizeUnitData(array $data, bool $isUpdate = false): array
     {
-        // Set default operator and operation_value if base_unit is not set
-        // This matches the salespro logic: if no base_unit, set defaults
         if (empty($data['base_unit'])) {
             $data['operator'] = '*';
             $data['operation_value'] = 1;
-            // Clear base_unit to ensure it's null
             $data['base_unit'] = null;
         }
 
-        // is_active defaults to true on create
-        if (!isset($data['is_active']) && !$isUpdate) {
+        if (! isset($data['is_active']) && ! $isUpdate) {
             $data['is_active'] = true;
         } elseif (isset($data['is_active'])) {
-            $data['is_active'] = (bool)filter_var(
+            $data['is_active'] = (bool) filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
@@ -157,246 +319,25 @@ class UnitService extends BaseService
     }
 
     /**
-     * Update an existing unit.
+     * Send export completion email to the user.
      *
-     * @param Unit $unit Unit instance to update
-     * @param array<string, mixed> $data Validated unit data
-     * @return Unit
+     * @param User $user Recipient of the export email.
+     * @param string $path Relative storage path of the export file.
+     * @param string $fileName Display filename for the attachment.
+     * @throws RuntimeException When mail settings are not configured.
      */
-    public function updateUnit(Unit $unit, array $data): Unit
+    private function sendExportEmail(User $user, string $path, string $fileName): void
     {
-        // Check permission: user needs 'unit' permission to update units
-        $this->requirePermission('units-update');
-
-        return $this->transaction(function () use ($unit, $data) {
-            $data = $this->normalizeUnitData($data, isUpdate: true);
-            $unit->update($data);
-            return $unit->fresh();
-        });
-    }
-
-    /**
-     * Refactored from individual loop to batch processing with chunking
-     * Bulk delete multiple units using efficient batch operations.
-     *
-     * @param array<int> $ids Array of unit IDs to delete
-     * @return int Number of units successfully deleted
-     */
-    public function bulkDeleteUnits(array $ids): int
-    {
-        // Check permission: user needs 'unit' permission to delete units
-        $this->requirePermission('units-delete');
-
-        return $this->transaction(function () use ($ids) {
-            $deletedCount = 0;
-
-            Unit::whereIn('id', $ids)
-                ->chunk(100, function ($units) use (&$deletedCount) {
-                    foreach ($units as $unit) {
-                        try {
-                            if (!$unit->products()->exists() && !$unit->subUnits()->exists()) {
-                                $unit->delete();
-                                $deletedCount++;
-                            }
-                        } catch (Exception $e) {
-                            $this->logError("Failed to delete unit {$unit->id}: " . $e->getMessage());
-                        }
-                    }
-                });
-
-            return $deletedCount;
-        });
-    }
-
-    /**
-     * Delete a single unit with validation.
-     *
-     * Prevents deletion if unit has associated products or sub-units.
-     *
-     * @param Unit $unit Unit instance to delete
-     * @return bool
-     * @throws HttpResponseException
-     */
-    public function deleteUnit(Unit $unit): bool
-    {
-        // Check permission: user needs 'unit' permission to delete units
-        $this->requirePermission('units-delete');
-
-        return $this->transaction(function () use ($unit) {
-            if ($unit->products()->exists()) {
-                abort(Response::HTTP_BAD_REQUEST, 'Cannot delete unit: unit has associated products');
-            }
-
-            if ($unit->subUnits()->exists()) {
-                abort(Response::HTTP_BAD_REQUEST, 'Cannot delete unit: unit has associated sub-units');
-            }
-
-            return $unit->delete();
-        });
-    }
-
-    /**
-     * Import units from a file.
-     *
-     * @param UploadedFile $file
-     * @return void
-     */
-    public function importUnits(UploadedFile $file): void
-    {
-        // Check permission: user needs 'unit' permission to import units
-        $this->requirePermission('units-import');
-
-        $this->transaction(function () use ($file) {
-            Excel::import(new UnitsImport(), $file);
-        });
-    }
-
-    /**
-     * Created private helper method to eliminate duplication across all bulk update methods
-     * Bulk update multiple units with specified data.
-     *
-     * @param array<int> $ids Array of unit IDs to update
-     * @param array<string, mixed> $updateData Data to update
-     * @return int Number of units updated
-     */
-    private function bulkUpdateUnits(array $ids, array $updateData): int
-    {
-        return $this->transaction(function () use ($ids, $updateData) {
-            return Unit::whereIn('id', $ids)->update($updateData);
-        });
-    }
-
-    /**
-     * Bulk activate multiple units.
-     *
-     * @param array<int> $ids Array of unit IDs to activate
-     * @return int Number of units activated
-     */
-    public function bulkActivateUnits(array $ids): int
-    {
-        // Check permission: user needs 'unit' permission to update units
-        $this->requirePermission('units-update');
-
-        return $this->bulkUpdateUnits($ids, self::BULK_ACTIVATE);
-    }
-
-    /**
-     * Bulk deactivate multiple units.
-     *
-     * @param array<int> $ids Array of unit IDs to deactivate
-     * @return int Number of units deactivated
-     */
-    public function bulkDeactivateUnits(array $ids): int
-    {
-        // Check permission: user needs 'unit' permission to update units
-        $this->requirePermission('units-update');
-
-        return $this->bulkUpdateUnits($ids, self::BULK_DEACTIVATE);
-    }
-
-    /**
-     * Export units to Excel or PDF.
-     *
-     * @param array<int> $ids Array of unit IDs to export (empty for all)
-     * @param string $format Export format: 'excel' or 'pdf'
-     * @param User|null $user User to send email to (null for download)
-     * @param array<string> $columns Columns to export
-     * @param string $method Export method: 'download' or 'email'
-     * @return string File path
-     */
-    public function exportUnits(
-        array $ids = [],
-        string $format = 'excel',
-        ?User $user = null,
-        array $columns = [],
-        string $method = 'download'
-    ): string {
-        // Check permission: user needs 'unit' permission to export units
-        $this->requirePermission('units-index');
-
-        $fileName = 'units-export-' . date('Y-m-d-His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $filePath = 'exports/' . $fileName;
-
-        $this->generateExportFile($format, $filePath, $ids, $columns);
-
-        if ($user && $method === 'email') {
-            $this->sendExportEmail($user, $filePath, $fileName);
-        }
-
-        return $filePath;
-    }
-
-    /**
-     * Extracted export file generation logic for cleaner separation of concerns
-     * Generate export file in specified format.
-     *
-     * @param string $format
-     * @param string $filePath
-     * @param array<int> $ids
-     * @param array<string> $columns
-     * @return void
-     */
-    private function generateExportFile(string $format, string $filePath, array $ids, array $columns): void
-    {
-        if ($format === 'excel') {
-            Excel::store(new UnitsExport($ids, $columns), $filePath, 'public');
-        } else {
-            $units = Unit::with('baseUnitRelation:id,code,name')
-                ->when(!empty($ids), fn($query) => $query->whereIn('id', $ids))
-                ->orderBy('code')
-                ->get();
-
-            $pdf = PDF::loadView('exports.units-pdf', [
-                'units' => $units,
-                'columns' => $columns,
-            ]);
-
-            Storage::disk('public')->put($filePath, $pdf->output());
-        }
-    }
-
-    /**
-     * Extracted email sending logic for better error handling and maintainability
-     * Send export file via email.
-     *
-     * @param User $user
-     * @param string $filePath
-     * @param string $fileName
-     * @return void
-     * @throws HttpResponseException
-     */
-    private function sendExportEmail(User $user, string $filePath, string $fileName): void
-    {
-        $mailSetting = MailSetting::latest()->first();
-        if (!$mailSetting) {
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Mail settings are not configured. Please contact the administrator.'],
-                    Response::HTTP_BAD_REQUEST
-                )
-            );
-        }
-
+        $mailSetting = MailSetting::latest()->firstOr(
+            fn () => throw new RuntimeException('Mail settings are not configured.')
+        );
         $generalSetting = GeneralSetting::latest()->first();
 
-        try {
-            $this->setMailInfo($mailSetting);
-            Mail::to($user->email)->send(new ExportMail(
-                $user,
-                $filePath,
-                $fileName,
-                'Units',
-                $generalSetting
-            ));
-        } catch (Exception $e) {
-            $this->logError("Failed to send export email: " . $e->getMessage());
-            throw new HttpResponseException(
-                response()->json(
-                    ['message' => 'Failed to send export email: ' . $e->getMessage()],
-                    Response::HTTP_INTERNAL_SERVER_ERROR
-                )
-            );
-        }
+        $this->setMailInfo($mailSetting);
+
+        Mail::to($user->email)->send(
+            new ExportMail($user, $path, $fileName, 'Units List', $generalSetting)
+        );
     }
 }
 

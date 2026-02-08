@@ -8,14 +8,17 @@ use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Class BrandRequest
+ * Form request for brand create and update validation.
  *
- * Validates brand creation and update requests.
+ * Validates name, slug, short_description, page_title, image, and is_active.
+ * Unique rules scope to non-soft-deleted brands only.
  */
 class BrandRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool True to allow (authorization handled by middleware/policy).
      */
     public function authorize(): bool
     {
@@ -29,21 +32,20 @@ class BrandRequest extends BaseRequest
      */
     public function rules(): array
     {
-        // Safely get the brand ID from the route for ignore rule
         $brandId = $this->route('brand')?->id;
 
         return [
             'name' => [
-                'required', 
-                'string', 
-                'max:255', 
-                Rule::unique('brands', 'name')->ignore($brandId)
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('brands', 'name')->ignore($brandId)->whereNull('deleted_at'),
             ],
             'slug' => [
-                'nullable', 
-                'string', 
-                'max:255', 
-                Rule::unique('brands', 'slug')->ignore($brandId)
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('brands', 'slug')->ignore($brandId)->whereNull('deleted_at'),
             ],
             'short_description' => ['nullable', 'string', 'max:1000'],
             'page_title' => ['nullable', 'string', 'max:255'],
@@ -58,7 +60,9 @@ class BrandRequest extends BaseRequest
     }
 
     /**
-     * Prepare data for validation.
+     * Prepare the data for validation.
+     *
+     * Normalizes is_active to boolean when present.
      */
     protected function prepareForValidation(): void
     {

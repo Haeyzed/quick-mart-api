@@ -45,7 +45,7 @@ class UnitBulkUpdateRequest extends BaseRequest
              * @var int $ids.*
              * @example 1
              */
-            'ids.*' => ['required', 'integer', Rule::exists('units', 'id')],
+            'ids.*' => ['required', 'integer', Rule::exists('units', 'id')->whereNull('deleted_at')],
         ];
     }
 }

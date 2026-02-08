@@ -126,7 +126,8 @@
                             'id' => 'ID',
                             'name' => 'Name',
                             'rate' => 'Rate (%)',
-                            'is_active' => 'Is Active',
+                            'is_active' => 'Status',
+                            'woocommerce_tax_id' => 'WooCommerce ID',
                             'created_at' => 'Created At',
                             'updated_at' => 'Updated At',
                         ];
@@ -156,6 +157,9 @@
                                         <span class="badge {{ $tax->is_active ? 'badge-yes' : 'badge-no' }}">
                                             {{ $tax->is_active ? 'Yes' : 'No' }}
                                         </span>
+                                        @break
+                                    @case('woocommerce_tax_id')
+                                        {{ $tax->woocommerce_tax_id ?? '-' }}
                                         @break
                                     @case('created_at')
                                         {{ $tax->created_at?->format('Y-m-d H:i:s') ?? '-' }}

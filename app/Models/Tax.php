@@ -93,11 +93,11 @@ class Tax extends Model
     }
 
     /**
-     * Get the tax's active status.
+     * Get the human-readable status.
      *
      * @return string
      */
-    protected function getStatusAttribute(): string
+    public function getStatusAttribute(): string
     {
         return $this->is_active ? 'active' : 'inactive';
     }
