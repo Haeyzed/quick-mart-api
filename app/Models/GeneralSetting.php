@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string|null $site_title
  * @property string|null $site_logo
+ * @property string|null $site_logo_url
  * @property bool $is_rtl
  * @property string|null $currency
  * @property string|null $currency_position
@@ -70,6 +71,7 @@ use Illuminate\Support\Carbon;
  * @property bool|null $disable_signup
  * @property bool|null $disable_forgot_password
  * @property string|null $favicon
+ * @property string|null $favicon_url
  * @property int|null $expiry_alert_days
 * @property string|null $margin_type
 * @property string|null $storage_provider
@@ -100,6 +102,9 @@ class GeneralSetting extends Model
     protected $fillable = [
         'site_title',
         'site_logo',
+        'site_logo_url',
+        'favicon',
+        'favicon_url',
         'is_rtl',
         'currency',
         'currency_position',
@@ -153,9 +158,9 @@ class GeneralSetting extends Model
         'custom_css',
         'disable_signup',
         'disable_forgot_password',
-        'favicon',
-            'expiry_alert_days',
-            'margin_type',
+        'expiry_alert_days',
+        'default_margin_value',
+        'margin_type',
             'storage_provider',
             'google_client_id',
             'google_client_secret',

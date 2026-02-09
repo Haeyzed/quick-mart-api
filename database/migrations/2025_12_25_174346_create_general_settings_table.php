@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('site_title');
             $table->string('site_logo')->nullable();
+            $table->string('site_logo_url')->nullable();
             $table->string('favicon')->nullable();
+            $table->string('favicon_url')->nullable();
             $table->boolean('is_rtl')->nullable();
             $table->string('currency');
             $table->integer('package_id')->nullable();

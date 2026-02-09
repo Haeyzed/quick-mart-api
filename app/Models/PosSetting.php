@@ -69,6 +69,8 @@ class PosSetting extends Model
         'thermal_invoice_size',
         'keybord_active',
         'is_table',
+        'send_sms',
+        'cash_register',
     ];
 
     /**

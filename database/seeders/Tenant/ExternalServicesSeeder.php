@@ -26,6 +26,7 @@ class ExternalServicesSeeder extends Seeder
     {
         $this->updateModuleStatuses();
         $this->seedPaymentGateways();
+        $this->seedSmsProviders();
     }
 
     /**
@@ -156,8 +157,71 @@ class ExternalServicesSeeder extends Seeder
             }
         }
     }
+
+    /**
+     * Seed SMS providers if they don't exist.
+     */
+    private function seedSmsProviders(): void
+    {
+        $providers = [
+            [
+                'name' => 'tonkra',
+                'type' => 'sms',
+                'details' => json_encode(['api_token' => '', 'sender_id' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+            [
+                'name' => 'revesms',
+                'type' => 'sms',
+                'details' => json_encode(['apikey' => '', 'secretkey' => '', 'callerID' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+            [
+                'name' => 'bdbulksms',
+                'type' => 'sms',
+                'details' => json_encode(['token' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+            [
+                'name' => 'clickatell',
+                'type' => 'sms',
+                'details' => json_encode(['api_key' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+            [
+                'name' => 'smstoday',
+                'type' => 'sms',
+                'details' => json_encode(['api_key' => '', 'password' => '', 'from' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+            [
+                'name' => 'twilio',
+                'type' => 'sms',
+                'details' => json_encode(['account_sid' => '', 'auth_token' => '', 'from' => '']),
+                'module_status' => json_encode(['ecommerce' => false, 'pos' => true]),
+                'active' => 0,
+            ],
+        ];
+
+        foreach ($providers as $provider) {
+            $exists = DB::table('external_services')
+                ->where('name', $provider['name'])
+                ->where('type', 'sms')
+                ->exists();
+
+            if (! $exists) {
+                DB::table('external_services')->insert(array_merge($provider, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]));
+            }
+        }
+    }
 }
-
-
 
 

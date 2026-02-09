@@ -21,6 +21,16 @@ use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariantController;
+use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AppSettingController;
+use App\Http\Controllers\Api\GeneralSettingController;
+use App\Http\Controllers\Api\MailSettingController;
+use App\Http\Controllers\Api\CreateSmsController;
+use App\Http\Controllers\Api\HrmSettingController;
+use App\Http\Controllers\Api\PaymentGatewaySettingController;
+use App\Http\Controllers\Api\PosSettingController;
+use App\Http\Controllers\Api\RewardPointSettingController;
+use App\Http\Controllers\Api\SmsSettingController;
 use App\Http\Controllers\Api\WarehouseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -132,6 +142,60 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('warehouses/all/active', [WarehouseController::class, 'getAllActive'])
         ->name('warehouses.all-active');
     Route::apiResource('warehouses', WarehouseController::class);
+
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])
+        ->name('activity-logs.index');
+
+    Route::get('settings/general', [GeneralSettingController::class, 'show'])
+        ->name('settings.general.show');
+    Route::put('settings/general', [GeneralSettingController::class, 'update'])
+        ->name('settings.general.update');
+
+    Route::get('settings/app', [AppSettingController::class, 'show'])
+        ->name('settings.app.show');
+    Route::delete('settings/app/tokens/{id}', [AppSettingController::class, 'destroyToken'])
+        ->name('settings.app.tokens.destroy');
+
+    Route::get('settings/mail', [MailSettingController::class, 'show'])
+        ->name('settings.mail.show');
+    Route::put('settings/mail', [MailSettingController::class, 'update'])
+        ->name('settings.mail.update');
+    Route::post('settings/mail/test', [MailSettingController::class, 'test'])
+        ->name('settings.mail.test');
+
+    Route::get('settings/sms', [SmsSettingController::class, 'index'])
+        ->name('settings.sms.index');
+    Route::get('settings/sms/{id}', [SmsSettingController::class, 'show'])
+        ->name('settings.sms.show');
+    Route::put('settings/sms/{id}', [SmsSettingController::class, 'update'])
+        ->name('settings.sms.update');
+
+    Route::get('sms/templates', [CreateSmsController::class, 'index'])
+        ->name('sms.templates.index');
+    Route::post('sms/send', [CreateSmsController::class, 'send'])
+        ->name('sms.send');
+
+    Route::get('settings/payment-gateways', [PaymentGatewaySettingController::class, 'index'])
+        ->name('settings.payment-gateways.index');
+    Route::get('settings/payment-gateways/{id}', [PaymentGatewaySettingController::class, 'show'])
+        ->name('settings.payment-gateways.show');
+    Route::put('settings/payment-gateways/{id}', [PaymentGatewaySettingController::class, 'update'])
+        ->name('settings.payment-gateways.update');
+
+    Route::get('settings/pos', [PosSettingController::class, 'show'])
+        ->name('settings.pos.show');
+    Route::put('settings/pos', [PosSettingController::class, 'update'])
+        ->name('settings.pos.update');
+
+    Route::get('settings/reward-points', [RewardPointSettingController::class, 'show'])
+        ->name('settings.reward-points.show');
+    Route::put('settings/reward-points', [RewardPointSettingController::class, 'update'])
+        ->name('settings.reward-points.update');
+
+    Route::get('settings/hrm', [HrmSettingController::class, 'show'])
+        ->name('settings.hrm.show');
+    Route::put('settings/hrm', [HrmSettingController::class, 'update'])
+        ->name('settings.hrm.update');
 
     Route::apiResource('customer-groups', CustomerGroupController::class);
     Route::delete('customer-groups/bulk-destroy', [CustomerGroupController::class, 'bulkDestroy'])
