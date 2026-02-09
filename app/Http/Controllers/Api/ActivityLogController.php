@@ -9,12 +9,15 @@ use App\Http\Requests\AuditIndexRequest;
 use App\Http\Resources\AuditResource;
 use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * API Controller for Audit Log.
  *
  * Handles index (paginated listing) of audits from Laravel Auditing.
  * Returns full Audit structure per standard.
+ * Uses through() to preserve LengthAwarePaginator so the success macro
+ * outputs data and meta at top level (matches other controllers).
  *
  * @group Audit Log
  */
@@ -37,8 +40,11 @@ class ActivityLogController extends Controller
             (int) $request->input('per_page', 10)
         );
 
+        // Transform data while preserving LengthAwarePaginator for the Response Macro
+        $audits->through(fn (Audit $audit) => new AuditResource($audit));
+
         return response()->success(
-            AuditResource::collection($audits),
+            $audits,
             'Audits fetched successfully'
         );
     }
