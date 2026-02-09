@@ -16,7 +16,7 @@ use OwenIt\Auditing\Models\Audit;
  * Returns raw Audit records without transformation.
  * Users with role_id > 2 only see their own audits.
  */
-class ActivityLogService extends BaseService
+class AuditLogService extends BaseService
 {
     use CheckPermissionsTrait;
 
@@ -26,7 +26,7 @@ class ActivityLogService extends BaseService
      * Role-based: users with role_id > 2 only see their own audits.
      * Requires activity-log-index permission.
      *
-     * @param  array<string, mixed>  $filters  Associative array with optional keys: search, event, auditable_type.
+     * @param  array<string, mixed>  $filters  Associative array with optional keys: search, event, auditable_type, ip_address, user.
      * @param  int  $perPage  Number of items per page.
      * @return LengthAwarePaginator<Audit>
      */
@@ -50,7 +50,12 @@ class ActivityLogService extends BaseService
                 );
             })
             ->when(! empty($filters['event'] ?? null), fn ($q) => $q->where('audits.event', $filters['event']))
-            ->when(! empty($filters['auditable_type'] ?? null), fn ($q) => $q->where('audits.auditable_type', $filters['auditable_type']))
+            ->when(! empty($filters['auditable_type'] ?? null), fn ($q) => $q->where('audits.auditable_type', 'like', "%{$filters['auditable_type']}%"))
+            ->when(! empty($filters['ip_address'] ?? null), fn ($q) => $q->where('audits.ip_address', 'like', "%{$filters['ip_address']}%"))
+            ->when(! empty($filters['user'] ?? null), function ($q) use ($filters) {
+                $term = "%{$filters['user']}%";
+                $q->whereHas('user', fn ($u) => $u->where('name', 'like', $term));
+            })
             ->orderByDesc('audits.id');
 
         return $query->paginate($perPage);

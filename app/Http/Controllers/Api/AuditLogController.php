@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AuditIndexRequest;
 use App\Http\Resources\AuditResource;
-use App\Services\ActivityLogService;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use OwenIt\Auditing\Models\Audit;
 
@@ -21,16 +21,16 @@ use OwenIt\Auditing\Models\Audit;
  *
  * @group Audit Log
  */
-class ActivityLogController extends Controller
+class AuditLogController extends Controller
 {
     public function __construct(
-        private readonly ActivityLogService $service
+        private readonly AuditLogService $service
     ) {}
 
     /**
      * Display a paginated listing of audits.
      *
-     * @param  AuditIndexRequest  $request  Validated query params: per_page, page, search, event, auditable_type.
+     * @param  AuditIndexRequest  $request  Validated query params: per_page, page, search, event, auditable_type, ip_address, user.
      * @return JsonResponse Paginated audits with meta and links.
      */
     public function index(AuditIndexRequest $request): JsonResponse

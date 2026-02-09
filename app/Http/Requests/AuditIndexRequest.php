@@ -24,6 +24,8 @@ class AuditIndexRequest extends BaseRequest
             'search' => ['nullable', 'string', 'max:255'],
             'event' => ['nullable', 'string', 'in:created,updated,deleted,restored'],
             'auditable_type' => ['nullable', 'string', 'max:255'],
+            'ip_address' => ['nullable', 'string', 'max:45'],
+            'user' => ['nullable', 'string', 'max:255'],
         ];
     }
 

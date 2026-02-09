@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\AppSettingController;
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CourierController;
+use App\Http\Controllers\Api\CreateSmsController;
 use App\Http\Controllers\Api\CurrencyController;
 use App\Http\Controllers\Api\CustomerGroupController;
 use App\Http\Controllers\Api\DepartmentController;
@@ -12,27 +14,24 @@ use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\DiscountController;
 use App\Http\Controllers\Api\DiscountPlanController;
 use App\Http\Controllers\Api\ExpenseCategoryController;
+use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HolidayController;
+use App\Http\Controllers\Api\HrmSettingController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\MailSettingController;
+use App\Http\Controllers\Api\PaymentGatewaySettingController;
+use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RewardPointSettingController;
+use App\Http\Controllers\Api\SmsSettingController;
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariantController;
-use App\Http\Controllers\Api\ActivityLogController;
-use App\Http\Controllers\Api\AppSettingController;
-use App\Http\Controllers\Api\GeneralSettingController;
-use App\Http\Controllers\Api\MailSettingController;
-use App\Http\Controllers\Api\CreateSmsController;
-use App\Http\Controllers\Api\HrmSettingController;
-use App\Http\Controllers\Api\PaymentGatewaySettingController;
-use App\Http\Controllers\Api\PosSettingController;
-use App\Http\Controllers\Api\RewardPointSettingController;
-use App\Http\Controllers\Api\SmsSettingController;
 use App\Http\Controllers\Api\WarehouseController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes (public)
@@ -143,8 +142,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('warehouses.all-active');
     Route::apiResource('warehouses', WarehouseController::class);
 
-    Route::get('activity-logs', [ActivityLogController::class, 'index'])
-        ->name('activity-logs.index');
+    Route::get('audit-logs', [AuditLogController::class, 'index'])
+        ->name('audit-logs.index');
 
     Route::get('settings/general', [GeneralSettingController::class, 'show'])
         ->name('settings.general.show');
@@ -218,35 +217,35 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('variants.bulkDestroy');
 
     Route::delete('products/bulk-destroy', [ProductController::class, 'bulkDestroy'])
-    ->name('products.bulkDestroy');
+        ->name('products.bulkDestroy');
     Route::get('products/without-variant', [ProductController::class, 'getProductsWithoutVariant'])
-    ->name('products.without-variant');
+        ->name('products.without-variant');
     Route::get('products/with-variant', [ProductController::class, 'getProductsWithVariant'])
-    ->name('products.with-variant');
+        ->name('products.with-variant');
     Route::get('products/generate-code', [ProductController::class, 'generateCode'])
-    ->name('products.generate-code');
+        ->name('products.generate-code');
     Route::post('products/import', [ProductController::class, 'import'])
-    ->name('products.import');
+        ->name('products.import');
     Route::post('products/{product}/reorder-images', [ProductController::class, 'reorderImages'])
-    ->name('products.reorder-images');
+        ->name('products.reorder-images');
     Route::get('products/search', [ProductController::class, 'search'])
-    ->name('products.search');
+        ->name('products.search');
     Route::get('products/sale-unit/{unitId}', [ProductController::class, 'getSaleUnits'])
-    ->name('products.sale-unit');
+        ->name('products.sale-unit');
     Route::get('products/combo-search', [ProductController::class, 'searchComboProduct'])
-    ->name('products.combo-search');
+        ->name('products.combo-search');
     Route::get('products/{product}/history/sales', [ProductController::class, 'saleHistory'])
-    ->name('products.history.sales');
+        ->name('products.history.sales');
     Route::get('products/{product}/history/purchases', [ProductController::class, 'purchaseHistory'])
-    ->name('products.history.purchases');
+        ->name('products.history.purchases');
     Route::get('products/{product}/history/sale-returns', [ProductController::class, 'saleReturnHistory'])
-    ->name('products.history.sale-returns');
+        ->name('products.history.sale-returns');
     Route::get('products/{product}/history/purchase-returns', [ProductController::class, 'purchaseReturnHistory'])
-    ->name('products.history.purchase-returns');
+        ->name('products.history.purchase-returns');
     Route::get('products/{product}/history/adjustments', [ProductController::class, 'adjustmentHistory'])
-    ->name('products.history.adjustments');
+        ->name('products.history.adjustments');
     Route::get('products/{product}/history/transfers', [ProductController::class, 'transferHistory'])
-    ->name('products.history.transfers');
+        ->name('products.history.transfers');
     Route::apiResource('products', ProductController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
