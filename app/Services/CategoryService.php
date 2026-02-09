@@ -48,9 +48,11 @@ class CategoryService extends BaseService
      * Create a new CategoryService instance.
      *
      * @param UploadService $uploadService Handles file uploads for category images and icons.
+     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
     public function __construct(
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        private readonly ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -144,7 +146,14 @@ class CategoryService extends BaseService
             $data['is_active'] = $data['is_active'] ?? true;
             $data['featured'] = $data['featured'] ?? false;
 
-            return Category::create($data);
+            $category = Category::create($data);
+            $this->activityLogService->log(
+                'Created Category',
+                (string) $category->id,
+                "Category '{$category->name}' was created."
+            );
+
+            return $category;
         });
     }
 
@@ -171,6 +180,11 @@ class CategoryService extends BaseService
 
             $data = $this->handleFileUploads($data);
             $category->update($data);
+            $this->activityLogService->log(
+                'Updated Category',
+                (string) $category->id,
+                "Category '{$category->name}' was updated."
+            );
 
             return $category->fresh();
         });
@@ -203,6 +217,11 @@ class CategoryService extends BaseService
         DB::transaction(function () use ($category) {
             $this->cleanupFiles($category);
             $category->delete();
+            $this->activityLogService->log(
+                'Deleted Category',
+                (string) $category->id,
+                "Category '{$category->name}' was deleted."
+            );
         });
     }
 
@@ -234,6 +253,14 @@ class CategoryService extends BaseService
                 }
             }
 
+            if ($deletedCount > 0) {
+                $this->activityLogService->log(
+                    'Bulk deleted Categories',
+                    (string) $deletedCount,
+                    "{$deletedCount} category(ies) were deleted."
+                );
+            }
+
             return $deletedCount;
         });
     }
@@ -249,8 +276,16 @@ class CategoryService extends BaseService
     public function bulkActivateCategories(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['is_active' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk activated Categories',
+                (string) $count,
+                "{$count} category(ies) were activated."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['is_active' => true]);
+        return $count;
     }
 
     /**
@@ -264,8 +299,16 @@ class CategoryService extends BaseService
     public function bulkDeactivateCategories(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['is_active' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk deactivated Categories',
+                (string) $count,
+                "{$count} category(ies) were deactivated."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['is_active' => false]);
+        return $count;
     }
 
     /**
@@ -279,8 +322,16 @@ class CategoryService extends BaseService
     public function bulkEnableFeatured(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['featured' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk enabled featured Categories',
+                (string) $count,
+                "{$count} category(ies) were set as featured."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['featured' => true]);
+        return $count;
     }
 
     /**
@@ -294,8 +345,16 @@ class CategoryService extends BaseService
     public function bulkDisableFeatured(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['featured' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk disabled featured Categories',
+                (string) $count,
+                "{$count} category(ies) were unset as featured."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['featured' => false]);
+        return $count;
     }
 
     /**
@@ -309,8 +368,16 @@ class CategoryService extends BaseService
     public function bulkEnableSync(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['is_sync_disable' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk enabled sync Categories',
+                (string) $count,
+                "{$count} category(ies) had sync enabled."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['is_sync_disable' => false]);
+        return $count;
     }
 
     /**
@@ -324,8 +391,16 @@ class CategoryService extends BaseService
     public function bulkDisableSync(array $ids): int
     {
         $this->requirePermission('categories-update');
+        $count = Category::whereIn('id', $ids)->update(['is_sync_disable' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk disabled sync Categories',
+                (string) $count,
+                "{$count} category(ies) had sync disabled."
+            );
+        }
 
-        return Category::whereIn('id', $ids)->update(['is_sync_disable' => true]);
+        return $count;
     }
 
     /**

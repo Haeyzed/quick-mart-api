@@ -38,6 +38,15 @@ class WarehouseService extends BaseService
     use CheckPermissionsTrait, MailInfo;
 
     /**
+     * Create a new WarehouseService instance.
+     *
+     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
+     */
+    public function __construct(
+        private readonly ActivityLogService $activityLogService
+    ) {}
+
+    /**
      * Retrieve a single warehouse by instance.
      *
      * Requires warehouses-index permission. Use for show/display operations.
@@ -109,6 +118,12 @@ class WarehouseService extends BaseService
                 ]);
             }
 
+            $this->activityLogService->log(
+                'Created Warehouse',
+                (string) $warehouse->id,
+                "Warehouse '{$warehouse->name}' was created."
+            );
+
             return $warehouse;
         });
     }
@@ -129,6 +144,11 @@ class WarehouseService extends BaseService
         return DB::transaction(function () use ($warehouse, $data) {
             $data = $this->normalizeWarehouseData($data);
             $warehouse->update($data);
+            $this->activityLogService->log(
+                'Updated Warehouse',
+                (string) $warehouse->id,
+                "Warehouse '{$warehouse->name}' was updated."
+            );
 
             return $warehouse->fresh();
         });
@@ -148,6 +168,11 @@ class WarehouseService extends BaseService
 
         DB::transaction(function () use ($warehouse) {
             $warehouse->deactivate();
+            $this->activityLogService->log(
+                'Deleted Warehouse',
+                (string) $warehouse->id,
+                "Warehouse '{$warehouse->name}' was deactivated."
+            );
         });
     }
 
@@ -173,6 +198,14 @@ class WarehouseService extends BaseService
                 $deletedCount++;
             }
 
+            if ($deletedCount > 0) {
+                $this->activityLogService->log(
+                    'Bulk deleted Warehouses',
+                    (string) $deletedCount,
+                    "{$deletedCount} warehouse(s) were deactivated."
+                );
+            }
+
             return $deletedCount;
         });
     }
@@ -188,8 +221,16 @@ class WarehouseService extends BaseService
     public function bulkActivateWarehouses(array $ids): int
     {
         $this->requirePermission('warehouses-update');
+        $count = Warehouse::whereIn('id', $ids)->update(['is_active' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk activated Warehouses',
+                (string) $count,
+                "{$count} warehouse(s) were activated."
+            );
+        }
 
-        return Warehouse::whereIn('id', $ids)->update(['is_active' => true]);
+        return $count;
     }
 
     /**
@@ -203,8 +244,16 @@ class WarehouseService extends BaseService
     public function bulkDeactivateWarehouses(array $ids): int
     {
         $this->requirePermission('warehouses-update');
+        $count = Warehouse::whereIn('id', $ids)->update(['is_active' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk deactivated Warehouses',
+                (string) $count,
+                "{$count} warehouse(s) were deactivated."
+            );
+        }
 
-        return Warehouse::whereIn('id', $ids)->update(['is_active' => false]);
+        return $count;
     }
 
     /**

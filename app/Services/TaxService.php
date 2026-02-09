@@ -35,8 +35,12 @@ class TaxService extends BaseService
 
     /**
      * Create a new TaxService instance.
+     *
+     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct() {}
+    public function __construct(
+        private readonly ActivityLogService $activityLogService
+    ) {}
 
     /**
      * Retrieve a single tax by instance.
@@ -93,8 +97,14 @@ class TaxService extends BaseService
 
         return DB::transaction(function () use ($data) {
             $data = $this->normalizeTaxData($data);
+            $tax = Tax::create($data);
+            $this->activityLogService->log(
+                'Created Tax',
+                (string) $tax->id,
+                "Tax '{$tax->name}' was created."
+            );
 
-            return Tax::create($data);
+            return $tax;
         });
     }
 
@@ -114,6 +124,11 @@ class TaxService extends BaseService
         return DB::transaction(function () use ($tax, $data) {
             $data = $this->normalizeTaxData($data, isUpdate: true);
             $tax->update($data);
+            $this->activityLogService->log(
+                'Updated Tax',
+                (string) $tax->id,
+                "Tax '{$tax->name}' was updated."
+            );
 
             return $tax->fresh();
         });
@@ -139,6 +154,11 @@ class TaxService extends BaseService
         }
 
         $tax->delete();
+        $this->activityLogService->log(
+            'Deleted Tax',
+            (string) $tax->id,
+            "Tax '{$tax->name}' was deleted."
+        );
     }
 
     /**
@@ -170,6 +190,14 @@ class TaxService extends BaseService
                 $deletedCount++;
             }
 
+            if ($deletedCount > 0) {
+                $this->activityLogService->log(
+                    'Bulk deleted Taxes',
+                    (string) $deletedCount,
+                    "{$deletedCount} tax(es) were deleted."
+                );
+            }
+
             return $deletedCount;
         });
     }
@@ -185,8 +213,16 @@ class TaxService extends BaseService
     public function bulkActivateTaxes(array $ids): int
     {
         $this->requirePermission('taxes-update');
+        $count = Tax::whereIn('id', $ids)->update(['is_active' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk activated Taxes',
+                (string) $count,
+                "{$count} tax(es) were activated."
+            );
+        }
 
-        return Tax::whereIn('id', $ids)->update(['is_active' => true]);
+        return $count;
     }
 
     /**
@@ -200,8 +236,16 @@ class TaxService extends BaseService
     public function bulkDeactivateTaxes(array $ids): int
     {
         $this->requirePermission('taxes-update');
+        $count = Tax::whereIn('id', $ids)->update(['is_active' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk deactivated Taxes',
+                (string) $count,
+                "{$count} tax(es) were deactivated."
+            );
+        }
 
-        return Tax::whereIn('id', $ids)->update(['is_active' => false]);
+        return $count;
     }
 
     /**

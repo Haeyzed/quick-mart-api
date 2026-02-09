@@ -35,8 +35,12 @@ class UnitService extends BaseService
 
     /**
      * Create a new UnitService instance.
+     *
+     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct() {}
+    public function __construct(
+        private readonly ActivityLogService $activityLogService
+    ) {}
 
     /**
      * Retrieve a single unit by instance.
@@ -113,8 +117,14 @@ class UnitService extends BaseService
 
         return DB::transaction(function () use ($data) {
             $data = $this->normalizeUnitData($data);
+            $unit = Unit::create($data);
+            $this->activityLogService->log(
+                'Created Unit',
+                (string) $unit->id,
+                "Unit '{$unit->name}' was created."
+            );
 
-            return Unit::create($data);
+            return $unit;
         });
     }
 
@@ -134,6 +144,11 @@ class UnitService extends BaseService
         return DB::transaction(function () use ($unit, $data) {
             $data = $this->normalizeUnitData($data, isUpdate: true);
             $unit->update($data);
+            $this->activityLogService->log(
+                'Updated Unit',
+                (string) $unit->id,
+                "Unit '{$unit->name}' was updated."
+            );
 
             return $unit->fresh();
         });
@@ -165,6 +180,11 @@ class UnitService extends BaseService
         }
 
         $unit->delete();
+        $this->activityLogService->log(
+            'Deleted Unit',
+            (string) $unit->id,
+            "Unit '{$unit->name}' was deleted."
+        );
     }
 
     /**
@@ -196,6 +216,14 @@ class UnitService extends BaseService
                 $deletedCount++;
             }
 
+            if ($deletedCount > 0) {
+                $this->activityLogService->log(
+                    'Bulk deleted Units',
+                    (string) $deletedCount,
+                    "{$deletedCount} unit(s) were deleted."
+                );
+            }
+
             return $deletedCount;
         });
     }
@@ -211,8 +239,16 @@ class UnitService extends BaseService
     public function bulkActivateUnits(array $ids): int
     {
         $this->requirePermission('units-update');
+        $count = Unit::whereIn('id', $ids)->update(['is_active' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk activated Units',
+                (string) $count,
+                "{$count} unit(s) were activated."
+            );
+        }
 
-        return Unit::whereIn('id', $ids)->update(['is_active' => true]);
+        return $count;
     }
 
     /**
@@ -226,8 +262,16 @@ class UnitService extends BaseService
     public function bulkDeactivateUnits(array $ids): int
     {
         $this->requirePermission('units-update');
+        $count = Unit::whereIn('id', $ids)->update(['is_active' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk deactivated Units',
+                (string) $count,
+                "{$count} unit(s) were deactivated."
+            );
+        }
 
-        return Unit::whereIn('id', $ids)->update(['is_active' => false]);
+        return $count;
     }
 
     /**

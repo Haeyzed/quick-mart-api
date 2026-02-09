@@ -42,9 +42,11 @@ class BrandService extends BaseService
      * Create a new BrandService instance.
      *
      * @param UploadService $uploadService Handles file uploads for brand images.
+     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
     public function __construct(
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        private readonly ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -110,7 +112,14 @@ class BrandService extends BaseService
                 $data = $this->handleImageUpload($data);
             }
 
-            return Brand::create($data);
+            $brand = Brand::create($data);
+            $this->activityLogService->log(
+                'Created Brand',
+                (string) $brand->id,
+                "Brand '{$brand->name}' was created."
+            );
+
+            return $brand;
         });
     }
 
@@ -136,6 +145,12 @@ class BrandService extends BaseService
             }
 
             $brand->update($data);
+            $this->activityLogService->log(
+                'Updated Brand',
+                (string) $brand->id,
+                "Brand '{$brand->name}' was updated."
+            );
+
             return $brand->fresh();
         });
     }
@@ -163,6 +178,11 @@ class BrandService extends BaseService
                 $this->uploadService->delete($brand->image);
             }
             $brand->delete();
+            $this->activityLogService->log(
+                'Deleted Brand',
+                (string) $brand->id,
+                "Brand '{$brand->name}' was deleted."
+            );
         });
     }
 
@@ -198,6 +218,14 @@ class BrandService extends BaseService
                 $deletedCount++;
             }
 
+            if ($deletedCount > 0) {
+                $this->activityLogService->log(
+                    'Bulk deleted Brands',
+                    (string) $deletedCount,
+                    "{$deletedCount} brand(s) were deleted."
+                );
+            }
+
             return $deletedCount;
         });
     }
@@ -213,7 +241,16 @@ class BrandService extends BaseService
     public function bulkActivateBrands(array $ids): int
     {
         $this->requirePermission('brands-update');
-        return Brand::whereIn('id', $ids)->update(['is_active' => true]);
+        $count = Brand::whereIn('id', $ids)->update(['is_active' => true]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk activated Brands',
+                (string) $count,
+                "{$count} brand(s) were activated."
+            );
+        }
+
+        return $count;
     }
 
     /**
@@ -227,7 +264,16 @@ class BrandService extends BaseService
     public function bulkDeactivateBrands(array $ids): int
     {
         $this->requirePermission('brands-update');
-        return Brand::whereIn('id', $ids)->update(['is_active' => false]);
+        $count = Brand::whereIn('id', $ids)->update(['is_active' => false]);
+        if ($count > 0) {
+            $this->activityLogService->log(
+                'Bulk deactivated Brands',
+                (string) $count,
+                "{$count} brand(s) were deactivated."
+            );
+        }
+
+        return $count;
     }
 
     /**
