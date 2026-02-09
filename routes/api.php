@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UtilityController;
 use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\WarehouseController;
 use Illuminate\Support\Facades\Route;
@@ -144,6 +145,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('audit-logs', [AuditLogController::class, 'index'])
         ->name('audit-logs.index');
+    Route::post('audit-logs/export', [AuditLogController::class, 'export'])
+        ->name('audit-logs.export');
+
+    Route::get('utility/auditable-models', [UtilityController::class, 'auditableModels'])
+        ->name('utility.auditable-models');
 
     Route::get('settings/general', [GeneralSettingController::class, 'show'])
         ->name('settings.general.show');

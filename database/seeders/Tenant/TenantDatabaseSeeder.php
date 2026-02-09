@@ -3459,7 +3459,11 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
-                'name' => 'activity-log-index',
+                'name' => 'audit-logs-index',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'audit-logs-export',
                 'guard_name' => 'web',
             ],
             [
@@ -3989,7 +3993,7 @@ class TenantDatabaseSeeder extends Seeder
             'customers-index', 'customers-create', 'customers-update', 'customers-delete', 'customers-import', 'customers-export',
             'suppliers-index', 'suppliers-create', 'suppliers-update', 'suppliers-delete', 'suppliers-import', 'suppliers-export',
             'users-index', 'users-create', 'users-update', 'users-delete',
-            'general_setting', 'activity-log-index', 'mail_setting', 'pos_setting',
+            'general_setting', 'audit-logs-index', 'audit-logs-export', 'mail_setting', 'pos_setting',
             'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
             'customer_group', 'gift_card', 'coupon',
             'warehouse',

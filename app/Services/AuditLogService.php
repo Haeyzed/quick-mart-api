@@ -4,10 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\AuditsExport;
+use App\Mail\ExportMail;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
+use App\Models\User;
 use App\Traits\CheckPermissionsTrait;
+use App\Traits\MailInfo;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use OwenIt\Auditing\Models\Audit;
+use RuntimeException;
 
 /**
  * Service class for Audit Log operations.
@@ -18,13 +29,13 @@ use OwenIt\Auditing\Models\Audit;
  */
 class AuditLogService extends BaseService
 {
-    use CheckPermissionsTrait;
+    use CheckPermissionsTrait, MailInfo;
 
     /**
      * Retrieve audits with optional filters and pagination.
      *
      * Role-based: users with role_id > 2 only see their own audits.
-     * Requires activity-log-index permission.
+     * Requires audit-logs-index permission.
      *
      * @param  array<string, mixed>  $filters  Associative array with optional keys: search, event, auditable_type, ip_address, user.
      * @param  int  $perPage  Number of items per page.
@@ -32,7 +43,7 @@ class AuditLogService extends BaseService
      */
     public function getAudits(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('activity-log-index');
+        $this->requirePermission('audit-logs-index');
 
         $user = Auth::user();
 
@@ -59,5 +70,53 @@ class AuditLogService extends BaseService
             ->orderByDesc('audits.id');
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Export audits to Excel or PDF.
+     *
+     * @param  array<int>  $ids  Audit IDs. Empty exports all.
+     * @param  string  $format  'excel' or 'pdf'.
+     * @param  User|null  $user  Recipient when method is 'email'.
+     * @param  array<string>  $columns  Column keys to include.
+     * @param  string  $method  'download' or 'email'.
+     * @return string Relative storage path of the generated file.
+     */
+    public function exportAudits(array $ids, string $format, ?User $user, array $columns, string $method): string
+    {
+        $this->requirePermission('audit-logs-export');
+
+        $fileName = 'audits_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/'.$fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new AuditsExport($ids, $columns), $relativePath, 'public');
+        } else {
+            $audits = Audit::query()
+                ->with('user')
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->orderByDesc('id')
+                ->get();
+            $pdf = PDF::loadView('exports.audits-pdf', compact('audits', 'columns'));
+            Storage::disk('public')->put($relativePath, $pdf->output());
+        }
+
+        if ($method === 'email' && $user) {
+            $this->sendExportEmail($user, $relativePath, $fileName);
+        }
+
+        return $relativePath;
+    }
+
+    private function sendExportEmail(User $user, string $path, string $fileName): void
+    {
+        $mailSetting = MailSetting::default()->firstOr(
+            fn () => throw new RuntimeException('Mail settings are not configured.')
+        );
+        $generalSetting = GeneralSetting::latest()->first();
+        $this->setMailInfo($mailSetting);
+        Mail::to($user->email)->send(
+            new ExportMail($user, $path, $fileName, 'Audit Log', $generalSetting)
+        );
     }
 }
