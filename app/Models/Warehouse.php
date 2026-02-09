@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Warehouse Model
@@ -26,7 +28,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Product> $products
  * @property-read Collection<int, Printer> $printers
  * @property-read Collection<int, Sale> $sales
@@ -35,9 +36,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|Warehouse active()
  */
-class Warehouse extends Model
+class Warehouse extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -106,8 +107,6 @@ class Warehouse extends Model
 
     /**
      * Deactivate the warehouse and delete related printers.
-     *
-     * @return void
      */
     public function deactivate(): void
     {
@@ -130,9 +129,6 @@ class Warehouse extends Model
 
     /**
      * Scope a query to only include active warehouses.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -151,4 +147,3 @@ class Warehouse extends Model
         ];
     }
 }
-

@@ -35,19 +35,15 @@ class UnitService extends BaseService
 
     /**
      * Create a new UnitService instance.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
+    public function __construct() {}
 
     /**
      * Retrieve a single unit by instance.
      *
      * Requires units-index permission. Use for show/display operations.
      *
-     * @param Unit $unit The unit instance to retrieve.
+     * @param  Unit  $unit  The unit instance to retrieve.
      * @return Unit The refreshed unit instance.
      */
     public function getUnit(Unit $unit): Unit
@@ -63,8 +59,8 @@ class UnitService extends BaseService
      * Supports filtering by status (active/inactive) and search term.
      * Requires units-index permission.
      *
-     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
-     * @param int $perPage Number of items per page.
+     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'search'.
+     * @param  int  $perPage  Number of items per page.
      * @return LengthAwarePaginator<Unit> Paginated unit collection.
      */
     public function getUnits(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -73,10 +69,9 @@ class UnitService extends BaseService
 
         return Unit::query()
             ->with('baseUnitRelation')
-            ->when(isset($filters['status']), fn ($q) =>
-                $q->where('is_active', $filters['status'] === 'active')
+            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active')
             )
-            ->when(!empty($filters['search']), function ($q) use ($filters) {
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
                 $q->where(fn ($subQ) => $subQ
                     ->where('code', 'like', $term)
@@ -108,7 +103,7 @@ class UnitService extends BaseService
      *
      * Requires units-create permission.
      *
-     * @param array<string, mixed> $data Validated unit data.
+     * @param  array<string, mixed>  $data  Validated unit data.
      * @return Unit The created unit instance.
      */
     public function createUnit(array $data): Unit
@@ -117,14 +112,8 @@ class UnitService extends BaseService
 
         return DB::transaction(function () use ($data) {
             $data = $this->normalizeUnitData($data);
-            $unit = Unit::create($data);
-            $this->activityLogService->log(
-                'Created Unit',
-                (string) $unit->id,
-                "Unit '{$unit->name}' was created."
-            );
 
-            return $unit;
+            return Unit::create($data);
         });
     }
 
@@ -133,8 +122,8 @@ class UnitService extends BaseService
      *
      * Requires units-update permission.
      *
-     * @param Unit $unit The unit instance to update.
-     * @param array<string, mixed> $data Validated unit data.
+     * @param  Unit  $unit  The unit instance to update.
+     * @param  array<string, mixed>  $data  Validated unit data.
      * @return Unit The updated unit instance (refreshed).
      */
     public function updateUnit(Unit $unit, array $data): Unit
@@ -144,11 +133,6 @@ class UnitService extends BaseService
         return DB::transaction(function () use ($unit, $data) {
             $data = $this->normalizeUnitData($data, isUpdate: true);
             $unit->update($data);
-            $this->activityLogService->log(
-                'Updated Unit',
-                (string) $unit->id,
-                "Unit '{$unit->name}' was updated."
-            );
 
             return $unit->fresh();
         });
@@ -160,7 +144,8 @@ class UnitService extends BaseService
      * Fails if the unit has associated products or sub-units.
      * Requires units-delete permission.
      *
-     * @param Unit $unit The unit instance to delete.
+     * @param  Unit  $unit  The unit instance to delete.
+     *
      * @throws ConflictHttpException When unit has associated products or sub-units (409 Conflict).
      */
     public function deleteUnit(Unit $unit): void
@@ -180,11 +165,6 @@ class UnitService extends BaseService
         }
 
         $unit->delete();
-        $this->activityLogService->log(
-            'Deleted Unit',
-            (string) $unit->id,
-            "Unit '{$unit->name}' was deleted."
-        );
     }
 
     /**
@@ -193,7 +173,7 @@ class UnitService extends BaseService
      * Skips units with products or sub-units. Returns the count of successfully deleted units.
      * Requires units-delete permission.
      *
-     * @param array<int> $ids Unit IDs to delete.
+     * @param  array<int>  $ids  Unit IDs to delete.
      * @return int Number of units successfully deleted.
      */
     public function bulkDeleteUnits(array $ids): int
@@ -216,14 +196,6 @@ class UnitService extends BaseService
                 $deletedCount++;
             }
 
-            if ($deletedCount > 0) {
-                $this->activityLogService->log(
-                    'Bulk deleted Units',
-                    (string) $deletedCount,
-                    "{$deletedCount} unit(s) were deleted."
-                );
-            }
-
             return $deletedCount;
         });
     }
@@ -233,22 +205,14 @@ class UnitService extends BaseService
      *
      * Sets is_active to true for all matching units. Requires units-update permission.
      *
-     * @param array<int> $ids Unit IDs to activate.
+     * @param  array<int>  $ids  Unit IDs to activate.
      * @return int Number of units updated.
      */
     public function bulkActivateUnits(array $ids): int
     {
         $this->requirePermission('units-update');
-        $count = Unit::whereIn('id', $ids)->update(['is_active' => true]);
-        if ($count > 0) {
-            $this->activityLogService->log(
-                'Bulk activated Units',
-                (string) $count,
-                "{$count} unit(s) were activated."
-            );
-        }
 
-        return $count;
+        return Unit::whereIn('id', $ids)->update(['is_active' => true]);
     }
 
     /**
@@ -256,22 +220,14 @@ class UnitService extends BaseService
      *
      * Sets is_active to false for all matching units. Requires units-update permission.
      *
-     * @param array<int> $ids Unit IDs to deactivate.
+     * @param  array<int>  $ids  Unit IDs to deactivate.
      * @return int Number of units updated.
      */
     public function bulkDeactivateUnits(array $ids): int
     {
         $this->requirePermission('units-update');
-        $count = Unit::whereIn('id', $ids)->update(['is_active' => false]);
-        if ($count > 0) {
-            $this->activityLogService->log(
-                'Bulk deactivated Units',
-                (string) $count,
-                "{$count} unit(s) were deactivated."
-            );
-        }
 
-        return $count;
+        return Unit::whereIn('id', $ids)->update(['is_active' => false]);
     }
 
     /**
@@ -279,12 +235,12 @@ class UnitService extends BaseService
      *
      * Requires units-import permission.
      *
-     * @param UploadedFile $file The uploaded import file.
+     * @param  UploadedFile  $file  The uploaded import file.
      */
     public function importUnits(UploadedFile $file): void
     {
         $this->requirePermission('units-import');
-        Excel::import(new UnitsImport(), $file);
+        Excel::import(new UnitsImport, $file);
     }
 
     /**
@@ -292,12 +248,13 @@ class UnitService extends BaseService
      *
      * Supports download or email delivery. Requires units-export permission.
      *
-     * @param array<int> $ids Unit IDs to export. Empty array exports all.
-     * @param string $format Export format: 'excel' or 'pdf'.
-     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
-     * @param array<string> $columns Column keys to include in export.
-     * @param string $method Delivery method: 'download' or 'email'.
+     * @param  array<int>  $ids  Unit IDs to export. Empty array exports all.
+     * @param  string  $format  Export format: 'excel' or 'pdf'.
+     * @param  User|null  $user  Recipient when method is 'email'. Required for email delivery.
+     * @param  array<string>  $columns  Column keys to include in export.
+     * @param  string  $method  Delivery method: 'download' or 'email'.
      * @return string Relative storage path of the generated file.
+     *
      * @throws RuntimeException When mail settings are not configured and method is 'email'.
      */
     public function exportUnits(
@@ -309,15 +266,15 @@ class UnitService extends BaseService
     ): string {
         $this->requirePermission('units-export');
 
-        $fileName = 'units_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
+        $fileName = 'units_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/'.$fileName;
 
         if ($format === 'excel') {
             Excel::store(new UnitsExport($ids, $columns), $relativePath, 'public');
         } else {
             $units = Unit::query()
                 ->with('baseUnitRelation:id,code,name')
-                ->when(!empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
                 ->orderBy('code')
                 ->get();
 
@@ -337,8 +294,8 @@ class UnitService extends BaseService
      *
      * Handles boolean conversions and default values: is_active, operator, operation_value.
      *
-     * @param array<string, mixed> $data Input data.
-     * @param bool $isUpdate Whether this is an update operation.
+     * @param  array<string, mixed>  $data  Input data.
+     * @param  bool  $isUpdate  Whether this is an update operation.
      * @return array<string, mixed> Normalized data.
      */
     private function normalizeUnitData(array $data, bool $isUpdate = false): array
@@ -365,9 +322,10 @@ class UnitService extends BaseService
     /**
      * Send export completion email to the user.
      *
-     * @param User $user Recipient of the export email.
-     * @param string $path Relative storage path of the export file.
-     * @param string $fileName Display filename for the attachment.
+     * @param  User  $user  Recipient of the export email.
+     * @param  string  $path  Relative storage path of the export file.
+     * @param  string  $fileName  Display filename for the attachment.
+     *
      * @throws RuntimeException When mail settings are not configured.
      */
     private function sendExportEmail(User $user, string $path, string $fileName): void
@@ -384,4 +342,3 @@ class UnitService extends BaseService
         );
     }
 }
-

@@ -20,12 +20,8 @@ class MailSettingService extends BaseService
 
     /**
      * MailSettingService constructor.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
+    public function __construct() {}
 
     /**
      * Retrieve the mail setting (latest).
@@ -46,9 +42,10 @@ class MailSettingService extends BaseService
      *
      * Requires mail_setting permission.
      *
-     * @param array<string, mixed> $data Validated data.
-     * @param bool $sendTest If true, sends test email to from_address.
+     * @param  array<string, mixed>  $data  Validated data.
+     * @param  bool  $sendTest  If true, sends test email to from_address.
      * @return MailSetting The updated mail setting instance.
+     *
      * @throws \Exception When sending test email fails.
      */
     public function updateMailSetting(array $data, bool $sendTest = false): MailSetting
@@ -70,12 +67,6 @@ class MailSettingService extends BaseService
         unset($data['send_test']);
 
         $mailSetting->fill($data)->save();
-
-        $this->activityLogService->log(
-            'Updated Mail Setting',
-            (string) $mailSetting->id,
-            'SMTP configuration was updated.'
-        );
 
         if ($sendTest) {
             $this->setMailInfo($mailSetting);

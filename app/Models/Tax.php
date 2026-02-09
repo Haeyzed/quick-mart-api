@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Tax Model
@@ -24,15 +26,14 @@ use Illuminate\Support\Carbon;
  * @property int|null $woocommerce_tax_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read string $status
  * @property-read Collection<int, Product> $products
  *
  * @method static Builder|Tax active()
  */
-class Tax extends Model
+class Tax extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -58,9 +59,6 @@ class Tax extends Model
 
     /**
      * Calculate tax amount for a given value.
-     *
-     * @param float $value
-     * @return float
      */
     public function calculateTax(float $value): float
     {
@@ -69,9 +67,6 @@ class Tax extends Model
 
     /**
      * Scope a query to only include active taxes.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -94,12 +89,9 @@ class Tax extends Model
 
     /**
      * Get the human-readable status.
-     *
-     * @return string
      */
     public function getStatusAttribute(): string
     {
         return $this->is_active ? 'active' : 'inactive';
     }
 }
-

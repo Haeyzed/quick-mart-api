@@ -18,12 +18,8 @@ class HrmSettingService extends BaseService
 
     /**
      * HrmSettingService constructor.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
+    public function __construct() {}
 
     /**
      * Retrieve the HRM setting (singleton).
@@ -35,6 +31,7 @@ class HrmSettingService extends BaseService
     public function getHrmSetting(): ?HrmSetting
     {
         $this->requirePermission('hrm_setting');
+
         return HrmSetting::latest()->first();
     }
 
@@ -43,7 +40,7 @@ class HrmSettingService extends BaseService
      *
      * Requires hrm_setting permission.
      *
-     * @param array<string, mixed> $data Validated data.
+     * @param  array<string, mixed>  $data  Validated data.
      * @return HrmSetting The updated HRM setting instance.
      */
     public function updateHrmSetting(array $data): HrmSetting
@@ -54,12 +51,6 @@ class HrmSettingService extends BaseService
             $setting = new HrmSetting;
         }
         $setting->fill($data)->save();
-
-        $this->activityLogService->log(
-            'Updated HRM Setting',
-            (string) $setting->id,
-            'HRM configuration was updated.'
-        );
 
         return $setting->fresh();
     }

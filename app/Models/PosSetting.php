@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PosSetting Model
@@ -32,14 +34,13 @@ use Illuminate\Support\Carbon;
  * @property bool $is_table
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Customer|null $customer
  * @property-read Warehouse|null $warehouse
  * @property-read Biller|null $biller
  */
-class PosSetting extends Model
+class PosSetting extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -121,4 +122,3 @@ class PosSetting extends Model
         ];
     }
 }
-

@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ActivityLogIndexRequest;
-use App\Http\Resources\ActivityLogResource;
-use App\Models\ActivityLog;
+use App\Http\Requests\AuditIndexRequest;
+use App\Http\Resources\AuditResource;
 use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * API Controller for Activity Log.
+ * API Controller for Audit Log.
  *
- * Handles index (paginated listing) of activity logs.
- * Role-based: users with role_id > 2 only see their own logs.
+ * Handles index (paginated listing) of audits from Laravel Auditing.
+ * Returns full Audit structure per standard.
  *
- * @group Activity Log
+ * @group Audit Log
  */
 class ActivityLogController extends Controller
 {
@@ -26,23 +25,21 @@ class ActivityLogController extends Controller
     ) {}
 
     /**
-     * Display a paginated listing of activity logs.
+     * Display a paginated listing of audits.
      *
-     * @param ActivityLogIndexRequest $request Validated query params: per_page, page, search.
-     * @return JsonResponse Paginated activity logs with meta and links.
+     * @param  AuditIndexRequest  $request  Validated query params: per_page, page, search, event, auditable_type.
+     * @return JsonResponse Paginated audits with meta and links.
      */
-    public function index(ActivityLogIndexRequest $request): JsonResponse
+    public function index(AuditIndexRequest $request): JsonResponse
     {
-        $activityLogs = $this->service->getActivityLogs(
+        $audits = $this->service->getAudits(
             $request->validated(),
             (int) $request->input('per_page', 10)
         );
 
-        $activityLogs->through(fn (ActivityLog $log) => new ActivityLogResource($log));
-
         return response()->success(
-            $activityLogs,
-            'Activity logs fetched successfully'
+            AuditResource::collection($audits),
+            'Audits fetched successfully'
         );
     }
 }

@@ -38,20 +38,11 @@ class WarehouseService extends BaseService
     use CheckPermissionsTrait, MailInfo;
 
     /**
-     * Create a new WarehouseService instance.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
-     */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
-
-    /**
      * Retrieve a single warehouse by instance.
      *
      * Requires warehouses-index permission. Use for show/display operations.
      *
-     * @param Warehouse $warehouse The warehouse instance to retrieve.
+     * @param  Warehouse  $warehouse  The warehouse instance to retrieve.
      * @return Warehouse The refreshed warehouse instance.
      */
     public function getWarehouse(Warehouse $warehouse): Warehouse
@@ -67,8 +58,8 @@ class WarehouseService extends BaseService
      * Supports filtering by status (active/inactive) and search term.
      * Requires warehouses-index permission.
      *
-     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
-     * @param int $perPage Number of items per page.
+     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'search'.
+     * @param  int  $perPage  Number of items per page.
      * @return LengthAwarePaginator<Warehouse> Paginated warehouse collection.
      */
     public function getWarehouses(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -97,7 +88,7 @@ class WarehouseService extends BaseService
      * Creates ProductWarehouse entries for all existing products (qty=0) per quick-mart-old logic.
      * Requires warehouses-create permission.
      *
-     * @param array<string, mixed> $data Validated warehouse attributes.
+     * @param  array<string, mixed>  $data  Validated warehouse attributes.
      * @return Warehouse The created warehouse instance.
      */
     public function createWarehouse(array $data): Warehouse
@@ -118,12 +109,6 @@ class WarehouseService extends BaseService
                 ]);
             }
 
-            $this->activityLogService->log(
-                'Created Warehouse',
-                (string) $warehouse->id,
-                "Warehouse '{$warehouse->name}' was created."
-            );
-
             return $warehouse;
         });
     }
@@ -133,8 +118,8 @@ class WarehouseService extends BaseService
      *
      * Requires warehouses-update permission.
      *
-     * @param Warehouse $warehouse The warehouse instance to update.
-     * @param array<string, mixed> $data Validated warehouse attributes.
+     * @param  Warehouse  $warehouse  The warehouse instance to update.
+     * @param  array<string, mixed>  $data  Validated warehouse attributes.
      * @return Warehouse The updated warehouse instance (refreshed).
      */
     public function updateWarehouse(Warehouse $warehouse, array $data): Warehouse
@@ -144,11 +129,6 @@ class WarehouseService extends BaseService
         return DB::transaction(function () use ($warehouse, $data) {
             $data = $this->normalizeWarehouseData($data);
             $warehouse->update($data);
-            $this->activityLogService->log(
-                'Updated Warehouse',
-                (string) $warehouse->id,
-                "Warehouse '{$warehouse->name}' was updated."
-            );
 
             return $warehouse->fresh();
         });
@@ -160,7 +140,7 @@ class WarehouseService extends BaseService
      * Per quick-mart-old: warehouse delete means deactivate, not soft delete.
      * Requires warehouses-delete permission.
      *
-     * @param Warehouse $warehouse The warehouse instance to delete.
+     * @param  Warehouse  $warehouse  The warehouse instance to delete.
      */
     public function deleteWarehouse(Warehouse $warehouse): void
     {
@@ -168,11 +148,6 @@ class WarehouseService extends BaseService
 
         DB::transaction(function () use ($warehouse) {
             $warehouse->deactivate();
-            $this->activityLogService->log(
-                'Deleted Warehouse',
-                (string) $warehouse->id,
-                "Warehouse '{$warehouse->name}' was deactivated."
-            );
         });
     }
 
@@ -182,7 +157,7 @@ class WarehouseService extends BaseService
      * Skips non-existent IDs. Returns the count of successfully deactivated warehouses.
      * Requires warehouses-delete permission.
      *
-     * @param array<int> $ids Warehouse IDs to delete (deactivate).
+     * @param  array<int>  $ids  Warehouse IDs to delete (deactivate).
      * @return int Number of warehouses successfully deactivated.
      */
     public function bulkDeleteWarehouses(array $ids): int
@@ -198,14 +173,6 @@ class WarehouseService extends BaseService
                 $deletedCount++;
             }
 
-            if ($deletedCount > 0) {
-                $this->activityLogService->log(
-                    'Bulk deleted Warehouses',
-                    (string) $deletedCount,
-                    "{$deletedCount} warehouse(s) were deactivated."
-                );
-            }
-
             return $deletedCount;
         });
     }
@@ -215,22 +182,14 @@ class WarehouseService extends BaseService
      *
      * Sets is_active to true for all matching warehouses. Requires warehouses-update permission.
      *
-     * @param array<int> $ids Warehouse IDs to activate.
+     * @param  array<int>  $ids  Warehouse IDs to activate.
      * @return int Number of warehouses updated.
      */
     public function bulkActivateWarehouses(array $ids): int
     {
         $this->requirePermission('warehouses-update');
-        $count = Warehouse::whereIn('id', $ids)->update(['is_active' => true]);
-        if ($count > 0) {
-            $this->activityLogService->log(
-                'Bulk activated Warehouses',
-                (string) $count,
-                "{$count} warehouse(s) were activated."
-            );
-        }
 
-        return $count;
+        return Warehouse::whereIn('id', $ids)->update(['is_active' => true]);
     }
 
     /**
@@ -238,22 +197,14 @@ class WarehouseService extends BaseService
      *
      * Sets is_active to false for all matching warehouses. Requires warehouses-update permission.
      *
-     * @param array<int> $ids Warehouse IDs to deactivate.
+     * @param  array<int>  $ids  Warehouse IDs to deactivate.
      * @return int Number of warehouses updated.
      */
     public function bulkDeactivateWarehouses(array $ids): int
     {
         $this->requirePermission('warehouses-update');
-        $count = Warehouse::whereIn('id', $ids)->update(['is_active' => false]);
-        if ($count > 0) {
-            $this->activityLogService->log(
-                'Bulk deactivated Warehouses',
-                (string) $count,
-                "{$count} warehouse(s) were deactivated."
-            );
-        }
 
-        return $count;
+        return Warehouse::whereIn('id', $ids)->update(['is_active' => false]);
     }
 
     /**
@@ -261,13 +212,13 @@ class WarehouseService extends BaseService
      *
      * Uses WarehousesImport for upsert logic (name, phone, email, address). Requires warehouses-import permission.
      *
-     * @param UploadedFile $file The uploaded import file.
+     * @param  UploadedFile  $file  The uploaded import file.
      */
     public function importWarehouses(UploadedFile $file): void
     {
         $this->requirePermission('warehouses-import');
 
-        Excel::import(new WarehousesImport(), $file);
+        Excel::import(new WarehousesImport, $file);
     }
 
     /**
@@ -275,11 +226,11 @@ class WarehouseService extends BaseService
      *
      * Supports download or email delivery. Requires warehouses-export permission.
      *
-     * @param array<int> $ids Warehouse IDs to export. Empty array exports all.
-     * @param string $format Export format: 'excel' or 'pdf'.
-     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
-     * @param array<string> $columns Column keys to include in export.
-     * @param string $method Delivery method: 'download' or 'email'.
+     * @param  array<int>  $ids  Warehouse IDs to export. Empty array exports all.
+     * @param  string  $format  Export format: 'excel' or 'pdf'.
+     * @param  User|null  $user  Recipient when method is 'email'. Required for email delivery.
+     * @param  array<string>  $columns  Column keys to include in export.
+     * @param  string  $method  Delivery method: 'download' or 'email'.
      * @return string Relative storage path of the generated file.
      *
      * @throws RuntimeException When mail settings are not configured and method is 'email'.
@@ -288,8 +239,8 @@ class WarehouseService extends BaseService
     {
         $this->requirePermission('warehouses-export');
 
-        $fileName = 'warehouses_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
+        $fileName = 'warehouses_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/'.$fileName;
 
         if ($format === 'excel') {
             Excel::store(new WarehousesExport($ids, $columns), $relativePath, 'public');
@@ -315,9 +266,9 @@ class WarehouseService extends BaseService
     /**
      * Send export completion email to the user.
      *
-     * @param User $user Recipient of the export email.
-     * @param string $path Relative storage path of the export file.
-     * @param string $fileName Display filename for the attachment.
+     * @param  User  $user  Recipient of the export email.
+     * @param  string  $path  Relative storage path of the export file.
+     * @param  string  $fileName  Display filename for the attachment.
      *
      * @throws RuntimeException When mail settings are not configured.
      */
@@ -341,7 +292,7 @@ class WarehouseService extends BaseService
      * Role-based: users with role_id > 2 only see their assigned warehouse (per quick-mart-old warehouseAll).
      * Requires warehouses-index permission.
      *
-     * @param User|null $user Optional user instance (defaults to authenticated user).
+     * @param  User|null  $user  Optional user instance (defaults to authenticated user).
      * @return Collection<int, Warehouse>
      */
     public function getAllActive(?User $user = null): Collection
@@ -366,7 +317,7 @@ class WarehouseService extends BaseService
     /**
      * Normalize warehouse data to match database schema requirements.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function normalizeWarehouseData(array $data): array

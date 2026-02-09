@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Brand
@@ -29,9 +30,9 @@ use Illuminate\Support\Str;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read string $status
  */
-class Brand extends Model
+class Brand extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -66,8 +67,6 @@ class Brand extends Model
 
     /**
      * The "booted" method of the model.
-     *
-     * @return void
      */
     protected static function booted(): void
     {
@@ -80,16 +79,12 @@ class Brand extends Model
     /**
      * Generate a unique slug for the brand.
      * Replaces recursion with a performant loop.
-     *
-     * @param string $name
-     * @param string|null $existingSlug
-     * @return string
      */
     public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
         $slug = $existingSlug ?: Str::slug($name);
-        
-        if (!$this->slugExists($slug)) {
+
+        if (! $this->slugExists($slug)) {
             return $slug;
         }
 
@@ -97,7 +92,7 @@ class Brand extends Model
         $count = 1;
 
         while ($this->slugExists($slug)) {
-            $slug = "{$originalSlug}-" . $count++;
+            $slug = "{$originalSlug}-".$count++;
         }
 
         return $slug;
@@ -110,7 +105,7 @@ class Brand extends Model
      * where('id', '!=', null) would produce invalid SQL semantics, so we only
      * exclude the current model when it has been persisted.
      *
-     * @param string $slug The slug to check for uniqueness.
+     * @param  string  $slug  The slug to check for uniqueness.
      * @return bool True if another brand already uses this slug.
      */
     protected function slugExists(string $slug): bool
@@ -126,8 +121,6 @@ class Brand extends Model
 
     /**
      * Get the human-readable status.
-     *
-     * @return string
      */
     public function getStatusAttribute(): string
     {

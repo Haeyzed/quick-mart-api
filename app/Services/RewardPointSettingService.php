@@ -18,12 +18,8 @@ class RewardPointSettingService extends BaseService
 
     /**
      * RewardPointSettingService constructor.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
+    public function __construct() {}
 
     /**
      * Retrieve the reward point setting (singleton).
@@ -44,7 +40,7 @@ class RewardPointSettingService extends BaseService
      *
      * Requires reward_point_setting permission.
      *
-     * @param array<string, mixed> $data Validated data.
+     * @param  array<string, mixed>  $data  Validated data.
      * @return RewardPointSetting The updated reward point setting instance.
      */
     public function updateRewardPointSetting(array $data): RewardPointSetting
@@ -53,12 +49,6 @@ class RewardPointSettingService extends BaseService
 
         $setting = RewardPointSetting::latest()->firstOrFail();
         $setting->update($data);
-
-        $this->activityLogService->log(
-            'Updated Reward Point Setting',
-            (string) $setting->id,
-            'Reward point configuration was updated.'
-        );
 
         return $setting->fresh();
     }

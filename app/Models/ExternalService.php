@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ExternalService Model
@@ -24,9 +26,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|ExternalService active()
  */
-class ExternalService extends Model
+class ExternalService extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -49,9 +51,6 @@ class ExternalService extends Model
 
     /**
      * Scope a query to only include active external services.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -70,4 +69,3 @@ class ExternalService extends Model
         ];
     }
 }
-

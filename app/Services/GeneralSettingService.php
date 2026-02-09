@@ -23,11 +23,9 @@ class GeneralSettingService extends BaseService
      * GeneralSettingService constructor.
      *
      * @param  UploadService  $uploadService  Handles file uploads for site logo and favicon.
-     * @param  ActivityLogService  $activityLogService  Handles activity logging for audit trail.
      */
     public function __construct(
-        private readonly UploadService $uploadService,
-        private readonly ActivityLogService $activityLogService
+        private readonly UploadService $uploadService
     ) {}
 
     /**
@@ -84,12 +82,6 @@ class GeneralSettingService extends BaseService
         $setting->update($data);
 
         Cache::forget('general_setting');
-
-        $this->activityLogService->log(
-            'Updated General Setting',
-            (string) $setting->id,
-            'General application settings were updated.'
-        );
 
         return $setting->fresh();
     }

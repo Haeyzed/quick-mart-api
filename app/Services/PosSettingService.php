@@ -18,12 +18,8 @@ class PosSettingService extends BaseService
 
     /**
      * PosSettingService constructor.
-     *
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
      */
-    public function __construct(
-        private readonly ActivityLogService $activityLogService
-    ) {}
+    public function __construct() {}
 
     /**
      * Retrieve the POS setting (singleton).
@@ -44,7 +40,7 @@ class PosSettingService extends BaseService
      *
      * Requires pos_setting permission.
      *
-     * @param array<string, mixed> $data Validated data.
+     * @param  array<string, mixed>  $data  Validated data.
      * @return PosSetting The updated POS setting instance.
      */
     public function updatePosSetting(array $data): PosSetting
@@ -76,19 +72,13 @@ class PosSettingService extends BaseService
 
         $setting->update($data);
 
-        $this->activityLogService->log(
-            'Updated POS Setting',
-            (string) $setting->id,
-            'POS configuration was updated.'
-        );
-
         return $setting->fresh();
     }
 
     /**
      * Normalize and cast incoming data.
      *
-     * @param array<string, mixed> $data Raw input data.
+     * @param  array<string, mixed>  $data  Raw input data.
      * @return array<string, mixed> Normalized data.
      */
     private function normalizeData(array $data): array

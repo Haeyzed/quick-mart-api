@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Category
@@ -34,7 +36,6 @@ use Illuminate\Support\Str;
  * @property int|null $woocommerce_category_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read string $status
  * @property-read string $featured_status
  * @property-read string $sync_status
@@ -46,9 +47,9 @@ use Illuminate\Support\Str;
  * @method static Builder|Category featured()
  * @method static Builder|Category root()
  */
-class Category extends Model
+class Category extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -77,10 +78,10 @@ class Category extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'parent_id'               => 'integer',
-        'is_active'               => 'boolean',
-        'featured'                => 'boolean',
-        'is_sync_disable'         => 'boolean',
+        'parent_id' => 'integer',
+        'is_active' => 'boolean',
+        'featured' => 'boolean',
+        'is_sync_disable' => 'boolean',
         'woocommerce_category_id' => 'integer',
     ];
 
@@ -99,7 +100,7 @@ class Category extends Model
         // Automatically generate slug on saving if not present
         static::saving(function (Category $category) {
             $category->slug = $category->generateUniqueSlug(
-                $category->name, 
+                $category->name,
                 $category->slug
             );
         });
@@ -108,16 +109,12 @@ class Category extends Model
     /**
      * Generate a unique slug for the category.
      * Uses iterative loop to avoid recursion stack overflow.
-     *
-     * @param string $name
-     * @param string|null $existingSlug
-     * @return string
      */
     public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
         $slug = $existingSlug ?: Str::slug($name);
 
-        if (!$this->slugExists($slug)) {
+        if (! $this->slugExists($slug)) {
             return $slug;
         }
 
@@ -125,7 +122,7 @@ class Category extends Model
         $count = 1;
 
         while ($this->slugExists($slug)) {
-            $slug = "{$originalSlug}-" . $count++;
+            $slug = "{$originalSlug}-".$count++;
         }
 
         return $slug;
@@ -138,7 +135,7 @@ class Category extends Model
      * where('id', '!=', null) would produce invalid SQL semantics, so we only
      * exclude the current model when it has been persisted.
      *
-     * @param string $slug The slug to check for uniqueness.
+     * @param  string  $slug  The slug to check for uniqueness.
      * @return bool True if another category already uses this slug.
      */
     protected function slugExists(string $slug): bool
@@ -157,25 +154,16 @@ class Category extends Model
      | -----------------------------------------------------------------
      */
 
-    /**
-     * @return BelongsTo
-     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');
     }
 
-    /**
-     * @return HasMany
-     */
     public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
 
-    /**
-     * @return HasMany
-     */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
@@ -188,8 +176,6 @@ class Category extends Model
 
     /**
      * Check if this is a root category.
-     *
-     * @return bool
      */
     public function isRoot(): bool
     {
@@ -198,9 +184,6 @@ class Category extends Model
 
     /**
      * Scope a query to only include active categories.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -209,9 +192,6 @@ class Category extends Model
 
     /**
      * Scope a query to only include featured categories.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeFeatured(Builder $query): Builder
     {
@@ -220,9 +200,6 @@ class Category extends Model
 
     /**
      * Scope a query to only include root categories.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeRoot(Builder $query): Builder
     {

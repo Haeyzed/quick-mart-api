@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Unit Model
@@ -27,7 +29,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read string $status
  * @property-read Unit|null $baseUnitRelation
  * @property-read Collection<int, Unit> $subUnits
@@ -35,9 +36,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|Unit active()
  */
-class Unit extends Model
+class Unit extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -85,9 +86,6 @@ class Unit extends Model
 
     /**
      * Convert a value from this unit to base unit.
-     *
-     * @param float $value
-     * @return float
      */
     public function convertToBase(float $value): float
     {
@@ -106,8 +104,6 @@ class Unit extends Model
 
     /**
      * Check if this is a base unit.
-     *
-     * @return bool
      */
     public function isBaseUnit(): bool
     {
@@ -116,9 +112,6 @@ class Unit extends Model
 
     /**
      * Scope a query to only include active units.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -141,12 +134,9 @@ class Unit extends Model
 
     /**
      * Get the human-readable status.
-     *
-     * @return string
      */
     public function getStatusAttribute(): string
     {
         return $this->is_active ? 'active' : 'inactive';
     }
 }
-

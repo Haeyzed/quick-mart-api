@@ -4,83 +4,55 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\ActivityLog;
 use App\Traits\CheckPermissionsTrait;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use OwenIt\Auditing\Models\Audit;
 
 /**
- * Service class for Activity Log operations.
+ * Service class for Audit Log operations.
  *
- * Centralizes business logic for retrieving and creating activity logs.
- * Per quick-mart-old: users with role_id > 2 only see their own logs.
+ * Uses Laravel Auditing (owen-it/laravel-auditing) as the source.
+ * Returns raw Audit records without transformation.
+ * Users with role_id > 2 only see their own audits.
  */
 class ActivityLogService extends BaseService
 {
     use CheckPermissionsTrait;
 
     /**
-     * Create an activity log entry.
+     * Retrieve audits with optional filters and pagination.
      *
-     * Persists user action into activity_logs table for audit trail.
-     *
-     * @param string $action Action description (e.g. 'Updated General Setting', 'Updated Mail Setting').
-     * @param string|null $referenceNo Optional reference identifier (e.g. invoice ref, setting name).
-     * @param string|null $itemDescription Optional additional context.
-     * @param int|null $userId User who performed the action; defaults to authenticated user.
-     * @return ActivityLog The created activity log instance.
-     */
-    public function log(
-        string $action,
-        ?string $referenceNo = null,
-        ?string $itemDescription = null,
-        ?int $userId = null
-    ): ActivityLog {
-        $user = Auth::user();
-        $userId = $userId ?? $user?->id;
-
-        if ($userId === null) {
-            throw new \RuntimeException('Activity log requires a user. No authenticated user and no user_id provided.');
-        }
-
-        return ActivityLog::query()->create([
-            'user_id' => $userId,
-            'action' => $action,
-            'reference_no' => $referenceNo,
-            'date' => now()->toDateString(),
-            'item_description' => $itemDescription,
-        ]);
-    }
-
-    /**
-     * Retrieve activity logs with optional filters and pagination.
-     *
-     * Role-based: users with role_id > 2 only see their own activity logs.
+     * Role-based: users with role_id > 2 only see their own audits.
      * Requires activity-log-index permission.
      *
-     * @param array<string, mixed> $filters Associative array with optional keys: search.
-     * @param int $perPage Number of items per page.
-     * @return LengthAwarePaginator Paginated activity log collection.
+     * @param  array<string, mixed>  $filters  Associative array with optional keys: search, event, auditable_type.
+     * @param  int  $perPage  Number of items per page.
+     * @return LengthAwarePaginator<Audit>
      */
-    public function getActivityLogs(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getAudits(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         $this->requirePermission('activity-log-index');
 
         $user = Auth::user();
 
-        return ActivityLog::query()
-            ->join('users', 'activity_logs.user_id', '=', 'users.id')
-            ->select('activity_logs.*', 'users.name as user_name')
-            ->when($user && $user->role_id > 2, fn ($q) => $q->where('activity_logs.user_id', $user->id))
+        $query = Audit::query()
+            ->with('user')
+            ->when($user && $user->role_id > 2, fn ($q) => $q->where('audits.user_id', $user->id))
             ->when(! empty($filters['search'] ?? null), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
                 $q->where(fn ($subQ) => $subQ
-                    ->where('activity_logs.action', 'like', $term)
-                    ->orWhere('activity_logs.reference_no', 'like', $term)
-                    ->orWhere('users.name', 'like', $term)
+                    ->where('audits.event', 'like', $term)
+                    ->orWhere('audits.auditable_type', 'like', $term)
+                    ->orWhere('audits.auditable_id', 'like', $term)
+                    ->orWhere('audits.tags', 'like', $term)
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $term))
                 );
             })
-            ->orderByDesc('activity_logs.id')
-            ->paginate($perPage);
+            ->when(! empty($filters['event'] ?? null), fn ($q) => $q->where('audits.event', $filters['event']))
+            ->when(! empty($filters['auditable_type'] ?? null), fn ($q) => $q->where('audits.auditable_type', $filters['auditable_type']))
+            ->orderByDesc('audits.id');
+
+        return $query->paginate($perPage);
     }
 }

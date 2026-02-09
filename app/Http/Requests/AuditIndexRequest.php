@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 /**
- * Form request for activity log index/listing query parameters.
+ * Form request for audit index/listing query parameters.
  *
- * Validates per_page, page, and search term.
+ * Validates per_page, page, search, event, auditable_type.
  */
-class ActivityLogIndexRequest extends BaseRequest
+class AuditIndexRequest extends BaseRequest
 {
     public function authorize(): bool
     {
@@ -22,6 +22,8 @@ class ActivityLogIndexRequest extends BaseRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
             'search' => ['nullable', 'string', 'max:255'],
+            'event' => ['nullable', 'string', 'in:created,updated,deleted,restored'],
+            'auditable_type' => ['nullable', 'string', 'max:255'],
         ];
     }
 
