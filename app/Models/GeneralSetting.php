@@ -70,26 +70,27 @@ use Illuminate\Support\Carbon;
  * @property string|null $custom_css
  * @property bool|null $disable_signup
  * @property bool|null $disable_forgot_password
+ * @property string|null $maintenance_allowed_ips
  * @property string|null $favicon
  * @property string|null $favicon_url
  * @property int|null $expiry_alert_days
-* @property string|null $margin_type
-* @property string|null $storage_provider
-* @property string|null $google_client_id
-* @property string|null $google_client_secret
-* @property string|null $google_redirect_url
-* @property bool $google_login_enabled
-* @property string|null $facebook_client_id
-* @property string|null $facebook_client_secret
-* @property string|null $facebook_redirect_url
-* @property bool $facebook_login_enabled
-* @property string|null $github_client_id
-* @property string|null $github_client_secret
-* @property string|null $github_redirect_url
-* @property bool $github_login_enabled
-* @property Carbon|null $created_at
-* @property Carbon|null $updated_at
-*/
+ * @property string|null $margin_type
+ * @property string|null $storage_provider
+ * @property string|null $google_client_id
+ * @property string|null $google_client_secret
+ * @property string|null $google_redirect_url
+ * @property bool $google_login_enabled
+ * @property string|null $facebook_client_id
+ * @property string|null $facebook_client_secret
+ * @property string|null $facebook_redirect_url
+ * @property bool $facebook_login_enabled
+ * @property string|null $github_client_id
+ * @property string|null $github_client_secret
+ * @property string|null $github_redirect_url
+ * @property bool $github_login_enabled
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class GeneralSetting extends Model
 {
     use HasFactory;
@@ -158,52 +159,53 @@ class GeneralSetting extends Model
         'custom_css',
         'disable_signup',
         'disable_forgot_password',
+        'maintenance_allowed_ips',
         'expiry_alert_days',
         'default_margin_value',
         'margin_type',
-            'storage_provider',
-            'google_client_id',
-            'google_client_secret',
-            'google_redirect_url',
-            'google_login_enabled',
-            'facebook_client_id',
-            'facebook_client_secret',
-            'facebook_redirect_url',
-            'facebook_login_enabled',
-            'github_client_id',
-            'github_client_secret',
-            'github_redirect_url',
-            'github_login_enabled',
-            // Cloudinary v3 credentials
-            'cloudinary_cloud_name',
-            'cloudinary_api_key',
-            'cloudinary_api_secret',
-            'cloudinary_secure_url',
-            // AWS S3 credentials
-            'aws_access_key_id',
-            'aws_secret_access_key',
-            'aws_default_region',
-            'aws_bucket',
-            'aws_url',
-            'aws_endpoint',
-            'aws_use_path_style_endpoint',
-            // SFTP credentials
-            'sftp_host',
-            'sftp_username',
-            'sftp_password',
-            'sftp_private_key',
-            'sftp_passphrase',
-            'sftp_port',
-            'sftp_root',
-            // FTP credentials
-            'ftp_host',
-            'ftp_username',
-            'ftp_password',
-            'ftp_port',
-            'ftp_root',
-            'ftp_passive',
-            'ftp_ssl',
-        ];
+        'storage_provider',
+        'google_client_id',
+        'google_client_secret',
+        'google_redirect_url',
+        'google_login_enabled',
+        'facebook_client_id',
+        'facebook_client_secret',
+        'facebook_redirect_url',
+        'facebook_login_enabled',
+        'github_client_id',
+        'github_client_secret',
+        'github_redirect_url',
+        'github_login_enabled',
+        // Cloudinary v3 credentials
+        'cloudinary_cloud_name',
+        'cloudinary_api_key',
+        'cloudinary_api_secret',
+        'cloudinary_secure_url',
+        // AWS S3 credentials
+        'aws_access_key_id',
+        'aws_secret_access_key',
+        'aws_default_region',
+        'aws_bucket',
+        'aws_url',
+        'aws_endpoint',
+        'aws_use_path_style_endpoint',
+        // SFTP credentials
+        'sftp_host',
+        'sftp_username',
+        'sftp_password',
+        'sftp_private_key',
+        'sftp_passphrase',
+        'sftp_port',
+        'sftp_root',
+        // FTP credentials
+        'ftp_host',
+        'ftp_username',
+        'ftp_password',
+        'ftp_port',
+        'ftp_root',
+        'ftp_passive',
+        'ftp_ssl',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -236,4 +238,3 @@ class GeneralSetting extends Model
         ];
     }
 }
-

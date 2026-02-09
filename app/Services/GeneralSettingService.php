@@ -22,8 +22,8 @@ class GeneralSettingService extends BaseService
     /**
      * GeneralSettingService constructor.
      *
-     * @param UploadService $uploadService Handles file uploads for site logo and favicon.
-     * @param ActivityLogService $activityLogService Handles activity logging for audit trail.
+     * @param  UploadService  $uploadService  Handles file uploads for site logo and favicon.
+     * @param  ActivityLogService  $activityLogService  Handles activity logging for audit trail.
      */
     public function __construct(
         private readonly UploadService $uploadService,
@@ -47,21 +47,23 @@ class GeneralSettingService extends BaseService
      *
      * Requires general_setting permission.
      *
-     * @param array<string, mixed> $data Validated data.
-     * @param UploadedFile|null $siteLogo Optional logo file.
-     * @param UploadedFile|null $favicon Optional favicon file.
+     * @param  array<string, mixed>  $data  Validated data.
+     * @param  UploadedFile|null  $siteLogo  Optional logo file.
+     * @param  UploadedFile|null  $favicon  Optional favicon file.
+     * @param  string|null  $clientIp  Optional client IP for maintenance_allowed_ips.
      * @return GeneralSetting The updated general setting instance.
      */
     public function updateGeneralSetting(
         array $data,
         ?UploadedFile $siteLogo = null,
-        ?UploadedFile $favicon = null
+        ?UploadedFile $favicon = null,
+        ?string $clientIp = null
     ): GeneralSetting {
         $this->requirePermission('general_setting');
 
         $setting = GeneralSetting::latest()->firstOrFail();
 
-        $data = $this->normalizeGeneralSettingData($data);
+        $data = $this->normalizeGeneralSettingData($data, $clientIp);
 
         if ($siteLogo) {
             if ($setting->site_logo) {
@@ -93,10 +95,10 @@ class GeneralSettingService extends BaseService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function normalizeGeneralSettingData(array $data): array
+    private function normalizeGeneralSettingData(array $data, ?string $clientIp = null): array
     {
         $toBoolean = fn ($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
@@ -133,9 +135,40 @@ class GeneralSettingService extends BaseService
         if (array_key_exists('expiry_alert_days', $data)) {
             $data['expiry_alert_days'] = (int) ($data['expiry_alert_days'] ?? 0);
         }
+        if (array_key_exists('margin_type', $data)) {
+            $data['margin_type'] = (int) $data['margin_type'];
+        }
+        if (array_key_exists('maintenance_allowed_ips', $data)) {
+            $data['maintenance_allowed_ips'] = $this->normalizeMaintenanceAllowedIps(
+                $data['maintenance_allowed_ips'],
+                $clientIp
+            );
+        }
 
         unset($data['site_logo'], $data['favicon']);
 
         return $data;
+    }
+
+    /**
+     * Normalize maintenance_allowed_ips: add current IP if not in list when enabled.
+     *
+     * @param  string|null  $ips  Comma-separated IPs or null when disabled.
+     * @param  string|null  $clientIp  Current request IP.
+     * @return string|null Normalized comma-separated IPs or null when disabled.
+     */
+    private function normalizeMaintenanceAllowedIps(?string $ips, ?string $clientIp): ?string
+    {
+        if (empty(trim((string) $ips))) {
+            return null;
+        }
+
+        $userIps = array_filter(array_map('trim', explode(',', $ips)));
+
+        if ($clientIp !== null && ! in_array($clientIp, $userIps, true)) {
+            $userIps[] = $clientIp;
+        }
+
+        return implode(',', array_unique($userIps));
     }
 }

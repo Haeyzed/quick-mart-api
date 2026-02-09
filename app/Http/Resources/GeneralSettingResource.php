@@ -20,7 +20,7 @@ class GeneralSettingResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request The incoming HTTP request.
+     * @param  Request  $request  The incoming HTTP request.
      * @return array<string, mixed> The transformed general setting data for API response.
      */
     public function toArray(Request $request): array
@@ -54,6 +54,8 @@ class GeneralSettingResource extends JsonResource
             'expiry_alert_days' => $this->expiry_alert_days,
             'disable_signup' => $this->disable_signup,
             'disable_forgot_password' => $this->disable_forgot_password,
+            'maintenance_allowed_ips' => $this->maintenance_allowed_ips,
+            'margin_type' => $this->margin_type !== null ? (int) $this->margin_type : null,
             'timezone' => $this->timezone,
             'show_products_details_in_sales_table' => $this->show_products_details_in_sales_table,
             'show_products_details_in_purchase_table' => $this->show_products_details_in_purchase_table,

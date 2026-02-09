@@ -55,6 +55,8 @@ class GeneralSettingRequest extends BaseRequest
             'expiry_alert_days' => ['nullable', 'integer', 'min:0'],
             'disable_signup' => ['nullable', 'boolean'],
             'disable_forgot_password' => ['nullable', 'boolean'],
+            'maintenance_allowed_ips' => ['nullable', 'string', 'max:500'],
+            'margin_type' => ['nullable', 'integer', 'in:0,1'],
             'timezone' => ['nullable', 'string', 'max:100'],
             'show_products_details_in_sales_table' => ['nullable', 'boolean'],
             'show_products_details_in_purchase_table' => ['nullable', 'boolean'],

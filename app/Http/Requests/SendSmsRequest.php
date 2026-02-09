@@ -19,7 +19,7 @@ class SendSmsRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'recipient' => ['required', 'string', 'max:50'],
+            'recipient' => ['required', 'string', 'max:500'],
             'message' => ['required_without:template_id', 'nullable', 'string', 'max:1600'],
             'template_id' => ['nullable', 'integer', 'exists:sms_templates,id'],
             'customer' => ['nullable', 'string', 'max:255'],

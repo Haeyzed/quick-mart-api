@@ -31,7 +31,7 @@ class PosSettingRequest extends BaseRequest
             'paypal_live_api_password' => ['nullable', 'string', 'max:255'],
             'paypal_live_api_secret' => ['nullable', 'string', 'max:255'],
             'payment_options' => ['nullable', 'array'],
-            'payment_options.*' => ['nullable', 'string', 'max:50'],
+            'payment_options.*' => ['nullable', 'string', 'max:50', 'distinct'],
             'show_print_invoice' => ['nullable', 'boolean'],
             'invoice_option' => ['nullable', Rule::in(['thermal', 'a4'])],
             'thermal_invoice_size' => ['nullable', 'string', 'max:20'],

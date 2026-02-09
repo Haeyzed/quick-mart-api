@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\GeneralSettingRequest;
 use App\Http\Resources\GeneralSettingResource;
-use App\Models\GeneralSetting;
 use App\Services\GeneralSettingService;
 use Illuminate\Http\JsonResponse;
 
@@ -22,8 +21,6 @@ class GeneralSettingController extends Controller
 {
     /**
      * GeneralSettingController constructor.
-     *
-     * @param GeneralSettingService $service
      */
     public function __construct(
         private readonly GeneralSettingService $service
@@ -47,7 +44,7 @@ class GeneralSettingController extends Controller
     /**
      * Update the general setting.
      *
-     * @param GeneralSettingRequest $request Validated general setting data.
+     * @param  GeneralSettingRequest  $request  Validated general setting data.
      * @return JsonResponse The updated general setting.
      */
     public function update(GeneralSettingRequest $request): JsonResponse
@@ -55,7 +52,8 @@ class GeneralSettingController extends Controller
         $setting = $this->service->updateGeneralSetting(
             $request->validated(),
             $request->file('site_logo'),
-            $request->file('favicon')
+            $request->file('favicon'),
+            $request->ip()
         );
 
         return response()->success(

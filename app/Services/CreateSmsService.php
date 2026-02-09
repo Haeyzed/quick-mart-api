@@ -23,7 +23,7 @@ class CreateSmsService extends BaseService
     /**
      * CreateSmsService constructor.
      *
-     * @param SmsService $smsService Handles SMS delivery via configured provider.
+     * @param  SmsService  $smsService  Handles SMS delivery via configured provider.
      */
     public function __construct(
         private readonly SmsService $smsService
@@ -42,7 +42,7 @@ class CreateSmsService extends BaseService
     /**
      * Send SMS directly or from template.
      *
-     * @param array<string, mixed> $data recipient, message, optional template_id and placeholders.
+     * @param  array<string, mixed>  $data  recipient, message, optional template_id and placeholders.
      * @return array<string, mixed>|bool Provider response or false.
      */
     public function sendSms(array $data): array|bool
@@ -56,6 +56,8 @@ class CreateSmsService extends BaseService
         if (empty($recipient)) {
             throw new \InvalidArgumentException('Recipient phone number is required.');
         }
+
+        $numbers = array_values(array_filter(array_map('trim', explode(',', $recipient))));
 
         if ($templateId) {
             $message = $this->buildMessageFromTemplate($templateId, $data);
@@ -73,18 +75,23 @@ class CreateSmsService extends BaseService
 
         $smsData = [
             'recipent' => $recipient,
+            'numbers' => $numbers,
             'message' => $message,
             'sms_provider_name' => $provider->name,
             'details' => $provider->details,
         ];
 
-        return $this->smsService->initialize($smsData);
+        if (count($numbers) === 1) {
+            return $this->smsService->initialize($smsData);
+        }
+
+        return $this->sendToMultipleRecipients($smsData);
     }
 
     /**
      * Build message from template with optional placeholders.
      *
-     * @param array<string, mixed> $data Placeholders: customer, reference, sale_status, payment_status.
+     * @param  array<string, mixed>  $data  Placeholders: customer, reference, sale_status, payment_status.
      */
     private function buildMessageFromTemplate(int $templateId, array $data): string
     {
@@ -102,5 +109,28 @@ class CreateSmsService extends BaseService
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $template->content);
+    }
+
+    /**
+     * Send SMS to multiple recipients (one API call per number).
+     *
+     * @param  array<string, mixed>  $smsData  Base SMS data with numbers array.
+     * @return array<string, mixed>|bool Aggregated result or false if any fails.
+     */
+    private function sendToMultipleRecipients(array $smsData): array|bool
+    {
+        $numbers = $smsData['numbers'] ?? [];
+        $results = [];
+
+        foreach ($numbers as $number) {
+            $payload = array_merge($smsData, ['recipent' => $number]);
+            $result = $this->smsService->initialize($payload);
+            if ($result === false) {
+                return false;
+            }
+            $results[] = $result;
+        }
+
+        return ['sent' => true, 'count' => count($numbers), 'results' => $results];
     }
 }
