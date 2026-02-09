@@ -26,6 +26,8 @@ class AuditIndexRequest extends BaseRequest
             'auditable_type' => ['nullable', 'string', 'max:255'],
             'ip_address' => ['nullable', 'string', 'max:45'],
             'user' => ['nullable', 'string', 'max:255'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ];
     }
 

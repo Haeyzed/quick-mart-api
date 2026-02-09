@@ -67,6 +67,8 @@ class AuditLogService extends BaseService
                 $term = "%{$filters['user']}%";
                 $q->whereHas('user', fn ($u) => $u->where('name', 'like', $term));
             })
+            ->when(! empty($filters['date_from'] ?? null), fn ($q) => $q->whereDate('audits.created_at', '>=', $filters['date_from']))
+            ->when(! empty($filters['date_to'] ?? null), fn ($q) => $q->whereDate('audits.created_at', '<=', $filters['date_to']))
             ->orderByDesc('audits.id');
 
         return $query->paginate($perPage);
