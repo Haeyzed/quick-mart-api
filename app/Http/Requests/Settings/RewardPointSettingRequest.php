@@ -18,7 +18,7 @@ class RewardPointSettingRequest extends BaseRequest
             'per_point_amount' => ['nullable', 'numeric', 'min:0'],
             'minimum_amount' => ['nullable', 'numeric', 'min:0'],
             'duration' => ['nullable', 'integer', 'min:0'],
-            'type' => ['nullable', 'string', 'max:50'],
+            'type' => ['nullable', 'string', 'in:days,months,years'],
             'is_active' => ['nullable', 'boolean'],
             'redeem_amount_per_unit_rp' => ['nullable', 'numeric', 'min:0'],
             'min_order_total_for_redeem' => ['nullable', 'numeric', 'min:0'],
