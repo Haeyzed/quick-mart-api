@@ -20,6 +20,10 @@ class RewardPointSettingController extends Controller
     {
         $setting = $this->service->getRewardPointSetting();
 
+        if (! $setting) {
+            return response()->success(null, 'No reward point setting configured');
+        }
+
         return response()->success(
             new RewardPointSettingResource($setting),
             'Reward point setting retrieved successfully'
@@ -29,7 +33,7 @@ class RewardPointSettingController extends Controller
     /**
      * Update the reward point setting.
      *
-     * @param RewardPointSettingRequest $request Validated reward point configuration.
+     * @param  RewardPointSettingRequest  $request  Validated reward point configuration.
      * @return JsonResponse The updated reward point setting.
      */
     public function update(RewardPointSettingRequest $request): JsonResponse
