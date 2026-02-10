@@ -5,67 +5,81 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CustomerGroupBulkDestroyRequest;
-use App\Http\Requests\CustomerGroupIndexRequest;
-use App\Http\Requests\CustomerGroupRequest;
+use App\Http\Requests\CustomerGroups\CustomerGroupBulkDestroyRequest;
+use App\Http\Requests\CustomerGroups\CustomerGroupBulkUpdateRequest;
+use App\Http\Requests\CustomerGroups\CustomerGroupIndexRequest;
+use App\Http\Requests\CustomerGroups\CustomerGroupRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CustomerGroupResource;
 use App\Models\CustomerGroup;
 use App\Services\CustomerGroupService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 /**
- * CustomerGroupController
+ * API Controller for Customer Group CRUD and bulk operations.
  *
- * Handles HTTP requests for customer group management operations.
- * Provides RESTful API endpoints for CRUD operations and bulk deletion.
+ * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
+ * import, and getAllActive. All responses use the ResponseServiceProvider macros.
+ *
+ * @group Customer Group Management
  */
 class CustomerGroupController extends Controller
 {
+    /**
+     * CustomerGroupController constructor.
+     */
     public function __construct(
-        private readonly CustomerGroupService $customerGroupService
+        private readonly CustomerGroupService $service
     ) {}
 
     /**
      * Display a paginated listing of customer groups.
      *
-     * @param  CustomerGroupIndexRequest  $request  Validated query params: per_page, page, is_active, search.
+     * @param  CustomerGroupIndexRequest  $request  Validated query params: per_page, page, status, search.
      * @return JsonResponse Paginated customer groups with meta and links.
      */
     public function index(CustomerGroupIndexRequest $request): JsonResponse
     {
-        $customerGroups = $this->customerGroupService->getCustomerGroups(
+        $customerGroups = $this->service->getCustomerGroups(
             $request->validated(),
             (int) $request->input('per_page', 10)
         );
 
-        $customerGroups->through(fn (CustomerGroup $group) => new CustomerGroupResource($group));
+        $customerGroups->through(fn (CustomerGroup $customerGroup) => new CustomerGroupResource($customerGroup));
 
         return response()->success(
             $customerGroups,
-            'Customer groups retrieved successfully'
+            'Customer groups fetched successfully'
         );
     }
 
     /**
      * Store a newly created customer group.
+     *
+     * @param  CustomerGroupRequest  $request  Validated customer group attributes.
+     * @return JsonResponse Created customer group with 201 status.
      */
     public function store(CustomerGroupRequest $request): JsonResponse
     {
-        $customerGroup = $this->customerGroupService->createCustomerGroup($request->validated());
+        $customerGroup = $this->service->createCustomerGroup($request->validated());
 
         return response()->success(
             new CustomerGroupResource($customerGroup),
             'Customer group created successfully',
-            201
+            Response::HTTP_CREATED
         );
     }
 
     /**
      * Display the specified customer group.
+     *
+     * @param  CustomerGroup  $customerGroup  The customer group instance resolved via route model binding.
      */
     public function show(CustomerGroup $customerGroup): JsonResponse
     {
+        $customerGroup = $this->service->getCustomerGroup($customerGroup);
+
         return response()->success(
             new CustomerGroupResource($customerGroup),
             'Customer group retrieved successfully'
@@ -74,50 +88,85 @@ class CustomerGroupController extends Controller
 
     /**
      * Update the specified customer group.
+     *
+     * @param  CustomerGroupRequest  $request  Validated customer group attributes.
+     * @param  CustomerGroup  $customerGroup  The customer group instance to update.
+     * @return JsonResponse Updated customer group.
      */
     public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup): JsonResponse
     {
-        $customerGroup = $this->customerGroupService->updateCustomerGroup($customerGroup, $request->validated());
+        $updatedCustomerGroup = $this->service->updateCustomerGroup($customerGroup, $request->validated());
 
         return response()->success(
-            new CustomerGroupResource($customerGroup),
+            new CustomerGroupResource($updatedCustomerGroup),
             'Customer group updated successfully'
         );
     }
 
     /**
      * Remove the specified customer group.
+     *
+     * @param  CustomerGroup  $customerGroup  The customer group instance to delete.
+     * @return JsonResponse Success message.
      */
     public function destroy(CustomerGroup $customerGroup): JsonResponse
     {
-        $this->customerGroupService->deleteCustomerGroup($customerGroup);
+        $this->service->deleteCustomerGroup($customerGroup);
 
-        return response()->success(
-            null,
-            'Customer group deleted successfully'
-        );
+        return response()->success(null, 'Customer group deleted successfully');
     }
 
     /**
-     * Bulk delete multiple customer groups.
+     * Bulk delete customer groups.
+     *
+     * @param  CustomerGroupBulkDestroyRequest  $request  Validated ids array.
+     * @return JsonResponse Deleted count and message.
      */
     public function bulkDestroy(CustomerGroupBulkDestroyRequest $request): JsonResponse
     {
-        $ids = $request->validated()['ids'];
-        $deletedCount = $this->customerGroupService->bulkDeleteCustomerGroups($ids);
+        $count = $this->service->bulkDeleteCustomerGroups($request->validated()['ids']);
 
         return response()->success(
-            ['deleted_count' => $deletedCount],
-            "Successfully deleted {$deletedCount} customer group(s)"
+            ['deleted_count' => $count],
+            "Successfully deleted {$count} customer group(s)"
         );
     }
 
     /**
-     * Import customer groups from a file.
+     * Bulk activate customer groups by ID.
+     *
+     * @param  CustomerGroupBulkUpdateRequest  $request  Validated ids array.
+     * @return JsonResponse Activated count and message.
+     */
+    public function bulkActivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkActivateCustomerGroups($request->validated()['ids']);
+
+        return response()->success(['activated_count' => $count], "{$count} customer group(s) activated");
+    }
+
+    /**
+     * Bulk deactivate customer groups by ID.
+     *
+     * @param  CustomerGroupBulkUpdateRequest  $request  Validated ids array.
+     * @return JsonResponse Deactivated count and message.
+     */
+    public function bulkDeactivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
+    {
+        $count = $this->service->bulkDeactivateCustomerGroups($request->validated()['ids']);
+
+        return response()->success(['deactivated_count' => $count], "{$count} customer group(s) deactivated");
+    }
+
+    /**
+     * Import customer groups from Excel/CSV file.
+     *
+     * @param  ImportRequest  $request  Validated file upload.
+     * @return JsonResponse Success message.
      */
     public function import(ImportRequest $request): JsonResponse
     {
-        $this->customerGroupService->importCustomerGroups($request->file('file'));
+        $this->service->importCustomerGroups($request->file('file'));
 
         return response()->success(null, 'Customer groups imported successfully');
     }
@@ -127,7 +176,7 @@ class CustomerGroupController extends Controller
      */
     public function getAllActive(): JsonResponse
     {
-        $customerGroups = $this->customerGroupService->getAllActive();
+        $customerGroups = $this->service->getAllActive();
 
         return response()->success(
             CustomerGroupResource::collection($customerGroups),

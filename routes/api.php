@@ -252,13 +252,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('customers.points.destroy');
     Route::apiResource('customers', CustomerController::class);
 
-    Route::apiResource('customer-groups', CustomerGroupController::class);
+    Route::patch('customer-groups/bulk-activate', [CustomerGroupController::class, 'bulkActivate'])
+        ->name('customer-groups.bulkActivate');
+    Route::patch('customer-groups/bulk-deactivate', [CustomerGroupController::class, 'bulkDeactivate'])
+        ->name('customer-groups.bulkDeactivate');
     Route::delete('customer-groups/bulk-destroy', [CustomerGroupController::class, 'bulkDestroy'])
         ->name('customer-groups.bulkDestroy');
     Route::post('customer-groups/import', [CustomerGroupController::class, 'import'])
         ->name('customer-groups.import');
     Route::get('customer-groups/all/active', [CustomerGroupController::class, 'getAllActive'])
         ->name('customer-groups.all-active');
+    Route::apiResource('customer-groups', CustomerGroupController::class);
 
     Route::apiResource('currencies', CurrencyController::class);
     Route::delete('currencies/bulk-destroy', [CurrencyController::class, 'bulkDestroy'])

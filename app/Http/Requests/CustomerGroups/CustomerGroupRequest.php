@@ -2,24 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\CustomerGroups;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * CustomerGroupRequest
+ * Form request for customer group create and update validation.
  *
- * Validates incoming data for both creating and updating customer groups.
- * Handles both store and update operations with appropriate uniqueness constraints.
+ * Validates name, percentage, and is_active.
  */
-class CustomerGroupRequest extends FormRequest
+class CustomerGroupRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True to allow (authorization handled by middleware/policy).
      */
     public function authorize(): bool
     {
@@ -33,34 +32,16 @@ class CustomerGroupRequest extends FormRequest
      */
     public function rules(): array
     {
-        $customerGroupId = $this->route('customer_group');
+        $customerGroupId = $this->route('customer_group')?->id;
 
         return [
-            /**
-             * The customer group name. Must be unique across all customer groups.
-             *
-             * @var string @name
-             * @example VIP Customers
-             */
             'name' => [
                 'required',
                 'string',
                 'max:255',
                 Rule::unique('customer_groups', 'name')->ignore($customerGroupId),
             ],
-            /**
-             * Discount percentage for this customer group.
-             *
-             * @var float|null @percentage
-             * @example 10.5
-             */
             'percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            /**
-             * Whether the customer group is active.
-             *
-             * @var bool|null @is_active
-             * @example true
-             */
             'is_active' => ['nullable', 'boolean'],
         ];
     }
@@ -68,14 +49,17 @@ class CustomerGroupRequest extends FormRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * Normalizes strings and is_active to boolean when present.
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
             'name' => $this->name ? trim($this->name) : null,
         ]);
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
-
 }
-
