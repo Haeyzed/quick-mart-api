@@ -33,7 +33,7 @@ class CustomerRequest extends BaseRequest
         $isUser = $this->boolean('user');
 
         $rules = [
-            'customer_group_id' => ['nullable', 'integer', 'exists:customer_groups,id'],
+            'customer_group_id' => ['required', 'integer', 'exists:customer_groups,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
