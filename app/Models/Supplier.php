@@ -34,7 +34,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, ReturnPurchase> $returnPurchases
  * @property-read Collection<int, Product> $products
@@ -57,6 +56,7 @@ class Supplier extends Model
         'vat_number',
         'email',
         'phone_number',
+        'wa_number',
         'address',
         'city',
         'state',
@@ -90,8 +90,6 @@ class Supplier extends Model
 
     /**
      * Calculate the total due amount for this supplier.
-     *
-     * @return float
      */
     public function getTotalDue(): float
     {
@@ -113,9 +111,6 @@ class Supplier extends Model
 
     /**
      * Scope a query to only include active suppliers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -136,4 +131,3 @@ class Supplier extends Model
         ];
     }
 }
-

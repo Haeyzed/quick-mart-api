@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Customer Model
@@ -44,7 +45,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read CustomerGroup|null $customerGroup
  * @property-read User|null $user
  * @property-read Collection<int, Sale> $sales
@@ -142,8 +142,6 @@ class Customer extends Model
 
     /**
      * Calculate the total due amount for this customer.
-     *
-     * @return float
      */
     public function getTotalDue(): float
     {
@@ -164,10 +162,49 @@ class Customer extends Model
     }
 
     /**
-     * Scope a query to only include active customers.
+     * Get custom field column names for customer that exist on the table (quick-mart-old).
      *
-     * @param Builder $query
-     * @return Builder
+     * @return array<int, string>
+     */
+    public static function getCustomFieldColumnNames(): array
+    {
+        $columns = Schema::getColumnListing('customers');
+        $customFields = CustomField::query()
+            ->where('belongs_to', 'customer')
+            ->get();
+
+        $result = [];
+        foreach ($customFields as $field) {
+            $col = str_replace(' ', '_', strtolower($field->name));
+            if (in_array($col, $columns, true)) {
+                $result[] = $col;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get custom field values for this customer (for API resource).
+     *
+     * @return array<string, mixed>
+     */
+    public function getCustomFieldValues(): array
+    {
+        $cols = self::getCustomFieldColumnNames();
+        $attrs = $this->getAttributes();
+        $out = [];
+        foreach ($cols as $col) {
+            if (array_key_exists($col, $attrs)) {
+                $out[$col] = $attrs[$col];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Scope a query to only include active customers.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -194,4 +231,3 @@ class Customer extends Model
         ];
     }
 }
-
