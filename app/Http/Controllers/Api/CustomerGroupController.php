@@ -9,12 +9,16 @@ use App\Http\Requests\CustomerGroups\CustomerGroupBulkDestroyRequest;
 use App\Http\Requests\CustomerGroups\CustomerGroupBulkUpdateRequest;
 use App\Http\Requests\CustomerGroups\CustomerGroupIndexRequest;
 use App\Http\Requests\CustomerGroups\CustomerGroupRequest;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CustomerGroupResource;
 use App\Models\CustomerGroup;
+use App\Models\User;
 use App\Services\CustomerGroupService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * API Controller for Customer Group CRUD and bulk operations.
@@ -169,6 +173,37 @@ class CustomerGroupController extends Controller
         $this->service->importCustomerGroups($request->file('file'));
 
         return response()->success(null, 'Customer groups imported successfully');
+    }
+
+    /**
+     * Export customer groups to Excel or PDF.
+     *
+     * @param  ExportRequest  $request  Validated export params: ids, format, method, columns, user_id (if email).
+     * @return JsonResponse|BinaryFileResponse Success message or file download.
+     */
+    public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $validated = $request->validated();
+
+        $user = ($validated['method'] === 'email')
+            ? User::findOrFail($validated['user_id'])
+            : null;
+
+        $filePath = $this->service->exportCustomerGroups(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $user,
+            $validated['columns'] ?? [],
+            $validated['method']
+        );
+
+        if ($validated['method'] === 'download') {
+            return response()->download(
+                Storage::disk('public')->path($filePath)
+            );
+        }
+
+        return response()->success(null, 'Export processed and sent via email');
     }
 
     /**

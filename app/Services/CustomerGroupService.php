@@ -4,25 +4,35 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\CustomerGroupsExport;
 use App\Imports\CustomerGroupsImport;
+use App\Mail\ExportMail;
 use App\Models\CustomerGroup;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
+use App\Models\User;
 use App\Traits\CheckPermissionsTrait;
+use App\Traits\MailInfo;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use RuntimeException;
 
 /**
  * Service class for Customer Group entity lifecycle operations.
  *
- * Centralizes business logic for Customer Group CRUD, bulk actions, and imports.
+ * Centralizes business logic for Customer Group CRUD, bulk actions, imports, and exports.
  * Delegates permission checks to CheckPermissionsTrait.
  */
 class CustomerGroupService extends BaseService
 {
-    use CheckPermissionsTrait;
+    use CheckPermissionsTrait, MailInfo;
 
     /**
      * Retrieve a single customer group by instance.
@@ -191,6 +201,67 @@ class CustomerGroupService extends BaseService
         $this->requirePermission('customer-groups-import');
 
         Excel::import(new CustomerGroupsImport, $file);
+    }
+
+    /**
+     * Export customer groups to Excel or PDF file.
+     *
+     * Supports download or email delivery. Requires customer-groups-export permission.
+     *
+     * @param  array<int>  $ids  Customer group IDs to export. Empty array exports all.
+     * @param  string  $format  Export format: 'excel' or 'pdf'.
+     * @param  User|null  $user  Recipient when method is 'email'.
+     * @param  array<string>  $columns  Column keys to include in export.
+     * @param  string  $method  Delivery method: 'download' or 'email'.
+     * @return string Relative storage path of the generated file.
+     */
+    public function exportCustomerGroups(array $ids, string $format, ?User $user, array $columns, string $method): string
+    {
+        $this->requirePermission('customer-groups-export');
+
+        $fileName = 'customer_groups_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/'.$fileName;
+
+        if ($format === 'excel') {
+            Excel::store(new CustomerGroupsExport($ids, $columns), $relativePath, 'public');
+        } else {
+            $customerGroups = CustomerGroup::query()
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->orderBy('name')
+                ->get();
+
+            $pdf = PDF::loadView('exports.customer-groups-pdf', compact('customerGroups', 'columns'));
+            Storage::disk('public')->put($relativePath, $pdf->output());
+        }
+
+        if ($method === 'email' && $user) {
+            $this->sendExportEmail($user, $relativePath, $fileName);
+        }
+
+        return $relativePath;
+    }
+
+    /**
+     * Send export completion email to the user.
+     *
+     * @param  User  $user  Recipient of the export email.
+     * @param  string  $path  Relative storage path of the export file.
+     * @param  string  $fileName  Display filename for the attachment.
+     *
+     * @throws RuntimeException When mail settings are not configured.
+     */
+    private function sendExportEmail(User $user, string $path, string $fileName): void
+    {
+        $mailSetting = MailSetting::default()->firstOr(
+            fn () => throw new RuntimeException('Mail settings are not configured.')
+        );
+        $generalSetting = GeneralSetting::latest()->first();
+
+        $this->setMailInfo($mailSetting);
+
+        Mail::to($user->email)->send(
+            new ExportMail($user, $path, $fileName, 'Customer Groups List', $generalSetting)
+        );
     }
 
     /**

@@ -260,6 +260,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('customer-groups.bulkDestroy');
     Route::post('customer-groups/import', [CustomerGroupController::class, 'import'])
         ->name('customer-groups.import');
+    Route::post('customer-groups/export', [CustomerGroupController::class, 'export'])
+        ->name('customer-groups.export');
     Route::get('customer-groups/all/active', [CustomerGroupController::class, 'getAllActive'])
         ->name('customer-groups.all-active');
     Route::apiResource('customer-groups', CustomerGroupController::class);
