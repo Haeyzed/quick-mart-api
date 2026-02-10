@@ -3604,6 +3604,26 @@ class TenantDatabaseSeeder extends Seeder
                 'guard_name' => 'web',
             ],
             [
+                'name' => 'customer-groups-index',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'customer-groups-create',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'customer-groups-update',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'customer-groups-delete',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'customer-groups-import',
+                'guard_name' => 'web',
+            ],
+            [
                 'name' => 'delivery',
                 'guard_name' => 'web',
             ],
@@ -3960,6 +3980,7 @@ class TenantDatabaseSeeder extends Seeder
             'warehouse',
             'warehouses-index', 'warehouses-create', 'warehouses-update', 'warehouses-delete', 'warehouses-import', 'warehouses-export',
             'billers-index', 'billers-create', 'billers-update', 'billers-delete', 'billers-import', 'billers-export', 'money-transfer',
+            'customer-groups-index', 'customer-groups-create', 'customer-groups-update', 'customer-groups-delete', 'customer-groups-import',
             'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
             'currency', 'revenue_profit_summary', 'cash_flow', 'monthly_summary', 'yearly_report',
             'discount_plan', 'discount',

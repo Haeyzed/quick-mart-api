@@ -25,8 +25,8 @@ class CustomerGroupService extends BaseService
     /**
      * Get paginated list of customer groups with optional filters.
      *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
+     * @param  array<string, mixed>  $filters  Available filters: is_active, search
+     * @param  int  $perPage  Number of items per page (default: 10)
      * @return LengthAwarePaginator<CustomerGroup>
      */
     public function getCustomerGroups(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -34,12 +34,12 @@ class CustomerGroupService extends BaseService
         return CustomerGroup::query()
             ->when(
                 isset($filters['is_active']),
-                fn($query) => $query->where('is_active', (bool)$filters['is_active'])
+                fn ($query) => $query->where('is_active', (bool) $filters['is_active'])
             )
             ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where(function ($q) use ($filters) {
-                    $q->where('name', 'like', '%' . $filters['search'] . '%');
+                ! empty($filters['search'] ?? null),
+                fn ($query) => $query->where(function ($q) use ($filters) {
+                    $q->where('name', 'like', '%'.$filters['search'].'%');
                 })
             )
             ->orderBy('name')
@@ -49,8 +49,7 @@ class CustomerGroupService extends BaseService
     /**
      * Get a single customer group by ID.
      *
-     * @param int $id Customer Group ID
-     * @return CustomerGroup
+     * @param  int  $id  Customer Group ID
      */
     public function getCustomerGroup(int $id): CustomerGroup
     {
@@ -60,14 +59,14 @@ class CustomerGroupService extends BaseService
     /**
      * Create a new customer group.
      *
-     * @param array<string, mixed> $data Validated customer group data
-     * @return CustomerGroup
+     * @param  array<string, mixed>  $data  Validated customer group data
      */
     public function createCustomerGroup(array $data): CustomerGroup
     {
         return $this->transaction(function () use ($data) {
             // Normalize data to match database schema
             $data = $this->normalizeCustomerGroupData($data);
+
             return CustomerGroup::create($data);
         });
     }
@@ -75,16 +74,16 @@ class CustomerGroupService extends BaseService
     /**
      * Normalize customer group data to match database schema requirements.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function normalizeCustomerGroupData(array $data): array
     {
         // is_active is stored as boolean (true/false)
-        if (!isset($data['is_active'])) {
+        if (! isset($data['is_active'])) {
             $data['is_active'] = false;
         } else {
-            $data['is_active'] = (bool)filter_var(
+            $data['is_active'] = (bool) filter_var(
                 $data['is_active'],
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
@@ -97,9 +96,8 @@ class CustomerGroupService extends BaseService
     /**
      * Update an existing customer group.
      *
-     * @param CustomerGroup $customerGroup Customer Group instance to update
-     * @param array<string, mixed> $data Validated customer group data
-     * @return CustomerGroup
+     * @param  CustomerGroup  $customerGroup  Customer Group instance to update
+     * @param  array<string, mixed>  $data  Validated customer group data
      */
     public function updateCustomerGroup(CustomerGroup $customerGroup, array $data): CustomerGroup
     {
@@ -107,6 +105,7 @@ class CustomerGroupService extends BaseService
             // Normalize data to match database schema
             $data = $this->normalizeCustomerGroupData($data);
             $customerGroup->update($data);
+
             return $customerGroup->fresh();
         });
     }
@@ -114,7 +113,7 @@ class CustomerGroupService extends BaseService
     /**
      * Bulk delete multiple customer groups.
      *
-     * @param array<int> $ids Array of customer group IDs to delete
+     * @param  array<int>  $ids  Array of customer group IDs to delete
      * @return int Number of customer groups deleted
      */
     public function bulkDeleteCustomerGroups(array $ids): int
@@ -128,7 +127,7 @@ class CustomerGroupService extends BaseService
                 $deletedCount++;
             } catch (Exception $e) {
                 // Log error but continue with other deletions
-                $this->logError("Failed to delete customer group {$id}: " . $e->getMessage());
+                $this->logError("Failed to delete customer group {$id}: ".$e->getMessage());
             }
         }
 
@@ -138,8 +137,8 @@ class CustomerGroupService extends BaseService
     /**
      * Delete a single customer group.
      *
-     * @param CustomerGroup $customerGroup Customer Group instance to delete
-     * @return bool
+     * @param  CustomerGroup  $customerGroup  Customer Group instance to delete
+     *
      * @throws HttpResponseException
      */
     public function deleteCustomerGroup(CustomerGroup $customerGroup): bool
@@ -155,14 +154,11 @@ class CustomerGroupService extends BaseService
 
     /**
      * Import customer groups from a file.
-     *
-     * @param UploadedFile $file
-     * @return void
      */
     public function importCustomerGroups(UploadedFile $file): void
     {
         $this->transaction(function () use ($file) {
-            Excel::import(new CustomerGroupsImport(), $file);
+            Excel::import(new CustomerGroupsImport, $file);
         });
     }
 
@@ -176,4 +172,3 @@ class CustomerGroupService extends BaseService
         return CustomerGroup::where('is_active', true)->get();
     }
 }
-

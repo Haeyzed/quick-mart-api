@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('percentage');
             $table->boolean('is_active')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index('is_active');
         });

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerGroupBulkDestroyRequest;
 use App\Http\Requests\CustomerGroupIndexRequest;
 use App\Http\Requests\CustomerGroupRequest;
+use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CustomerGroupResource;
 use App\Models\CustomerGroup;
 use App\Services\CustomerGroupService;
@@ -23,34 +24,31 @@ class CustomerGroupController extends Controller
 {
     public function __construct(
         private readonly CustomerGroupService $customerGroupService
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a listing of customer groups.
+     * Display a paginated listing of customer groups.
      *
-     * @param CustomerGroupIndexRequest $request
-     * @return JsonResponse
+     * @param  CustomerGroupIndexRequest  $request  Validated query params: per_page, page, is_active, search.
+     * @return JsonResponse Paginated customer groups with meta and links.
      */
     public function index(CustomerGroupIndexRequest $request): JsonResponse
     {
-        $perPage = (int)($request->validated()['per_page'] ?? 10);
-        $filters = $request->only(['is_active', 'search']);
+        $customerGroups = $this->customerGroupService->getCustomerGroups(
+            $request->validated(),
+            (int) $request->input('per_page', 10)
+        );
 
-        $customerGroups = $this->customerGroupService->getCustomerGroups($filters, $perPage);
+        $customerGroups->through(fn (CustomerGroup $group) => new CustomerGroupResource($group));
 
         return response()->success(
-            CustomerGroupResource::collection($customerGroups),
+            $customerGroups,
             'Customer groups retrieved successfully'
         );
     }
 
     /**
      * Store a newly created customer group.
-     *
-     * @param CustomerGroupRequest $request
-     * @return JsonResponse
      */
     public function store(CustomerGroupRequest $request): JsonResponse
     {
@@ -65,9 +63,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Display the specified customer group.
-     *
-     * @param CustomerGroup $customerGroup
-     * @return JsonResponse
      */
     public function show(CustomerGroup $customerGroup): JsonResponse
     {
@@ -79,10 +74,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Update the specified customer group.
-     *
-     * @param CustomerGroupRequest $request
-     * @param CustomerGroup $customerGroup
-     * @return JsonResponse
      */
     public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup): JsonResponse
     {
@@ -96,9 +87,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Remove the specified customer group.
-     *
-     * @param CustomerGroup $customerGroup
-     * @return JsonResponse
      */
     public function destroy(CustomerGroup $customerGroup): JsonResponse
     {
@@ -112,9 +100,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Bulk delete multiple customer groups.
-     *
-     * @param CustomerGroupBulkDestroyRequest $request
-     * @return JsonResponse
      */
     public function bulkDestroy(CustomerGroupBulkDestroyRequest $request): JsonResponse
     {
@@ -129,9 +114,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Import customer groups from a file.
-     *
-     * @param ImportRequest $request
-     * @return JsonResponse
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -142,8 +124,6 @@ class CustomerGroupController extends Controller
 
     /**
      * Get all active customer groups.
-     *
-     * @return JsonResponse
      */
     public function getAllActive(): JsonResponse
     {
@@ -155,4 +135,3 @@ class CustomerGroupController extends Controller
         );
     }
 }
-
