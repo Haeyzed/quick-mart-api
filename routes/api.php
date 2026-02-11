@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\MailSettingController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
 use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RewardPointSettingController;
 use App\Http\Controllers\Api\SaleAgentController;
 use App\Http\Controllers\Api\SmsSettingController;
@@ -265,6 +266,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('customer-groups/all/active', [CustomerGroupController::class, 'getAllActive'])
         ->name('customer-groups.all-active');
     Route::apiResource('customer-groups', CustomerGroupController::class);
+
+    Route::get('reports/customer-due', [ReportController::class, 'customerDueReport'])
+        ->name('reports.customer-due');
 
     Route::apiResource('currencies', CurrencyController::class);
     Route::delete('currencies/bulk-destroy', [CurrencyController::class, 'bulkDestroy'])
