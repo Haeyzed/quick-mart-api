@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Database\Seeders\Tenant;
 
 use App\Models\User;
+use Database\Seeders\Tenant\Support\PermissionModuleResolver;
 use App\Services\PermissionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Tenant Database Seeder
@@ -266,6 +268,7 @@ class TenantDatabaseSeeder extends Seeder
                 $insertData[] = [
                     'name' => $permission['name'],
                     'guard_name' => $permission['guard_name'],
+                    'module' => $this->getModuleForPermission($permission['name']),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -275,6 +278,37 @@ class TenantDatabaseSeeder extends Seeder
         if (! empty($insertData)) {
             DB::table('permissions')->insert($insertData);
         }
+
+        $this->backfillPermissionModules();
+    }
+
+    /**
+     * Backfill module for existing permissions that have null module.
+     */
+    private function backfillPermissionModules(): void
+    {
+        if (! Schema::hasColumn('permissions', 'module')) {
+            return;
+        }
+
+        $permissions = DB::table('permissions')->whereNull('module')->get();
+
+        foreach ($permissions as $permission) {
+            DB::table('permissions')
+                ->where('id', $permission->id)
+                ->update([
+                    'module' => $this->getModuleForPermission($permission->name),
+                    'updated_at' => now(),
+                ]);
+        }
+    }
+
+    /**
+     * Map permission name to module for grouping.
+     */
+    protected function getModuleForPermission(string $name): string
+    {
+        return PermissionModuleResolver::resolve($name);
     }
 
     /**
@@ -3325,6 +3359,10 @@ class TenantDatabaseSeeder extends Seeder
             ],
             [
                 'name' => 'customer-report',
+                'guard_name' => 'web',
+            ],
+            [
+                'name' => 'customer-group-report',
                 'guard_name' => 'web',
             ],
             [

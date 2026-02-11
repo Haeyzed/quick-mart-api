@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\AppSettingController;
-use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillerController;
 use App\Http\Controllers\Api\BrandController;
@@ -162,12 +161,59 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('warehouses.all-active');
     Route::apiResource('warehouses', WarehouseController::class);
 
-    Route::get('reports/audit-logs', [AuditLogController::class, 'index'])
+    Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');
-    Route::post('reports/audit-logs/export', [AuditLogController::class, 'export'])
+    Route::post('reports/audit-logs/export', [ReportController::class, 'auditLogExport'])
         ->name('reports.audit-logs.export');
     Route::get('reports/audit-logs/auditable-models', [UtilityController::class, 'auditableModels'])
         ->name('reports.audit-logs.auditable-models');
+
+    Route::get('reports/product-qty-alert', [ReportController::class, 'productQtyAlert'])
+        ->name('reports.product-qty-alert');
+    Route::get('reports/product-expiry', [ReportController::class, 'productExpiry'])
+        ->name('reports.product-expiry');
+    Route::get('reports/warehouse-stock', [ReportController::class, 'warehouseStock'])
+        ->name('reports.warehouse-stock');
+    Route::get('reports/daily-sale', [ReportController::class, 'dailySale'])
+        ->name('reports.daily-sale');
+    Route::get('reports/monthly-sale', [ReportController::class, 'monthlySale'])
+        ->name('reports.monthly-sale');
+    Route::get('reports/daily-purchase', [ReportController::class, 'dailyPurchase'])
+        ->name('reports.daily-purchase');
+    Route::get('reports/monthly-purchase', [ReportController::class, 'monthlyPurchase'])
+        ->name('reports.monthly-purchase');
+    Route::get('reports/best-seller', [ReportController::class, 'bestSeller'])
+        ->name('reports.best-seller');
+    Route::get('reports/sale', [ReportController::class, 'saleReport'])
+        ->name('reports.sale');
+    Route::get('reports/purchase', [ReportController::class, 'purchaseReport'])
+        ->name('reports.purchase');
+    Route::get('reports/payment', [ReportController::class, 'paymentReport'])
+        ->name('reports.payment');
+    Route::get('reports/supplier-due', [ReportController::class, 'supplierDueReport'])
+        ->name('reports.supplier-due');
+    Route::get('reports/challan', [ReportController::class, 'challanReport'])
+        ->name('reports.challan');
+    Route::get('reports/product', [ReportController::class, 'productReport'])
+        ->name('reports.product');
+    Route::get('reports/customer', [ReportController::class, 'customerReport'])
+        ->name('reports.customer');
+    Route::get('reports/customer-group', [ReportController::class, 'customerGroupReport'])
+        ->name('reports.customer-group');
+    Route::get('reports/supplier', [ReportController::class, 'supplierReport'])
+        ->name('reports.supplier');
+    Route::get('reports/user', [ReportController::class, 'userReport'])
+        ->name('reports.user');
+    Route::get('reports/biller', [ReportController::class, 'billerReport'])
+        ->name('reports.biller');
+    Route::get('reports/warehouse', [ReportController::class, 'warehouseReport'])
+        ->name('reports.warehouse');
+    Route::get('reports/profit-loss', [ReportController::class, 'profitLoss'])
+        ->name('reports.profit-loss');
+    Route::get('reports/sale-chart', [ReportController::class, 'saleReportChart'])
+        ->name('reports.sale-chart');
+    Route::get('reports/daily-sale-objective', [ReportController::class, 'dailySaleObjective'])
+        ->name('reports.daily-sale-objective');
 
     Route::get('settings/general', [GeneralSettingController::class, 'show'])
         ->name('settings.general.show');
