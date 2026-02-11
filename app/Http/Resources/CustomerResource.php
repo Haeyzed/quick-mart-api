@@ -33,6 +33,7 @@ class CustomerResource extends JsonResource
             'points' => $this->points,
             'deposit' => $this->deposit,
             'deposited_balance' => round((float) $this->deposit - (float) $this->expense, 2),
+            'total_due' => $this->when(isset($this->resource->total_due), round((float) $this->resource->total_due, 2)),
             'pay_term_no' => $this->pay_term_no,
             'pay_term_period' => $this->pay_term_period,
             'expense' => $this->expense,

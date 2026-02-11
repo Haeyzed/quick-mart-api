@@ -132,7 +132,7 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Create a User for customer login (quick-mart-old: role_id 5, phone from phone_number).
+     * Create a User for customer login (phone from phone_number, role = Customer).
      *
      * @param  array<string, mixed>  $data
      */
@@ -143,13 +143,22 @@ class CustomerService extends BaseService
             throw new RuntimeException('Authenticated user required to create customer login.');
         }
 
+        $customerRoleId = \App\Models\Roles::query()
+            ->where('name', 'Customer')
+            ->where('is_active', true)
+            ->value('id');
+
+        if (! $customerRoleId) {
+            throw new RuntimeException('Customer role not found. Please ensure a role named "Customer" exists and is active.');
+        }
+
         return User::create([
             'name' => $data['name'],
             'username' => $data['username'] ?? $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'phone' => $data['phone_number'] ?? null,
-            'role_id' => 5,
+            'role_id' => $customerRoleId,
             'is_active' => true,
             'is_deleted' => false,
         ]);

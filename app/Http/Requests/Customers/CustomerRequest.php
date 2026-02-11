@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Customers;
 
+use App\Models\Supplier;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * Validates name, customer_group_id, contact and address fields, opening_balance, deposit, etc.
  * Unique phone_number scoped to active customers only.
+ * On update, ignores the current customer's linked supplier (when "both") and linked user (when "user") for uniqueness.
  * Conditional validation (from quick-mart-old):
  * - When "both" (customer + supplier): company_name and email required and unique in active suppliers; address, city required.
  * - When "user" (create login): username and email required and unique in users (not deleted); password required.
@@ -28,9 +30,21 @@ class CustomerRequest extends BaseRequest
      */
     public function rules(): array
     {
-        $customerId = $this->route('customer')?->id;
+        $customer = $this->route('customer');
+        $customerId = $customer?->id;
         $isBoth = $this->boolean('both');
         $isUser = $this->boolean('user');
+
+        $supplierIdToIgnore = null;
+        $userIdToIgnore = null;
+        if ($customer) {
+            $supplierIdToIgnore = Supplier::query()
+                ->where('email', $customer->email)
+                ->where('company_name', $customer->company_name)
+                ->where('is_active', true)
+                ->value('id');
+            $userIdToIgnore = $customer->user_id;
+        }
 
         $rules = [
             'customer_group_id' => ['required', 'integer', 'exists:customer_groups,id'],
@@ -69,11 +83,11 @@ class CustomerRequest extends BaseRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('suppliers', 'company_name')->where('is_active', true),
+                Rule::unique('suppliers', 'company_name')->ignore($supplierIdToIgnore)->where('is_active', true),
             ];
-            $emailRules = ['required', 'email', 'max:255', Rule::unique('suppliers', 'email')->where('is_active', true)];
+            $emailRules = ['required', 'email', 'max:255', Rule::unique('suppliers', 'email')->ignore($supplierIdToIgnore)->where('is_active', true)];
             if ($isUser) {
-                $emailRules[] = Rule::unique('users', 'email')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
+                $emailRules[] = Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
             }
             $rules['email'] = $emailRules;
             $rules['address'] = ['required', 'string', 'max:500'];
@@ -84,14 +98,14 @@ class CustomerRequest extends BaseRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'username')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                Rule::unique('users', 'username')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
             ];
             if (! $isBoth) {
                 $rules['email'] = [
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('users', 'email')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                    Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
                 ];
             }
             $rules['password'] = ['required', 'string', 'min:8', 'max:255'];

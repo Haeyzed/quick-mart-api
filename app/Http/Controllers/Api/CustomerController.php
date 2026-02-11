@@ -43,7 +43,12 @@ class CustomerController extends Controller
             (int) $request->input('per_page', 10)
         );
 
-        $customers->through(fn (Customer $customer) => new CustomerResource($customer));
+        $customers->through(function (Customer $customer) {
+            $summary = $this->service->getCustomerSummary($customer);
+            $customer->setAttribute('total_due', $summary['balance_due']);
+
+            return new CustomerResource($customer);
+        });
 
         return response()->success($customers, 'Customers fetched successfully');
     }
