@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Returns Model (Sale Return)
@@ -40,7 +42,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $staff_note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User $user
  * @property-read Sale $sale
  * @property-read Customer|null $customer
@@ -50,9 +51,9 @@ use Illuminate\Support\Carbon;
  * @property-read Currency|null $currency
  * @property-read Collection<int, ProductReturn> $productReturns
  */
-class Returns extends Model
+class Returns extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -198,4 +199,3 @@ class Returns extends Model
         ];
     }
 }
-

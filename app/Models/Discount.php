@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Discount Model
@@ -31,15 +33,14 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, DiscountPlan> $discountPlans
  *
  * @method static Builder|Discount active()
  * @method static Builder|Discount valid()
  */
-class Discount extends Model
+class Discount extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -73,14 +74,10 @@ class Discount extends Model
 
     /**
      * Calculate discount amount for a given price and quantity.
-     *
-     * @param float $price
-     * @param int $quantity
-     * @return float
      */
     public function calculateDiscount(float $price, int $quantity = 1): float
     {
-        if (!$this->isValid()) {
+        if (! $this->isValid()) {
             return 0;
         }
 
@@ -101,12 +98,10 @@ class Discount extends Model
 
     /**
      * Check if the discount is currently valid.
-     *
-     * @return bool
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -125,9 +120,6 @@ class Discount extends Model
 
     /**
      * Scope a query to only include active discounts.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -136,9 +128,6 @@ class Discount extends Model
 
     /**
      * Scope a query to only include valid discounts.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeValid(Builder $query): Builder
     {
@@ -173,7 +162,6 @@ class Discount extends Model
     /**
      * Get the product list as an array.
      *
-     * @param string|null $value
      * @return array<int>|null
      */
     protected function getProductListAttribute(?string $value): ?array
@@ -188,14 +176,13 @@ class Discount extends Model
     /**
      * Set the product list from an array or string.
      *
-     * @param array<int>|string|null $value
-     * @return void
+     * @param  array<int>|string|null  $value
      */
     protected function setProductListAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['product_list'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && !empty($value)) {
+        } elseif (is_string($value) && ! empty($value)) {
             $this->attributes['product_list'] = $value;
         } else {
             $this->attributes['product_list'] = null;
@@ -205,7 +192,6 @@ class Discount extends Model
     /**
      * Get the days as an array.
      *
-     * @param string|null $value
      * @return array<string>|null
      */
     protected function getDaysAttribute(?string $value): ?array
@@ -220,18 +206,16 @@ class Discount extends Model
     /**
      * Set the days from an array or string.
      *
-     * @param array<string>|string|null $value
-     * @return void
+     * @param  array<string>|string|null  $value
      */
     protected function setDaysAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['days'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && !empty($value)) {
+        } elseif (is_string($value) && ! empty($value)) {
             $this->attributes['days'] = $value;
         } else {
             $this->attributes['days'] = null;
         }
     }
 }
-

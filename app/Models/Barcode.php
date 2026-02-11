@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Barcode Model
@@ -23,9 +25,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|Barcode default()
  */
-class Barcode extends Model
+class Barcode extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that aren't mass assignable.
@@ -36,9 +38,6 @@ class Barcode extends Model
 
     /**
      * Scope a query to only include default barcode.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefault(Builder $query): Builder
     {
@@ -57,4 +56,3 @@ class Barcode extends Model
         ];
     }
 }
-

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Deposit Model
@@ -21,13 +23,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Customer $customer
  * @property-read User $user
  */
-class Deposit extends Model
+class Deposit extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -75,4 +76,3 @@ class Deposit extends Model
         ];
     }
 }
-

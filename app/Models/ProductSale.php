@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductSale Model (Pivot)
@@ -34,7 +36,6 @@ use Illuminate\Support\Carbon;
  * @property int|null $topping_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Sale $sale
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
@@ -43,9 +44,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|ProductSale delivered()
  * @method static Builder|ProductSale notDelivered()
  */
-class ProductSale extends Model
+class ProductSale extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -120,8 +121,6 @@ class ProductSale extends Model
 
     /**
      * Calculate the net quantity (qty - return_qty).
-     *
-     * @return float
      */
     public function getNetQty(): float
     {
@@ -130,9 +129,6 @@ class ProductSale extends Model
 
     /**
      * Scope a query to only include delivered items.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDelivered(Builder $query): Builder
     {
@@ -141,9 +137,6 @@ class ProductSale extends Model
 
     /**
      * Scope a query to only include not delivered items.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeNotDelivered(Builder $query): Builder
     {
@@ -176,4 +169,3 @@ class ProductSale extends Model
         ];
     }
 }
-

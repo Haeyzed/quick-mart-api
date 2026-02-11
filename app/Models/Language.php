@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Language Model
@@ -24,14 +26,13 @@ use Illuminate\Support\Facades\Cache;
  * @property bool $is_default
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Translation> $translations
  *
  * @method static Builder|Language default()
  */
-class Language extends Model
+class Language extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -46,8 +47,6 @@ class Language extends Model
 
     /**
      * Get the default language (cached).
-     *
-     * @return self|null
      */
     public static function getDefaultLanguage(): ?self
     {
@@ -58,8 +57,6 @@ class Language extends Model
 
     /**
      * Forget cached language data.
-     *
-     * @return void
      */
     public static function forgetCachedLanguage(): void
     {
@@ -69,9 +66,6 @@ class Language extends Model
 
     /**
      * Set the default language and update cache.
-     *
-     * @param int $id
-     * @return self
      */
     public static function setDefaultLanguage(int $id): self
     {
@@ -106,9 +100,6 @@ class Language extends Model
 
     /**
      * Scope a query to only include default language.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefault(Builder $query): Builder
     {
@@ -127,4 +118,3 @@ class Language extends Model
         ];
     }
 }
-

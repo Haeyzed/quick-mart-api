@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Overtime Model
@@ -24,15 +26,14 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Employee $employee
  *
  * @method static Builder|Overtime paid()
  * @method static Builder|Overtime pending()
  */
-class Overtime extends Model
+class Overtime extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -57,8 +58,6 @@ class Overtime extends Model
 
     /**
      * Boot the model.
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -81,9 +80,6 @@ class Overtime extends Model
 
     /**
      * Scope a query to only include paid overtimes.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePaid(Builder $query): Builder
     {
@@ -92,9 +88,6 @@ class Overtime extends Model
 
     /**
      * Scope a query to only include pending overtimes.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -117,4 +110,3 @@ class Overtime extends Model
         ];
     }
 }
-

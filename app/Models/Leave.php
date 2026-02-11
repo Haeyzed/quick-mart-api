@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Leave Model
@@ -25,7 +27,6 @@ use Illuminate\Support\Carbon;
  * @property int|null $approver_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Employee $employee
  * @property-read LeaveType $leaveType
  * @property-read User|null $approver
@@ -34,9 +35,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Leave approved()
  * @method static Builder|Leave rejected()
  */
-class Leave extends Model
+class Leave extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -92,9 +93,6 @@ class Leave extends Model
 
     /**
      * Scope a query to only include pending leaves.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -103,9 +101,6 @@ class Leave extends Model
 
     /**
      * Scope a query to only include approved leaves.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeApproved(Builder $query): Builder
     {
@@ -114,9 +109,6 @@ class Leave extends Model
 
     /**
      * Scope a query to only include rejected leaves.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeRejected(Builder $query): Builder
     {
@@ -140,4 +132,3 @@ class Leave extends Model
         ];
     }
 }
-

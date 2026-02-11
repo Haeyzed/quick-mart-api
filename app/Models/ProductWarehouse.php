@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductWarehouse Model (Pivot)
@@ -25,7 +27,6 @@ use Illuminate\Support\Carbon;
  * @property float|null $price
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Product $product
  * @property-read Warehouse $warehouse
  * @property-read ProductBatch|null $batch
@@ -34,9 +35,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|ProductWarehouse findProductWithVariant(int $productId, int $variantId, int $warehouseId)
  * @method static Builder|ProductWarehouse findProductWithoutVariant(int $productId, int $warehouseId)
  */
-class ProductWarehouse extends Model
+class ProductWarehouse extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -102,12 +103,6 @@ class ProductWarehouse extends Model
 
     /**
      * Scope a query to find a product with variant in a specific warehouse.
-     *
-     * @param Builder $query
-     * @param int $productId
-     * @param int $variantId
-     * @param int $warehouseId
-     * @return Builder
      */
     public function scopeFindProductWithVariant(Builder $query, int $productId, int $variantId, int $warehouseId): Builder
     {
@@ -118,11 +113,6 @@ class ProductWarehouse extends Model
 
     /**
      * Scope a query to find a product without variant in a specific warehouse.
-     *
-     * @param Builder $query
-     * @param int $productId
-     * @param int $warehouseId
-     * @return Builder
      */
     public function scopeFindProductWithoutVariant(Builder $query, int $productId, int $warehouseId): Builder
     {
@@ -148,4 +138,3 @@ class ProductWarehouse extends Model
         ];
     }
 }
-

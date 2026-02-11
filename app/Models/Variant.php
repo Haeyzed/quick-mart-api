@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Variant Model
@@ -21,14 +23,13 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Product> $products
  *
  * @method static Builder|Variant byName(string $name)
  */
-class Variant extends Model
+class Variant extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -53,14 +54,9 @@ class Variant extends Model
 
     /**
      * Scope a query to filter by variant name.
-     *
-     * @param Builder $query
-     * @param string $name
-     * @return Builder
      */
     public function scopeByName(Builder $query, string $name): Builder
     {
         return $query->where('name', $name);
     }
 }
-

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * InvoiceSetting Model
@@ -54,16 +56,15 @@ use Illuminate\Support\Carbon;
  * @property int|null $updated_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User|null $creator
  * @property-read User|null $updater
  *
  * @method static Builder|InvoiceSetting active()
  * @method static Builder|InvoiceSetting default()
  */
-class InvoiceSetting extends Model
+class InvoiceSetting extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -118,8 +119,6 @@ class InvoiceSetting extends Model
 
     /**
      * Get the active invoice setting.
-     *
-     * @return self|null
      */
     public static function activeSetting(): ?self
     {
@@ -133,8 +132,6 @@ class InvoiceSetting extends Model
 
     /**
      * Boot the model.
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -175,9 +172,6 @@ class InvoiceSetting extends Model
 
     /**
      * Scope a query to only include active invoice settings.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -186,9 +180,6 @@ class InvoiceSetting extends Model
 
     /**
      * Scope a query to only include default invoice setting.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefault(Builder $query): Builder
     {
@@ -224,4 +215,3 @@ class InvoiceSetting extends Model
         ];
     }
 }
-

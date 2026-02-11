@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Sale Model
@@ -76,7 +78,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @property-read User $user
  * @property-read Customer|null $customer
  * @property-read Warehouse $warehouse
@@ -98,9 +99,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Sale paid()
  * @method static Builder|Sale unpaid()
  */
-class Sale extends Model
+class Sale extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
     use SoftDeletes;
 
     /**
@@ -316,8 +317,6 @@ class Sale extends Model
 
     /**
      * Calculate the remaining amount to be paid.
-     *
-     * @return float
      */
     public function getRemainingAmount(): float
     {
@@ -326,8 +325,6 @@ class Sale extends Model
 
     /**
      * Check if the sale is fully paid.
-     *
-     * @return bool
      */
     public function isFullyPaid(): bool
     {
@@ -336,8 +333,6 @@ class Sale extends Model
 
     /**
      * Check if the sale is completed.
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -346,9 +341,6 @@ class Sale extends Model
 
     /**
      * Scope a query to only include completed sales.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeCompleted(Builder $query): Builder
     {
@@ -357,9 +349,6 @@ class Sale extends Model
 
     /**
      * Scope a query to only include pending sales.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -368,9 +357,6 @@ class Sale extends Model
 
     /**
      * Scope a query to only include paid sales.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePaid(Builder $query): Builder
     {
@@ -379,9 +365,6 @@ class Sale extends Model
 
     /**
      * Scope a query to only include unpaid sales.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeUnpaid(Builder $query): Builder
     {
@@ -426,4 +409,3 @@ class Sale extends Model
         ];
     }
 }
-

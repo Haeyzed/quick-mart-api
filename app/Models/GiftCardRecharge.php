@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * GiftCardRecharge Model
@@ -20,13 +22,12 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read GiftCard $giftCard
  * @property-read User $user
  */
-class GiftCardRecharge extends Model
+class GiftCardRecharge extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -80,4 +81,3 @@ class GiftCardRecharge extends Model
         ];
     }
 }
-

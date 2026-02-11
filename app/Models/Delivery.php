@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Delivery Model
@@ -29,7 +31,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Sale $sale
  * @property-read User $user
  * @property-read Courier|null $courier
@@ -38,9 +39,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Delivery delivered()
  * @method static Builder|Delivery cancelled()
  */
-class Delivery extends Model
+class Delivery extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -93,8 +94,6 @@ class Delivery extends Model
 
     /**
      * Check if the delivery is pending.
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -103,8 +102,6 @@ class Delivery extends Model
 
     /**
      * Check if the delivery is delivered.
-     *
-     * @return bool
      */
     public function isDelivered(): bool
     {
@@ -113,9 +110,6 @@ class Delivery extends Model
 
     /**
      * Scope a query to only include pending deliveries.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -124,9 +118,6 @@ class Delivery extends Model
 
     /**
      * Scope a query to only include delivered deliveries.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDelivered(Builder $query): Builder
     {
@@ -135,9 +126,6 @@ class Delivery extends Model
 
     /**
      * Scope a query to only include cancelled deliveries.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeCancelled(Builder $query): Builder
     {
@@ -158,4 +146,3 @@ class Delivery extends Model
         ];
     }
 }
-

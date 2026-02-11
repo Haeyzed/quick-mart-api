@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Payroll Model
@@ -28,7 +30,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $month
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Employee $employee
  * @property-read Account|null $account
  * @property-read User $user
@@ -36,9 +37,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Payroll paid()
  * @method static Builder|Payroll pending()
  */
-class Payroll extends Model
+class Payroll extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -91,9 +92,6 @@ class Payroll extends Model
 
     /**
      * Scope a query to only include paid payrolls.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePaid(Builder $query): Builder
     {
@@ -102,9 +100,6 @@ class Payroll extends Model
 
     /**
      * Scope a query to only include pending payrolls.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -128,4 +123,3 @@ class Payroll extends Model
         ];
     }
 }
-

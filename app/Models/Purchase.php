@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Purchase Model
@@ -47,7 +49,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @property-read User $user
  * @property-read Supplier $supplier
  * @property-read Warehouse $warehouse
@@ -64,9 +65,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Purchase paid()
  * @method static Builder|Purchase unpaid()
  */
-class Purchase extends Model
+class Purchase extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
     use SoftDeletes;
 
     /**
@@ -204,8 +205,6 @@ class Purchase extends Model
 
     /**
      * Calculate the remaining amount to be paid.
-     *
-     * @return float
      */
     public function getRemainingAmount(): float
     {
@@ -214,8 +213,6 @@ class Purchase extends Model
 
     /**
      * Check if the purchase is fully paid.
-     *
-     * @return bool
      */
     public function isFullyPaid(): bool
     {
@@ -224,8 +221,6 @@ class Purchase extends Model
 
     /**
      * Check if the purchase is completed.
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -234,9 +229,6 @@ class Purchase extends Model
 
     /**
      * Scope a query to only include completed purchases.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeCompleted(Builder $query): Builder
     {
@@ -245,9 +237,6 @@ class Purchase extends Model
 
     /**
      * Scope a query to only include pending purchases.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -256,9 +245,6 @@ class Purchase extends Model
 
     /**
      * Scope a query to only include paid purchases.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePaid(Builder $query): Builder
     {
@@ -267,9 +253,6 @@ class Purchase extends Model
 
     /**
      * Scope a query to only include unpaid purchases.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeUnpaid(Builder $query): Builder
     {
@@ -304,4 +287,3 @@ class Purchase extends Model
         ];
     }
 }
-

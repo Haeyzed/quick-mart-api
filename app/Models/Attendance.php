@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Attendance Model
@@ -25,7 +27,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Employee $employee
  * @property-read User $user
  *
@@ -33,9 +34,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Attendance absent()
  * @method static Builder|Attendance late()
  */
-class Attendance extends Model
+class Attendance extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -74,9 +75,6 @@ class Attendance extends Model
 
     /**
      * Scope a query to only include present attendances.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePresent(Builder $query): Builder
     {
@@ -85,9 +83,6 @@ class Attendance extends Model
 
     /**
      * Scope a query to only include absent attendances.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeAbsent(Builder $query): Builder
     {
@@ -96,9 +91,6 @@ class Attendance extends Model
 
     /**
      * Scope a query to only include late attendances.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeLate(Builder $query): Builder
     {
@@ -119,4 +111,3 @@ class Attendance extends Model
         ];
     }
 }
-

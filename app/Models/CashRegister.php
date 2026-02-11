@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * CashRegister Model
@@ -24,7 +26,6 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User $user
  * @property-read Warehouse $warehouse
  * @property-read Collection<int, Sale> $sales
@@ -33,9 +34,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|CashRegister open()
  * @method static Builder|CashRegister closed()
  */
-class CashRegister extends Model
+class CashRegister extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -91,8 +92,6 @@ class CashRegister extends Model
 
     /**
      * Check if the cash register is open.
-     *
-     * @return bool
      */
     public function isOpen(): bool
     {
@@ -101,8 +100,6 @@ class CashRegister extends Model
 
     /**
      * Check if the cash register is closed.
-     *
-     * @return bool
      */
     public function isClosed(): bool
     {
@@ -111,9 +108,6 @@ class CashRegister extends Model
 
     /**
      * Scope a query to only include open cash registers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeOpen(Builder $query): Builder
     {
@@ -122,9 +116,6 @@ class CashRegister extends Model
 
     /**
      * Scope a query to only include closed cash registers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeClosed(Builder $query): Builder
     {
@@ -145,4 +136,3 @@ class CashRegister extends Model
         ];
     }
 }
-

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * IncomeCategory Model
@@ -23,14 +25,13 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Income> $incomes
  *
  * @method static Builder|IncomeCategory active()
  */
-class IncomeCategory extends Model
+class IncomeCategory extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -51,7 +52,7 @@ class IncomeCategory extends Model
     public static function generateCode(): string
     {
         do {
-            $code = str_pad((string)random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $code = str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
         } while (self::where('code', $code)->where('is_active', true)->exists());
 
         return $code;
@@ -69,9 +70,6 @@ class IncomeCategory extends Model
 
     /**
      * Scope a query to only include active income categories.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -90,4 +88,3 @@ class IncomeCategory extends Model
         ];
     }
 }
-

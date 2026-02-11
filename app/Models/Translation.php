@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Translation Model
@@ -22,12 +24,11 @@ use Illuminate\Support\Facades\Cache;
  * @property string $value
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Language $language
  */
-class Translation extends Model
+class Translation extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -44,7 +45,6 @@ class Translation extends Model
     /**
      * Get translations by locale (cached).
      *
-     * @param string $locale
      * @return array<string, string>
      */
     public static function getTranslationsByLocale(string $locale): array
@@ -53,7 +53,7 @@ class Translation extends Model
             return self::where('locale', $locale)
                 ->get()
                 ->mapWithKeys(function ($item) {
-                    return [$item->group . '.' . $item->key => $item->value];
+                    return [$item->group.'.'.$item->key => $item->value];
                 })
                 ->toArray();
         });
@@ -61,8 +61,6 @@ class Translation extends Model
 
     /**
      * Forget cached translations.
-     *
-     * @return void
      */
     public static function forgetCachedTranslations(): void
     {
@@ -80,4 +78,3 @@ class Translation extends Model
         return $this->belongsTo(Language::class, 'locale', 'language');
     }
 }
-

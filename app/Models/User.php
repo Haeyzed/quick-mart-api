@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection as SupportCollection;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use Laravel\Sanctum\HasApiTokens;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -43,7 +45,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Biller|null $biller
  * @property-read Warehouse|null $warehouse
  * @property-read Collection<int, Holiday> $holidays
@@ -54,9 +55,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static Builder|User active()
  * @method static Builder|User notDeleted()
  */
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements AuditableContract, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
+    use Auditable;
+
     use HasApiTokens;
     use HasFactory;
     use HasRoles;
@@ -157,8 +160,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if the user is active.
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
@@ -167,8 +168,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if the user is deleted.
-     *
-     * @return bool
      */
     public function isDeleted(): bool
     {
@@ -177,9 +176,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Scope a query to only include active users.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -188,9 +184,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Scope a query to only include non-deleted users.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeNotDeleted(Builder $query): Builder
     {
@@ -201,8 +194,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * Check if the user has a specific permission.
      * This is a convenience wrapper around Spatie's hasPermissionTo method.
      *
-     * @param string $permission Permission name
-     * @return bool
+     * @param  string  $permission  Permission name
      */
     public function canPerform(string $permission): bool
     {
@@ -212,8 +204,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Check if the user has any of the given permissions.
      *
-     * @param array<string> $permissions Array of permission names
-     * @return bool
+     * @param  array<string>  $permissions  Array of permission names
      */
     public function canPerformAny(array $permissions): bool
     {
@@ -223,8 +214,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Check if the user has all of the given permissions.
      *
-     * @param array<string> $permissions Array of permission names
-     * @return bool
+     * @param  array<string>  $permissions  Array of permission names
      */
     public function canPerformAll(array $permissions): bool
     {

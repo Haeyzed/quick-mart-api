@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Challan Model
@@ -31,7 +33,6 @@ use Illuminate\Support\Carbon;
  * @property int|null $closed_by_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Courier|null $courier
  * @property-read User|null $createdBy
  * @property-read User|null $closedBy
@@ -39,9 +40,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Challan open()
  * @method static Builder|Challan closed()
  */
-class Challan extends Model
+class Challan extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -97,9 +98,6 @@ class Challan extends Model
 
     /**
      * Scope a query to only include open challans.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeOpen(Builder $query): Builder
     {
@@ -108,9 +106,6 @@ class Challan extends Model
 
     /**
      * Scope a query to only include closed challans.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeClosed(Builder $query): Builder
     {
@@ -133,4 +128,3 @@ class Challan extends Model
         ];
     }
 }
-

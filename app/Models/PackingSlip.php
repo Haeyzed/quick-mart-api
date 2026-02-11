@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PackingSlip Model
@@ -26,7 +28,6 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Sale $sale
  * @property-read Delivery|null $delivery
  * @property-read Collection<int, Product> $products
@@ -35,9 +36,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|PackingSlip pending()
  * @method static Builder|PackingSlip completed()
  */
-class PackingSlip extends Model
+class PackingSlip extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -96,9 +97,6 @@ class PackingSlip extends Model
 
     /**
      * Scope a query to only include pending packing slips.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -107,9 +105,6 @@ class PackingSlip extends Model
 
     /**
      * Scope a query to only include completed packing slips.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeCompleted(Builder $query): Builder
     {
@@ -130,4 +125,3 @@ class PackingSlip extends Model
         ];
     }
 }
-

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PaymentWithCreditCard Model
@@ -22,13 +24,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $data
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Payment $payment
  * @property-read Customer|null $customer
  */
-class PaymentWithCreditCard extends Model
+class PaymentWithCreditCard extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -83,4 +84,3 @@ class PaymentWithCreditCard extends Model
         ];
     }
 }
-

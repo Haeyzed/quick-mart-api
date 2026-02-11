@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Quotation Model
@@ -39,7 +41,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User $user
  * @property-read Biller $biller
  * @property-read Supplier|null $supplier
@@ -51,9 +52,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Quotation accepted()
  * @method static Builder|Quotation rejected()
  */
-class Quotation extends Model
+class Quotation extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -145,7 +146,7 @@ class Quotation extends Model
     /**
      * Scope a query to only include pending quotations.
      *
-     * @param Builder $query
+     * @param  Builder  $query
      * @return Builder
      */
     public function scopePending($query)
@@ -155,9 +156,6 @@ class Quotation extends Model
 
     /**
      * Scope a query to only include accepted quotations.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeAccepted(Builder $query): Builder
     {
@@ -166,9 +164,6 @@ class Quotation extends Model
 
     /**
      * Scope a query to only include rejected quotations.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeRejected(Builder $query): Builder
     {
@@ -201,4 +196,3 @@ class Quotation extends Model
         ];
     }
 }
-

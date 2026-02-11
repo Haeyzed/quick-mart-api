@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * SmsTemplate Model
@@ -25,9 +27,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|SmsTemplate default()
  * @method static Builder|SmsTemplate defaultEcommerce()
  */
-class SmsTemplate extends Model
+class SmsTemplate extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -43,9 +45,6 @@ class SmsTemplate extends Model
 
     /**
      * Scope a query to only include default SMS templates.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefault(Builder $query): Builder
     {
@@ -54,9 +53,6 @@ class SmsTemplate extends Model
 
     /**
      * Scope a query to only include default ecommerce SMS templates.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefaultEcommerce(Builder $query): Builder
     {
@@ -76,4 +72,3 @@ class SmsTemplate extends Model
         ];
     }
 }
-

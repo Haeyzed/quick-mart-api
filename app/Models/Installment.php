@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Installment Model
@@ -22,16 +24,15 @@ use Illuminate\Support\Carbon;
  * @property float $amount
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read InstallmentPlan $plan
  *
  * @method static Builder|Installment paid()
  * @method static Builder|Installment pending()
  * @method static Builder|Installment overdue()
  */
-class Installment extends Model
+class Installment extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -57,8 +58,6 @@ class Installment extends Model
 
     /**
      * Check if the installment is paid.
-     *
-     * @return bool
      */
     public function isPaid(): bool
     {
@@ -67,8 +66,6 @@ class Installment extends Model
 
     /**
      * Check if the installment is overdue.
-     *
-     * @return bool
      */
     public function isOverdue(): bool
     {
@@ -77,9 +74,6 @@ class Installment extends Model
 
     /**
      * Scope a query to only include paid installments.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePaid(Builder $query): Builder
     {
@@ -88,9 +82,6 @@ class Installment extends Model
 
     /**
      * Scope a query to only include pending installments.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -99,9 +90,6 @@ class Installment extends Model
 
     /**
      * Scope a query to only include overdue installments.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeOverdue(Builder $query): Builder
     {
@@ -123,4 +111,3 @@ class Installment extends Model
         ];
     }
 }
-

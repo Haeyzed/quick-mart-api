@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ExpenseCategory Model
@@ -23,14 +25,13 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Expense> $expenses
  *
  * @method static Builder|ExpenseCategory active()
  */
-class ExpenseCategory extends Model
+class ExpenseCategory extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -55,9 +56,6 @@ class ExpenseCategory extends Model
 
     /**
      * Scope a query to only include active expense categories.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -76,4 +74,3 @@ class ExpenseCategory extends Model
         ];
     }
 }
-

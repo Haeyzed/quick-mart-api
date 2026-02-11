@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Printer Model
@@ -27,14 +29,13 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Warehouse $warehouse
  *
  * @method static Builder|Printer active()
  */
-class Printer extends Model
+class Printer extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that aren't mass assignable.
@@ -55,8 +56,6 @@ class Printer extends Model
 
     /**
      * Get the capability profile string representation.
-     *
-     * @return string
      */
     public function getCapabilityProfileStrAttribute(): string
     {
@@ -85,8 +84,6 @@ class Printer extends Model
 
     /**
      * Get the connection type string representation.
-     *
-     * @return string
      */
     public function getConnectionTypeStrAttribute(): string
     {
@@ -111,9 +108,6 @@ class Printer extends Model
 
     /**
      * Scope a query to only include active printers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -133,4 +127,3 @@ class Printer extends Model
         ];
     }
 }
-

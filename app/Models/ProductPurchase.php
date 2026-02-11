@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductPurchase Model (Pivot)
@@ -35,7 +37,6 @@ use Illuminate\Support\Carbon;
  * @property float $total
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Purchase $purchase
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
@@ -43,9 +44,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|ProductPurchase received()
  */
-class ProductPurchase extends Model
+class ProductPurchase extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -121,8 +122,6 @@ class ProductPurchase extends Model
 
     /**
      * Calculate the net quantity (qty - return_qty).
-     *
-     * @return float
      */
     public function getNetQty(): float
     {
@@ -131,8 +130,6 @@ class ProductPurchase extends Model
 
     /**
      * Check if the item is fully received.
-     *
-     * @return bool
      */
     public function isFullyReceived(): bool
     {
@@ -141,9 +138,6 @@ class ProductPurchase extends Model
 
     /**
      * Scope a query to only include received items.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeReceived(Builder $query): Builder
     {
@@ -176,4 +170,3 @@ class ProductPurchase extends Model
         ];
     }
 }
-

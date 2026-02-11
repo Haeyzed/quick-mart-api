@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * InstallmentPlan Model
@@ -27,13 +29,12 @@ use Illuminate\Support\Carbon;
  * @property int $months
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Model $reference
  * @property-read Collection<int, Installment> $installments
  */
-class InstallmentPlan extends Model
+class InstallmentPlan extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -73,8 +74,6 @@ class InstallmentPlan extends Model
 
     /**
      * Calculate the monthly installment amount.
-     *
-     * @return float
      */
     public function getMonthlyAmount(): float
     {
@@ -102,4 +101,3 @@ class InstallmentPlan extends Model
         ];
     }
 }
-

@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Product Model
@@ -88,7 +90,6 @@ use Illuminate\Support\Str;
  * @property bool|null $is_recipe
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- *
  * @property-read Category $category
  * @property-read Brand|null $brand
  * @property-read Tax|null $tax
@@ -109,9 +110,9 @@ use Illuminate\Support\Str;
  * @method static Builder|Product featured()
  * @method static Builder|Product online()
  */
-class Product extends Model
+class Product extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -327,24 +328,20 @@ class Product extends Model
 
     /**
      * Get the effective price (promotion price if on promotion, otherwise regular price).
-     *
-     * @return float
      */
     public function getEffectivePrice(): float
     {
         return $this->isOnPromotion() && $this->promotion_price
-            ? (float)$this->promotion_price
+            ? (float) $this->promotion_price
             : $this->price;
     }
 
     /**
      * Check if the product is on promotion.
-     *
-     * @return bool
      */
     public function isOnPromotion(): bool
     {
-        if (!$this->promotion) {
+        if (! $this->promotion) {
             return false;
         }
 
@@ -365,12 +362,10 @@ class Product extends Model
 
     /**
      * Check if product quantity is below alert threshold.
-     *
-     * @return bool
      */
     public function isLowStock(): bool
     {
-        if (!$this->alert_quantity || !$this->track_inventory) {
+        if (! $this->alert_quantity || ! $this->track_inventory) {
             return false;
         }
 
@@ -379,9 +374,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include active products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -390,9 +382,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include active standard products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActiveStandard(Builder $query): Builder
     {
@@ -402,9 +391,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include active featured products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActiveFeatured(Builder $query): Builder
     {
@@ -414,9 +400,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include featured products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeFeatured(Builder $query): Builder
     {
@@ -425,9 +408,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include online products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeOnline(Builder $query): Builder
     {
@@ -491,8 +471,6 @@ class Product extends Model
 
     /**
      * Boot the model and set up event listeners for slug generation.
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -505,8 +483,6 @@ class Product extends Model
 
     /**
      * Generate and normalize slug if ecommerce/restaurant module is enabled and slug is missing.
-     *
-     * @return void
      */
     protected function generateSlugIfNeeded(): void
     {
@@ -516,12 +492,12 @@ class Product extends Model
         $hasEcommerce = in_array('ecommerce', $modules);
         $hasRestaurant = in_array('restaurant', $modules);
 
-        if (!$hasEcommerce && !$hasRestaurant) {
+        if (! $hasEcommerce && ! $hasRestaurant) {
             return;
         }
 
         // Generate slug if name exists and slug is missing
-        if ($this->name && !$this->slug) {
+        if ($this->name && ! $this->slug) {
             $this->slug = Str::slug($this->name, '-');
         }
 
@@ -532,4 +508,3 @@ class Product extends Model
         }
     }
 }
-

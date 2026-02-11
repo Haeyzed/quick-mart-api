@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * WhatsappSetting Model
@@ -22,9 +24,9 @@ use Illuminate\Support\Facades\Http;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-class WhatsappSetting extends Model
+class WhatsappSetting extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -39,17 +41,14 @@ class WhatsappSetting extends Model
 
     /**
      * Base URL for Facebook Graph API.
-     *
-     * @var string
      */
     private string $baseUrl = 'https://graph.facebook.com/v22.0';
 
     /**
      * Send WhatsApp message to multiple phone numbers.
      *
-     * @param array<int, string> $phoneNumbers
-     * @param string $type
-     * @param array<string, mixed>|string $messageContent
+     * @param  array<int, string>  $phoneNumbers
+     * @param  array<string, mixed>|string  $messageContent
      * @return array<string, mixed>
      */
     public function sendMessage(array $phoneNumbers, string $type, array|string $messageContent): array
@@ -89,7 +88,7 @@ class WhatsappSetting extends Model
                         'messaging_product' => 'whatsapp',
                     ]);
 
-                if (!$uploadResponse->successful()) {
+                if (! $uploadResponse->successful()) {
                     return [
                         'success' => false,
                         'message' => 'Failed to upload media to WhatsApp',
@@ -98,7 +97,7 @@ class WhatsappSetting extends Model
                 }
 
                 $mediaId = $uploadResponse->json('id');
-                if (!$mediaId) {
+                if (! $mediaId) {
                     return [
                         'success' => false,
                         'message' => 'Media ID not returned from WhatsApp',
@@ -112,7 +111,7 @@ class WhatsappSetting extends Model
                     $payload[$type]['filename'] = $originalName;
                 }
 
-                if (!empty($messageContent['caption'])) {
+                if (! empty($messageContent['caption'])) {
                     $payload[$type]['caption'] = $messageContent['caption'];
                 }
             }
@@ -137,7 +136,7 @@ class WhatsappSetting extends Model
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Exception: ' . $e->getMessage(),
+                'message' => 'Exception: '.$e->getMessage(),
             ];
         }
     }
@@ -164,7 +163,6 @@ class WhatsappSetting extends Model
     /**
      * Delete template from Facebook.
      *
-     * @param string $name
      * @return array<string, mixed>
      */
     public function deleteTemplate(string $name): array
@@ -185,4 +183,3 @@ class WhatsappSetting extends Model
         ];
     }
 }
-

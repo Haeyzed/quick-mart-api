@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * DiscountPlan Model
@@ -23,15 +25,14 @@ use Illuminate\Support\Carbon;
  * @property string $type
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Customer> $customers
  * @property-read Collection<int, Discount> $discounts
  *
  * @method static Builder|DiscountPlan active()
  */
-class DiscountPlan extends Model
+class DiscountPlan extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -68,9 +69,6 @@ class DiscountPlan extends Model
 
     /**
      * Scope a query to only include active discount plans.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -89,4 +87,3 @@ class DiscountPlan extends Model
         ];
     }
 }
-

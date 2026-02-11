@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Currency Model
@@ -25,16 +27,15 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Sale> $sales
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, Payment> $payments
  *
  * @method static Builder|Currency active()
  */
-class Currency extends Model
+class Currency extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -81,9 +82,6 @@ class Currency extends Model
 
     /**
      * Convert an amount from this currency to base currency.
-     *
-     * @param float $amount
-     * @return float
      */
     public function convertToBase(float $amount): float
     {
@@ -92,9 +90,6 @@ class Currency extends Model
 
     /**
      * Convert an amount from base currency to this currency.
-     *
-     * @param float $amount
-     * @return float
      */
     public function convertFromBase(float $amount): float
     {
@@ -103,9 +98,6 @@ class Currency extends Model
 
     /**
      * Scope a query to only include active currencies.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -125,4 +117,3 @@ class Currency extends Model
         ];
     }
 }
-

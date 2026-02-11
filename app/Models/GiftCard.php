@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * GiftCard Model
@@ -29,7 +31,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Customer|null $customer
  * @property-read User|null $user
  * @property-read User|null $creator
@@ -39,9 +40,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|GiftCard expired()
  * @method static Builder|GiftCard notExpired()
  */
-class GiftCard extends Model
+class GiftCard extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -61,13 +62,11 @@ class GiftCard extends Model
 
     /**
      * Generate a unique 16-digit numeric gift card code.
-     *
-     * @return string
      */
     public static function generateCode(): string
     {
         do {
-            $code = str_pad((string)random_int(0, 9999999999999999), 16, '0', STR_PAD_LEFT);
+            $code = str_pad((string) random_int(0, 9999999999999999), 16, '0', STR_PAD_LEFT);
         } while (self::where('card_no', $code)->where('is_active', true)->exists());
 
         return $code;
@@ -115,8 +114,6 @@ class GiftCard extends Model
 
     /**
      * Check if the gift card is expired.
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -125,8 +122,6 @@ class GiftCard extends Model
 
     /**
      * Check if the gift card has balance.
-     *
-     * @return bool
      */
     public function hasBalance(): bool
     {
@@ -135,8 +130,6 @@ class GiftCard extends Model
 
     /**
      * Get the remaining balance on this gift card.
-     *
-     * @return float
      */
     public function getRemainingBalance(): float
     {
@@ -146,7 +139,7 @@ class GiftCard extends Model
     /**
      * Scope a query to only include active gift cards.
      *
-     * @param Builder $query
+     * @param  Builder  $query
      * @return Builder
      */
     public function scopeActive($query)
@@ -156,9 +149,6 @@ class GiftCard extends Model
 
     /**
      * Scope a query to only include expired gift cards.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeExpired(Builder $query): Builder
     {
@@ -167,9 +157,6 @@ class GiftCard extends Model
 
     /**
      * Scope a query to only include non-expired gift cards.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeNotExpired(Builder $query): Builder
     {
@@ -197,4 +184,3 @@ class GiftCard extends Model
         ];
     }
 }
-

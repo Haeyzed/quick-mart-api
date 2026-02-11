@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Holiday Model
@@ -26,15 +28,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $region
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User $user
  *
  * @method static Builder|Holiday approved()
  * @method static Builder|Holiday pending()
  */
-class Holiday extends Model
+class Holiday extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -63,9 +64,6 @@ class Holiday extends Model
 
     /**
      * Scope a query to only include approved holidays.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeApproved(Builder $query): Builder
     {
@@ -74,9 +72,6 @@ class Holiday extends Model
 
     /**
      * Scope a query to only include pending holidays.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -99,4 +94,3 @@ class Holiday extends Model
         ];
     }
 }
-

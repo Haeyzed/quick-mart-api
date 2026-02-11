@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Payment Model
@@ -37,7 +39,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $payment_note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Purchase|null $purchase
  * @property-read Sale|null $sale
  * @property-read User $user
@@ -52,9 +53,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|Payment byMethod(string $method)
  */
-class Payment extends Model
+class Payment extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -194,10 +195,6 @@ class Payment extends Model
 
     /**
      * Scope a query to filter by payment method.
-     *
-     * @param Builder $query
-     * @param string $method
-     * @return Builder
      */
     public function scopeByMethod(Builder $query, string $method): Builder
     {
@@ -227,4 +224,3 @@ class Payment extends Model
         ];
     }
 }
-

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Coupon Model
@@ -30,7 +32,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User|null $user
  * @property-read Collection<int, Sale> $sales
  *
@@ -38,9 +39,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Coupon valid()
  * @method static Builder|Coupon expired()
  */
-class Coupon extends Model
+class Coupon extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -82,12 +83,10 @@ class Coupon extends Model
 
     /**
      * Check if the coupon is valid.
-     *
-     * @return bool
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -104,8 +103,6 @@ class Coupon extends Model
 
     /**
      * Check if the coupon is expired.
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -114,8 +111,6 @@ class Coupon extends Model
 
     /**
      * Check if the coupon is fully used.
-     *
-     * @return bool
      */
     public function isFullyUsed(): bool
     {
@@ -124,9 +119,6 @@ class Coupon extends Model
 
     /**
      * Calculate discount amount for a given total.
-     *
-     * @param float $total
-     * @return float
      */
     public function calculateDiscount(float $total): float
     {
@@ -143,9 +135,6 @@ class Coupon extends Model
 
     /**
      * Scope a query to only include active coupons.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -154,9 +143,6 @@ class Coupon extends Model
 
     /**
      * Scope a query to only include valid coupons.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeValid(Builder $query): Builder
     {
@@ -170,9 +156,6 @@ class Coupon extends Model
 
     /**
      * Scope a query to only include expired coupons.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeExpired(Builder $query): Builder
     {
@@ -197,4 +180,3 @@ class Coupon extends Model
         ];
     }
 }
-

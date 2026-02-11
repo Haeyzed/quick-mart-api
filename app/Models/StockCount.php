@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * StockCount Model
@@ -28,7 +30,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_adjusted
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Warehouse $warehouse
  * @property-read Brand|null $brand
  * @property-read Category|null $category
@@ -37,9 +38,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|StockCount adjusted()
  * @method static Builder|StockCount notAdjusted()
  */
-class StockCount extends Model
+class StockCount extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -108,9 +109,6 @@ class StockCount extends Model
 
     /**
      * Scope a query to only include adjusted stock counts.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeAdjusted(Builder $query): Builder
     {
@@ -119,9 +117,6 @@ class StockCount extends Model
 
     /**
      * Scope a query to only include not adjusted stock counts.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeNotAdjusted(Builder $query): Builder
     {
@@ -144,4 +139,3 @@ class StockCount extends Model
         ];
     }
 }
-

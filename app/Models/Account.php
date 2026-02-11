@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Account Model
@@ -31,7 +33,6 @@ use Illuminate\Support\Carbon;
  * @property bool|null $is_payment
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Account|null $parent
  * @property-read Collection<int, Account> $children
  * @property-read Collection<int, Payment> $payments
@@ -41,9 +42,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Account active()
  * @method static Builder|Account default()
  */
-class Account extends Model
+class Account extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -116,9 +117,6 @@ class Account extends Model
 
     /**
      * Scope a query to only include active accounts.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -127,9 +125,6 @@ class Account extends Model
 
     /**
      * Scope a query to only include default account.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeDefault(Builder $query): Builder
     {
@@ -153,4 +148,3 @@ class Account extends Model
         ];
     }
 }
-

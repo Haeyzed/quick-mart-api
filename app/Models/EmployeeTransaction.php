@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * EmployeeTransaction Model
@@ -24,16 +26,15 @@ use Illuminate\Support\Carbon;
  * @property int $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Employee $employee
  * @property-read User $creator
  *
  * @method static Builder|EmployeeTransaction advance()
  * @method static Builder|EmployeeTransaction loan()
  */
-class EmployeeTransaction extends Model
+class EmployeeTransaction extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -71,9 +72,6 @@ class EmployeeTransaction extends Model
 
     /**
      * Scope a query to only include advance transactions.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeAdvance(Builder $query): Builder
     {
@@ -82,9 +80,6 @@ class EmployeeTransaction extends Model
 
     /**
      * Scope a query to only include loan transactions.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeLoan(Builder $query): Builder
     {
@@ -106,4 +101,3 @@ class EmployeeTransaction extends Model
         ];
     }
 }
-

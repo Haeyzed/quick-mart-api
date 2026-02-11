@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductQuotation Model (Pivot)
@@ -28,16 +30,15 @@ use Illuminate\Support\Carbon;
  * @property float $total
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Quotation $quotation
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
  * @property-read Unit $unit
  */
-class ProductQuotation extends Model
+class ProductQuotation extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -137,4 +138,3 @@ class ProductQuotation extends Model
         ];
     }
 }
-

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Employee Model
@@ -37,7 +39,6 @@ use Illuminate\Support\Carbon;
  * @property array|null $sales_target
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Department $department
  * @property-read Designation $designation
  * @property-read Shift $shift
@@ -51,9 +52,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
  */
-class Employee extends Model
+class Employee extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -172,9 +173,6 @@ class Employee extends Model
 
     /**
      * Scope a query to only include active employees.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -183,9 +181,6 @@ class Employee extends Model
 
     /**
      * Scope a query to only include sale agents.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeSaleAgents(Builder $query): Builder
     {
@@ -212,4 +207,3 @@ class Employee extends Model
         ];
     }
 }
-

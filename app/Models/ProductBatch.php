@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductBatch Model
@@ -24,7 +26,6 @@ use Illuminate\Support\Carbon;
  * @property float $qty
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Product $product
  * @property-read Collection<int, ProductSale> $productSales
  * @property-read Collection<int, ProductPurchase> $productPurchases
@@ -32,9 +33,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|ProductBatch expired()
  * @method static Builder|ProductBatch expiringSoon(int $days = 30)
  */
-class ProductBatch extends Model
+class ProductBatch extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -80,27 +81,22 @@ class ProductBatch extends Model
 
     /**
      * Check if the batch is expiring soon.
-     *
-     * @param int $days
-     * @return bool
      */
     public function isExpiringSoon(int $days = 30): bool
     {
-        if (!$this->expired_date) {
+        if (! $this->expired_date) {
             return false;
         }
 
-        return now()->addDays($days)->isAfter($this->expired_date) && !$this->isExpired();
+        return now()->addDays($days)->isAfter($this->expired_date) && ! $this->isExpired();
     }
 
     /**
      * Check if the batch is expired.
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
-        if (!$this->expired_date) {
+        if (! $this->expired_date) {
             return false;
         }
 
@@ -109,9 +105,6 @@ class ProductBatch extends Model
 
     /**
      * Scope a query to only include expired batches.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeExpired(Builder $query): Builder
     {
@@ -120,9 +113,6 @@ class ProductBatch extends Model
 
     /**
      * Scope a query to only include batches expiring soon.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeExpiringSoon(Builder $query, int $days = 30): Builder
     {
@@ -143,4 +133,3 @@ class ProductBatch extends Model
         ];
     }
 }
-

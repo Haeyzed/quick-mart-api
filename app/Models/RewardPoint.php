@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * RewardPoint Model
@@ -27,7 +29,6 @@ use Illuminate\Support\Carbon;
  * @property int|null $sale_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Customer $customer
  * @property-read User|null $creator
  * @property-read Sale|null $sale
@@ -35,9 +36,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|RewardPoint expired()
  * @method static Builder|RewardPoint notExpired()
  */
-class RewardPoint extends Model
+class RewardPoint extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -95,8 +96,6 @@ class RewardPoint extends Model
 
     /**
      * Check if the reward point is expired.
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -105,8 +104,6 @@ class RewardPoint extends Model
 
     /**
      * Get the net points (points - deducted_points).
-     *
-     * @return float
      */
     public function getNetPoints(): float
     {
@@ -115,9 +112,6 @@ class RewardPoint extends Model
 
     /**
      * Scope a query to only include expired reward points.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeExpired(Builder $query): Builder
     {
@@ -126,9 +120,6 @@ class RewardPoint extends Model
 
     /**
      * Scope a query to only include non-expired reward points.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeNotExpired(Builder $query): Builder
     {
@@ -156,4 +147,3 @@ class RewardPoint extends Model
         ];
     }
 }
-

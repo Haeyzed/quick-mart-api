@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Expense Model
@@ -28,7 +30,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $document
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read ExpenseCategory $expenseCategory
  * @property-read Warehouse $warehouse
  * @property-read Account|null $account
@@ -36,9 +37,9 @@ use Illuminate\Support\Carbon;
  * @property-read CashRegister|null $cashRegister
  * @property-read Employee|null $employee
  */
-class Expense extends Model
+class Expense extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -139,4 +140,3 @@ class Expense extends Model
         ];
     }
 }
-

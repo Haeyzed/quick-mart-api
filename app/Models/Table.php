@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Table Model
@@ -24,14 +26,13 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Collection<int, Sale> $sales
  *
  * @method static Builder|Table active()
  */
-class Table extends Model
+class Table extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -48,8 +49,6 @@ class Table extends Model
 
     /**
      * Check if the table is currently occupied.
-     *
-     * @return bool
      */
     public function isOccupied(): bool
     {
@@ -71,9 +70,6 @@ class Table extends Model
 
     /**
      * Scope a query to only include active tables.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -94,4 +90,3 @@ class Table extends Model
         ];
     }
 }
-

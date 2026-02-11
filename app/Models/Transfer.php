@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Transfer Model
@@ -34,7 +36,6 @@ use Illuminate\Support\Carbon;
  * @property bool $is_sent
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read User $user
  * @property-read Warehouse $fromWarehouse
  * @property-read Warehouse $toWarehouse
@@ -44,9 +45,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Transfer completed()
  * @method static Builder|Transfer sent()
  */
-class Transfer extends Model
+class Transfer extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -112,9 +113,6 @@ class Transfer extends Model
 
     /**
      * Scope a query to only include pending transfers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopePending(Builder $query): Builder
     {
@@ -123,9 +121,6 @@ class Transfer extends Model
 
     /**
      * Scope a query to only include completed transfers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeCompleted(Builder $query): Builder
     {
@@ -134,9 +129,6 @@ class Transfer extends Model
 
     /**
      * Scope a query to only include sent transfers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeSent(Builder $query): Builder
     {
@@ -164,4 +156,3 @@ class Transfer extends Model
         ];
     }
 }
-

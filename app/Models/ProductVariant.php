@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductVariant Model (Pivot)
@@ -25,16 +27,15 @@ use Illuminate\Support\Carbon;
  * @property float $qty
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @property-read Product $product
  * @property-read Variant $variant
  *
  * @method static Builder|ProductVariant findExactProduct(int $productId, int $variantId)
  * @method static Builder|ProductVariant findExactProductWithCode(int $productId, string $itemCode)
  */
-class ProductVariant extends Model
+class ProductVariant extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The table associated with the model.
@@ -80,11 +81,6 @@ class ProductVariant extends Model
 
     /**
      * Scope a query to find exact product with variant.
-     *
-     * @param Builder $query
-     * @param int $productId
-     * @param int $variantId
-     * @return Builder
      */
     public function scopeFindExactProduct(Builder $query, int $productId, int $variantId): Builder
     {
@@ -94,11 +90,6 @@ class ProductVariant extends Model
 
     /**
      * Scope a query to find exact product with item code.
-     *
-     * @param Builder $query
-     * @param int $productId
-     * @param string $itemCode
-     * @return Builder
      */
     public function scopeFindExactProductWithCode(Builder $query, int $productId, string $itemCode): Builder
     {
@@ -123,4 +114,3 @@ class ProductVariant extends Model
         ];
     }
 }
-

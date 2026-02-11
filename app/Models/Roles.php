@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Roles Model
@@ -24,9 +26,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Builder|Roles active()
  */
-class Roles extends Model
+class Roles extends Model implements AuditableContract
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -42,9 +44,6 @@ class Roles extends Model
 
     /**
      * Scope a query to only include active roles.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -63,4 +62,3 @@ class Roles extends Model
         ];
     }
 }
-
