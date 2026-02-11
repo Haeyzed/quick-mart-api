@@ -162,13 +162,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('warehouses.all-active');
     Route::apiResource('warehouses', WarehouseController::class);
 
-    Route::get('audit-logs', [AuditLogController::class, 'index'])
-        ->name('audit-logs.index');
-    Route::post('audit-logs/export', [AuditLogController::class, 'export'])
-        ->name('audit-logs.export');
-
-    Route::get('utility/auditable-models', [UtilityController::class, 'auditableModels'])
-        ->name('utility.auditable-models');
+    Route::get('reports/audit-logs', [AuditLogController::class, 'index'])
+        ->name('reports.audit-logs.index');
+    Route::post('reports/audit-logs/export', [AuditLogController::class, 'export'])
+        ->name('reports.audit-logs.export');
+    Route::get('reports/audit-logs/auditable-models', [UtilityController::class, 'auditableModels'])
+        ->name('reports.audit-logs.auditable-models');
 
     Route::get('settings/general', [GeneralSettingController::class, 'show'])
         ->name('settings.general.show');
@@ -269,6 +268,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('reports/customer-due', [ReportController::class, 'customerDueReport'])
         ->name('reports.customer-due');
+    Route::post('reports/customer-due/export', [ReportController::class, 'exportCustomerDueReport'])
+        ->name('reports.customer-due.export');
 
     Route::apiResource('currencies', CurrencyController::class);
     Route::delete('currencies/bulk-destroy', [CurrencyController::class, 'bulkDestroy'])
