@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders\Tenant;
 
 use App\Models\User;
-use Database\Seeders\Tenant\Support\PermissionModuleResolver;
 use App\Services\PermissionService;
+use Database\Seeders\Tenant\Support\PermissionModuleResolver;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -428,17 +428,34 @@ class TenantDatabaseSeeder extends Seeder
         DB::table('billers')->insert([
             [
                 'id' => 1,
-                'name' => 'Test Biller',
+                'name' => 'Main Outlet',
                 'image' => null,
-                'company_name' => 'Test Company',
+                'company_name' => 'Quick Mart HQ',
                 'vat_number' => null,
-                'email' => 'test@gmail.com',
-                'phone_number' => '12312',
-                'address' => 'Test address',
-                'city' => 'Test City',
-                'state' => null,
-                'postal_code' => null,
-                'country' => null,
+                'email' => 'biller@quickmart.com',
+                'phone_number' => '+1234567890',
+                'address' => '123 Main St',
+                'city' => 'New York',
+                'state' => 'NY',
+                'postal_code' => '10001',
+                'country' => 'USA',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 2,
+                'name' => 'Downtown Branch',
+                'image' => null,
+                'company_name' => 'Quick Mart Downtown',
+                'vat_number' => null,
+                'email' => 'branch@quickmart.com',
+                'phone_number' => '+0987654321',
+                'address' => '456 Oak Ave',
+                'city' => 'Los Angeles',
+                'state' => 'CA',
+                'postal_code' => '90001',
+                'country' => 'USA',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),

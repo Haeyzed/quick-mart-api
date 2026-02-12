@@ -95,19 +95,22 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('categories.export');
     Route::apiResource('categories', CategoryController::class);
 
-    Route::get('billers/all/active', [BillerController::class, 'getAllActive'])
-        ->name('billers.all-active');
-    Route::patch('billers/bulk-activate', [BillerController::class, 'bulkActivate'])
-        ->name('billers.bulkActivate');
-    Route::patch('billers/bulk-deactivate', [BillerController::class, 'bulkDeactivate'])
-        ->name('billers.bulkDeactivate');
-    Route::delete('billers/bulk-destroy', [BillerController::class, 'bulkDestroy'])
-        ->name('billers.bulkDestroy');
-    Route::post('billers/import', [BillerController::class, 'import'])
-        ->name('billers.import');
-    Route::post('billers/export', [BillerController::class, 'export'])
-        ->name('billers.export');
-    Route::apiResource('billers', BillerController::class);
+    // People: Billers (under people prefix, Warehouse-style CRUD + import + bulk delete)
+    Route::prefix('people')->group(function () {
+        Route::get('billers/all/active', [BillerController::class, 'getAllActive'])
+            ->name('billers.all-active');
+        Route::patch('billers/bulk-activate', [BillerController::class, 'bulkActivate'])
+            ->name('billers.bulkActivate');
+        Route::patch('billers/bulk-deactivate', [BillerController::class, 'bulkDeactivate'])
+            ->name('billers.bulkDeactivate');
+        Route::delete('billers/bulk-destroy', [BillerController::class, 'bulkDestroy'])
+            ->name('billers.bulkDestroy');
+        Route::post('billers/import', [BillerController::class, 'import'])
+            ->name('billers.import');
+        Route::post('billers/export', [BillerController::class, 'export'])
+            ->name('billers.export');
+        Route::apiResource('billers', BillerController::class);
+    });
 
     Route::patch('brands/bulk-activate', [BrandController::class, 'bulkActivate'])
         ->name('brands.bulkActivate');

@@ -210,8 +210,10 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
+     * Process image upload and merge path into biller data.
+     *
+     * @param  array<string, mixed>  $data  Input data containing 'image' as UploadedFile.
+     * @return array<string, mixed> Data with 'image' (path) set.
      */
     private function handleImageUpload(array $data): array
     {

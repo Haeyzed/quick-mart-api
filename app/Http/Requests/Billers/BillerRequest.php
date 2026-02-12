@@ -25,23 +25,23 @@ class BillerRequest extends BaseRequest
         $billerId = $this->route('biller')?->id;
 
         return [
-            'name' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'company_name' => [
-                'nullable',
+                'required',
                 'string',
                 'max:255',
                 Rule::unique('billers', 'company_name')->ignore($billerId)->where('is_active', true),
             ],
             'vat_number' => ['nullable', 'string', 'max:255'],
             'email' => [
-                'nullable',
+                'required',
                 'email',
                 'max:255',
                 Rule::unique('billers', 'email')->ignore($billerId)->where('is_active', true),
             ],
-            'phone_number' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:500'],
+            'city' => ['required', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:50'],
             'country' => ['nullable', 'string', 'max:255'],

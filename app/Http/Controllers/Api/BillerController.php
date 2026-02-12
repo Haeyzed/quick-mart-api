@@ -21,7 +21,10 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * API Controller for Biller CRUD.
+ * API Controller for Biller CRUD and bulk operations.
+ *
+ * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
+ * import, export, and getAllActive. All responses use the ResponseServiceProvider macros.
  *
  * @group Biller Management
  */
@@ -31,6 +34,12 @@ class BillerController extends Controller
         private readonly BillerService $service
     ) {}
 
+    /**
+     * Display a paginated listing of billers.
+     *
+     * @param  BillerIndexRequest  $request  Validated query params: per_page, page, status, search.
+     * @return JsonResponse Paginated billers with meta and links.
+     */
     public function index(BillerIndexRequest $request): JsonResponse
     {
         $billers = $this->service->getBillers(
@@ -43,6 +52,12 @@ class BillerController extends Controller
         return response()->success($billers, 'Billers fetched successfully');
     }
 
+    /**
+     * Store a newly created biller.
+     *
+     * @param  BillerRequest  $request  Validated biller attributes.
+     * @return JsonResponse Created biller with 201 status.
+     */
     public function store(BillerRequest $request): JsonResponse
     {
         $biller = $this->service->createBiller($request->validated());
@@ -54,6 +69,11 @@ class BillerController extends Controller
         );
     }
 
+    /**
+     * Display the specified biller.
+     *
+     * @param  Biller  $biller  The biller instance resolved via route model binding.
+     */
     public function show(Biller $biller): JsonResponse
     {
         $biller = $this->service->getBiller($biller);
@@ -61,6 +81,13 @@ class BillerController extends Controller
         return response()->success(new BillerResource($biller), 'Biller retrieved successfully');
     }
 
+    /**
+     * Update the specified biller.
+     *
+     * @param  BillerRequest  $request  Validated biller attributes.
+     * @param  Biller  $biller  The biller instance to update.
+     * @return JsonResponse Updated biller.
+     */
     public function update(BillerRequest $request, Biller $biller): JsonResponse
     {
         $biller = $this->service->updateBiller($biller, $request->validated());
@@ -68,6 +95,12 @@ class BillerController extends Controller
         return response()->success(new BillerResource($biller), 'Biller updated successfully');
     }
 
+    /**
+     * Remove the specified biller (deactivates it).
+     *
+     * @param  Biller  $biller  The biller instance to delete.
+     * @return JsonResponse Success message.
+     */
     public function destroy(Biller $biller): JsonResponse
     {
         $this->service->deleteBiller($biller);
@@ -77,6 +110,8 @@ class BillerController extends Controller
 
     /**
      * Get all active billers (for dropdowns).
+     *
+     * @return JsonResponse Collection of active billers.
      */
     public function getAllActive(): JsonResponse
     {
@@ -85,6 +120,12 @@ class BillerController extends Controller
         return response()->success(BillerResource::collection($billers), 'Active billers fetched successfully');
     }
 
+    /**
+     * Bulk delete billers (deactivates them).
+     *
+     * @param  BillerBulkDestroyRequest  $request  Validated ids array.
+     * @return JsonResponse Deleted count and message.
+     */
     public function bulkDestroy(BillerBulkDestroyRequest $request): JsonResponse
     {
         $count = $this->service->bulkDeleteBillers($request->validated()['ids']);
@@ -95,6 +136,12 @@ class BillerController extends Controller
         );
     }
 
+    /**
+     * Bulk activate billers by ID.
+     *
+     * @param  BillerBulkUpdateRequest  $request  Validated ids array.
+     * @return JsonResponse Activated count and message.
+     */
     public function bulkActivate(BillerBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkActivateBillers($request->validated()['ids']);
@@ -102,6 +149,12 @@ class BillerController extends Controller
         return response()->success(['activated_count' => $count], "{$count} billers activated");
     }
 
+    /**
+     * Bulk deactivate billers by ID.
+     *
+     * @param  BillerBulkUpdateRequest  $request  Validated ids array.
+     * @return JsonResponse Deactivated count and message.
+     */
     public function bulkDeactivate(BillerBulkUpdateRequest $request): JsonResponse
     {
         $count = $this->service->bulkDeactivateBillers($request->validated()['ids']);
@@ -109,6 +162,12 @@ class BillerController extends Controller
         return response()->success(['deactivated_count' => $count], "{$count} billers deactivated");
     }
 
+    /**
+     * Import billers from Excel/CSV file.
+     *
+     * @param  ImportRequest  $request  Validated file upload.
+     * @return JsonResponse Success message.
+     */
     public function import(ImportRequest $request): JsonResponse
     {
         $this->service->importBillers($request->file('file'));
@@ -116,6 +175,14 @@ class BillerController extends Controller
         return response()->success(null, 'Billers imported successfully');
     }
 
+    /**
+     * Export billers to Excel or PDF.
+     *
+     * Supports download or email delivery based on method.
+     *
+     * @param  ExportRequest  $request  Validated export params: ids, format, method, columns, user_id (if email).
+     * @return JsonResponse|BinaryFileResponse Success message or file download.
+     */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
         $validated = $request->validated();
