@@ -4,26 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * API Resource for Brand entity.
- *
- * Transforms Brand model into a consistent JSON structure for API responses.
- * Compatible with Scramble/OpenAPI documentation.
- *
- * @mixin \App\Models\Brand
+ * @mixin Brand
  */
 class BrandResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request The incoming HTTP request.
-     * @return array<string, mixed> The transformed brand data for API response.
+     * @param Request $request
+     * @return array<string, mixed>
      */
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
@@ -31,10 +27,9 @@ class BrandResource extends JsonResource
             'slug' => $this->slug,
             'short_description' => $this->short_description,
             'page_title' => $this->page_title,
-            'image' => $this->image,
             'image_url' => $this->image_url,
             'is_active' => $this->is_active,
-            'status' => $this->status,
+            'status_label' => $this->is_active ? 'active' : 'inactive',
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

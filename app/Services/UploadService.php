@@ -9,90 +9,148 @@ use App\Traits\StorageProviderInfo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Class UploadService
- * * A robust, provider-agnostic file management service supporting dynamic 
- * disk resolution (S3, Local, DigitalOcean) based on application settings.
+ *
+ * A robust, provider-agnostic file management service.
+ * Handles dynamic disk resolution (S3, Local, DigitalOcean, etc.)
+ * based on application settings.
  */
 class UploadService
 {
-    use GeneralSettingsTrait, StorageProviderInfo;
+    use GeneralSettingsTrait;
+    use StorageProviderInfo;
 
     /**
      * Store a file and return the public URL in one call.
      *
-     * @param UploadedFile $file
-     * @param string $directory
-     * @param string|null $disk
-     * @param string|null $fileName
-     * @return string
+     * @param UploadedFile $file The file to upload.
+     * @param string $directory Target directory.
+     * @param string|null $disk Specific disk (optional).
+     * @param string|null $fileName Custom filename (optional).
+     * @return string The public URL of the uploaded file.
+     * @throws RuntimeException If upload fails.
      */
-    public function uploadAndGetUrl(UploadedFile $file, string $directory = 'uploads', ?string $disk = null, ?string $fileName = null): string
-    {
+    public function uploadAndGetUrl(
+        UploadedFile $file,
+        string $directory = 'uploads',
+        ?string $disk = null,
+        ?string $fileName = null
+    ): string {
         $resolvedDisk = $this->resolveDisk($disk);
         $filePath = $this->upload($file, $directory, $resolvedDisk, $fileName);
 
-        return Storage::disk($resolvedDisk)->url($filePath);
+        $url = $this->url($filePath, $resolvedDisk);
+
+        if ($url === null) {
+            // Fallback or empty string if URL generation fails (e.g. private bucket)
+            return '';
+        }
+
+        return $url;
     }
 
     /**
      * Pure file storage logic.
-     * * @return string The relative file path.
+     *
+     * @param UploadedFile $file The file to upload.
+     * @param string $directory Target directory.
+     * @param string|null $disk Specific disk (optional).
+     * @param string|null $fileName Custom filename (optional).
+     * @return string The relative file path.
+     * @throws RuntimeException If storage write fails.
      */
-    public function upload(UploadedFile $file, string $directory = 'uploads', ?string $disk = null, ?string $fileName = null): string
-    {
+    public function upload(
+        UploadedFile $file,
+        string $directory = 'uploads',
+        ?string $disk = null,
+        ?string $fileName = null
+    ): string {
         $resolvedDisk = $this->resolveDisk($disk);
         $extension = $file->getClientOriginalExtension();
 
-        $finalFileName = $fileName 
+        $finalFileName = $fileName
             ? (str_contains($fileName, '.') ? $fileName : "{$fileName}.{$extension}")
             : $this->generateFileName($extension);
 
-        Storage::disk($resolvedDisk)->putFileAs($directory, $file, $finalFileName);
+        $path = Storage::disk($resolvedDisk)->putFileAs($directory, $file, $finalFileName);
 
-        return "{$directory}/{$finalFileName}";
+        if ($path === false) {
+            throw new RuntimeException("Failed to upload file to disk: {$resolvedDisk}");
+        }
+
+        return $path;
     }
 
     /**
      * Get the public URL with disk verification.
+     *
+     * @param string|null $filePath The relative file path.
+     * @param string|null $disk Specific disk (optional).
+     * @return string|null The full URL or null if file is missing/path is empty.
      */
     public function url(?string $filePath, ?string $disk = null): ?string
     {
-        if (!$filePath) return null;
+        if (empty($filePath)) {
+            return null;
+        }
+
         $resolvedDisk = $this->resolveDisk($disk);
 
-        return Storage::disk($resolvedDisk)->exists($filePath)
-            ? Storage::disk($resolvedDisk)->url($filePath)
-            : null;
+        // Optimization: For Cloud disks, 'exists' checks can be slow.
+        // We rely on the driver to generate the URL.
+        return Storage::disk($resolvedDisk)->url($filePath);
     }
 
     /**
      * Delete file from storage.
+     *
+     * @param string|null $filePath The relative file path.
+     * @param string|null $disk Specific disk (optional).
+     * @return bool True if deleted or file didn't exist.
      */
     public function delete(?string $filePath, ?string $disk = null): bool
     {
-        if (!$filePath) return false;
+        if (empty($filePath)) {
+            return false;
+        }
+
         $resolvedDisk = $this->resolveDisk($disk);
 
-        return Storage::disk($resolvedDisk)->exists($filePath) && Storage::disk($resolvedDisk)->delete($filePath);
+        if (Storage::disk($resolvedDisk)->exists($filePath)) {
+            return Storage::disk($resolvedDisk)->delete($filePath);
+        }
+
+        return false;
     }
 
     /**
      * Centralized disk resolution logic.
+     *
+     * @param string|null $disk
+     * @return string The resolved disk name.
      */
     private function resolveDisk(?string $disk): string
     {
-        $resolved = $disk ?? $this->getStorageProvider();
+        // 1. Use requested disk OR fallback to system default provider
+        $resolved = $disk ?: $this->getStorageProvider();
+
+        // 2. Configure the dynamic config for this provider (from Trait)
         $this->setStorageProviderInfo($resolved);
+
         return $resolved;
     }
 
     /**
      * Generate a collision-resistant filename.
+     *
+     * @param string $extension
+     * @return string
      */
     protected function generateFileName(string $extension): string
     {
-        return Str::uuid() . '.' . $extension;
+        return Str::uuid()->toString() . '.' . $extension;
     }
 }

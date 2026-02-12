@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Response as ResponseFacade;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * Class ResponseServiceProvider
@@ -177,8 +178,8 @@ class ResponseServiceProvider extends ServiceProvider
         /**
          * Return a standardized success JSON response.
          *
-         * Automatically detects paginated responses and appends
-         * pagination metadata and navigation links.
+         * Automatically detects paginated responses (including API Resource Collections)
+         * and appends pagination metadata and navigation links.
          *
          * @param mixed  $data       Response payload
          * @param string $message    Success message
@@ -196,7 +197,31 @@ class ResponseServiceProvider extends ServiceProvider
                 'message' => $message,
             ];
 
-            if ($data instanceof LengthAwarePaginator) {
+            // 1. Handle API Resource Collections wrapping Pagination (e.g. BrandResource::collection($paginator))
+            if ($data instanceof AnonymousResourceCollection && $data->resource instanceof LengthAwarePaginator) {
+                $paginator = $data->resource;
+
+                // For ResourceCollection, 'collection' contains the transformed items
+                $response['data'] = $data->collection;
+
+                $response['meta'] = [
+                    'current_page' => $paginator->currentPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'last_page' => $paginator->lastPage(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more' => $paginator->hasMorePages(),
+                ];
+                $response['links'] = [
+                    'first' => $paginator->url(1),
+                    'last' => $paginator->url($paginator->lastPage()),
+                    'prev' => $paginator->previousPageUrl(),
+                    'next' => $paginator->nextPageUrl(),
+                ];
+            }
+            // 2. Handle Raw LengthAwarePaginator passed directly
+            elseif ($data instanceof LengthAwarePaginator) {
                 $response['data'] = $data->getCollection();
                 $response['meta'] = [
                     'current_page' => $data->currentPage(),
@@ -213,7 +238,9 @@ class ResponseServiceProvider extends ServiceProvider
                     'prev' => $data->previousPageUrl(),
                     'next' => $data->nextPageUrl(),
                 ];
-            } else {
+            }
+            // 3. Handle Standard Data
+            else {
                 $response['data'] = $data;
             }
 

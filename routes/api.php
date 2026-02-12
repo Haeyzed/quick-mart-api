@@ -112,16 +112,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('billers', BillerController::class);
     });
 
-    Route::patch('brands/bulk-activate', [BrandController::class, 'bulkActivate'])
-        ->name('brands.bulkActivate');
-    Route::patch('brands/bulk-deactivate', [BrandController::class, 'bulkDeactivate'])
-        ->name('brands.bulkDeactivate');
-    Route::delete('brands/bulk-destroy', [BrandController::class, 'bulkDestroy'])
-        ->name('brands.bulkDestroy');
-    Route::post('brands/import', [BrandController::class, 'import'])
-        ->name('brands.import');
-    Route::post('brands/export', [BrandController::class, 'export'])
-        ->name('brands.export');
+    Route::prefix('brands')->name('brands.')->group(function () {
+        Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [BrandController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [BrandController::class, 'import'])->name('import');
+        Route::get('export', [BrandController::class, 'export'])->name('export');
+    });
     Route::apiResource('brands', BrandController::class);
 
     Route::get('units/base-units', [UnitController::class, 'getBaseUnits'])

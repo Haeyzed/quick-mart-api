@@ -11,32 +11,25 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Excel export for Brand entities.
- *
- * Exports brands by ID or all when ids is empty. Supports column selection.
- * Uses query-based chunking for memory efficiency.
- */
 class BrandsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    private const DEFAULT_COLUMNS = [
+        'id', 'name', 'slug', 'short_description',
+        'page_title', 'image_url', 'is_active',
+        'created_at', 'updated_at'
+    ];
+
     /**
-     * Create a new BrandsExport instance.
-     *
-     * @param array<int> $ids Brand IDs to export. Empty array exports all.
-     * @param array<string> $columns Column keys to include. Empty uses defaults.
+     * @param array<int> $ids
+     * @param array<string> $columns
      */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
     ) {}
 
-    /**
-     * Build the query for the export.
-     *
-     * @return Builder<Brand>
-     */
     public function query(): Builder
     {
         return Brand::query()
@@ -44,55 +37,30 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
             ->orderBy('name');
     }
 
-    /**
-     * Get the column headings for the export.
-     *
-     * @return array<string> Column header labels.
-     */
     public function headings(): array
     {
-        $labelMap = [
-            'id'                => 'ID',
-            'name'              => 'Brand Name',
-            'slug'              => 'URL Slug',
-            'short_description' => 'Description',
-            'page_title'        => 'SEO Title',
-            'image_url'         => 'Image Source',
-            'is_active'         => 'Status',
-            'created_at'        => 'Date Created',
-            'updated_at'        => 'Last Updated',
-        ];
-
-        if (empty($this->columns)) {
-            return array_values($labelMap);
-        }
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
-            $this->columns
+            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            $columns
         );
     }
 
     /**
-     * Map a brand model to an export row.
-     *
-     * @param Brand $brand The brand instance to map.
-     * @return array<string|int|null> Row data matching the headings order.
+     * @param Brand $row
      */
-    public function map($brand): array
+    public function map($row): array
     {
-        /** @var Brand $brand */
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        $columnsToExport = $this->columns ?: [
-            'id', 'name', 'slug', 'short_description', 'page_title', 
-            'image_url', 'is_active', 'created_at', 'updated_at'
-        ];
-
-        return array_map(fn ($col) => match ($col) {
-            'is_active'  => $brand->is_active ? 'Active' : 'Inactive',
-            'created_at' => $brand->created_at?->toDateTimeString(),
-            'updated_at' => $brand->updated_at?->toDateTimeString(),
-            default      => $brand->{$col} ?? '',
-        }, $columnsToExport);
+        return array_map(function ($col) use ($row) {
+            return match ($col) {
+                'is_active' => $row->is_active ? 'Active' : 'Inactive',
+                'created_at' => $row->created_at?->toDateTimeString(),
+                'updated_at' => $row->updated_at?->toDateTimeString(),
+                default => $row->{$col} ?? '',
+            };
+        }, $columns);
     }
 }

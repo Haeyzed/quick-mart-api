@@ -6,10 +6,11 @@ namespace Database\Seeders\Tenant;
 
 use App\Models\User;
 use App\Services\PermissionService;
-use Database\Seeders\Tenant\Support\PermissionModuleResolver;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 /**
  * Tenant Database Seeder
@@ -43,15 +44,14 @@ class TenantDatabaseSeeder extends Seeder
         // Call other seeders first
         $this->call(BarcodeSeeder::class);
         $this->call(ExternalServicesSeeder::class);
-        // $this->call(LanguagesTableSeeder::class);
-        // $this->call(TranslationsTableSeeder::class);
         $this->call(InvoiceSettingsSeeder::class);
 
         // Seed core application data
         $this->seedGeneralSettings();
-        $this->seedRoles();
-        $this->seedPermissions();
-        $this->seedRolePermissions();
+
+        // Unified permission and role seeding logic
+        $this->seedRolesAndPermissions();
+
         $this->seedAccounts();
         $this->seedBillers();
         $this->seedWarehouses();
@@ -70,6 +70,290 @@ class TenantDatabaseSeeder extends Seeder
         $this->seedProductPurchases();
         $this->seedProductWarehouse();
         $this->seedMailSettings();
+    }
+
+    /**
+     * Seed roles and permissions using the new structured approach.
+     * Replaces seedRoles, seedPermissions, and seedRolePermissions.
+     */
+    private function seedRolesAndPermissions(): void
+    {
+        // 1. Define Permissions Grouped by Module
+        $permissionsByModule = [
+            'products' => [
+                'view products',
+                'create products',
+                'edit products',
+                'delete products',
+                'import products',
+                'export products',
+                'view product details',
+                'view product history',
+                'print barcode',
+                'stock count',
+                'adjustment',
+                'view product qty alert',
+            ],
+            'brands' => [
+                'view brands',
+                'view brand details',
+                'create brands',
+                'edit brands',
+                'delete brands',
+                'import brands',
+                'export brands',
+            ],
+            'categories' => [
+                'view categories',
+                'create categories',
+                'edit categories',
+                'delete categories',
+                'import categories',
+                'export categories',
+            ],
+            'units' => [
+                'view units',
+                'create units',
+                'edit units',
+                'delete units',
+                'import units',
+                'export units',
+            ],
+            'taxes' => [
+                'view taxes',
+                'create taxes',
+                'edit taxes',
+                'delete taxes',
+                'import taxes',
+                'export taxes',
+            ],
+            'purchases' => [
+                'view purchases',
+                'create purchases',
+                'edit purchases',
+                'delete purchases',
+                'import purchases',
+                'export purchases',
+                'view purchase payments',
+                'create purchase payments',
+                'edit purchase payments',
+                'delete purchase payments',
+                'view purchase returns',
+                'create purchase returns',
+                'edit purchase returns',
+                'delete purchase returns',
+            ],
+            'sales' => [
+                'view sales',
+                'create sales',
+                'edit sales',
+                'delete sales',
+                'import sales',
+                'export sales',
+                'view sale payments',
+                'create sale payments',
+                'edit sale payments',
+                'delete sale payments',
+                'view pos',
+                'view today sale',
+                'view today profit',
+                'change sale date',
+                'view gift cards',
+                'view coupons',
+                'view delivery',
+            ],
+            'quotes' => [
+                'view quotes',
+                'create quotes',
+                'edit quotes',
+                'delete quotes',
+            ],
+            'transfers' => [
+                'view transfers',
+                'create transfers',
+                'edit transfers',
+                'delete transfers',
+                'import transfers',
+                'money transfer',
+            ],
+            'returns' => [
+                'view returns',
+                'create returns',
+                'edit returns',
+                'delete returns',
+            ],
+            'people' => [
+                'view customers',
+                'create customers',
+                'edit customers',
+                'delete customers',
+                'import customers',
+                'export customers',
+                'view customer groups',
+                'create customer groups',
+                'edit customer groups',
+                'delete customer groups',
+                'import customer groups',
+                'export customer groups',
+                'view suppliers',
+                'create suppliers',
+                'edit suppliers',
+                'delete suppliers',
+                'import suppliers',
+                'export suppliers',
+                'view billers',
+                'create billers',
+                'edit billers',
+                'delete billers',
+                'import billers',
+                'export billers',
+                'view users',
+                'create users',
+                'edit users',
+                'delete users',
+                'view employees',
+                'create employees',
+                'edit employees',
+                'delete employees',
+            ],
+            'warehouses' => [
+                'view warehouses',
+                'create warehouses',
+                'edit warehouses',
+                'delete warehouses',
+                'import warehouses',
+                'export warehouses',
+                'view warehouse report',
+                'view warehouse stock report',
+            ],
+            'accounting' => [
+                'view accounts',
+                'view balance sheet',
+                'view account statement',
+                'view incomes',
+                'create incomes',
+                'edit incomes',
+                'delete incomes',
+                'view expenses',
+                'create expenses',
+                'edit expenses',
+                'delete expenses',
+                'view profit loss',
+                'view cash flow',
+            ],
+            'hrm' => [
+                'view departments',
+                'view attendance',
+                'view payroll',
+                'view designations',
+                'view shifts',
+                'view overtime',
+                'view leaves',
+                'view leave types',
+                'hrm panel',
+                'view holidays',
+            ],
+            'reports' => [
+                'view product report',
+                'view purchase report',
+                'view sale report',
+                'view customer report',
+                'view supplier report',
+                'view due report',
+                'view user report',
+                'view best seller',
+                'view daily sale',
+                'view monthly sale',
+                'view daily purchase',
+                'view monthly purchase',
+                'view payment report',
+                'view dso report',
+                'view supplier due report',
+                'view biller report',
+                'view product expiry report',
+                'view revenue profit summary',
+                'view monthly summary',
+                'view yearly report',
+            ],
+            'settings' => [
+                'manage general settings',
+                'manage mail settings',
+                'manage pos settings',
+                'manage hrm settings',
+                'manage sms settings',
+                'manage reward point settings',
+                'manage payment gateway settings',
+                'manage barcode settings',
+                'manage language settings',
+                'manage invoice settings',
+                'manage discount plans',
+                'manage custom fields',
+                'manage role permissions',
+                'backup database',
+                'empty database',
+                'view audit logs',
+                'export audit logs',
+                'send notification',
+                'view all notifications',
+            ],
+        ];
+
+        // 2. Create Roles
+        $roles = ['Super Admin', 'Admin', 'Owner', 'Staff', 'Customer'];
+        foreach ($roles as $name) {
+            Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+        }
+
+        // 3. Create Permissions and Assign Logic
+        $allPermissions = [];
+        $staffPermissions = [];
+
+        foreach ($permissionsByModule as $module => $permissions) {
+            foreach ($permissions as $perm) {
+                Permission::updateOrCreate(
+                    ['name' => $perm, 'guard_name' => 'web'],
+                    ['module' => $module]
+                );
+
+                $allPermissions[] = $perm;
+
+                // Define Staff Permissions Logic
+                $isDelete = str_contains($perm, 'delete');
+                $isExport = str_contains($perm, 'export');
+                $isSettings = $module === 'settings' || $module === 'hrm';
+                $isAudit = str_contains($perm, 'audit');
+
+                if (! $isDelete && ! $isExport && ! $isSettings && ! $isAudit) {
+                    $staffPermissions[] = $perm;
+                }
+            }
+        }
+
+        // 4. Assign Permissions to Roles
+
+        // Admin / Super Admin / Owner get ALL
+        $adminRoles = ['Super Admin', 'Admin', 'Owner'];
+        foreach ($adminRoles as $roleName) {
+            $role = Role::where('name', $roleName)->where('guard_name', 'web')->first();
+            if ($role) {
+                $role->syncPermissions($allPermissions);
+            }
+        }
+
+        // Staff gets Restricted
+        $staffRole = Role::where('name', 'Staff')->where('guard_name', 'web')->first();
+        if ($staffRole) {
+            $staffRole->syncPermissions($staffPermissions);
+        }
+
+        // Handle legacy lowercase 'staff' to prevent issues
+        $legacyStaff = Role::where('name', 'staff')->where('guard_name', 'web')->first();
+        if ($legacyStaff) {
+            $legacyStaff->syncPermissions($staffPermissions);
+        }
+
+        // Reset cached roles and permissions
+        app()['cache']->forget('spatie.permission.cache');
     }
 
     /**
@@ -133,9 +417,6 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Seed users.
-     *
-     * This method creates the initial admin user and assigns roles and permissions
-     * using the PermissionService to ensure proper deduplication and role resolution.
      */
     private function seedUsers(): void
     {
@@ -192,198 +473,6 @@ class TenantDatabaseSeeder extends Seeder
 
             // Assign roles and all permissions with automatic deduplication
             $permissionService->assignRolesAndPermissions($user, $rolesToAssign, $allPermissions);
-        }
-    }
-
-    /**
-     * Seed roles.
-     */
-    private function seedRoles(): void
-    {
-        if (DB::table('roles')->count() > 0) {
-            return;
-        }
-
-        $now = now();
-        DB::table('roles')->insert([
-            [
-                'name' => 'Admin',
-                'description' => 'admin can access all data...',
-                'is_active' => true,
-                'guard_name' => 'web',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'Owner',
-                'description' => 'Staff of shop',
-                'is_active' => true,
-                'guard_name' => 'web',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'staff',
-                'description' => 'staff has specific access...',
-                'is_active' => true,
-                'guard_name' => 'web',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'Customer',
-                'description' => null,
-                'is_active' => true,
-                'guard_name' => 'web',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-    }
-
-    /**
-     * Seed permissions.
-     *
-     * This method seeds all application permissions, checking for existing
-     * permissions to avoid duplicates.
-     */
-    private function seedPermissions(): void
-    {
-        $existingPermissions = DB::table('permissions')
-            ->select('name', 'guard_name')
-            ->get();
-
-        $existingMap = [];
-        foreach ($existingPermissions as $item) {
-            $existingMap["{$item->name}|{$item->guard_name}"] = true;
-        }
-
-        $permissionData = $this->getPermissionData();
-        $now = now();
-
-        $insertData = [];
-        foreach ($permissionData as $permission) {
-            $lookupKey = "{$permission['name']}|{$permission['guard_name']}";
-            if (! isset($existingMap[$lookupKey])) {
-                $insertData[] = [
-                    'name' => $permission['name'],
-                    'guard_name' => $permission['guard_name'],
-                    'module' => $this->getModuleForPermission($permission['name']),
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-        }
-
-        if (! empty($insertData)) {
-            DB::table('permissions')->insert($insertData);
-        }
-
-        $this->backfillPermissionModules();
-    }
-
-    /**
-     * Backfill module for existing permissions that have null module.
-     */
-    private function backfillPermissionModules(): void
-    {
-        if (! Schema::hasColumn('permissions', 'module')) {
-            return;
-        }
-
-        $permissions = DB::table('permissions')->whereNull('module')->get();
-
-        foreach ($permissions as $permission) {
-            DB::table('permissions')
-                ->where('id', $permission->id)
-                ->update([
-                    'module' => $this->getModuleForPermission($permission->name),
-                    'updated_at' => now(),
-                ]);
-        }
-    }
-
-    /**
-     * Map permission name to module for grouping.
-     */
-    protected function getModuleForPermission(string $name): string
-    {
-        return PermissionModuleResolver::resolve($name);
-    }
-
-    /**
-     * Seed role-permission mappings.
-     *
-     * Uses permission and role names (no hardcoded IDs). Resolves names to IDs
-     * from the database after roles and permissions are seeded.
-     */
-    private function seedRolePermissions(): void
-    {
-        $tenantData = self::$tenantData;
-        $guard = 'web';
-
-        $permissionIds = DB::table('permissions')
-            ->where('guard_name', $guard)
-            ->pluck('id', 'name')
-            ->all();
-
-        $roleIds = DB::table('roles')
-            ->where('guard_name', $guard)
-            ->pluck('id', 'name')
-            ->all();
-
-        $existingRolePermissions = DB::table('role_has_permissions')
-            ->select('permission_id', 'role_id')
-            ->get();
-
-        $existingMap = [];
-        foreach ($existingRolePermissions as $item) {
-            $existingMap["{$item->permission_id}|{$item->role_id}"] = true;
-        }
-
-        $isSaaS = config('database.connections.saleprosaas_landlord') !== null;
-
-        $nameBasedMappings = [];
-        if (! $isSaaS) {
-            foreach ($this->getPermissionData() as $p) {
-                $nameBasedMappings[] = ['permission' => $p['name'], 'role' => 'Admin'];
-            }
-        } else {
-            $nameBasedMappings = $this->getBasicPermissionsRole();
-        }
-
-        $packagePermissionsRole = $tenantData['package_permissions_role'] ?? [];
-        $allMappings = array_merge($nameBasedMappings, $packagePermissionsRole);
-
-        $insertData = [];
-        foreach ($allMappings as $row) {
-            $permissionId = null;
-            $roleId = null;
-
-            if (isset($row['permission_id'], $row['role_id'])) {
-                $permissionId = (int) $row['permission_id'];
-                $roleId = (int) $row['role_id'];
-            } elseif (isset($row['permission'], $row['role'])) {
-                $permissionId = $permissionIds[$row['permission']] ?? null;
-                $roleId = $roleIds[$row['role']] ?? null;
-            }
-
-            if ($permissionId === null || $roleId === null) {
-                continue;
-            }
-
-            $lookupKey = "{$permissionId}|{$roleId}";
-            if (! isset($existingMap[$lookupKey])) {
-                $insertData[] = [
-                    'permission_id' => $permissionId,
-                    'role_id' => $roleId,
-                ];
-                $existingMap[$lookupKey] = true;
-            }
-        }
-
-        if (! empty($insertData)) {
-            DB::table('role_has_permissions')->insert($insertData);
         }
     }
 
@@ -706,10 +795,6 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Seed products.
-     *
-     * Note: The products array is extremely large (over 2000 lines).
-     * The full product data array from lines 1805-4068 of the original
-     * TenantDatabaseSeeder.php file should be copied here.
      */
     private function seedProducts(): void
     {
@@ -741,11 +826,6 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Return a placeholder image URL for seeded data.
-     *
-     * Uses picsum.photos as a placeholder service. For production, consider
-     * using local assets or null to avoid external dependencies.
-     *
-     * @return string Placeholder image URL
      */
     private function getRandomImageUrl(): string
     {
@@ -754,8 +834,6 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Return a placeholder file URL for seeded product data.
-     *
-     * @return string Placeholder PDF URL
      */
     private function getRandomFileUrl(): string
     {
@@ -764,10 +842,6 @@ class TenantDatabaseSeeder extends Seeder
 
     /**
      * Get product data array.
-     *
-     * This method should return the full product data array.
-     *
-     * @return array<int, array<string, mixed>> Product data array
      */
     private function getProductData(): array
     {
@@ -3167,898 +3241,6 @@ class TenantDatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
         ]);
-    }
-
-    /**
-     * Get permission data array.
-     *
-     * This method should return the full permission data array.
-     * For now, it returns an empty array as a placeholder.
-     * The actual data should be copied from the original TenantDatabaseSeeder.php
-     * (approximately lines 125-1012).
-     *
-     * @return array<int, array<string, mixed>> Permission data array
-     */
-    private function getPermissionData(): array
-    {
-        return [
-            [
-                'name' => 'taxes-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'taxes-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'taxes-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'taxes-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'taxes-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'taxes-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'units-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'products-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'products-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'products-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'products-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'products-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchases-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchases-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchases-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchases-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sales-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sales-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sales-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sales-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'quotes-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'quotes-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'quotes-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'quotes-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'transfers-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'transfers-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'transfers-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'transfers-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'returns-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'returns-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'returns-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'returns-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'product-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-group-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'due-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'users-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'users-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'users-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'users-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'profit-loss',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'best-seller',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'daily-sale',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'monthly-sale',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'daily-purchase',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'monthly-purchase',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'payment-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouse-stock-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'product-qty-alert',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'supplier-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'expenses-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'expenses-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'expenses-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'expenses-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'general_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'audit-logs-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'audit-logs-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'mail_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'pos_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'hrm_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-return-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-return-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-return-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-return-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'account-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'balance-sheet',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'account-statement',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'department',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'attendance',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'payroll',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'employees-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'employees-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'employees-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'employees-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'user-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'stock_count',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'adjustment',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sms_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'create_sms',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'print_barcode',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'empty_database',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer_group',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'gift_card',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'coupon',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'holiday',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouse-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouse',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'warehouses-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'brands-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'money-transfer',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customer-groups-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'delivery',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'send_notification',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'today_sale',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'today_profit',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'currency',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'backup_database',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'reward_point_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'revenue_profit_summary',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'cash_flow',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'monthly_summary',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'yearly_report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'discount_plan',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'discount',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'product-expiry-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-payment-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-payment-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-payment-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase-payment-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-payment-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-payment-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-payment-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-payment-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'all_notification',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-report-chart',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'dso-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'product_history',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'supplier-due-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'custom_field',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'incomes-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'incomes-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'incomes-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'incomes-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'packing_slip_challan',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'biller-report',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'payment_gateway_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'barcode_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'language_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'addons',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'account-selection',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'invoice_setting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'invoice_create_edit_delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'handle_discount',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchases-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sales-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'customers-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'billers-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'suppliers-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-create',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-index',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-delete',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'categories-export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'role_permission',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'cart-product-update',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'transfers-import',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'change_sale_date',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_product',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_purchase',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_sale',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_quotation',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_transfer',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_expense',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_income',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_accounting',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_hrm',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_people',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_reports',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sidebar_settings',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale_export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'product_export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'purchase_export',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'designations',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'shift',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'overtime',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'leave-type',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'leave',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'hrm-panel',
-                'guard_name' => 'web',
-            ],
-            [
-                'name' => 'sale-agents',
-                'guard_name' => 'web',
-            ],
-        ];
-    }
-
-    /**
-     * Get basic permission–role mappings for SaaS mode (Admin role).
-     * Uses permission and role names; IDs are resolved when seeding.
-     *
-     * @return array<int, array{permission: string, role: string}>
-     */
-    private function getBasicPermissionsRole(): array
-    {
-        $role = 'Admin';
-        $permissions = [
-            'units-update', 'units-delete', 'units-create', 'units-index', 'units-import', 'units-export',
-            'taxes-update', 'taxes-delete', 'taxes-create', 'taxes-index', 'taxes-import', 'taxes-export',
-            'brands-index', 'brands-create', 'brands-update', 'brands-delete', 'brands-import', 'brands-export',
-            'categories-index', 'categories-create', 'categories-import', 'categories-update', 'categories-delete', 'categories-export',
-            'products-index', 'products-create', 'products-update', 'products-delete', 'products-import', 'products-export',
-            'purchases-index', 'purchases-create', 'purchases-update', 'purchases-delete', 'purchases-import', 'purchases-export',
-            'sales-index', 'sales-create', 'sales-update', 'sales-delete', 'sales-import', 'sales-export',
-            'customers-index', 'customers-create', 'customers-update', 'customers-delete', 'customers-import', 'customers-export',
-            'suppliers-index', 'suppliers-create', 'suppliers-update', 'suppliers-delete', 'suppliers-import', 'suppliers-export',
-            'users-index', 'users-create', 'users-update', 'users-delete',
-            'general_setting', 'audit-logs-index', 'audit-logs-export', 'mail_setting', 'pos_setting',
-            'sms_setting', 'create_sms', 'print_barcode', 'empty_database',
-            'customer_group', 'gift_card', 'coupon',
-            'warehouse',
-            'warehouses-index', 'warehouses-create', 'warehouses-update', 'warehouses-delete', 'warehouses-import', 'warehouses-export',
-            'billers-index', 'billers-create', 'billers-update', 'billers-delete', 'billers-import', 'billers-export', 'money-transfer',
-            'customer-groups-index', 'customer-groups-create', 'customer-groups-update', 'customer-groups-delete', 'customer-groups-import', 'customer-groups-export',
-            'category', 'delivery', 'send_notification', 'today_sale', 'today_profit',
-            'currency', 'revenue_profit_summary', 'cash_flow', 'monthly_summary', 'yearly_report',
-            'discount_plan', 'discount',
-            'purchase-payment-index', 'purchase-payment-create', 'purchase-payment-update', 'purchase-payment-delete',
-            'sale-payment-index', 'sale-payment-create', 'sale-payment-update', 'sale-payment-delete',
-            'all_notification', 'product_history', 'custom_field',
-            'incomes-index', 'incomes-create', 'incomes-update', 'incomes-delete',
-            'packing_slip_challan', 'payment_gateway_setting', 'barcode_setting', 'language_setting',
-            'account-selection', 'invoice_setting', 'invoice_create_edit_delete', 'handle_discount',
-            'purchases-import', 'sales-import', 'customers-import', 'billers-import',
-            'role_permission', 'cart-product-update',
-        ];
-
-        $mappings = [];
-        foreach ($permissions as $name) {
-            $mappings[] = ['permission' => $name, 'role' => $role];
-        }
-
-        return $mappings;
     }
 
     /**

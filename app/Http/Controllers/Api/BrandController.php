@@ -5,26 +5,32 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Brands\BrandBulkDestroyRequest;
-use App\Http\Requests\Brands\BrandBulkUpdateRequest;
-use App\Http\Requests\Brands\BrandIndexRequest;
-use App\Http\Requests\Brands\BrandRequest;
+use App\Http\Requests\Brands\BrandBulkActionRequest;
+use App\Http\Requests\Brands\StoreBrandRequest;
+use App\Http\Requests\Brands\UpdateBrandRequest;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\BrandResource;
+use App\Mail\ExportMail;
 use App\Models\Brand;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\BrandService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response; // Import standard Response constants
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * API Controller for Brand CRUD and bulk operations.
+ * Class BrandController
  *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
- * import, and export. All responses use the ResponseServiceProvider macros.
+ * API Controller for Brand CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to BrandService.
  *
  * @group Brand Management
  */
@@ -37,37 +43,37 @@ class BrandController extends Controller
      */
     public function __construct(
         private readonly BrandService $service
-    ) {}
+    ) {
+        // Standard Resource Authorization (index, show, store, update, destroy)
+        $this->authorizeResource(Brand::class, 'brand');
+    }
 
     /**
      * Display a paginated listing of brands.
      *
-     * @param BrandIndexRequest $request Validated query params: per_page, page, status, search.
-     * @return JsonResponse Paginated brands with meta and links.
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index(BrandIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $brands = $this->service->getBrands(
-            $request->validated(),
+        $brands = $this->service->getPaginatedBrands(
+            $request->all(),
             (int) $request->input('per_page', 10)
         );
 
-        // Transform data while preserving LengthAwarePaginator for the Response Macro
-        $brands->through(fn (Brand $brand) => new BrandResource($brand));
-
         return response()->success(
-            $brands,
-            'Brands fetched successfully'
+            BrandResource::collection($brands),
+            'Brands retrieved successfully'
         );
     }
 
     /**
      * Store a newly created brand.
      *
-     * @param BrandRequest $request Validated brand attributes.
-     * @return JsonResponse Created brand with 201 status.
+     * @param StoreBrandRequest $request
+     * @return JsonResponse
      */
-    public function store(BrandRequest $request): JsonResponse
+    public function store(StoreBrandRequest $request): JsonResponse
     {
         $brand = $this->service->createBrand($request->validated());
 
@@ -81,29 +87,25 @@ class BrandController extends Controller
     /**
      * Display the specified brand.
      *
-     * Requires brands-index permission. Returns the brand as a resource.
-     *
-     * @param Brand $brand The brand instance resolved via route model binding.
+     * @param Brand $brand
      * @return JsonResponse
      */
     public function show(Brand $brand): JsonResponse
     {
-        $brand = $this->service->getBrand($brand);
-
         return response()->success(
             new BrandResource($brand),
-            'Brand retrieved successfully'
+            'Brand details retrieved successfully'
         );
     }
 
     /**
      * Update the specified brand.
      *
-     * @param BrandRequest $request Validated brand attributes.
-     * @param Brand $brand The brand instance to update.
-     * @return JsonResponse Updated brand.
+     * @param UpdateBrandRequest $request
+     * @param Brand $brand
+     * @return JsonResponse
      */
-    public function update(BrandRequest $request, Brand $brand): JsonResponse
+    public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
         $updatedBrand = $this->service->updateBrand($brand, $request->validated());
 
@@ -116,8 +118,8 @@ class BrandController extends Controller
     /**
      * Remove the specified brand (soft delete).
      *
-     * @param Brand $brand The brand instance to delete.
-     * @return JsonResponse Success message.
+     * @param Brand $brand
+     * @return JsonResponse
      */
     public function destroy(Brand $brand): JsonResponse
     {
@@ -127,13 +129,15 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk delete brands (soft delete). Skips brands with products.
+     * Bulk delete brands.
      *
-     * @param BrandBulkDestroyRequest $request Validated ids array.
-     * @return JsonResponse Deleted count and message.
+     * @param BrandBulkActionRequest $request
+     * @return JsonResponse
      */
-    public function bulkDestroy(BrandBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(BrandBulkActionRequest $request): JsonResponse
     {
+        Gate::authorize('deleteAny', Brand::class);
+
         $count = $this->service->bulkDeleteBrands($request->validated()['ids']);
 
         return response()->success(
@@ -143,39 +147,51 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk activate brands by ID.
+     * Bulk activate brands.
      *
-     * @param BrandBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Activated count and message.
+     * @param BrandBulkActionRequest $request
+     * @return JsonResponse
      */
-    public function bulkActivate(BrandBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(BrandBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateBrands($request->validated()['ids']);
+        Gate::authorize('updateAny', Brand::class);
 
-        return response()->success(['activated_count' => $count], "{$count} brands activated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} brands activated"
+        );
     }
 
     /**
-     * Bulk deactivate brands by ID.
+     * Bulk deactivate brands.
      *
-     * @param BrandBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Deactivated count and message.
+     * @param BrandBulkActionRequest $request
+     * @return JsonResponse
      */
-    public function bulkDeactivate(BrandBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(BrandBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateBrands($request->validated()['ids']);
+        Gate::authorize('updateAny', Brand::class);
 
-        return response()->success(['deactivated_count' => $count], "{$count} brands deactivated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} brands deactivated"
+        );
     }
 
     /**
-     * Import brands from Excel/CSV file.
+     * Import brands from Excel/CSV.
      *
-     * @param ImportRequest $request Validated file upload.
-     * @return JsonResponse Success message.
+     * @param ImportRequest $request
+     * @return JsonResponse
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        Gate::authorize('import', Brand::class);
+
         $this->service->importBrands($request->file('file'));
 
         return response()->success(null, 'Brands imported successfully');
@@ -184,34 +200,73 @@ class BrandController extends Controller
     /**
      * Export brands to Excel or PDF.
      *
-     * Supports download or email delivery based on method.
-     *
-     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
-     * @return JsonResponse|BinaryFileResponse Success message or file download.
+     * @param ExportRequest $request
+     * @return JsonResponse|BinaryFileResponse
+     * @throws AuthorizationException
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
-        $validated = $request->validated();
-        
-        // Resolve user safely (assuming Sanctum/Passport auth is active, or passed ID)
-        $user = ($validated['method'] === 'email') 
-            ? User::findOrFail($validated['user_id']) 
-            : null;
+        Gate::authorize('export', Brand::class);
 
-        $filePath = $this->service->exportBrands(
+        $validated = $request->validated();
+
+        // 1. Generate the file via service
+        $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
-            $user,
-            $validated['columns'] ?? [],
-            $validated['method']
+            $validated['columns'] ?? []
         );
 
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
+        // 2. Handle Download Method
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        // 3. Handle Email Method
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found for email delivery.',
+                ], 404);
+            }
+
+            $mailSetting = MailSetting::default()->first();
+
+            if (! $mailSetting) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'System mail settings are not configured. Cannot send email.',
+                ], 500);
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'brands_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Brand Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(
+                null,
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid export method provided.',
+        ], 400);
     }
 }

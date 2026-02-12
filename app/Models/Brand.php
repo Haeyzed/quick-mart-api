@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Policies\BrandPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use OwenIt\Auditing\Auditable;
-use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Brand
- *
- * Represents a product brand in the catalog.
  *
  * @property int $id
  * @property string $name
@@ -25,14 +25,21 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $image
  * @property string|null $image_url
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ *
+ * @method static Builder|Brand newModelQuery()
+ * @method static Builder|Brand newQuery()
+ * @method static Builder|Brand query()
+ * @method static Builder|Brand active()
  */
-class Brand extends Model implements AuditableContract
+
+#[UsePolicy(BrandPolicy::class)]
+class Brand extends Model
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -59,78 +66,66 @@ class Brand extends Model implements AuditableContract
     ];
 
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
-    protected $appends = ['status'];
-
-    /**
-     * The "booted" method of the model.
+     * Bootstrap the model and its traits.
      */
     protected static function booted(): void
     {
-        // Automatically generate slug on saving if not present
-        static::saving(function (Brand $brand) {
-            $brand->slug = $brand->generateUniqueSlug($brand->name, $brand->slug);
+        static::saving(static function (Brand $brand): void {
+            if (empty($brand->slug)) {
+                $brand->slug = $brand->generateUniqueSlug($brand->name);
+            }
         });
     }
 
     /**
-     * Generate a unique slug for the brand.
-     * Replaces recursion with a performant loop.
+     * Scope a query to only include active brands.
+     *
+     * @param Builder $query
+     * @return Builder
      */
-    public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
+    public function scopeActive(Builder $query): Builder
     {
-        $slug = $existingSlug ?: Str::slug($name);
+        return $query->where('is_active', true);
+    }
 
-        if (! $this->slugExists($slug)) {
-            return $slug;
-        }
-
+    /**
+     * Generate a unique slug for the brand.
+     *
+     * @param string $name
+     * @return string
+     */
+    public function generateUniqueSlug(string $name): string
+    {
+        $slug = Str::slug($name);
         $originalSlug = $slug;
         $count = 1;
 
         while ($this->slugExists($slug)) {
-            $slug = "{$originalSlug}-".$count++;
+            $slug = "{$originalSlug}-{$count}";
+            $count++;
         }
 
         return $slug;
     }
 
     /**
-     * Check if the slug exists for another brand, excluding the current model when persisted.
+     * Check if the slug exists, excluding the current ID.
      *
-     * Handles both new (unsaved) and existing records. For new records,
-     * where('id', '!=', null) would produce invalid SQL semantics, so we only
-     * exclude the current model when it has been persisted.
-     *
-     * @param  string  $slug  The slug to check for uniqueness.
-     * @return bool True if another brand already uses this slug.
+     * @param string $slug
+     * @return bool
      */
     protected function slugExists(string $slug): bool
     {
-        $query = static::where('slug', $slug);
-
-        if ($this->exists) {
-            $query->whereKeyNot($this->getKey());
-        }
-
-        return $query->exists();
-    }
-
-    /**
-     * Get the human-readable status.
-     */
-    public function getStatusAttribute(): string
-    {
-        return $this->is_active ? 'active' : 'inactive';
+        return static::query()
+            ->where('slug', $slug)
+            ->when($this->exists, fn (Builder $query) => $query->whereNot('id', $this->id))
+            ->exists();
     }
 
     /**
      * Get the products associated with this brand.
      *
-     * @return HasMany<Product>
+     * @return HasMany
      */
     public function products(): HasMany
     {
