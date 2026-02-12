@@ -6,7 +6,13 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
+/**
+ * API Resource for Supplier entity.
+ *
+ * @mixin \App\Models\Supplier
+ */
 class SupplierResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -28,6 +34,7 @@ class SupplierResource extends JsonResource
             'pay_term_no' => $this->pay_term_no,
             'pay_term_period' => $this->pay_term_period,
             'image' => $this->image,
+            'image_url' => $this->image ? Storage::disk('public')->url($this->image) : null,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

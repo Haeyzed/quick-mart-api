@@ -19,7 +19,7 @@ class SupplierRequest extends BaseRequest
         $supplierId = $this->route('supplier')?->id;
 
         return [
-            'name' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'company_name' => [
                 'nullable',
                 'string',

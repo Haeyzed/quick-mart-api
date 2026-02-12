@@ -412,6 +412,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('suppliers/all/active', [SupplierController::class, 'getAllActive'])
         ->name('suppliers.all-active');
+    Route::get('suppliers/{supplier}/ledger', [SupplierController::class, 'ledger'])
+        ->name('suppliers.ledger');
+    Route::get('suppliers/{supplier}/balance-due', [SupplierController::class, 'balanceDue'])
+        ->name('suppliers.balance-due');
+    Route::get('suppliers/{supplier}/payments', [SupplierController::class, 'payments'])
+        ->name('suppliers.payments');
+    Route::post('suppliers/{supplier}/clear-due', [SupplierController::class, 'clearDue'])
+        ->name('suppliers.clear-due');
     Route::patch('suppliers/bulk-activate', [SupplierController::class, 'bulkActivate'])
         ->name('suppliers.bulkActivate');
     Route::patch('suppliers/bulk-deactivate', [SupplierController::class, 'bulkDeactivate'])
