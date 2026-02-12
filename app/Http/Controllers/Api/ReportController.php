@@ -7,30 +7,53 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\AuditLogExportRequest;
 use App\Http\Requests\Reports\AuditLogIndexRequest;
+use App\Http\Requests\Reports\BestSellerExportRequest;
 use App\Http\Requests\Reports\BestSellerReportRequest;
+use App\Http\Requests\Reports\BillerReportExportRequest;
 use App\Http\Requests\Reports\BillerReportRequest;
+use App\Http\Requests\Reports\ChallanReportExportRequest;
 use App\Http\Requests\Reports\ChallanReportRequest;
 use App\Http\Requests\Reports\CustomerDueReportExportRequest;
 use App\Http\Requests\Reports\CustomerDueReportRequest;
+use App\Http\Requests\Reports\CustomerGroupReportExportRequest;
 use App\Http\Requests\Reports\CustomerGroupReportRequest;
+use App\Http\Requests\Reports\CustomerReportExportRequest;
 use App\Http\Requests\Reports\CustomerReportRequest;
+use App\Http\Requests\Reports\DailyPurchaseExportRequest;
 use App\Http\Requests\Reports\DailyPurchaseReportRequest;
+use App\Http\Requests\Reports\DailySaleExportRequest;
+use App\Http\Requests\Reports\DailySaleObjectiveExportRequest;
 use App\Http\Requests\Reports\DailySaleObjectiveRequest;
 use App\Http\Requests\Reports\DailySaleReportRequest;
+use App\Http\Requests\Reports\MonthlyPurchaseExportRequest;
 use App\Http\Requests\Reports\MonthlyPurchaseReportRequest;
+use App\Http\Requests\Reports\MonthlySaleExportRequest;
 use App\Http\Requests\Reports\MonthlySaleReportRequest;
+use App\Http\Requests\Reports\PaymentReportExportRequest;
 use App\Http\Requests\Reports\PaymentReportRequest;
+use App\Http\Requests\Reports\ProductExpiryExportRequest;
 use App\Http\Requests\Reports\ProductExpiryReportRequest;
+use App\Http\Requests\Reports\ProductQtyAlertExportRequest;
 use App\Http\Requests\Reports\ProductQtyAlertRequest;
+use App\Http\Requests\Reports\ProductReportExportRequest;
 use App\Http\Requests\Reports\ProductReportRequest;
+use App\Http\Requests\Reports\ProfitLossExportRequest;
 use App\Http\Requests\Reports\ProfitLossReportRequest;
+use App\Http\Requests\Reports\PurchaseReportExportRequest;
 use App\Http\Requests\Reports\PurchaseReportRequest;
+use App\Http\Requests\Reports\SaleReportChartExportRequest;
 use App\Http\Requests\Reports\SaleReportChartRequest;
+use App\Http\Requests\Reports\SaleReportExportRequest;
 use App\Http\Requests\Reports\SaleReportRequest;
+use App\Http\Requests\Reports\SupplierDueExportRequest;
 use App\Http\Requests\Reports\SupplierDueReportRequest;
+use App\Http\Requests\Reports\SupplierReportExportRequest;
 use App\Http\Requests\Reports\SupplierReportRequest;
+use App\Http\Requests\Reports\UserReportExportRequest;
 use App\Http\Requests\Reports\UserReportRequest;
+use App\Http\Requests\Reports\WarehouseReportExportRequest;
 use App\Http\Requests\Reports\WarehouseReportRequest;
+use App\Http\Requests\Reports\WarehouseStockExportRequest;
 use App\Http\Requests\Reports\WarehouseStockReportRequest;
 use App\Http\Resources\AuditResource;
 use App\Http\Resources\DueReportResource;
@@ -451,5 +474,245 @@ class ReportController extends Controller
         );
 
         return response()->success($report, 'Daily sale objective report fetched successfully');
+    }
+
+    private function handleExport(array $validated, callable $exportFn): JsonResponse|BinaryFileResponse
+    {
+        $user = ($validated['method'] === 'email')
+            ? User::findOrFail($validated['user_id'])
+            : null;
+
+        $filePath = $exportFn($validated, $user);
+
+        if ($validated['method'] === 'download') {
+            return response()->download(Storage::disk('public')->path($filePath));
+        }
+
+        return response()->success(null, 'Export processed and sent via email');
+    }
+
+    public function exportProductQtyAlert(ProductQtyAlertExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        return $this->handleExport($request->validated(), fn ($v, $u) => $this->service->exportProductQtyAlert([], $v['format'], $u, $v['columns'] ?? [], $v['method']));
+    }
+
+    public function exportProductExpiry(ProductExpiryExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProductExpiry(
+            array_filter(['expired_before' => $v['expired_before'] ?? null]),
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportWarehouseStock(WarehouseStockExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportWarehouseStock(
+            array_filter(['warehouse_id' => $v['warehouse_id'] ?? null]),
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportDailySale(DailySaleExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailySale(
+            ['year' => $v['year'], 'month' => $v['month'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportMonthlySale(MonthlySaleExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportMonthlySale(
+            ['year' => $v['year'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportDailyPurchase(DailyPurchaseExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailyPurchase(
+            ['year' => $v['year'], 'month' => $v['month'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportMonthlyPurchase(MonthlyPurchaseExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportMonthlyPurchase(
+            ['year' => $v['year'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportBestSeller(BestSellerExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportBestSeller(
+            ['months' => $v['months'] ?? null, 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportSaleReport(SaleReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSaleReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportPurchaseReport(PurchaseReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportPurchaseReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportPaymentReport(PaymentReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportPaymentReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'type' => $v['type'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportSupplierDueReport(SupplierDueExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSupplierDueReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'supplier_id' => $v['supplier_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportChallanReport(ChallanReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportChallanReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'based_on' => $v['based_on'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportProductReport(ProductReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProductReport(
+            ['warehouse_id' => $v['warehouse_id'] ?? null, 'category_id' => $v['category_id'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportCustomerReport(CustomerReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportCustomerReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'customer_id' => $v['customer_id']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportCustomerGroupReport(CustomerGroupReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportCustomerGroupReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'customer_group_id' => $v['customer_group_id']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportSupplierReport(SupplierReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSupplierReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'supplier_id' => $v['supplier_id']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportUserReport(UserReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportUserReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'filter_user_id' => $v['filter_user_id']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportBillerReport(BillerReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportBillerReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'biller_id' => $v['biller_id']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportWarehouseReport(WarehouseReportExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportWarehouseReport(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'], 'type' => $v['type'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportProfitLoss(ProfitLossExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProfitLoss(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportSaleReportChart(SaleReportChartExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSaleReportChart(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null, 'time_period' => $v['time_period'] ?? null, 'product_list' => $v['product_list'] ?? null],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
+    }
+
+    public function exportDailySaleObjective(DailySaleObjectiveExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        $v = $request->validated();
+
+        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailySaleObjective(
+            ['start_date' => $v['start_date'], 'end_date' => $v['end_date']],
+            $v['format'], $u, $v['columns'] ?? [], $v['method']
+        ));
     }
 }

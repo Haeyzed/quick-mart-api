@@ -170,50 +170,96 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('reports/product-qty-alert', [ReportController::class, 'productQtyAlert'])
         ->name('reports.product-qty-alert');
+    Route::post('reports/product-qty-alert/export', [ReportController::class, 'exportProductQtyAlert'])
+        ->name('reports.product-qty-alert.export');
     Route::get('reports/product-expiry', [ReportController::class, 'productExpiry'])
         ->name('reports.product-expiry');
+    Route::post('reports/product-expiry/export', [ReportController::class, 'exportProductExpiry'])
+        ->name('reports.product-expiry.export');
     Route::get('reports/warehouse-stock', [ReportController::class, 'warehouseStock'])
         ->name('reports.warehouse-stock');
+    Route::post('reports/warehouse-stock/export', [ReportController::class, 'exportWarehouseStock'])
+        ->name('reports.warehouse-stock.export');
     Route::get('reports/daily-sale', [ReportController::class, 'dailySale'])
         ->name('reports.daily-sale');
+    Route::post('reports/daily-sale/export', [ReportController::class, 'exportDailySale'])
+        ->name('reports.daily-sale.export');
     Route::get('reports/monthly-sale', [ReportController::class, 'monthlySale'])
         ->name('reports.monthly-sale');
+    Route::post('reports/monthly-sale/export', [ReportController::class, 'exportMonthlySale'])
+        ->name('reports.monthly-sale.export');
     Route::get('reports/daily-purchase', [ReportController::class, 'dailyPurchase'])
         ->name('reports.daily-purchase');
+    Route::post('reports/daily-purchase/export', [ReportController::class, 'exportDailyPurchase'])
+        ->name('reports.daily-purchase.export');
     Route::get('reports/monthly-purchase', [ReportController::class, 'monthlyPurchase'])
         ->name('reports.monthly-purchase');
+    Route::post('reports/monthly-purchase/export', [ReportController::class, 'exportMonthlyPurchase'])
+        ->name('reports.monthly-purchase.export');
     Route::get('reports/best-seller', [ReportController::class, 'bestSeller'])
         ->name('reports.best-seller');
+    Route::post('reports/best-seller/export', [ReportController::class, 'exportBestSeller'])
+        ->name('reports.best-seller.export');
     Route::get('reports/sale', [ReportController::class, 'saleReport'])
         ->name('reports.sale');
+    Route::post('reports/sale/export', [ReportController::class, 'exportSaleReport'])
+        ->name('reports.sale.export');
     Route::get('reports/purchase', [ReportController::class, 'purchaseReport'])
         ->name('reports.purchase');
+    Route::post('reports/purchase/export', [ReportController::class, 'exportPurchaseReport'])
+        ->name('reports.purchase.export');
     Route::get('reports/payment', [ReportController::class, 'paymentReport'])
         ->name('reports.payment');
+    Route::post('reports/payment/export', [ReportController::class, 'exportPaymentReport'])
+        ->name('reports.payment.export');
     Route::get('reports/supplier-due', [ReportController::class, 'supplierDueReport'])
         ->name('reports.supplier-due');
+    Route::post('reports/supplier-due/export', [ReportController::class, 'exportSupplierDueReport'])
+        ->name('reports.supplier-due.export');
     Route::get('reports/challan', [ReportController::class, 'challanReport'])
         ->name('reports.challan');
+    Route::post('reports/challan/export', [ReportController::class, 'exportChallanReport'])
+        ->name('reports.challan.export');
     Route::get('reports/product', [ReportController::class, 'productReport'])
         ->name('reports.product');
+    Route::post('reports/product/export', [ReportController::class, 'exportProductReport'])
+        ->name('reports.product.export');
     Route::get('reports/customer', [ReportController::class, 'customerReport'])
         ->name('reports.customer');
+    Route::post('reports/customer/export', [ReportController::class, 'exportCustomerReport'])
+        ->name('reports.customer.export');
     Route::get('reports/customer-group', [ReportController::class, 'customerGroupReport'])
         ->name('reports.customer-group');
+    Route::post('reports/customer-group/export', [ReportController::class, 'exportCustomerGroupReport'])
+        ->name('reports.customer-group.export');
     Route::get('reports/supplier', [ReportController::class, 'supplierReport'])
         ->name('reports.supplier');
+    Route::post('reports/supplier/export', [ReportController::class, 'exportSupplierReport'])
+        ->name('reports.supplier.export');
     Route::get('reports/user', [ReportController::class, 'userReport'])
         ->name('reports.user');
+    Route::post('reports/user/export', [ReportController::class, 'exportUserReport'])
+        ->name('reports.user.export');
     Route::get('reports/biller', [ReportController::class, 'billerReport'])
         ->name('reports.biller');
+    Route::post('reports/biller/export', [ReportController::class, 'exportBillerReport'])
+        ->name('reports.biller.export');
     Route::get('reports/warehouse', [ReportController::class, 'warehouseReport'])
         ->name('reports.warehouse');
+    Route::post('reports/warehouse/export', [ReportController::class, 'exportWarehouseReport'])
+        ->name('reports.warehouse.export');
     Route::get('reports/profit-loss', [ReportController::class, 'profitLoss'])
         ->name('reports.profit-loss');
+    Route::post('reports/profit-loss/export', [ReportController::class, 'exportProfitLoss'])
+        ->name('reports.profit-loss.export');
     Route::get('reports/sale-chart', [ReportController::class, 'saleReportChart'])
         ->name('reports.sale-chart');
+    Route::post('reports/sale-chart/export', [ReportController::class, 'exportSaleReportChart'])
+        ->name('reports.sale-chart.export');
     Route::get('reports/daily-sale-objective', [ReportController::class, 'dailySaleObjective'])
         ->name('reports.daily-sale-objective');
+    Route::post('reports/daily-sale-objective/export', [ReportController::class, 'exportDailySaleObjective'])
+        ->name('reports.daily-sale-objective.export');
 
     Route::get('settings/general', [GeneralSettingController::class, 'show'])
         ->name('settings.general.show');

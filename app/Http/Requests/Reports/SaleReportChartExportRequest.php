@@ -5,30 +5,29 @@ declare(strict_types=1);
 namespace App\Http\Requests\Reports;
 
 use App\Http\Requests\BaseRequest;
+use App\Http\Requests\Reports\Concerns\HasReportExportRules;
 use Illuminate\Validation\Rule;
 
-/**
- * Form request for sale report chart query parameters.
- */
-class SaleReportChartRequest extends BaseRequest
+class SaleReportChartExportRequest extends BaseRequest
 {
+    use HasReportExportRules;
+
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * @return array<string, array<int, mixed>>
-     */
     public function rules(): array
     {
-        return [
+        $base = [
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
             'time_period' => ['nullable', 'string', Rule::in(['weekly', 'monthly'])],
             'product_list' => ['nullable', 'string'],
         ];
+
+        return array_merge($base, $this->exportRules());
     }
 
     protected function prepareForValidation(): void
