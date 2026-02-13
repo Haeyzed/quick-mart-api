@@ -41,7 +41,7 @@ class BrandPolicy
      */
     public function update(User $user, Brand $brand): bool
     {
-        return $user->checkPermissionTo('edit brands');
+        return $user->checkPermissionTo('update brands');
     }
 
     /**
@@ -65,7 +65,7 @@ class BrandPolicy
      */
     public function updateAny(User $user): bool
     {
-        return $user->checkPermissionTo('edit brands');
+        return $user->checkPermissionTo('update brands');
     }
 
     /**

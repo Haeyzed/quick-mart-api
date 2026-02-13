@@ -98,7 +98,7 @@ class TenantDatabaseSeeder extends Seeder
                 'view brands',
                 'view brand details',
                 'create brands',
-                'edit brands',
+                'update brands',
                 'delete brands',
                 'import brands',
                 'export brands',
