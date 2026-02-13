@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Policies\BrandPolicy;
-use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Auditable;
 
 /**
  * Class Brand
@@ -35,11 +35,9 @@ use Illuminate\Support\Str;
  * @method static Builder|Brand active()
  */
 
-#[UsePolicy(BrandPolicy::class)]
-class Brand extends Model
+class Brand extends Model implements AuditableContract
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, Auditable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
