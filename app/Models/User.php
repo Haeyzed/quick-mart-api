@@ -203,12 +203,17 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
 
     /**
      * Check if the user denies (lacks) a specific permission.
+     * Treats non-existent permissions as denied (avoids 500 when permission name is invalid).
      *
      * @param  string  $permission  Permission name
      */
     public function denies(string $permission): bool
     {
-        return ! $this->hasPermissionTo($permission);
+        try {
+            return ! $this->hasPermissionTo($permission);
+        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
+            return true;
+        }
     }
 
     /**
