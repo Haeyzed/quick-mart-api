@@ -24,7 +24,8 @@ class ExportRequest extends FormRequest
             'columns' => ['required', 'array', 'min:1'],
             'columns.*' => ['string'],
             'user_id' => ['required_if:method,email', 'integer', 'exists:users,id'],
+            'start_date' => ['sometimes', 'date', 'date_format:Y-m-d'],
+            'end_date' => ['sometimes', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
         ];
     }
 }
-

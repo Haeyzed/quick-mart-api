@@ -49,6 +49,14 @@ class BrandService
                     );
                 }
             )
+            ->when(
+                ! empty($filters['start_date']),
+                fn (Builder $q) => $q->whereDate('created_at', '>=', $filters['start_date'])
+            )
+            ->when(
+                ! empty($filters['end_date']),
+                fn (Builder $q) => $q->whereDate('created_at', '<=', $filters['end_date'])
+            )
             ->latest()
             ->paginate($perPage);
     }
@@ -168,15 +176,21 @@ class BrandService
      * @param  array<int>  $ids
      * @param  string  $format  'excel' or 'pdf'
      * @param  array<string>  $columns
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters for created_at
      * @return string Relative file path.
      */
-    public function generateExportFile(array $ids, string $format, array $columns): string
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
         $fileName = 'brands_'.now()->timestamp;
         $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
-        ExcelFacade::store(new BrandsExport($ids, $columns), $relativePath, 'public', $writerType);
+        ExcelFacade::store(
+            new BrandsExport($ids, $columns, $filters['start_date'] ?? null, $filters['end_date'] ?? null),
+            $relativePath,
+            'public',
+            $writerType
+        );
 
         return $relativePath;
     }

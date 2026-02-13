@@ -25,6 +25,8 @@ use OwenIt\Auditing\Auditable;
  * @property string|null $image
  * @property string|null $image_url
  * @property bool $is_active
+ * @property Carbon|null $start_date
+ * @property Carbon|null $end_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -52,6 +54,8 @@ class Brand extends Model implements AuditableContract
         'image',
         'image_url',
         'is_active',
+        'start_date',
+        'end_date',
     ];
 
     /**

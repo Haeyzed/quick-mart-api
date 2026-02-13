@@ -18,22 +18,28 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
     private const DEFAULT_COLUMNS = [
         'id', 'name', 'slug', 'short_description',
         'page_title', 'image_url', 'is_active',
-        'created_at', 'updated_at'
+        'created_at', 'updated_at',
     ];
 
     /**
-     * @param array<int> $ids
-     * @param array<string> $columns
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  string|null  $startDate  Filter by created_at >= (Y-m-d)
+     * @param  string|null  $endDate  Filter by created_at <= (Y-m-d)
      */
     public function __construct(
         private readonly array $ids = [],
-        private readonly array $columns = []
+        private readonly array $columns = [],
+        private readonly ?string $startDate = null,
+        private readonly ?string $endDate = null
     ) {}
 
     public function query(): Builder
     {
         return Brand::query()
-            ->when(!empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(! empty($this->startDate), fn (Builder $q) => $q->whereDate('created_at', '>=', $this->startDate))
+            ->when(! empty($this->endDate), fn (Builder $q) => $q->whereDate('created_at', '<=', $this->endDate))
             ->orderBy('name');
     }
 
@@ -48,7 +54,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
     }
 
     /**
-     * @param Brand $row
+     * @param  Brand  $row
      */
     public function map($row): array
     {

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Tenant Database Seeder
@@ -83,7 +84,7 @@ class TenantDatabaseSeeder extends Seeder
             'products' => [
                 'view products',
                 'create products',
-                'edit products',
+                'update products',
                 'delete products',
                 'import products',
                 'export products',
@@ -105,24 +106,27 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'categories' => [
                 'view categories',
+                'view category details',
                 'create categories',
-                'edit categories',
+                'update categories',
                 'delete categories',
                 'import categories',
                 'export categories',
             ],
             'units' => [
                 'view units',
+                'view unit details',
                 'create units',
-                'edit units',
+                'update units',
                 'delete units',
                 'import units',
                 'export units',
             ],
             'taxes' => [
                 'view taxes',
+                'view tax details',
                 'create taxes',
-                'edit taxes',
+                'update taxes',
                 'delete taxes',
                 'import taxes',
                 'export taxes',
@@ -130,29 +134,29 @@ class TenantDatabaseSeeder extends Seeder
             'purchases' => [
                 'view purchases',
                 'create purchases',
-                'edit purchases',
+                'update purchases',
                 'delete purchases',
                 'import purchases',
                 'export purchases',
                 'view purchase payments',
                 'create purchase payments',
-                'edit purchase payments',
+                'update purchase payments',
                 'delete purchase payments',
                 'view purchase returns',
                 'create purchase returns',
-                'edit purchase returns',
+                'update purchase returns',
                 'delete purchase returns',
             ],
             'sales' => [
                 'view sales',
                 'create sales',
-                'edit sales',
+                'update sales',
                 'delete sales',
                 'import sales',
                 'export sales',
                 'view sale payments',
                 'create sale payments',
-                'edit sale payments',
+                'update sale payments',
                 'delete sale payments',
                 'view pos',
                 'view today sale',
@@ -165,13 +169,13 @@ class TenantDatabaseSeeder extends Seeder
             'quotes' => [
                 'view quotes',
                 'create quotes',
-                'edit quotes',
+                'update quotes',
                 'delete quotes',
             ],
             'transfers' => [
                 'view transfers',
                 'create transfers',
-                'edit transfers',
+                'update transfers',
                 'delete transfers',
                 'import transfers',
                 'money transfer',
@@ -179,47 +183,47 @@ class TenantDatabaseSeeder extends Seeder
             'returns' => [
                 'view returns',
                 'create returns',
-                'edit returns',
+                'update returns',
                 'delete returns',
             ],
             'people' => [
                 'view customers',
                 'create customers',
-                'edit customers',
+                'update customers',
                 'delete customers',
                 'import customers',
                 'export customers',
                 'view customer groups',
                 'create customer groups',
-                'edit customer groups',
+                'update customer groups',
                 'delete customer groups',
                 'import customer groups',
                 'export customer groups',
                 'view suppliers',
                 'create suppliers',
-                'edit suppliers',
+                'update suppliers',
                 'delete suppliers',
                 'import suppliers',
                 'export suppliers',
                 'view billers',
                 'create billers',
-                'edit billers',
+                'update billers',
                 'delete billers',
                 'import billers',
                 'export billers',
                 'view users',
                 'create users',
-                'edit users',
+                'update users',
                 'delete users',
                 'view employees',
                 'create employees',
-                'edit employees',
+                'update employees',
                 'delete employees',
             ],
             'warehouses' => [
                 'view warehouses',
                 'create warehouses',
-                'edit warehouses',
+                'update warehouses',
                 'delete warehouses',
                 'import warehouses',
                 'export warehouses',
@@ -232,11 +236,11 @@ class TenantDatabaseSeeder extends Seeder
                 'view account statement',
                 'view incomes',
                 'create incomes',
-                'edit incomes',
+                'update incomes',
                 'delete incomes',
                 'view expenses',
                 'create expenses',
-                'edit expenses',
+                'update expenses',
                 'delete expenses',
                 'view profit loss',
                 'view cash flow',
@@ -297,6 +301,8 @@ class TenantDatabaseSeeder extends Seeder
                 'view all notifications',
             ],
         ];
+        // Reset cached roles and permissions
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // 2. Create Roles
         $roles = ['Super Admin', 'Admin', 'Owner', 'Staff', 'Customer'];
@@ -351,9 +357,8 @@ class TenantDatabaseSeeder extends Seeder
         if ($legacyStaff) {
             $legacyStaff->syncPermissions($staffPermissions);
         }
-
-        // Reset cached roles and permissions
-        app()['cache']->forget('spatie.permission.cache');
+        
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**

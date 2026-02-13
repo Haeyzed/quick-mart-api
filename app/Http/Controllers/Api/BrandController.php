@@ -205,7 +205,11 @@ class BrandController extends Controller
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
-            $validated['columns'] ?? []
+            $validated['columns'] ?? [],
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
         );
 
         // 2. Handle Download Method
