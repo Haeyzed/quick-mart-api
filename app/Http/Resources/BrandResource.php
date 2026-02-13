@@ -29,7 +29,7 @@ class BrandResource extends JsonResource
             'page_title' => $this->page_title,
             'image_url' => $this->image_url,
             'is_active' => $this->is_active,
-            'status_label' => $this->is_active ? 'active' : 'inactive',
+            'status' => $this->is_active ? 'active' : 'inactive',
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

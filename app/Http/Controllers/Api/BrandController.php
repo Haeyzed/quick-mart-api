@@ -41,8 +41,6 @@ class BrandController extends Controller
 
     /**
      * BrandController constructor.
-     *
-     * @param BrandService $service
      */
     public function __construct(
         private readonly BrandService $service
@@ -50,9 +48,6 @@ class BrandController extends Controller
 
     /**
      * Display a paginated listing of brands.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -71,9 +66,6 @@ class BrandController extends Controller
 
     /**
      * Store a newly created brand.
-     *
-     * @param StoreBrandRequest $request
-     * @return JsonResponse
      */
     public function store(StoreBrandRequest $request): JsonResponse
     {
@@ -90,9 +82,6 @@ class BrandController extends Controller
 
     /**
      * Display the specified brand.
-     *
-     * @param Brand $brand
-     * @return JsonResponse
      */
     public function show(Brand $brand): JsonResponse
     {
@@ -106,10 +95,6 @@ class BrandController extends Controller
 
     /**
      * Update the specified brand.
-     *
-     * @param UpdateBrandRequest $request
-     * @param Brand $brand
-     * @return JsonResponse
      */
     public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
@@ -125,9 +110,6 @@ class BrandController extends Controller
 
     /**
      * Remove the specified brand (soft delete).
-     *
-     * @param Brand $brand
-     * @return JsonResponse
      */
     public function destroy(Brand $brand): JsonResponse
     {
@@ -140,9 +122,6 @@ class BrandController extends Controller
 
     /**
      * Bulk delete brands.
-     *
-     * @param BrandBulkActionRequest $request
-     * @return JsonResponse
      */
     public function bulkDestroy(BrandBulkActionRequest $request): JsonResponse
     {
@@ -158,9 +137,6 @@ class BrandController extends Controller
 
     /**
      * Bulk activate brands.
-     *
-     * @param BrandBulkActionRequest $request
-     * @return JsonResponse
      */
     public function bulkActivate(BrandBulkActionRequest $request): JsonResponse
     {
@@ -176,9 +152,6 @@ class BrandController extends Controller
 
     /**
      * Bulk deactivate brands.
-     *
-     * @param BrandBulkActionRequest $request
-     * @return JsonResponse
      */
     public function bulkDeactivate(BrandBulkActionRequest $request): JsonResponse
     {
@@ -194,9 +167,6 @@ class BrandController extends Controller
 
     /**
      * Import brands from Excel/CSV.
-     *
-     * @param ImportRequest $request
-     * @return JsonResponse
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -210,8 +180,6 @@ class BrandController extends Controller
     /**
      * Export brands to Excel or PDF.
      *
-     * @param ExportRequest $request
-     * @return JsonResponse|BinaryFileResponse
      * @throws AuthorizationException
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
@@ -261,7 +229,7 @@ class BrandController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'brands_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'brands_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Brand Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -270,7 +238,7 @@ class BrandController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
