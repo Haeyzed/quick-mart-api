@@ -7,15 +7,12 @@ namespace App\Services;
 use App\Exports\BrandsExport;
 use App\Imports\BrandsImport;
 use App\Models\Brand;
-use App\Services\UploadService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -33,9 +30,7 @@ class BrandService
     /**
      * Get paginated brands based on filters.
      *
-     * @param array<string, mixed> $filters
-     * @param int $perPage
-     * @return LengthAwarePaginator
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedBrands(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -45,7 +40,7 @@ class BrandService
                 fn (Builder $q) => $q->where('is_active', $filters['status'] === 'active')
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where(fn (Builder $subQ) => $subQ
@@ -61,8 +56,7 @@ class BrandService
     /**
      * Create a new brand.
      *
-     * @param array<string, mixed> $data
-     * @return Brand
+     * @param  array<string, mixed>  $data
      */
     public function createBrand(array $data): Brand
     {
@@ -80,9 +74,7 @@ class BrandService
     /**
      * Update an existing brand.
      *
-     * @param Brand $brand
-     * @param array<string, mixed> $data
-     * @return Brand
+     * @param  array<string, mixed>  $data
      */
     public function updateBrand(Brand $brand, array $data): Brand
     {
@@ -107,7 +99,6 @@ class BrandService
     /**
      * Delete a brand.
      *
-     * @param Brand $brand
      * @throws ConflictHttpException
      */
     public function deleteBrand(Brand $brand): void
@@ -127,7 +118,7 @@ class BrandService
     /**
      * Bulk delete brands.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      * @return int Count of deleted items.
      */
     public function bulkDeleteBrands(array $ids): int
@@ -156,9 +147,7 @@ class BrandService
     /**
      * Update status for multiple brands.
      *
-     * @param array<int> $ids
-     * @param bool $isActive
-     * @return int
+     * @param  array<int>  $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -167,39 +156,27 @@ class BrandService
 
     /**
      * Import brands from file.
-     *
-     * @param UploadedFile $file
-     * @return void
      */
     public function importBrands(UploadedFile $file): void
     {
-        Excel::import(new BrandsImport(), $file);
+        ExcelFacade::import(new BrandsImport, $file);
     }
 
     /**
      * Export brands to file.
      *
-     * @param array<int> $ids
-     * @param string $format 'excel' or 'pdf'
-     * @param array<string> $columns
+     * @param  array<int>  $ids
+     * @param  string  $format  'excel' or 'pdf'
+     * @param  array<string>  $columns
      * @return string Relative file path.
      */
     public function generateExportFile(array $ids, string $format, array $columns): string
     {
-        $fileName = 'brands_' . now()->timestamp;
-        $relativePath = "exports/{$fileName}." . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'brands_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
-        if ($format === 'excel') {
-            Excel::store(new BrandsExport($ids, $columns), $relativePath, 'public');
-        } else {
-            $brands = Brand::query()
-                ->when(!empty($ids), fn (Builder $q) => $q->whereIn('id', $ids))
-                ->get();
-
-            // Note: Ensure the view 'exports.brands-pdf' exists
-            $pdf = Pdf::loadView('exports.brands-pdf', compact('brands', 'columns'));
-            Storage::disk('public')->put($relativePath, $pdf->output());
-        }
+        ExcelFacade::store(new BrandsExport($ids, $columns), $relativePath, 'public', $writerType);
 
         return $relativePath;
     }
@@ -207,7 +184,6 @@ class BrandService
     /**
      * Handle Image Upload via UploadService.
      *
-     * @param UploadedFile $file
      * @return array{path: string, url: string|null}
      */
     private function handleImageUpload(UploadedFile $file): array
