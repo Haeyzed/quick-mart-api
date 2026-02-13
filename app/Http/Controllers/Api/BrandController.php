@@ -46,7 +46,7 @@ class BrandController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (auth()->user()->denies('view brandsv')) {
+        if (auth()->user()->denies('view brands')) {
             return response()->forbidden('Permission denied for viewing brands list.');
         }
 
