@@ -18,6 +18,7 @@ use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\BrandService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // 1. Import this trait
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -36,6 +37,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class BrandController extends Controller
 {
+    use AuthorizesRequests; // 2. Use the trait here
+
     /**
      * BrandController constructor.
      *
@@ -264,9 +267,8 @@ class BrandController extends Controller
             );
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Invalid export method provided.',
-        ], 400);
+        return response()->badRequest(
+            'Invalid export method provided.',
+        );
     }
 }
