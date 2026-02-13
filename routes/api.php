@@ -117,7 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
         Route::post('bulk-deactivate', [BrandController::class, 'bulkDeactivate'])->name('bulk-deactivate');
         Route::post('import', [BrandController::class, 'import'])->name('import');
-        Route::get('export', [BrandController::class, 'export'])->name('export');
+        Route::post('export', [BrandController::class, 'export'])->name('export');
     });
     Route::apiResource('brands', BrandController::class);
 
