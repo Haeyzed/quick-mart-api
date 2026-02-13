@@ -227,10 +227,7 @@ class BrandController extends Controller
             $mailSetting = MailSetting::default()->first();
 
             if (! $mailSetting) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'System mail settings are not configured. Cannot send email.',
-                ], 500);
+                return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
             $generalSetting = GeneralSetting::query()->latest()->first();
