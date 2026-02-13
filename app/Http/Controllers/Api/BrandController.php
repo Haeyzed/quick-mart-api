@@ -46,10 +46,7 @@ class BrandController extends Controller
      */
     public function __construct(
         private readonly BrandService $service
-    ) {
-        // Standard Resource Authorization (index, show, store, update, destroy)
-        $this->authorizeResource(Brand::class, 'brand');
-    }
+    ) {}
 
     /**
      * Display a paginated listing of brands.
@@ -59,6 +56,8 @@ class BrandController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Brand::class);
+
         $brands = $this->service->getPaginatedBrands(
             $request->all(),
             (int) $request->input('per_page', 10)
@@ -78,6 +77,8 @@ class BrandController extends Controller
      */
     public function store(StoreBrandRequest $request): JsonResponse
     {
+        $this->authorize('create', Brand::class);
+
         $brand = $this->service->createBrand($request->validated());
 
         return response()->success(
@@ -95,6 +96,8 @@ class BrandController extends Controller
      */
     public function show(Brand $brand): JsonResponse
     {
+        $this->authorize('view', $brand);
+
         return response()->success(
             new BrandResource($brand),
             'Brand details retrieved successfully'
@@ -110,6 +113,8 @@ class BrandController extends Controller
      */
     public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
+        $this->authorize('update', $brand);
+
         $updatedBrand = $this->service->updateBrand($brand, $request->validated());
 
         return response()->success(
@@ -126,6 +131,8 @@ class BrandController extends Controller
      */
     public function destroy(Brand $brand): JsonResponse
     {
+        $this->authorize('delete', $brand);
+
         $this->service->deleteBrand($brand);
 
         return response()->success(null, 'Brand deleted successfully');
