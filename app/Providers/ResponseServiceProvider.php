@@ -30,11 +30,9 @@ class ResponseServiceProvider extends ServiceProvider
      * Automatically detects paginated data and appends
      * pagination metadata and navigation links.
      *
-     * @param mixed  $data       Response payload
-     * @param string $message    Human-readable success message
-     * @param int    $statusCode HTTP status code
-     *
-     * @return JsonResponse
+     * @param  mixed  $data  Response payload
+     * @param  string  $message  Human-readable success message
+     * @param  int  $statusCode  HTTP status code
      *
      * @deprecated Use response()->success() macro instead.
      */
@@ -75,10 +73,7 @@ class ResponseServiceProvider extends ServiceProvider
     /**
      * Create a validation error JSON response.
      *
-     * @param array<string, array<int, string>> $errors
-     * @param string $message
-     *
-     * @return JsonResponse
+     * @param  array<string, array<int, string>>  $errors
      *
      * @deprecated Use response()->error() macro instead.
      */
@@ -92,11 +87,9 @@ class ResponseServiceProvider extends ServiceProvider
     /**
      * Create an error JSON response.
      *
-     * @param string $message    Error message
-     * @param mixed  $errors     Optional error details
-     * @param int    $statusCode HTTP status code
-     *
-     * @return JsonResponse
+     * @param  string  $message  Error message
+     * @param  mixed  $errors  Optional error details
+     * @param  int  $statusCode  HTTP status code
      *
      * @deprecated Use response()->error() macro instead.
      */
@@ -119,10 +112,6 @@ class ResponseServiceProvider extends ServiceProvider
 
     /**
      * Create a "not found" JSON response.
-     *
-     * @param string $message
-     *
-     * @return JsonResponse
      */
     public static function notFound(string $message = 'Resource not found'): JsonResponse
     {
@@ -131,10 +120,6 @@ class ResponseServiceProvider extends ServiceProvider
 
     /**
      * Create an unauthorized JSON response.
-     *
-     * @param string $message
-     *
-     * @return JsonResponse
      */
     public static function unauthorized(string $message = 'Unauthorized'): JsonResponse
     {
@@ -143,10 +128,6 @@ class ResponseServiceProvider extends ServiceProvider
 
     /**
      * Create a forbidden JSON response.
-     *
-     * @param string $message
-     *
-     * @return JsonResponse
      */
     public static function forbidden(string $message = 'Forbidden'): JsonResponse
     {
@@ -160,8 +141,6 @@ class ResponseServiceProvider extends ServiceProvider
 
     /**
      * Register services.
-     *
-     * @return void
      */
     public function register(): void
     {
@@ -170,8 +149,6 @@ class ResponseServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap response macros.
-     *
-     * @return void
      */
     public function boot(): void
     {
@@ -181,10 +158,9 @@ class ResponseServiceProvider extends ServiceProvider
          * Automatically detects paginated responses (including API Resource Collections)
          * and appends pagination metadata and navigation links.
          *
-         * @param mixed  $data       Response payload
-         * @param string $message    Success message
-         * @param int    $statusCode HTTP status code
-         *
+         * @param  mixed  $data  Response payload
+         * @param  string  $message  Success message
+         * @param  int  $statusCode  HTTP status code
          * @return JsonResponse
          */
         ResponseFacade::macro('success', function (
@@ -250,10 +226,9 @@ class ResponseServiceProvider extends ServiceProvider
         /**
          * Return a standardized error JSON response.
          *
-         * @param string $message    Error message
-         * @param int    $statusCode HTTP status code
-         * @param mixed  $errors     Optional error details
-         *
+         * @param  string  $message  Error message
+         * @param  int  $statusCode  HTTP status code
+         * @param  mixed  $errors  Optional error details
          * @return JsonResponse
          */
         ResponseFacade::macro('error', function (
@@ -271,6 +246,19 @@ class ResponseServiceProvider extends ServiceProvider
             }
 
             return response()->json($response, $statusCode);
+        });
+
+        /**
+         * Return a standardized forbidden (403) JSON response.
+         *
+         * @param  string  $message  Error message
+         * @return JsonResponse
+         */
+        ResponseFacade::macro('forbidden', function (string $message = 'Forbidden'): JsonResponse {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], Response::HTTP_FORBIDDEN);
         });
     }
 }

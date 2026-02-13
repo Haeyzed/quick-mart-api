@@ -17,12 +17,9 @@ use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\BrandService;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // 1. Import this trait
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -37,8 +34,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class BrandController extends Controller
 {
-    use AuthorizesRequests; // 2. Use the trait here
-
     /**
      * BrandController constructor.
      */
@@ -51,7 +46,9 @@ class BrandController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Brand::class);
+        if (auth()->user()->denies('view brands')) {
+            return response()->forbidden('Permission denied for viewing brands list.');
+        }
 
         $brands = $this->service->getPaginatedBrands(
             $request->all(),
@@ -69,7 +66,9 @@ class BrandController extends Controller
      */
     public function store(StoreBrandRequest $request): JsonResponse
     {
-        $this->authorize('create', Brand::class);
+        if (auth()->user()->denies('create brands')) {
+            return response()->forbidden('Permission denied for create brand.');
+        }
 
         $brand = $this->service->createBrand($request->validated());
 
@@ -85,7 +84,9 @@ class BrandController extends Controller
      */
     public function show(Brand $brand): JsonResponse
     {
-        $this->authorize('view', $brand);
+        if (auth()->user()->denies('view brand details')) {
+            return response()->forbidden('Permission denied for view brand.');
+        }
 
         return response()->success(
             new BrandResource($brand),
@@ -98,7 +99,9 @@ class BrandController extends Controller
      */
     public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
-        $this->authorize('update', $brand);
+        if (auth()->user()->denies('update brands')) {
+            return response()->forbidden('Permission denied for update brand.');
+        }
 
         $updatedBrand = $this->service->updateBrand($brand, $request->validated());
 
@@ -113,7 +116,9 @@ class BrandController extends Controller
      */
     public function destroy(Brand $brand): JsonResponse
     {
-        $this->authorize('delete', $brand);
+        if (auth()->user()->denies('delete brands')) {
+            return response()->forbidden('Permission denied for delete brand.');
+        }
 
         $this->service->deleteBrand($brand);
 
@@ -125,7 +130,9 @@ class BrandController extends Controller
      */
     public function bulkDestroy(BrandBulkActionRequest $request): JsonResponse
     {
-        Gate::authorize('deleteAny', Brand::class);
+        if (auth()->user()->denies('delete brands')) {
+            return response()->forbidden('Permission denied for bulk delete brands.');
+        }
 
         $count = $this->service->bulkDeleteBrands($request->validated()['ids']);
 
@@ -140,7 +147,9 @@ class BrandController extends Controller
      */
     public function bulkActivate(BrandBulkActionRequest $request): JsonResponse
     {
-        Gate::authorize('updateAny', Brand::class);
+        if (auth()->user()->denies('update brands')) {
+            return response()->forbidden('Permission denied for bulk update brands.');
+        }
 
         $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
 
@@ -155,7 +164,9 @@ class BrandController extends Controller
      */
     public function bulkDeactivate(BrandBulkActionRequest $request): JsonResponse
     {
-        Gate::authorize('updateAny', Brand::class);
+        if (auth()->user()->denies('update brands')) {
+            return response()->forbidden('Permission denied for bulk update brands.');
+        }
 
         $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
 
@@ -170,7 +181,9 @@ class BrandController extends Controller
      */
     public function import(ImportRequest $request): JsonResponse
     {
-        Gate::authorize('import', Brand::class);
+        if (auth()->user()->denies('import brands')) {
+            return response()->forbidden('Permission denied for import brands.');
+        }
 
         $this->service->importBrands($request->file('file'));
 
@@ -179,12 +192,12 @@ class BrandController extends Controller
 
     /**
      * Export brands to Excel or PDF.
-     *
-     * @throws AuthorizationException
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
-        Gate::authorize('export', Brand::class);
+        if (auth()->user()->denies('export brands')) {
+            return response()->forbidden('Permission denied for export brands.');
+        }
 
         $validated = $request->validated();
 
@@ -208,10 +221,7 @@ class BrandController extends Controller
             $user = User::query()->find($userId);
 
             if (! $user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found for email delivery.',
-                ], 404);
+                return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
@@ -242,8 +252,6 @@ class BrandController extends Controller
             );
         }
 
-        return response()->badRequest(
-            'Invalid export method provided.',
-        );
+        return response()->error('Invalid export method provided.');
     }
 }

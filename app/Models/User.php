@@ -202,6 +202,16 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     }
 
     /**
+     * Check if the user denies (lacks) a specific permission.
+     *
+     * @param  string  $permission  Permission name
+     */
+    public function denies(string $permission): bool
+    {
+        return ! $this->hasPermissionTo($permission);
+    }
+
+    /**
      * Check if the user has any of the given permissions.
      *
      * @param  array<string>  $permissions  Array of permission names
