@@ -25,7 +25,7 @@ class CategoryService
 {
     private const IMAGE_PATH = 'images/categories';
     private const ICON_PATH = 'images/categories/icons';
-    private const TEMPLATE_PATH = 'imports/templates';
+    private const TEMPLATE_PATH = 'Imports/Templates';
 
     public function __construct(
         private readonly UploadService $uploadService

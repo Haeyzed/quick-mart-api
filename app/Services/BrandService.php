@@ -28,7 +28,7 @@ class BrandService
      *
      */
     private const IMAGE_PATH = 'images/brands';
-    private const TEMPLATE_PATH = 'imports/templates';
+    private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
      * @param UploadService $uploadService
