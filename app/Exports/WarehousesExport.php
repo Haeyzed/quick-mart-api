@@ -30,7 +30,9 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {}
+    )
+    {
+    }
 
     /**
      * Build the query for the export.
@@ -40,9 +42,9 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
     public function query(): Builder
     {
         return Warehouse::query()
-            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
-            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->withCount(['productWarehouses as number_of_products' => fn($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn($q) => $q->where('qty', '>', 0)], 'qty')
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('name');
     }
 
@@ -71,7 +73,7 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }
@@ -95,7 +97,7 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
         $numberOfProducts = $warehouse->number_of_products ?? $warehouse->productWarehouses()->where('qty', '>', 0)->count();
         $stockQuantity = $warehouse->stock_quantity ?? $warehouse->productWarehouses()->where('qty', '>', 0)->sum('qty');
 
-        return array_map(fn ($col) => match ($col) {
+        return array_map(fn($col) => match ($col) {
             'is_active' => $warehouse->is_active ? 'Active' : 'Inactive',
             'number_of_products' => $numberOfProducts,
             'stock_quantity' => $stockQuantity,

@@ -30,7 +30,7 @@ class CustomerReportExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('customer_id')) {
-            $this->merge(['customer_id' => (int) $this->customer_id]);
+            $this->merge(['customer_id' => (int)$this->customer_id]);
         }
     }
 }

@@ -21,7 +21,9 @@ class SmsSettingController extends Controller
 {
     public function __construct(
         private readonly SmsSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List all SMS providers.
@@ -48,7 +50,7 @@ class SmsSettingController extends Controller
     {
         $provider = $this->service->getSmsProvider($id);
 
-        if (! $provider) {
+        if (!$provider) {
             return response()->notFound('SMS provider not found');
         }
 

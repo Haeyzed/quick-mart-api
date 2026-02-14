@@ -17,7 +17,9 @@ class UtilityController extends Controller
 {
     public function __construct(
         private readonly UtilityService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get all distinct auditable model types (for filters/combobox).

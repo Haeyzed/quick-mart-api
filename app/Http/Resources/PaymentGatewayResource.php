@@ -26,7 +26,7 @@ class PaymentGatewayResource extends JsonResource
         $details = $this->parseDetails($this->details);
         $moduleStatus = is_string($this->module_status)
             ? json_decode($this->module_status, true) ?? []
-            : (array) $this->module_status;
+            : (array)$this->module_status;
 
         return [
             'id' => $this->id,
@@ -38,6 +38,18 @@ class PaymentGatewayResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    private function parseDetails(?string $details): array
+    {
+        if (empty($details) || !str_contains($details, ';')) {
+            return [];
+        }
+        [$keysStr, $valsStr] = explode(';', $details, 2);
+        $keys = array_map('trim', explode(',', $keysStr));
+        $vals = array_map('trim', explode(',', $valsStr));
+
+        return array_combine($keys, $vals) ?: [];
     }
 
     /**
@@ -60,17 +72,5 @@ class PaymentGatewayResource extends JsonResource
         }
 
         return $masked;
-    }
-
-    private function parseDetails(?string $details): array
-    {
-        if (empty($details) || ! str_contains($details, ';')) {
-            return [];
-        }
-        [$keysStr, $valsStr] = explode(';', $details, 2);
-        $keys = array_map('trim', explode(',', $keysStr));
-        $vals = array_map('trim', explode(',', $valsStr));
-
-        return array_combine($keys, $vals) ?: [];
     }
 }

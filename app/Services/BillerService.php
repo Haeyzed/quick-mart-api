@@ -15,6 +15,7 @@ use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -36,7 +37,9 @@ class BillerService extends BaseService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     public function getBiller(Biller $biller): Biller
     {
@@ -46,7 +49,7 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<Biller>
      */
     public function getBillers(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -54,10 +57,10 @@ class BillerService extends BaseService
         $this->requirePermission('billers-index');
 
         return Biller::query()
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(! empty($filters['search']), function ($q) use ($filters) {
-                $term = '%'.$filters['search'].'%';
-                $q->where(fn ($subQ) => $subQ
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
+            ->when(!empty($filters['search']), function ($q) use ($filters) {
+                $term = '%' . $filters['search'] . '%';
+                $q->where(fn($subQ) => $subQ
                     ->where('name', 'like', $term)
                     ->orWhere('company_name', 'like', $term)
                     ->orWhere('email', 'like', $term)
@@ -69,7 +72,7 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createBiller(array $data): Biller
     {
@@ -86,7 +89,25 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * Process image upload and merge path into biller data.
+     *
+     * @param array<string, mixed> $data Input data containing 'image' as UploadedFile.
+     * @return array<string, mixed> Data with 'image' (path) set.
+     */
+    private function handleImageUpload(array $data): array
+    {
+        $path = $this->uploadService->upload(
+            $data['image'],
+            config('storage.billers.images', self::DEFAULT_BILLER_IMAGES_PATH)
+        );
+
+        $data['image'] = $path;
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
      */
     public function updateBiller(Biller $biller, array $data): Biller
     {
@@ -106,22 +127,10 @@ class BillerService extends BaseService
         });
     }
 
-    public function deleteBiller(Biller $biller): void
-    {
-        $this->requirePermission('billers-delete');
-
-        DB::transaction(function () use ($biller) {
-            if ($biller->image) {
-                $this->uploadService->delete($biller->image);
-            }
-            $biller->update(['is_active' => false]);
-        });
-    }
-
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, Biller>
+     * @return Collection<int, Biller>
      */
-    public function getAllActive(): \Illuminate\Database\Eloquent\Collection
+    public function getAllActive(): Collection
     {
         $this->requirePermission('billers-index');
 
@@ -129,7 +138,7 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkDeleteBillers(array $ids): int
     {
@@ -145,6 +154,18 @@ class BillerService extends BaseService
         }
 
         return $count;
+    }
+
+    public function deleteBiller(Biller $biller): void
+    {
+        $this->requirePermission('billers-delete');
+
+        DB::transaction(function () use ($biller) {
+            if ($biller->image) {
+                $this->uploadService->delete($biller->image);
+            }
+            $biller->update(['is_active' => false]);
+        });
     }
 
     public function bulkActivateBillers(array $ids): int
@@ -168,21 +189,21 @@ class BillerService extends BaseService
     }
 
     /**
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
+     * @param array<int> $ids
+     * @param array<string> $columns
      */
     public function exportBillers(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
         $this->requirePermission('billers-export');
 
-        $fileName = 'billers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'billers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new BillersExport($ids, $columns), $relativePath, 'public');
         } else {
             $billers = Biller::query()
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('company_name')
                 ->get();
 
@@ -200,30 +221,12 @@ class BillerService extends BaseService
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
         $this->setMailInfo($mailSetting);
         Mail::to($user->email)->send(
             new ExportMail($user, $path, $fileName, 'Billers List', $generalSetting)
         );
-    }
-
-    /**
-     * Process image upload and merge path into biller data.
-     *
-     * @param  array<string, mixed>  $data  Input data containing 'image' as UploadedFile.
-     * @return array<string, mixed> Data with 'image' (path) set.
-     */
-    private function handleImageUpload(array $data): array
-    {
-        $path = $this->uploadService->upload(
-            $data['image'],
-            config('storage.billers.images', self::DEFAULT_BILLER_IMAGES_PATH)
-        );
-
-        $data['image'] = $path;
-
-        return $data;
     }
 }

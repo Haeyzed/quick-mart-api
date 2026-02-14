@@ -39,7 +39,7 @@ class CustomerGroupService extends BaseService
      *
      * Requires customer-groups-index permission. Use for show/display operations.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group instance to retrieve.
+     * @param CustomerGroup $customerGroup The customer group instance to retrieve.
      * @return CustomerGroup The refreshed customer group instance.
      */
     public function getCustomerGroup(CustomerGroup $customerGroup): CustomerGroup
@@ -55,8 +55,8 @@ class CustomerGroupService extends BaseService
      * Supports filtering by status (active/inactive) and search term.
      * Requires customer-groups-index permission.
      *
-     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'search'.
-     * @param  int  $perPage  Number of items per page.
+     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
+     * @param int $perPage Number of items per page.
      * @return LengthAwarePaginator<CustomerGroup> Paginated customer group collection.
      */
     public function getCustomerGroups(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -64,8 +64,8 @@ class CustomerGroupService extends BaseService
         $this->requirePermission('customer-groups-index');
 
         return CustomerGroup::query()
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(! empty($filters['search'] ?? null), function ($q) use ($filters) {
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
+            ->when(!empty($filters['search'] ?? null), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
                 $q->where('name', 'like', $term);
             })
@@ -78,7 +78,7 @@ class CustomerGroupService extends BaseService
      *
      * Requires customer-groups-create permission.
      *
-     * @param  array<string, mixed>  $data  Validated customer group attributes.
+     * @param array<string, mixed> $data Validated customer group attributes.
      * @return CustomerGroup The created customer group instance.
      */
     public function createCustomerGroup(array $data): CustomerGroup
@@ -93,12 +93,33 @@ class CustomerGroupService extends BaseService
     }
 
     /**
+     * Normalize customer group data to match database schema requirements.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeCustomerGroupData(array $data): array
+    {
+        if (!isset($data['is_active'])) {
+            $data['is_active'] = false;
+        } else {
+            $data['is_active'] = (bool)filter_var(
+                $data['is_active'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+        }
+
+        return $data;
+    }
+
+    /**
      * Update an existing customer group.
      *
      * Requires customer-groups-update permission.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group instance to update.
-     * @param  array<string, mixed>  $data  Validated customer group attributes.
+     * @param CustomerGroup $customerGroup The customer group instance to update.
+     * @param array<string, mixed> $data Validated customer group attributes.
      * @return CustomerGroup The updated customer group (refreshed).
      */
     public function updateCustomerGroup(CustomerGroup $customerGroup, array $data): CustomerGroup
@@ -114,32 +135,12 @@ class CustomerGroupService extends BaseService
     }
 
     /**
-     * Delete a customer group.
-     *
-     * Fails with 422 if the group has associated customers.
-     * Requires customer-groups-delete permission.
-     *
-     * @param  CustomerGroup  $customerGroup  The customer group instance to delete.
-     */
-    public function deleteCustomerGroup(CustomerGroup $customerGroup): void
-    {
-        $this->requirePermission('customer-groups-delete');
-
-        DB::transaction(function () use ($customerGroup) {
-            if ($customerGroup->customers()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete customer group: group has associated customers.');
-            }
-            $customerGroup->delete();
-        });
-    }
-
-    /**
      * Bulk delete customer groups.
      *
      * Skips non-existent IDs. Fails if any group has associated customers.
      * Requires customer-groups-delete permission.
      *
-     * @param  array<int>  $ids  Customer group IDs to delete.
+     * @param array<int> $ids Customer group IDs to delete.
      * @return int Number of customer groups successfully deleted.
      */
     public function bulkDeleteCustomerGroups(array $ids): int
@@ -160,11 +161,31 @@ class CustomerGroupService extends BaseService
     }
 
     /**
+     * Delete a customer group.
+     *
+     * Fails with 422 if the group has associated customers.
+     * Requires customer-groups-delete permission.
+     *
+     * @param CustomerGroup $customerGroup The customer group instance to delete.
+     */
+    public function deleteCustomerGroup(CustomerGroup $customerGroup): void
+    {
+        $this->requirePermission('customer-groups-delete');
+
+        DB::transaction(function () use ($customerGroup) {
+            if ($customerGroup->customers()->exists()) {
+                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete customer group: group has associated customers.');
+            }
+            $customerGroup->delete();
+        });
+    }
+
+    /**
      * Bulk activate customer groups by ID.
      *
      * Sets is_active to true for all matching customer groups. Requires customer-groups-update permission.
      *
-     * @param  array<int>  $ids  Customer group IDs to activate.
+     * @param array<int> $ids Customer group IDs to activate.
      * @return int Number of customer groups updated.
      */
     public function bulkActivateCustomerGroups(array $ids): int
@@ -179,7 +200,7 @@ class CustomerGroupService extends BaseService
      *
      * Sets is_active to false for all matching customer groups. Requires customer-groups-update permission.
      *
-     * @param  array<int>  $ids  Customer group IDs to deactivate.
+     * @param array<int> $ids Customer group IDs to deactivate.
      * @return int Number of customer groups updated.
      */
     public function bulkDeactivateCustomerGroups(array $ids): int
@@ -194,7 +215,7 @@ class CustomerGroupService extends BaseService
      *
      * Requires customer-groups-import permission.
      *
-     * @param  UploadedFile  $file  The uploaded import file.
+     * @param UploadedFile $file The uploaded import file.
      */
     public function importCustomerGroups(UploadedFile $file): void
     {
@@ -208,25 +229,25 @@ class CustomerGroupService extends BaseService
      *
      * Supports download or email delivery. Requires customer-groups-export permission.
      *
-     * @param  array<int>  $ids  Customer group IDs to export. Empty array exports all.
-     * @param  string  $format  Export format: 'excel' or 'pdf'.
-     * @param  User|null  $user  Recipient when method is 'email'.
-     * @param  array<string>  $columns  Column keys to include in export.
-     * @param  string  $method  Delivery method: 'download' or 'email'.
+     * @param array<int> $ids Customer group IDs to export. Empty array exports all.
+     * @param string $format Export format: 'excel' or 'pdf'.
+     * @param User|null $user Recipient when method is 'email'.
+     * @param array<string> $columns Column keys to include in export.
+     * @param string $method Delivery method: 'download' or 'email'.
      * @return string Relative storage path of the generated file.
      */
     public function exportCustomerGroups(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
         $this->requirePermission('customer-groups-export');
 
-        $fileName = 'customer_groups_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'customer_groups_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new CustomerGroupsExport($ids, $columns), $relativePath, 'public');
         } else {
             $customerGroups = CustomerGroup::query()
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('name')
                 ->get();
 
@@ -244,16 +265,16 @@ class CustomerGroupService extends BaseService
     /**
      * Send export completion email to the user.
      *
-     * @param  User  $user  Recipient of the export email.
-     * @param  string  $path  Relative storage path of the export file.
-     * @param  string  $fileName  Display filename for the attachment.
+     * @param User $user Recipient of the export email.
+     * @param string $path Relative storage path of the export file.
+     * @param string $fileName Display filename for the attachment.
      *
      * @throws RuntimeException When mail settings are not configured.
      */
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
 
@@ -276,26 +297,5 @@ class CustomerGroupService extends BaseService
         $this->requirePermission('customer-groups-index');
 
         return CustomerGroup::where('is_active', true)->orderBy('name')->get();
-    }
-
-    /**
-     * Normalize customer group data to match database schema requirements.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function normalizeCustomerGroupData(array $data): array
-    {
-        if (! isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
-            $data['is_active'] = (bool) filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
     }
 }

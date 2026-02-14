@@ -74,6 +74,14 @@ class Tax extends Model implements AuditableContract
     }
 
     /**
+     * Get the human-readable status.
+     */
+    public function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -85,13 +93,5 @@ class Tax extends Model implements AuditableContract
             'is_active' => 'boolean',
             'woocommerce_tax_id' => 'integer',
         ];
-    }
-
-    /**
-     * Get the human-readable status.
-     */
-    public function getStatusAttribute(): string
-    {
-        return $this->is_active ? 'active' : 'inactive';
     }
 }

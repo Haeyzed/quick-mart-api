@@ -14,7 +14,9 @@ class PosSettingController extends Controller
 {
     public function __construct(
         private readonly PosSettingService $service
-    ) {}
+    )
+    {
+    }
 
     public function show(): JsonResponse
     {

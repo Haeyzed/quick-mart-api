@@ -7,7 +7,9 @@ namespace App\Services;
 use App\Models\MailSetting;
 use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
+use Exception;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 
 /**
  * Service class for Mail Setting operations.
@@ -21,7 +23,9 @@ class MailSettingService extends BaseService
     /**
      * MailSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve the mail setting (latest).
@@ -42,11 +46,11 @@ class MailSettingService extends BaseService
      *
      * Requires mail_setting permission.
      *
-     * @param  array<string, mixed>  $data  Validated data.
-     * @param  bool  $sendTest  If true, sends test email to from_address.
+     * @param array<string, mixed> $data Validated data.
+     * @param bool $sendTest If true, sends test email to from_address.
      * @return MailSetting The updated mail setting instance.
      *
-     * @throws \Exception When sending test email fails.
+     * @throws Exception When sending test email fails.
      */
     public function updateMailSetting(array $data, bool $sendTest = false): MailSetting
     {
@@ -54,12 +58,12 @@ class MailSettingService extends BaseService
 
         $mailSetting = MailSetting::latest()->first();
 
-        if (! $mailSetting) {
+        if (!$mailSetting) {
             $mailSetting = new MailSetting;
         }
 
-        if (! empty($data['password'])) {
-            $data['password'] = trim((string) $data['password']);
+        if (!empty($data['password'])) {
+            $data['password'] = trim((string)$data['password']);
         } else {
             unset($data['password']);
         }
@@ -84,7 +88,7 @@ class MailSettingService extends BaseService
      *
      * Requires mail_setting permission.
      *
-     * @throws \Exception When mail settings are missing or sending fails.
+     * @throws Exception When mail settings are missing or sending fails.
      */
     public function sendTestEmail(): void
     {
@@ -93,8 +97,8 @@ class MailSettingService extends BaseService
         $mailSetting = MailSetting::default()->first()
             ?? MailSetting::latest()->first();
 
-        if (! $mailSetting) {
-            throw new \RuntimeException('Mail settings are not configured.');
+        if (!$mailSetting) {
+            throw new RuntimeException('Mail settings are not configured.');
         }
 
         $this->setMailInfo($mailSetting);

@@ -19,7 +19,9 @@ class HrmSettingService extends BaseService
     /**
      * HrmSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve the HRM setting (singleton).
@@ -40,14 +42,14 @@ class HrmSettingService extends BaseService
      *
      * Requires hrm_setting permission.
      *
-     * @param  array<string, mixed>  $data  Validated data.
+     * @param array<string, mixed> $data Validated data.
      * @return HrmSetting The updated HRM setting instance.
      */
     public function updateHrmSetting(array $data): HrmSetting
     {
         $this->requirePermission('hrm_setting');
         $setting = HrmSetting::latest()->first();
-        if (! $setting) {
+        if (!$setting) {
             $setting = new HrmSetting;
         }
         $setting->fill($data)->save();

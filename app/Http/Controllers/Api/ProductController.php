@@ -30,7 +30,8 @@ class ProductController extends Controller
      */
     public function __construct(
         private readonly ProductService $service
-    ) {
+    )
+    {
     }
 
     /**

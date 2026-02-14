@@ -7,7 +7,7 @@ namespace App\Http\Requests\Auth;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Validator;
 
 /**
  * ChangePasswordRequest
@@ -63,7 +63,7 @@ class ChangePasswordRequest extends BaseRequest
     /**
      * Configure the validator instance.
      *
-     * @param \Illuminate\Validation\Validator $validator
+     * @param Validator $validator
      * @return void
      */
     public function withValidator($validator): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
@@ -13,8 +14,8 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  * @property string $name
  * @property string $guard_name
  * @property string|null $module
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Permission extends SpatiePermission
 {

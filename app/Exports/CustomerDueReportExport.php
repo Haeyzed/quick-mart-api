@@ -15,13 +15,15 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class CustomerDueReportExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
-     * @param  Collection<int, array<string, mixed>>  $rows  Report rows from ReportService.
-     * @param  array<string>  $columns  Column keys to include.
+     * @param Collection<int, array<string, mixed>> $rows Report rows from ReportService.
+     * @param array<string> $columns Column keys to include.
      */
     public function __construct(
         private readonly Collection $rows,
-        private readonly array $columns = []
-    ) {}
+        private readonly array      $columns = []
+    )
+    {
+    }
 
     public function collection(): Collection
     {
@@ -47,13 +49,13 @@ class CustomerDueReportExport implements FromCollection, WithHeadings, WithMappi
         $cols = $this->columns ?: array_keys($labelMap);
 
         return array_map(
-            fn (string $col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $cols
         );
     }
 
     /**
-     * @param  array<string, mixed>  $row
+     * @param array<string, mixed> $row
      * @return array<string|int|float|null>
      */
     public function map($row): array
@@ -63,6 +65,6 @@ class CustomerDueReportExport implements FromCollection, WithHeadings, WithMappi
             'grand_total', 'returned_amount', 'paid', 'due',
         ];
 
-        return array_map(fn (string $col) => $row[$col] ?? '', $cols);
+        return array_map(fn(string $col) => $row[$col] ?? '', $cols);
     }
 }

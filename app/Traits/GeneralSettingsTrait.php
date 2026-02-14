@@ -15,6 +15,25 @@ use App\Models\GeneralSetting;
 trait GeneralSettingsTrait
 {
     /**
+     * Check if a module is enabled.
+     *
+     * @param string $moduleName Module name to check (e.g., 'ecommerce', 'restaurant')
+     * @return bool
+     */
+    protected function isModuleEnabled(string $moduleName): bool
+    {
+        $generalSetting = $this->getGeneralSettings();
+
+        if (!$generalSetting || !$generalSetting->modules) {
+            return false;
+        }
+
+        $modules = explode(',', $generalSetting->modules);
+
+        return in_array($moduleName, $modules);
+    }
+
+    /**
      * Get the general settings instance (singleton pattern).
      *
      * @return GeneralSetting|null
@@ -25,25 +44,6 @@ trait GeneralSettingsTrait
     }
 
     /**
-     * Check if a module is enabled.
-     *
-     * @param string $moduleName Module name to check (e.g., 'ecommerce', 'restaurant')
-     * @return bool
-     */
-    protected function isModuleEnabled(string $moduleName): bool
-    {
-        $generalSetting = $this->getGeneralSettings();
-        
-        if (!$generalSetting || !$generalSetting->modules) {
-            return false;
-        }
-
-        $modules = explode(',', $generalSetting->modules);
-        
-        return in_array($moduleName, $modules);
-    }
-
-    /**
      * Get the storage provider from general settings.
      *
      * @return string Storage provider name (default: 'public')
@@ -51,7 +51,7 @@ trait GeneralSettingsTrait
     protected function getStorageProvider(): string
     {
         $generalSetting = $this->getGeneralSettings();
-        
+
         return $generalSetting->storage_provider ?? 'public';
     }
 
@@ -63,7 +63,7 @@ trait GeneralSettingsTrait
     protected function isWithoutStockEnabled(): bool
     {
         $generalSetting = $this->getGeneralSettings();
-        
+
         return $generalSetting && $generalSetting->without_stock === 'yes';
     }
 }

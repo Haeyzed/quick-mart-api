@@ -31,10 +31,10 @@ class ProductExpiryReportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('per_page')) {
-            $this->merge(['per_page' => (int) $this->per_page]);
+            $this->merge(['per_page' => (int)$this->per_page]);
         }
         if ($this->has('page')) {
-            $this->merge(['page' => (int) $this->page]);
+            $this->merge(['page' => (int)$this->page]);
         }
     }
 }

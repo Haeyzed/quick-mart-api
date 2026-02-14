@@ -23,21 +23,21 @@ class BillersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, WithVa
     {
         $data = $row->toArray();
 
-        $companyName = trim((string) ($data['company_name'] ?? $data['companyname'] ?? ''));
+        $companyName = trim((string)($data['company_name'] ?? $data['companyname'] ?? ''));
         if ($companyName === '') {
             return;
         }
 
         $attributes = [
-            'name' => trim((string) ($data['name'] ?? '')),
-            'vat_number' => trim((string) ($data['vat_number'] ?? $data['vatnumber'] ?? '')) ?: null,
-            'email' => trim((string) ($data['email'] ?? '')) ?: null,
-            'phone_number' => trim((string) ($data['phone_number'] ?? $data['phonenumber'] ?? '')) ?: null,
-            'address' => trim((string) ($data['address'] ?? '')) ?: null,
-            'city' => trim((string) ($data['city'] ?? '')) ?: null,
-            'state' => trim((string) ($data['state'] ?? '')) ?: null,
-            'postal_code' => trim((string) ($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
-            'country' => trim((string) ($data['country'] ?? '')) ?: null,
+            'name' => trim((string)($data['name'] ?? '')),
+            'vat_number' => trim((string)($data['vat_number'] ?? $data['vatnumber'] ?? '')) ?: null,
+            'email' => trim((string)($data['email'] ?? '')) ?: null,
+            'phone_number' => trim((string)($data['phone_number'] ?? $data['phonenumber'] ?? '')) ?: null,
+            'address' => trim((string)($data['address'] ?? '')) ?: null,
+            'city' => trim((string)($data['city'] ?? '')) ?: null,
+            'state' => trim((string)($data['state'] ?? '')) ?: null,
+            'postal_code' => trim((string)($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
+            'country' => trim((string)($data['country'] ?? '')) ?: null,
             'is_active' => true,
         ];
 

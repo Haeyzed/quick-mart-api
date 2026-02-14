@@ -146,7 +146,7 @@ class Quotation extends Model implements AuditableContract
     /**
      * Scope a query to only include pending quotations.
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopePending($query)

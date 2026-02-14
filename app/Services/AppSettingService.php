@@ -29,12 +29,12 @@ class AppSettingService extends BaseService
 
         $generalSetting = GeneralSetting::latest()->first();
 
-        if (! $generalSetting) {
-            $generalSetting = GeneralSetting::create(['app_key' => (string) random_int(100000, 999999)]);
+        if (!$generalSetting) {
+            $generalSetting = GeneralSetting::create(['app_key' => (string)random_int(100000, 999999)]);
         }
 
         if (empty($generalSetting->app_key)) {
-            $generalSetting->update(['app_key' => (string) random_int(100000, 999999)]);
+            $generalSetting->update(['app_key' => (string)random_int(100000, 999999)]);
         }
 
         $installUrl = rtrim(Config::get('app.url'), '/');

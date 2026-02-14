@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -42,7 +41,7 @@ class TaxBulkDestroyRequest extends BaseRequest
             /**
              * Each ID in the ids array must be a valid tax ID.
              *
-             * @var int $ids.*
+             * @var int $ids .*
              * @example 1
              */
             'ids.*' => ['required', 'integer', Rule::exists('taxes', 'id')],

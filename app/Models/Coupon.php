@@ -86,7 +86,7 @@ class Coupon extends Model implements AuditableContract
      */
     public function isValid(): bool
     {
-        if (! $this->is_active) {
+        if (!$this->is_active) {
             return false;
         }
 

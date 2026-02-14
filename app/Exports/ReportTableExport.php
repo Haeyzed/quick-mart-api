@@ -15,15 +15,17 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class ReportTableExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
-     * @param  Collection<int, array<string, mixed>>  $rows
-     * @param  array<string, string>  $columnLabels
-     * @param  array<string>  $columns
+     * @param Collection<int, array<string, mixed>> $rows
+     * @param array<string, string> $columnLabels
+     * @param array<string> $columns
      */
     public function __construct(
         private readonly Collection $rows,
-        private readonly array $columnLabels,
-        private readonly array $columns = []
-    ) {}
+        private readonly array      $columnLabels,
+        private readonly array      $columns = []
+    )
+    {
+    }
 
     public function collection(): Collection
     {
@@ -38,19 +40,19 @@ class ReportTableExport implements FromCollection, WithHeadings, WithMapping
         $cols = $this->columns ?: array_keys($this->columnLabels);
 
         return array_map(
-            fn (string $col) => $this->columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => $this->columnLabels[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $cols
         );
     }
 
     /**
-     * @param  array<string, mixed>  $row
+     * @param array<string, mixed> $row
      * @return array<string|int|float|null>
      */
     public function map($row): array
     {
         $cols = $this->columns ?: array_keys($this->columnLabels);
 
-        return array_map(fn (string $col) => $row[$col] ?? '', $cols);
+        return array_map(fn(string $col) => $row[$col] ?? '', $cols);
     }
 }

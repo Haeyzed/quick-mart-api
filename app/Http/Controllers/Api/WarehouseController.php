@@ -37,7 +37,9 @@ class WarehouseController extends Controller
      */
     public function __construct(
         private readonly WarehouseService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of warehouses.
@@ -49,10 +51,10 @@ class WarehouseController extends Controller
     {
         $warehouses = $this->service->getWarehouses(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $warehouses->through(fn (Warehouse $warehouse) => new WarehouseResource($warehouse));
+        $warehouses->through(fn(Warehouse $warehouse) => new WarehouseResource($warehouse));
 
         return response()->success(
             $warehouses,

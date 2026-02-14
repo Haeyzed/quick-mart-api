@@ -34,28 +34,30 @@ class SupplierController extends Controller
 {
     public function __construct(
         private readonly SupplierService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of suppliers.
      *
-     * @param  SupplierIndexRequest  $request  Validated query params: per_page, page, status, search.
+     * @param SupplierIndexRequest $request Validated query params: per_page, page, status, search.
      * @return JsonResponse Paginated suppliers with meta and links.
      */
     /**
      * Display a paginated listing of suppliers.
      *
-     * @param  SupplierIndexRequest  $request  Validated query params: per_page, page, status, search.
+     * @param SupplierIndexRequest $request Validated query params: per_page, page, status, search.
      * @return JsonResponse Paginated suppliers with meta and links.
      */
     public function index(SupplierIndexRequest $request): JsonResponse
     {
         $suppliers = $this->service->getSuppliers(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $suppliers->through(fn (Supplier $supplier) => new SupplierResource($supplier));
+        $suppliers->through(fn(Supplier $supplier) => new SupplierResource($supplier));
 
         return response()->success($suppliers, 'Suppliers fetched successfully');
     }
@@ -63,13 +65,13 @@ class SupplierController extends Controller
     /**
      * Store a newly created supplier.
      *
-     * @param  SupplierRequest  $request  Validated supplier attributes.
+     * @param SupplierRequest $request Validated supplier attributes.
      * @return JsonResponse Created supplier with 201 status.
      */
     /**
      * Store a newly created supplier.
      *
-     * @param  SupplierRequest  $request  Validated supplier attributes.
+     * @param SupplierRequest $request Validated supplier attributes.
      * @return JsonResponse Created supplier with 201 status.
      */
     public function store(SupplierRequest $request): JsonResponse
@@ -86,7 +88,7 @@ class SupplierController extends Controller
     /**
      * Display the specified supplier.
      *
-     * @param  Supplier  $supplier  The supplier instance resolved via route model binding.
+     * @param Supplier $supplier The supplier instance resolved via route model binding.
      * @return JsonResponse Supplier data.
      */
     public function show(Supplier $supplier): JsonResponse
@@ -99,8 +101,8 @@ class SupplierController extends Controller
     /**
      * Update the specified supplier.
      *
-     * @param  SupplierRequest  $request  Validated supplier attributes.
-     * @param  Supplier  $supplier  The supplier instance to update.
+     * @param SupplierRequest $request Validated supplier attributes.
+     * @param Supplier $supplier The supplier instance to update.
      * @return JsonResponse Updated supplier.
      */
     public function update(SupplierRequest $request, Supplier $supplier): JsonResponse
@@ -113,7 +115,7 @@ class SupplierController extends Controller
     /**
      * Remove the specified supplier (deactivates it).
      *
-     * @param  Supplier  $supplier  The supplier instance to delete.
+     * @param Supplier $supplier The supplier instance to delete.
      * @return JsonResponse Success message.
      */
     public function destroy(Supplier $supplier): JsonResponse
@@ -138,7 +140,7 @@ class SupplierController extends Controller
     /**
      * Bulk delete suppliers (deactivates them).
      *
-     * @param  SupplierBulkDestroyRequest  $request  Validated ids array.
+     * @param SupplierBulkDestroyRequest $request Validated ids array.
      * @return JsonResponse Deleted count and message.
      */
     public function bulkDestroy(SupplierBulkDestroyRequest $request): JsonResponse
@@ -154,7 +156,7 @@ class SupplierController extends Controller
     /**
      * Bulk activate suppliers by ID.
      *
-     * @param  SupplierBulkUpdateRequest  $request  Validated ids array.
+     * @param SupplierBulkUpdateRequest $request Validated ids array.
      * @return JsonResponse Activated count and message.
      */
     public function bulkActivate(SupplierBulkUpdateRequest $request): JsonResponse
@@ -167,7 +169,7 @@ class SupplierController extends Controller
     /**
      * Bulk deactivate suppliers by ID.
      *
-     * @param  SupplierBulkUpdateRequest  $request  Validated ids array.
+     * @param SupplierBulkUpdateRequest $request Validated ids array.
      * @return JsonResponse Deactivated count and message.
      */
     public function bulkDeactivate(SupplierBulkUpdateRequest $request): JsonResponse
@@ -180,7 +182,7 @@ class SupplierController extends Controller
     /**
      * Import suppliers from Excel/CSV file.
      *
-     * @param  ImportRequest  $request  Validated file upload.
+     * @param ImportRequest $request Validated file upload.
      * @return JsonResponse Success message.
      */
     public function import(ImportRequest $request): JsonResponse
@@ -195,7 +197,7 @@ class SupplierController extends Controller
      *
      * Supports download or email delivery based on method.
      *
-     * @param  ExportRequest  $request  Validated export params: ids, format, method, columns, user_id (if email).
+     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
      * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
@@ -223,7 +225,7 @@ class SupplierController extends Controller
     /**
      * Get supplier ledger (purchases, payments, returns) sorted by date.
      *
-     * @param  Supplier  $supplier  The supplier instance.
+     * @param Supplier $supplier The supplier instance.
      * @return JsonResponse Ledger entries with running balance.
      */
     public function ledger(Supplier $supplier): JsonResponse
@@ -236,7 +238,7 @@ class SupplierController extends Controller
     /**
      * Get total balance due for supplier.
      *
-     * @param  Supplier  $supplier  The supplier instance.
+     * @param Supplier $supplier The supplier instance.
      * @return JsonResponse Balance due amount.
      */
     public function balanceDue(Supplier $supplier): JsonResponse
@@ -249,7 +251,7 @@ class SupplierController extends Controller
     /**
      * Get supplier payment history.
      *
-     * @param  Supplier  $supplier  The supplier instance.
+     * @param Supplier $supplier The supplier instance.
      * @return JsonResponse Payment history.
      */
     public function payments(Supplier $supplier): JsonResponse
@@ -262,8 +264,8 @@ class SupplierController extends Controller
     /**
      * Record payment against supplier's due purchases.
      *
-     * @param  SupplierClearDueRequest  $request  Validated amount, note, cash_register_id.
-     * @param  Supplier  $supplier  The supplier instance.
+     * @param SupplierClearDueRequest $request Validated amount, note, cash_register_id.
+     * @param Supplier $supplier The supplier instance.
      * @return JsonResponse Success message.
      */
     public function clearDue(SupplierClearDueRequest $request, Supplier $supplier): JsonResponse
@@ -271,9 +273,9 @@ class SupplierController extends Controller
         $validated = $request->validated();
         $this->service->clearDue(
             $supplier->id,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null,
-            isset($validated['cash_register_id']) ? (int) $validated['cash_register_id'] : null
+            isset($validated['cash_register_id']) ? (int)$validated['cash_register_id'] : null
         );
 
         return response()->success(null, 'Payment recorded successfully');

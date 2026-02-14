@@ -11,50 +11,67 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
+/**
+ *
+ */
 class BrandsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    /**
+     *
+     */
     private const DEFAULT_COLUMNS = [
-        'id', 'name', 'slug', 'short_description',
-        'page_title', 'image_url', 'is_active',
-        'created_at', 'updated_at',
+        'id',
+        'name',
+        'slug',
+        'short_description',
+        'page_title',
+        'image_url',
+        'is_active',
+        'created_at',
+        'updated_at',
     ];
 
     /**
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
-     * @param  string|null  $startDate  Filter by created_at >= (Y-m-d)
-     * @param  string|null  $endDate  Filter by created_at <= (Y-m-d)
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array<string> $filters
      */
     public function __construct(
-        private readonly array $ids = [],
-        private readonly array $columns = [],
-        private readonly ?string $startDate = null,
-        private readonly ?string $endDate = null
-    ) {}
+        private readonly array   $ids = [],
+        private readonly array   $columns = [],
+        private readonly array   $filters = [],
+    )
+    {
+    }
 
+    /**
+     * @return Builder
+     */
     public function query(): Builder
     {
         return Brand::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
-            ->when(! empty($this->startDate), fn (Builder $q) => $q->whereDate('created_at', '>=', $this->startDate))
-            ->when(! empty($this->endDate), fn (Builder $q) => $q->whereDate('created_at', '<=', $this->endDate))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->filter($this->filters)
             ->orderBy('name');
     }
 
+    /**
+     * @return array
+     */
     public function headings(): array
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => ucfirst(str_replace('_', ' ', $col)),
             $columns
         );
     }
 
     /**
-     * @param  Brand  $row
+     * @param Brand $row
      */
     public function map($row): array
     {
@@ -62,7 +79,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
 
         return array_map(function ($col) use ($row) {
             return match ($col) {
-                'is_active' => $row->is_active ? 'Active' : 'Inactive',
+                'is_active' => $row->is_active ? 'Yes' : 'No',
                 'created_at' => $row->created_at?->toDateTimeString(),
                 'updated_at' => $row->updated_at?->toDateTimeString(),
                 default => $row->{$col} ?? '',

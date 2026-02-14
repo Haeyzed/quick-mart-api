@@ -21,13 +21,15 @@ class AuditsExport implements FromQuery, WithHeadings, WithMapping
     use Exportable;
 
     /**
-     * @param  array<int>  $ids  Audit IDs to export. Empty array exports all.
-     * @param  array<string>  $columns  Column keys to include.
+     * @param array<int> $ids Audit IDs to export. Empty array exports all.
+     * @param array<string> $columns Column keys to include.
      */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {}
+    )
+    {
+    }
 
     /**
      * @return Builder<Audit>
@@ -36,7 +38,7 @@ class AuditsExport implements FromQuery, WithHeadings, WithMapping
     {
         return Audit::query()
             ->with('user')
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderByDesc('id');
     }
 
@@ -60,13 +62,13 @@ class AuditsExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }
 
     /**
-     * @param  Audit  $audit
+     * @param Audit $audit
      * @return array<string|int|null>
      */
     public function map($audit): array
@@ -76,7 +78,7 @@ class AuditsExport implements FromQuery, WithHeadings, WithMapping
             'user_name', 'ip_address', 'created_at',
         ];
 
-        return array_map(fn ($col) => match ($col) {
+        return array_map(fn($col) => match ($col) {
             'user_name' => $audit->user?->name ?? '—',
             'created_at' => $audit->created_at?->toDateTimeString(),
             default => $audit->{$col} ?? '',

@@ -43,9 +43,9 @@ class ProductsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             $name = trim($row['name'] ?? '');
             $code = trim($row['code'] ?? '');
             $type = strtolower(trim($row['type'] ?? 'standard'));
-            $cost = is_numeric($row['cost'] ?? null) ? (float) str_replace(',', '', (string) $row['cost']) : 0;
-            $price = is_numeric($row['price'] ?? null) ? (float) str_replace(',', '', (string) $row['price']) : ($cost * 1.25); // Default 25% margin
-            $profitMargin = is_numeric($row['profitmargin'] ?? null) ? (float) $row['profitmargin'] : 25;
+            $cost = is_numeric($row['cost'] ?? null) ? (float)str_replace(',', '', (string)$row['cost']) : 0;
+            $price = is_numeric($row['price'] ?? null) ? (float)str_replace(',', '', (string)$row['price']) : ($cost * 1.25); // Default 25% margin
+            $profitMargin = is_numeric($row['profitmargin'] ?? null) ? (float)$row['profitmargin'] : 25;
 
             // Calculate price from cost and profit margin if price not provided
             if (!is_numeric($row['price'] ?? null) && is_numeric($row['profitmargin'] ?? null)) {
@@ -119,9 +119,9 @@ class ProductsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             // Handle variants if provided
             $variantValue = trim($row['variantvalue'] ?? '');
             $variantName = trim($row['variantname'] ?? '');
-            $itemCodes = !empty($row['itemcode'] ?? null) ? explode(',', (string) $row['itemcode']) : [];
-            $additionalCosts = !empty($row['additionalcost'] ?? null) ? explode(',', (string) $row['additionalcost']) : [];
-            $additionalPrices = !empty($row['additionalprice'] ?? null) ? explode(',', (string) $row['additionalprice']) : [];
+            $itemCodes = !empty($row['itemcode'] ?? null) ? explode(',', (string)$row['itemcode']) : [];
+            $additionalCosts = !empty($row['additionalcost'] ?? null) ? explode(',', (string)$row['additionalcost']) : [];
+            $additionalPrices = !empty($row['additionalprice'] ?? null) ? explode(',', (string)$row['additionalprice']) : [];
 
             if (!empty($variantValue) && !empty($variantName)) {
                 // Parse variant options and values
@@ -161,8 +161,8 @@ class ProductsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                                 'variant_id' => $variant->id,
                                 'position' => $key + 1,
                                 'item_code' => $itemCodes[$key] ?? ($variant->name . '-' . $code),
-                                'additional_cost' => isset($additionalCosts[$key]) ? (float) str_replace(',', '', $additionalCosts[$key]) : 0,
-                                'additional_price' => isset($additionalPrices[$key]) ? (float) str_replace(',', '', $additionalPrices[$key]) : 0,
+                                'additional_cost' => isset($additionalCosts[$key]) ? (float)str_replace(',', '', $additionalCosts[$key]) : 0,
+                                'additional_price' => isset($additionalPrices[$key]) ? (float)str_replace(',', '', $additionalPrices[$key]) : 0,
                                 'qty' => 0,
                             ]
                         );

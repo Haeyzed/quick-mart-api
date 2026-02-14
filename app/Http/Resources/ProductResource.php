@@ -7,8 +7,6 @@ namespace App\Http\Resources;
 use App\Models\ProductWarehouse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
 
 /**
  * ProductResource

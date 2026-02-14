@@ -26,7 +26,9 @@ class MailSettingController extends Controller
      */
     public function __construct(
         private readonly MailSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display the mail setting.
@@ -37,7 +39,7 @@ class MailSettingController extends Controller
     {
         $setting = $this->service->getMailSetting();
 
-        if (! $setting) {
+        if (!$setting) {
             return response()->success(null, 'No mail setting configured');
         }
 

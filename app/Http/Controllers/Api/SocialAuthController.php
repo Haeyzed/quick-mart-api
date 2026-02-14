@@ -20,7 +20,8 @@ class SocialAuthController extends Controller
 {
     public function __construct(
         private readonly SocialAuthService $service
-    ) {
+    )
+    {
     }
 
     /**

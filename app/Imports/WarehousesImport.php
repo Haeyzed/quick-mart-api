@@ -31,10 +31,10 @@ class WarehousesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 continue;
             }
 
-            $name = trim((string) ($row['name'] ?? ''));
-            $phone = trim((string) ($row['phone'] ?? '')) ?: null;
-            $email = trim((string) ($row['email'] ?? '')) ?: null;
-            $address = trim((string) ($row['address'] ?? '')) ?: null;
+            $name = trim((string)($row['name'] ?? ''));
+            $phone = trim((string)($row['phone'] ?? '')) ?: null;
+            $email = trim((string)($row['email'] ?? '')) ?: null;
+            $address = trim((string)($row['address'] ?? '')) ?: null;
 
             // Find or create warehouse
             $warehouse = Warehouse::firstOrNew(

@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exports\BrandsExport;
 use App\Imports\BrandsImport;
 use App\Models\Brand;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -21,42 +22,29 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  */
 class BrandService
 {
-    private const BRAND_IMAGE_PATH = 'images/brands';
+    /**
+     *
+     */
+    private const IMAGE_PATH = 'images/brands';
 
+    /**
+     * @param UploadService $uploadService
+     */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated brands based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedBrands(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Brand::query()
-            ->when(
-                isset($filters['status']),
-                fn (Builder $q) => $q->where('is_active', $filters['status'] === 'active')
-            )
-            ->when(
-                ! empty($filters['search']),
-                function (Builder $q) use ($filters) {
-                    $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
-                        ->where('name', 'like', $term)
-                        ->orWhere('slug', 'like', $term)
-                    );
-                }
-            )
-            ->when(
-                ! empty($filters['start_date']),
-                fn (Builder $q) => $q->whereDate('created_at', '>=', $filters['start_date'])
-            )
-            ->when(
-                ! empty($filters['end_date']),
-                fn (Builder $q) => $q->whereDate('created_at', '<=', $filters['end_date'])
-            )
+            ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
@@ -64,42 +52,26 @@ class BrandService
     /**
      * Create a new brand.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createBrand(array $data): Brand
     {
         return DB::transaction(function () use ($data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                $uploadResult = $this->handleImageUpload($data['image']);
-                $data['image'] = $uploadResult['path'];
-                $data['image_url'] = $uploadResult['url'];
-            }
-
-            return Brand::create($data);
+            $data = $this->handleUploads($data);
+            return Brand::query()->create($data);
         });
     }
 
     /**
      * Update an existing brand.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function updateBrand(Brand $brand, array $data): Brand
     {
         return DB::transaction(function () use ($brand, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                // Delete old image
-                if ($brand->image) {
-                    $this->uploadService->delete($brand->image);
-                }
-
-                $uploadResult = $this->handleImageUpload($data['image']);
-                $data['image'] = $uploadResult['path'];
-                $data['image_url'] = $uploadResult['url'];
-            }
-
+            $data = $this->handleUploads($data, $brand);
             $brand->update($data);
-
             return $brand->fresh();
         });
     }
@@ -116,9 +88,7 @@ class BrandService
         }
 
         DB::transaction(function () use ($brand) {
-            if ($brand->image) {
-                $this->uploadService->delete($brand->image);
-            }
+            $this->cleanupFiles($brand);
             $brand->delete();
         });
     }
@@ -126,13 +96,13 @@ class BrandService
     /**
      * Bulk delete brands.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      * @return int Count of deleted items.
      */
     public function bulkDeleteBrands(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
-            $brands = Brand::whereIn('id', $ids)->withCount('products')->get();
+            $brands = Brand::query()->whereIn('id', $ids)->withCount('products')->get();
             $count = 0;
 
             foreach ($brands as $brand) {
@@ -140,10 +110,7 @@ class BrandService
                     continue;
                 }
 
-                if ($brand->image) {
-                    $this->uploadService->delete($brand->image);
-                }
-
+                $this->cleanupFiles($brand);
                 $brand->delete();
                 $count++;
             }
@@ -155,11 +122,11 @@ class BrandService
     /**
      * Update status for multiple brands.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        return Brand::whereIn('id', $ids)->update(['is_active' => $isActive]);
+        return Brand::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 
     /**
@@ -173,20 +140,20 @@ class BrandService
     /**
      * Export brands to file.
      *
-     * @param  array<int>  $ids
-     * @param  string  $format  'excel' or 'pdf'
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters for created_at
+     * @param array<int> $ids
+     * @param string $format 'excel' or 'pdf'
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters for created_at
      * @return string Relative file path.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'brands_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'brands_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(
-            new BrandsExport($ids, $columns, $filters['start_date'] ?? null, $filters['end_date'] ?? null),
+            new BrandsExport($ids, $columns, $filters),
             $relativePath,
             'public',
             $writerType
@@ -196,18 +163,33 @@ class BrandService
     }
 
     /**
-     * Handle Image Upload via UploadService.
+     * Handle Image/Icon Upload via UploadService.
      *
-     * @return array{path: string, url: string|null}
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    private function handleImageUpload(UploadedFile $file): array
+    private function handleUploads(array $data, ?Brand $brand = null): array
     {
-        $path = $this->uploadService->upload($file, self::BRAND_IMAGE_PATH);
-        $url = $this->uploadService->url($path);
+        // Handle Image
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if ($brand?->image) {
+                $this->uploadService->delete($brand->image);
+            }
+            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+            $data['image'] = $path;
+            $data['image_url'] = $this->uploadService->url($path);
+        }
 
-        return [
-            'path' => $path,
-            'url' => $url,
-        ];
+        return $data;
+    }
+
+    /**
+     * Remove associated files.
+     */
+    private function cleanupFiles(Brand $brand): void
+    {
+        if ($brand->image) {
+            $this->uploadService->delete($brand->image);
+        }
     }
 }

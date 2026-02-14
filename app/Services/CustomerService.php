@@ -10,6 +10,7 @@ use App\Enums\RewardPointTypeEnum;
 use App\Exports\CustomersExport;
 use App\Imports\CustomersImport;
 use App\Mail\ExportMail;
+use App\Models\Biller;
 use App\Models\Customer;
 use App\Models\CustomField;
 use App\Models\Deposit;
@@ -20,9 +21,11 @@ use App\Models\MailSetting;
 use App\Models\Payment;
 use App\Models\Returns;
 use App\Models\RewardPoint;
+use App\Models\Roles;
 use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -66,7 +69,7 @@ class CustomerService extends BaseService
      *
      * Supports status, customer_group_id, and search. Requires customers-index permission.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<Customer>
      */
     public function getCustomers(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -75,11 +78,11 @@ class CustomerService extends BaseService
 
         return Customer::query()
             ->with(['customerGroup', 'discountPlans'])
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(isset($filters['customer_group_id']), fn ($q) => $q->where('customer_group_id', $filters['customer_group_id']))
-            ->when(! empty($filters['search']), function ($q) use ($filters) {
-                $term = '%'.$filters['search'].'%';
-                $q->where(fn ($subQ) => $subQ
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
+            ->when(isset($filters['customer_group_id']), fn($q) => $q->where('customer_group_id', $filters['customer_group_id']))
+            ->when(!empty($filters['search']), function ($q) use ($filters) {
+                $term = '%' . $filters['search'] . '%';
+                $q->where(fn($subQ) => $subQ
                     ->where('name', 'like', $term)
                     ->orWhere('company_name', 'like', $term)
                     ->orWhere('email', 'like', $term)
@@ -97,20 +100,20 @@ class CustomerService extends BaseService
      * When "user" is true, creates a User and links customer; when "both" is true, creates a Supplier with same details.
      * Defaults type to REGULAR when not provided. Requires customers-create permission.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createCustomer(array $data): Customer
     {
         $this->requirePermission('customers-create');
 
         return DB::transaction(function () use ($data) {
-            $createSupplier = ! empty($data['both']);
+            $createSupplier = !empty($data['both']);
             $data['is_active'] = $data['is_active'] ?? true;
             if (empty($data['type'])) {
                 $data['type'] = CustomerTypeEnum::REGULAR->value;
             }
 
-            if (! empty($data['user'])) {
+            if (!empty($data['user'])) {
                 $user = $this->createUserForCustomer($data);
                 $data['user_id'] = $user->id;
             }
@@ -134,21 +137,21 @@ class CustomerService extends BaseService
     /**
      * Create a User for customer login (phone from phone_number, role = Customer).
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     private function createUserForCustomer(array $data): User
     {
         $userId = Auth::id();
-        if (! $userId) {
+        if (!$userId) {
             throw new RuntimeException('Authenticated user required to create customer login.');
         }
 
-        $customerRoleId = \App\Models\Roles::query()
+        $customerRoleId = Roles::query()
             ->where('name', 'Customer')
             ->where('is_active', true)
             ->value('id');
 
-        if (! $customerRoleId) {
+        if (!$customerRoleId) {
             throw new RuntimeException('Customer role not found. Please ensure a role named "Customer" exists and is active.');
         }
 
@@ -165,9 +168,22 @@ class CustomerService extends BaseService
     }
 
     /**
+     * Keep only keys that are fillable on Customer model (exclude custom field and request-only keys).
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function onlyFillableCustomerData(array $data): array
+    {
+        $fillable = (new Customer)->getFillable();
+
+        return array_intersect_key($data, array_flip($fillable));
+    }
+
+    /**
      * Create a Supplier with same details as customer (quick-mart-old "both").
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     private function createSupplierFromCustomerData(array $data): void
     {
@@ -205,13 +221,13 @@ class CustomerService extends BaseService
 
     private function createInitialDepositIfNeeded(Customer $customer): void
     {
-        $amount = (float) ($customer->deposit ?? 0);
+        $amount = (float)($customer->deposit ?? 0);
         if ($amount <= 0) {
             return;
         }
 
         $userId = Auth::id();
-        if (! $userId) {
+        if (!$userId) {
             return;
         }
 
@@ -227,21 +243,21 @@ class CustomerService extends BaseService
      */
     private function createOpeningBalanceSaleIfNeeded(Customer $customer, array $data): void
     {
-        $openingBalance = (float) ($data['opening_balance'] ?? $customer->opening_balance ?? 0);
+        $openingBalance = (float)($data['opening_balance'] ?? $customer->opening_balance ?? 0);
         if ($openingBalance <= 0) {
             return;
         }
 
         $userId = Auth::id();
-        if (! $userId) {
+        if (!$userId) {
             return;
         }
 
-        $warehouseId = (int) (\App\Models\Warehouse::query()->value('id') ?? 1);
-        $billerId = (int) (\App\Models\Biller::query()->where('is_active', true)->value('id') ?? 1);
+        $warehouseId = (int)(Warehouse::query()->value('id') ?? 1);
+        $billerId = (int)(Biller::query()->where('is_active', true)->value('id') ?? 1);
 
         Sale::create([
-            'reference_no' => 'cob-'.date('Ymd').'-'.date('his'),
+            'reference_no' => 'cob-' . date('Ymd') . '-' . date('his'),
             'customer_id' => $customer->id,
             'user_id' => $userId,
             'warehouse_id' => $warehouseId,
@@ -260,42 +276,31 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Update an existing customer.
+     * Persist custom field values onto customer (quick-mart-old: custom fields stored on customers table).
      *
-     * When "user" is true and customer has no user_id, creates a User and links (quick-mart-old).
-     * Requires customers-update permission.
-     *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
-    public function updateCustomer(Customer $customer, array $data): Customer
+    private function syncCustomFieldsForCustomer(Customer $customer, array $data): void
     {
-        $this->requirePermission('customers-update');
+        $allowedColumns = $this->getCustomerCustomFieldColumnNames();
+        if (empty($allowedColumns)) {
+            return;
+        }
 
-        return DB::transaction(function () use ($customer, $data) {
-            if (! empty($data['user']) && ! $customer->user_id) {
-                $user = $this->createUserForCustomer($data);
-                $data['user_id'] = $user->id;
+        $customFieldData = [];
+        foreach ($allowedColumns as $col) {
+            if (array_key_exists($col, $data)) {
+                $value = $data[$col];
+                if (is_array($value)) {
+                    $value = implode(',', $value);
+                }
+                $customFieldData[$col] = $value;
             }
-            unset($data['user'], $data['username'], $data['password'], $data['both']);
+        }
 
-            $customer->update($this->onlyFillableCustomerData($data));
-            $this->syncCustomFieldsForCustomer($customer, $data);
-
-            return $customer->fresh(['customerGroup', 'discountPlans']);
-        });
-    }
-
-    /**
-     * Keep only keys that are fillable on Customer model (exclude custom field and request-only keys).
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function onlyFillableCustomerData(array $data): array
-    {
-        $fillable = (new Customer)->getFillable();
-
-        return array_intersect_key($data, array_flip($fillable));
+        if ($customFieldData !== []) {
+            DB::table('customers')->where('id', $customer->id)->update($customFieldData);
+        }
     }
 
     /**
@@ -323,31 +328,63 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Persist custom field values onto customer (quick-mart-old: custom fields stored on customers table).
+     * Update an existing customer.
      *
-     * @param  array<string, mixed>  $data
+     * When "user" is true and customer has no user_id, creates a User and links (quick-mart-old).
+     * Requires customers-update permission.
+     *
+     * @param array<string, mixed> $data
      */
-    private function syncCustomFieldsForCustomer(Customer $customer, array $data): void
+    public function updateCustomer(Customer $customer, array $data): Customer
     {
-        $allowedColumns = $this->getCustomerCustomFieldColumnNames();
-        if (empty($allowedColumns)) {
-            return;
-        }
+        $this->requirePermission('customers-update');
 
-        $customFieldData = [];
-        foreach ($allowedColumns as $col) {
-            if (array_key_exists($col, $data)) {
-                $value = $data[$col];
-                if (is_array($value)) {
-                    $value = implode(',', $value);
-                }
-                $customFieldData[$col] = $value;
+        return DB::transaction(function () use ($customer, $data) {
+            if (!empty($data['user']) && !$customer->user_id) {
+                $user = $this->createUserForCustomer($data);
+                $data['user_id'] = $user->id;
+            }
+            unset($data['user'], $data['username'], $data['password'], $data['both']);
+
+            $customer->update($this->onlyFillableCustomerData($data));
+            $this->syncCustomFieldsForCustomer($customer, $data);
+
+            return $customer->fresh(['customerGroup', 'discountPlans']);
+        });
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Customer>
+     */
+    public function getAllActive(): \Illuminate\Database\Eloquent\Collection
+    {
+        $this->requirePermission('customers-index');
+
+        return Customer::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Bulk soft-delete customers. Requires customers-delete permission.
+     *
+     * @param array<int> $ids
+     */
+    public function bulkDeleteCustomers(array $ids): int
+    {
+        $this->requirePermission('customers-delete');
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $customer = Customer::find($id);
+            if ($customer) {
+                $this->deleteCustomer($customer);
+                $count++;
             }
         }
 
-        if ($customFieldData !== []) {
-            DB::table('customers')->where('id', $customer->id)->update($customFieldData);
-        }
+        return $count;
     }
 
     /**
@@ -374,40 +411,6 @@ class CustomerService extends BaseService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, Customer>
-     */
-    public function getAllActive(): \Illuminate\Database\Eloquent\Collection
-    {
-        $this->requirePermission('customers-index');
-
-        return Customer::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-    }
-
-    /**
-     * Bulk soft-delete customers. Requires customers-delete permission.
-     *
-     * @param  array<int>  $ids
-     */
-    public function bulkDeleteCustomers(array $ids): int
-    {
-        $this->requirePermission('customers-delete');
-
-        $count = 0;
-        foreach ($ids as $id) {
-            $customer = Customer::find($id);
-            if ($customer) {
-                $this->deleteCustomer($customer);
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
      * Import customers from Excel/CSV. Requires customers-import permission.
      */
     public function importCustomers(UploadedFile $file): void
@@ -421,22 +424,22 @@ class CustomerService extends BaseService
      *
      * Requires customers-export permission.
      *
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
+     * @param array<int> $ids
+     * @param array<string> $columns
      */
     public function exportCustomers(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
         $this->requirePermission('customers-export');
 
-        $fileName = 'customers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'customers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new CustomersExport($ids, $columns), $relativePath, 'public');
         } else {
             $customers = Customer::query()
                 ->with('customerGroup')
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('name')
                 ->get();
 
@@ -454,7 +457,7 @@ class CustomerService extends BaseService
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
         $this->setMailInfo($mailSetting);
@@ -473,14 +476,14 @@ class CustomerService extends BaseService
     {
         $this->requirePermission('customers-index');
 
-        $openingBalance = (float) ($customer->opening_balance ?? 0);
+        $openingBalance = (float)($customer->opening_balance ?? 0);
         $sales = Sale::query()
             ->where('customer_id', $customer->id)
             ->whereNull('deleted_at')
             ->get();
         $totalSales = $sales->sum('grand_total');
-        $totalPaid = $sales->sum(fn ($s) => Payment::where('sale_id', $s->id)->sum('amount'));
-        $totalReturns = (float) Returns::where('customer_id', $customer->id)->sum('grand_total');
+        $totalPaid = $sales->sum(fn($s) => Payment::where('sale_id', $s->id)->sum('amount'));
+        $totalReturns = (float)Returns::where('customer_id', $customer->id)->sum('grand_total');
         $balanceDue = $totalSales - ($openingBalance + $totalPaid + $totalReturns);
 
         return [
@@ -506,12 +509,12 @@ class CustomerService extends BaseService
             ->where('customer_id', $customer->id)
             ->whereNull('deleted_at')
             ->get()
-            ->map(fn ($s) => [
+            ->map(fn($s) => [
                 'id' => $s->id,
                 'date' => $s->created_at->format('Y-m-d'),
                 'type' => 'Sale',
                 'reference' => $s->reference_no,
-                'debit' => (float) $s->grand_total,
+                'debit' => (float)$s->grand_total,
                 'credit' => 0.0,
             ]);
 
@@ -520,13 +523,13 @@ class CustomerService extends BaseService
             $salePayments = Payment::query()
                 ->where('sale_id', $row['id'])
                 ->get()
-                ->map(fn ($p) => [
+                ->map(fn($p) => [
                     'id' => $p->id,
                     'date' => ($p->payment_at ?? $p->created_at)?->format('Y-m-d') ?? '-',
                     'type' => 'Payment',
                     'reference' => $p->payment_reference ?? '-',
                     'debit' => 0.0,
-                    'credit' => (float) $p->amount,
+                    'credit' => (float)$p->amount,
                 ]);
             $payments = $payments->merge($salePayments);
         }
@@ -534,13 +537,13 @@ class CustomerService extends BaseService
         $returns = Returns::query()
             ->where('customer_id', $customer->id)
             ->get()
-            ->map(fn ($r) => [
+            ->map(fn($r) => [
                 'id' => $r->id,
                 'date' => $r->created_at->format('Y-m-d'),
                 'type' => 'Purchase Return',
                 'reference' => $r->reference_no,
                 'debit' => 0.0,
-                'credit' => (float) $r->grand_total,
+                'credit' => (float)$r->grand_total,
             ]);
 
         $ledger = $sales->merge($payments)->merge($returns)->sortBy('date')->values();
@@ -581,7 +584,7 @@ class CustomerService extends BaseService
         $this->requirePermission('customers-update');
 
         $userId = Auth::id();
-        if (! $userId) {
+        if (!$userId) {
             throw new RuntimeException('Authenticated user required to add deposit.');
         }
 
@@ -706,7 +709,7 @@ class CustomerService extends BaseService
         $this->requirePermission('customers-index');
 
         return Payment::query()
-            ->whereHas('sale', fn ($q) => $q->where('customer_id', $customer->id)->whereNull('deleted_at'))
+            ->whereHas('sale', fn($q) => $q->where('customer_id', $customer->id)->whereNull('deleted_at'))
             ->with('sale')
             ->latest('created_at')
             ->get();

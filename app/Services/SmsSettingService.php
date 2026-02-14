@@ -22,7 +22,9 @@ class SmsSettingService extends BaseService
     /**
      * SmsSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve all SMS providers.
@@ -45,7 +47,7 @@ class SmsSettingService extends BaseService
      *
      * Requires sms_setting permission.
      *
-     * @param  int  $id  External service ID.
+     * @param int $id External service ID.
      * @return ExternalService|null The SMS provider or null if not found.
      */
     public function getSmsProvider(int $id): ?ExternalService
@@ -60,8 +62,8 @@ class SmsSettingService extends BaseService
      *
      * Requires sms_setting permission.
      *
-     * @param  int  $id  External service ID.
-     * @param  array<string, mixed>  $data  Validated data (details, active).
+     * @param int $id External service ID.
+     * @param array<string, mixed> $data Validated data (details, active).
      * @return ExternalService The updated SMS provider instance.
      */
     public function updateSmsProvider(int $id, array $data): ExternalService
@@ -73,13 +75,13 @@ class SmsSettingService extends BaseService
         if (isset($data['details']) && is_array($data['details'])) {
             $existingDetails = is_string($provider->details)
                 ? json_decode($provider->details, true) ?? []
-                : (array) $provider->details;
+                : (array)$provider->details;
 
             $provider->details = json_encode(array_merge($existingDetails, $data['details']));
         }
 
         if (array_key_exists('active', $data)) {
-            $provider->active = (bool) $data['active'];
+            $provider->active = (bool)$data['active'];
             if ($provider->active) {
                 ExternalService::where('type', self::SMS_TYPE)
                     ->whereKeyNot($id)

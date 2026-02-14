@@ -126,13 +126,13 @@ class ProductIndexRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'per_page' => $this->per_page ? (int) $this->per_page : null,
-            'page' => $this->page ? (int) $this->page : null,
-            'warehouse_id' => $this->warehouse_id ? (int) $this->warehouse_id : null,
-            'brand_id' => $this->brand_id ? (int) $this->brand_id : null,
-            'category_id' => $this->category_id ? (int) $this->category_id : null,
-            'unit_id' => $this->unit_id ? (int) $this->unit_id : null,
-            'tax_id' => $this->tax_id ? (int) $this->tax_id : null,
+            'per_page' => $this->per_page ? (int)$this->per_page : null,
+            'page' => $this->page ? (int)$this->page : null,
+            'warehouse_id' => $this->warehouse_id ? (int)$this->warehouse_id : null,
+            'brand_id' => $this->brand_id ? (int)$this->brand_id : null,
+            'category_id' => $this->category_id ? (int)$this->category_id : null,
+            'unit_id' => $this->unit_id ? (int)$this->unit_id : null,
+            'tax_id' => $this->tax_id ? (int)$this->tax_id : null,
             'product_type' => $this->product_type ?: 'all',
             'stock_filter' => $this->stock_filter ?: 'all',
             'imeiorvariant' => $this->imeiorvariant ?: '0',

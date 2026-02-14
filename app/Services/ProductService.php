@@ -8,13 +8,11 @@ use App\Enums\PaymentMethodEnum;
 use App\Enums\PaymentStatusEnum;
 use App\Enums\PurchaseStatusEnum;
 use App\Enums\TaxMethodEnum;
-use App\Models\Brand;
-use App\Models\Category;
+use App\Imports\ProductsImport;
 use App\Models\CustomField;
 use App\Models\GeneralSetting;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\ProductBatch;
 use App\Models\ProductPurchase;
 use App\Models\ProductVariant;
 use App\Models\ProductWarehouse;
@@ -23,27 +21,24 @@ use App\Models\Tax;
 use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
-use App\Imports\ProductsImport;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\TenantInfo;
 use App\Traits\CacheForget;
+use App\Traits\CheckPermissionsTrait;
 use App\Traits\GeneralSettingsTrait;
 use App\Traits\StorageProviderInfo;
+use App\Traits\TenantInfo;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
 use Maatwebsite\Excel\Facades\Excel;
-use Exception;
 
 /**
  * ProductService
@@ -62,7 +57,8 @@ class ProductService extends BaseService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {
+    )
+    {
     }
 
     /**
@@ -137,19 +133,19 @@ class ProductService extends BaseService
             $query->where(function ($q) use ($search) {
                 // Search in product name or code
                 $q->where('products.name', 'LIKE', "%{$search}%")
-                  ->orWhere('products.code', 'LIKE', "%{$search}%")
-                  // Search in product variants
-                  ->orWhereHas('productVariants', function ($variantQuery) use ($search) {
-                      $variantQuery->where('item_code', 'LIKE', "%{$search}%");
-                  })
-                  // Search in brand name
-                  ->orWhereHas('brand', function ($brandQuery) use ($search) {
-                      $brandQuery->where('name', 'LIKE', "%{$search}%");
-                  })
-                  // Search in category name
-                  ->orWhereHas('category', function ($categoryQuery) use ($search) {
-                      $categoryQuery->where('name', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('products.code', 'LIKE', "%{$search}%")
+                    // Search in product variants
+                    ->orWhereHas('productVariants', function ($variantQuery) use ($search) {
+                        $variantQuery->where('item_code', 'LIKE', "%{$search}%");
+                    })
+                    // Search in brand name
+                    ->orWhereHas('brand', function ($brandQuery) use ($search) {
+                        $brandQuery->where('name', 'LIKE', "%{$search}%");
+                    })
+                    // Search in category name
+                    ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                        $categoryQuery->where('name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -358,6 +354,342 @@ class ProductService extends BaseService
 
             return $product->fresh(['category', 'brand', 'unit']);
         });
+    }
+
+    /**
+     * Normalize product data to match database schema requirements.
+     *
+     * @param array<string, mixed> $data
+     * @param bool $isUpdate Whether this is an update operation
+     * @return array<string, mixed>
+     */
+    private function normalizeProductData(array $data, bool $isUpdate = false): array
+    {
+        // Handle name
+        if (isset($data['name'])) {
+            $data['name'] = preg_replace('/[\n\r]/', "<br>", htmlspecialchars(trim($data['name']), ENT_QUOTES));
+        }
+
+        // Handle boolean fields (per model casts)
+        // Note: Types are already normalized in ProductRequest::prepareForValidation()
+        // This serves as a safeguard and handles defaults
+        $booleanFields = [
+            'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei',
+            'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory',
+            'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion'
+        ];
+
+        foreach ($booleanFields as $field) {
+            if (isset($data[$field])) {
+                // Only normalize if not already boolean (safeguard)
+                if (!is_bool($data[$field])) {
+                    $data[$field] = filter_var(
+                        $data[$field],
+                        FILTER_VALIDATE_BOOLEAN,
+                        FILTER_NULL_ON_FAILURE
+                    );
+                }
+            } elseif (!$isUpdate && in_array($field, ['is_active', 'track_inventory'])) {
+                $data[$field] = true;
+            }
+        }
+
+        $numericFields = [
+            'cost', 'profit_margin', 'price', 'wholesale_price', 'qty',
+            'alert_quantity', 'daily_sale_objective', 'promotion_price',
+            'wastage_percent', 'production_cost'
+        ];
+
+        foreach ($numericFields as $field) {
+            if (isset($data[$field]) && !is_float($data[$field])) {
+                $data[$field] = is_numeric($data[$field]) ? (float)$data[$field] : null;
+            }
+        }
+
+        // Handle integer fields (per model casts)
+        $integerFields = [
+            'brand_id', 'category_id', 'unit_id', 'purchase_unit_id', 'sale_unit_id',
+            'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id',
+            'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee'
+        ];
+
+        foreach ($integerFields as $field) {
+            if (isset($data[$field]) && !is_int($data[$field])) {
+                $data[$field] = is_numeric($data[$field]) ? (int)$data[$field] : null;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Handle image uploads and create multiple sizes.
+     *
+     * @param array<UploadedFile> $images
+     * @param int $offset Offset for naming (used in updates)
+     * @return array{paths: array<string>, urls: array<string>}
+     */
+    private function handleImageUploads(array $images, int $offset = 0): array
+    {
+        $disk = $this->getStorageProvider();
+
+        // Set storage provider configuration from database
+        $this->setStorageProviderInfo($disk);
+
+        $baseDirectory = config('storage.products.images.base');
+
+        $imagePaths = [];
+        $imageUrls = [];
+
+        foreach ($images as $key => $image) {
+            if (!$image instanceof UploadedFile) {
+                continue;
+            }
+
+            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
+            $imageName = date("Ymdhis") . ($offset + $key + 1);
+
+            // Handle multi-tenant logic
+            if (config('database.connections.saleprosaas_landlord', false)) {
+                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
+            } else {
+                $imageName = $imageName . '.' . $ext;
+            }
+
+            // Ensure base directory exists
+            Storage::disk($disk)->makeDirectory($baseDirectory);
+
+            // Store original image
+            $originalPath = $baseDirectory . '/' . $imageName;
+            Storage::disk($disk)->putFileAs($baseDirectory, $image, $imageName);
+
+            // Create different sizes using Intervention Image
+            $manager = new ImageManager(new GdDriver());
+            $img = $manager->read($image->getRealPath());
+
+            // Create size directories and save resized images
+            $sizes = [
+                'xlarge' => [1000, 1250],
+                'large' => [500, 500],
+                'medium' => [250, 250],
+                'small' => [100, 100],
+            ];
+
+            foreach ($sizes as $sizeName => [$width, $height]) {
+                $sizeDirectory = config("storage.products.images.{$sizeName}");
+                Storage::disk($disk)->makeDirectory($sizeDirectory);
+
+                $resized = clone $img;
+                $resized->resize($width, $height);
+
+                // Save to temporary file first, then put to storage
+                $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $imageName;
+                $resized->save($tempPath);
+
+                if ($disk === 'cloudinary') {
+                    // Create a temporary UploadedFile instance for Cloudinary
+                    $mimeType = mime_content_type($tempPath) ?: 'image/jpeg';
+                    $tempFile = new UploadedFile(
+                        $tempPath,
+                        $imageName,
+                        $mimeType,
+                        null,
+                        true
+                    );
+                    Storage::disk($disk)->putFileAs($sizeDirectory, $tempFile, $imageName);
+                } else {
+                    // For other storage providers, use put() with file contents
+                    Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
+                }
+
+                unlink($tempPath);
+            }
+
+            // Store just the filename (not full path) for database compatibility
+            $imagePaths[] = $imageName;
+            $imageUrls[] = $this->uploadService->url($originalPath);
+        }
+
+        return [
+            'paths' => $imagePaths,
+            'urls' => $imageUrls
+        ];
+    }
+
+    /**
+     * Handle custom fields for products.
+     *
+     * @param Product $product
+     * @param array<string, mixed> $data
+     * @return void
+     */
+    private function handleCustomFields(Product $product, array $data): void
+    {
+        $customFields = CustomField::where('belongs_to', 'product')->select('name', 'type')->get();
+        $customFieldData = [];
+
+        foreach ($customFields as $customField) {
+            $fieldName = str_replace(' ', '_', strtolower($customField->name));
+            if (isset($data[$fieldName])) {
+                if ($customField->type == 'checkbox' || $customField->type == 'multi_select') {
+                    $customFieldData[$fieldName] = is_array($data[$fieldName])
+                        ? implode(",", $data[$fieldName])
+                        : $data[$fieldName];
+                } else {
+                    $customFieldData[$fieldName] = $data[$fieldName];
+                }
+            }
+        }
+
+        if (!empty($customFieldData)) {
+            DB::table('products')->where('id', $product->id)->update($customFieldData);
+        }
+    }
+
+    /**
+     * Auto purchase for initial stock.
+     *
+     * Creates a Purchase record with ProductPurchase pivot and Payment for initial stock.
+     * This ensures proper accounting and inventory tracking.
+     *
+     * @param Product $product
+     * @param int $warehouseId
+     * @param float $stock
+     * @return void
+     */
+    private function autoPurchase(Product $product, int $warehouseId, float $stock): void
+    {
+        // Prepare purchase data
+        $userId = Auth::check() ? Auth::id() : 1; // Fallback to 1 if no authenticated user
+        $purchasePrefix = config('references.purchase.prefix', 'pr');
+        $purchaseData = [
+            'reference_no' => $purchasePrefix . '-' . date("Ymd") . '-' . date("his"),
+            'user_id' => $userId,
+            'warehouse_id' => $warehouseId,
+            'supplier_id' => 0, // No supplier for auto purchase
+            'item' => 1,
+            'total_qty' => $stock,
+            'total_discount' => 0,
+            'status' => PurchaseStatusEnum::COMPLETED->value,
+            'payment_status' => PaymentStatusEnum::PAID->value,
+        ];
+
+        // Calculate tax and costs based on tax method
+        $taxRate = 0.00;
+        $tax = 0.00;
+        $netUnitCost = number_format((float)$product->cost, 2, '.', '');
+
+        if ($product->tax_id) {
+            $taxData = Tax::find($product->tax_id);
+            if ($taxData) {
+                $taxRate = $taxData->rate;
+
+                if ($product->tax_method == TaxMethodEnum::EXCLUSIVE->value) {
+                    // Exclusive tax: tax is added on top
+                    $netUnitCost = number_format((float)$product->cost, 2, '.', '');
+                    $tax = number_format((float)$product->cost * $stock * ($taxRate / 100), 2, '.', '');
+                    $cost = number_format((float)$product->cost * $stock + $tax, 2, '.', '');
+                } else {
+                    // Inclusive tax: tax is included in the cost
+                    $netUnitCost = number_format((100 / (100 + $taxRate)) * (float)$product->cost, 2, '.', '');
+                    $tax = number_format(((float)$product->cost - $netUnitCost) * $stock, 2, '.', '');
+                    $cost = number_format((float)$product->cost * $stock, 2, '.', '');
+                }
+
+                $purchaseData['total_tax'] = $tax;
+                $purchaseData['total_cost'] = $cost;
+            }
+        } else {
+            // No tax
+            $purchaseData['total_tax'] = 0.00;
+            $purchaseData['total_cost'] = number_format((float)$product->cost * $stock, 2, '.', '');
+            $cost = $purchaseData['total_cost'];
+        }
+
+        // Update or create ProductWarehouse entry
+        $productWarehouse = ProductWarehouse::where([
+            ['product_id', $product->id],
+            ['warehouse_id', $warehouseId]
+        ])->first();
+
+        if ($productWarehouse) {
+            $productWarehouse->qty += $stock;
+            $productWarehouse->save();
+        } else {
+            ProductWarehouse::create([
+                'product_id' => $product->id,
+                'warehouse_id' => $warehouseId,
+                'qty' => $stock,
+            ]);
+        }
+
+        // Set additional purchase fields
+        $purchaseData['order_tax'] = 0;
+        $purchaseData['grand_total'] = $purchaseData['total_cost'];
+        $purchaseData['paid_amount'] = $purchaseData['grand_total'];
+
+        // Create Purchase record
+        $purchase = Purchase::create($purchaseData);
+
+        // Create ProductPurchase pivot record
+        ProductPurchase::create([
+            'purchase_id' => $purchase->id,
+            'product_id' => $product->id,
+            'qty' => $stock,
+            'recieved' => $stock,
+            'purchase_unit_id' => $product->unit_id ?? $product->purchase_unit_id ?? 1,
+            'net_unit_cost' => $netUnitCost,
+            'net_unit_price' => $netUnitCost, // Same as cost for auto purchase
+            'discount' => 0,
+            'tax_rate' => $taxRate,
+            'tax' => $tax,
+            'total' => $cost ?? $purchaseData['total_cost'],
+        ]);
+
+        // Create Payment record
+        $paymentPrefix = config('references.payment.purchase', 'ppr');
+        Payment::create([
+            'payment_reference' => $paymentPrefix . '-' . date("Ymd") . '-' . date("his"),
+            'user_id' => $userId,
+            'purchase_id' => $purchase->id,
+            'account_id' => 0,
+            'amount' => $purchaseData['grand_total'],
+            'change' => 0,
+            'paying_method' => PaymentMethodEnum::CASH->value,
+            'payment_at' => now(),
+        ]);
+    }
+
+    /**
+     * Handle product variants creation/update.
+     *
+     * @param Product $product
+     * @param array<string, mixed> $data
+     * @return void
+     */
+    private function handleProductVariants(Product $product, array $data): void
+    {
+        if (!isset($data['variant_name']) || !is_array($data['variant_name'])) {
+            return;
+        }
+
+        foreach ($data['variant_name'] as $key => $variantName) {
+            $variant = Variant::firstOrCreate(['name' => $variantName]);
+
+            ProductVariant::firstOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'variant_id' => $variant->id,
+                ],
+                [
+                    'item_code' => $data['item_code'][$key] ?? null,
+                    'additional_cost' => $data['additional_cost'][$key] ?? 0,
+                    'additional_price' => $data['additional_price'][$key] ?? 0,
+                    'qty' => 0,
+                    'position' => $key + 1,
+                ]
+            );
+        }
     }
 
     /**
@@ -695,6 +1027,32 @@ class ProductService extends BaseService
     }
 
     /**
+     * Bulk delete products.
+     *
+     * @param array<int> $ids Array of product IDs to delete
+     * @return int Number of products deleted
+     */
+    public function bulkDeleteProducts(array $ids): int
+    {
+        // Check permission: user needs 'products-delete' permission to delete products
+        $this->requirePermission('products-delete');
+
+        $deletedCount = 0;
+
+        foreach ($ids as $id) {
+            try {
+                $product = Product::findOrFail($id);
+                $this->deleteProduct($product);
+                $deletedCount++;
+            } catch (Exception $e) {
+                $this->logError("Failed to delete product {$id}: " . $e->getMessage());
+            }
+        }
+
+        return $deletedCount;
+    }
+
+    /**
      * Delete a product (soft delete by setting is_active to false).
      *
      * @param Product $product Product instance to delete
@@ -727,192 +1085,6 @@ class ProductService extends BaseService
     }
 
     /**
-     * Bulk delete products.
-     *
-     * @param array<int> $ids Array of product IDs to delete
-     * @return int Number of products deleted
-     */
-    public function bulkDeleteProducts(array $ids): int
-    {
-        // Check permission: user needs 'products-delete' permission to delete products
-        $this->requirePermission('products-delete');
-
-        $deletedCount = 0;
-
-        foreach ($ids as $id) {
-            try {
-                $product = Product::findOrFail($id);
-                $this->deleteProduct($product);
-                $deletedCount++;
-            } catch (Exception $e) {
-                $this->logError("Failed to delete product {$id}: " . $e->getMessage());
-            }
-        }
-
-        return $deletedCount;
-    }
-
-    /**
-     * Normalize product data to match database schema requirements.
-     *
-     * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation
-     * @return array<string, mixed>
-     */
-    private function normalizeProductData(array $data, bool $isUpdate = false): array
-    {
-        // Handle name
-        if (isset($data['name'])) {
-            $data['name'] = preg_replace('/[\n\r]/', "<br>", htmlspecialchars(trim($data['name']), ENT_QUOTES));
-        }
-
-        // Handle boolean fields (per model casts)
-        // Note: Types are already normalized in ProductRequest::prepareForValidation()
-        // This serves as a safeguard and handles defaults
-        $booleanFields = [
-            'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei',
-            'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory',
-            'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion'
-        ];
-
-        foreach ($booleanFields as $field) {
-            if (isset($data[$field])) {
-                // Only normalize if not already boolean (safeguard)
-                if (!is_bool($data[$field])) {
-                    $data[$field] = filter_var(
-                        $data[$field],
-                        FILTER_VALIDATE_BOOLEAN,
-                        FILTER_NULL_ON_FAILURE
-                    );
-                }
-            } elseif (!$isUpdate && in_array($field, ['is_active', 'track_inventory'])) {
-                $data[$field] = true;
-            }
-        }
-
-        $numericFields = [
-            'cost', 'profit_margin', 'price', 'wholesale_price', 'qty',
-            'alert_quantity', 'daily_sale_objective', 'promotion_price',
-            'wastage_percent', 'production_cost'
-        ];
-
-        foreach ($numericFields as $field) {
-            if (isset($data[$field]) && !is_float($data[$field])) {
-                $data[$field] = is_numeric($data[$field]) ? (float)$data[$field] : null;
-            }
-        }
-
-        // Handle integer fields (per model casts)
-        $integerFields = [
-            'brand_id', 'category_id', 'unit_id', 'purchase_unit_id', 'sale_unit_id',
-            'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id',
-            'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee'
-        ];
-
-        foreach ($integerFields as $field) {
-            if (isset($data[$field]) && !is_int($data[$field])) {
-                $data[$field] = is_numeric($data[$field]) ? (int)$data[$field] : null;
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Handle image uploads and create multiple sizes.
-     *
-     * @param array<UploadedFile> $images
-     * @param int $offset Offset for naming (used in updates)
-     * @return array{paths: array<string>, urls: array<string>}
-     */
-    private function handleImageUploads(array $images, int $offset = 0): array
-    {
-        $disk = $this->getStorageProvider();
-
-        // Set storage provider configuration from database
-        $this->setStorageProviderInfo($disk);
-
-        $baseDirectory = config('storage.products.images.base');
-
-        $imagePaths = [];
-        $imageUrls = [];
-
-        foreach ($images as $key => $image) {
-            if (!$image instanceof UploadedFile) {
-                continue;
-            }
-
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis") . ($offset + $key + 1);
-
-            // Handle multi-tenant logic
-            if (config('database.connections.saleprosaas_landlord', false)) {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-            } else {
-                $imageName = $imageName . '.' . $ext;
-            }
-
-            // Ensure base directory exists
-            Storage::disk($disk)->makeDirectory($baseDirectory);
-
-            // Store original image
-            $originalPath = $baseDirectory . '/' . $imageName;
-            Storage::disk($disk)->putFileAs($baseDirectory, $image, $imageName);
-
-            // Create different sizes using Intervention Image
-            $manager = new ImageManager(new GdDriver());
-            $img = $manager->read($image->getRealPath());
-
-            // Create size directories and save resized images
-            $sizes = [
-                'xlarge' => [1000, 1250],
-                'large' => [500, 500],
-                'medium' => [250, 250],
-                'small' => [100, 100],
-            ];
-
-            foreach ($sizes as $sizeName => [$width, $height]) {
-                $sizeDirectory = config("storage.products.images.{$sizeName}");
-                Storage::disk($disk)->makeDirectory($sizeDirectory);
-
-                $resized = clone $img;
-                $resized->resize($width, $height);
-
-                // Save to temporary file first, then put to storage
-                $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $imageName;
-                $resized->save($tempPath);
-                
-                if ($disk === 'cloudinary') {
-                    // Create a temporary UploadedFile instance for Cloudinary
-                    $mimeType = mime_content_type($tempPath) ?: 'image/jpeg';
-                    $tempFile = new UploadedFile(
-                        $tempPath,
-                        $imageName,
-                        $mimeType,
-                        null,
-                        true
-                    );
-                    Storage::disk($disk)->putFileAs($sizeDirectory, $tempFile, $imageName);
-                } else {
-                    // For other storage providers, use put() with file contents
-                    Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
-                }
-
-                unlink($tempPath);
-            }
-
-            // Store just the filename (not full path) for database compatibility
-            $imagePaths[] = $imageName;
-            $imageUrls[] = $this->uploadService->url($originalPath);
-        }
-
-        return [
-            'paths' => $imagePaths,
-            'urls' => $imageUrls
-        ];
-    }
-
-    /**
      * Delete image from storage (all sizes).
      *
      * @param string $imageName
@@ -942,182 +1114,6 @@ class ProductService extends BaseService
                 Storage::disk($disk)->delete($path);
             }
         }
-    }
-
-    /**
-     * Handle custom fields for products.
-     *
-     * @param Product $product
-     * @param array<string, mixed> $data
-     * @return void
-     */
-    private function handleCustomFields(Product $product, array $data): void
-    {
-        $customFields = CustomField::where('belongs_to', 'product')->select('name', 'type')->get();
-        $customFieldData = [];
-
-        foreach ($customFields as $customField) {
-            $fieldName = str_replace(' ', '_', strtolower($customField->name));
-            if (isset($data[$fieldName])) {
-                if ($customField->type == 'checkbox' || $customField->type == 'multi_select') {
-                    $customFieldData[$fieldName] = is_array($data[$fieldName])
-                        ? implode(",", $data[$fieldName])
-                        : $data[$fieldName];
-                } else {
-                    $customFieldData[$fieldName] = $data[$fieldName];
-                }
-            }
-        }
-
-        if (!empty($customFieldData)) {
-            DB::table('products')->where('id', $product->id)->update($customFieldData);
-        }
-    }
-
-    /**
-     * Handle product variants creation/update.
-     *
-     * @param Product $product
-     * @param array<string, mixed> $data
-     * @return void
-     */
-    private function handleProductVariants(Product $product, array $data): void
-    {
-        if (!isset($data['variant_name']) || !is_array($data['variant_name'])) {
-            return;
-        }
-
-        foreach ($data['variant_name'] as $key => $variantName) {
-            $variant = Variant::firstOrCreate(['name' => $variantName]);
-
-            ProductVariant::firstOrCreate(
-                [
-                    'product_id' => $product->id,
-                    'variant_id' => $variant->id,
-                ],
-                [
-                    'item_code' => $data['item_code'][$key] ?? null,
-                    'additional_cost' => $data['additional_cost'][$key] ?? 0,
-                    'additional_price' => $data['additional_price'][$key] ?? 0,
-                    'qty' => 0,
-                    'position' => $key + 1,
-                ]
-            );
-        }
-    }
-
-    /**
-     * Auto purchase for initial stock.
-     *
-     * Creates a Purchase record with ProductPurchase pivot and Payment for initial stock.
-     * This ensures proper accounting and inventory tracking.
-     *
-     * @param Product $product
-     * @param int $warehouseId
-     * @param float $stock
-     * @return void
-     */
-    private function autoPurchase(Product $product, int $warehouseId, float $stock): void
-    {
-        // Prepare purchase data
-        $userId = Auth::check() ? Auth::id() : 1; // Fallback to 1 if no authenticated user
-        $purchasePrefix = config('references.purchase.prefix', 'pr');
-        $purchaseData = [
-            'reference_no' => $purchasePrefix . '-' . date("Ymd") . '-' . date("his"),
-            'user_id' => $userId,
-            'warehouse_id' => $warehouseId,
-            'supplier_id' => 0, // No supplier for auto purchase
-            'item' => 1,
-            'total_qty' => $stock,
-            'total_discount' => 0,
-            'status' => PurchaseStatusEnum::COMPLETED->value,
-            'payment_status' => PaymentStatusEnum::PAID->value,
-        ];
-
-        // Calculate tax and costs based on tax method
-        $taxRate = 0.00;
-        $tax = 0.00;
-        $netUnitCost = number_format((float)$product->cost, 2, '.', '');
-
-        if ($product->tax_id) {
-            $taxData = Tax::find($product->tax_id);
-            if ($taxData) {
-                $taxRate = $taxData->rate;
-
-                if ($product->tax_method == TaxMethodEnum::EXCLUSIVE->value) {
-                    // Exclusive tax: tax is added on top
-                    $netUnitCost = number_format((float)$product->cost, 2, '.', '');
-                    $tax = number_format((float)$product->cost * $stock * ($taxRate / 100), 2, '.', '');
-                    $cost = number_format((float)$product->cost * $stock + $tax, 2, '.', '');
-                } else {
-                    // Inclusive tax: tax is included in the cost
-                    $netUnitCost = number_format((100 / (100 + $taxRate)) * (float)$product->cost, 2, '.', '');
-                    $tax = number_format(((float)$product->cost - $netUnitCost) * $stock, 2, '.', '');
-                    $cost = number_format((float)$product->cost * $stock, 2, '.', '');
-                }
-
-                $purchaseData['total_tax'] = $tax;
-                $purchaseData['total_cost'] = $cost;
-            }
-        } else {
-            // No tax
-            $purchaseData['total_tax'] = 0.00;
-            $purchaseData['total_cost'] = number_format((float)$product->cost * $stock, 2, '.', '');
-            $cost = $purchaseData['total_cost'];
-        }
-
-        // Update or create ProductWarehouse entry
-        $productWarehouse = ProductWarehouse::where([
-            ['product_id', $product->id],
-            ['warehouse_id', $warehouseId]
-        ])->first();
-
-        if ($productWarehouse) {
-            $productWarehouse->qty += $stock;
-            $productWarehouse->save();
-        } else {
-            ProductWarehouse::create([
-                'product_id' => $product->id,
-                'warehouse_id' => $warehouseId,
-                'qty' => $stock,
-            ]);
-        }
-
-        // Set additional purchase fields
-        $purchaseData['order_tax'] = 0;
-        $purchaseData['grand_total'] = $purchaseData['total_cost'];
-        $purchaseData['paid_amount'] = $purchaseData['grand_total'];
-
-        // Create Purchase record
-        $purchase = Purchase::create($purchaseData);
-
-        // Create ProductPurchase pivot record
-        ProductPurchase::create([
-            'purchase_id' => $purchase->id,
-            'product_id' => $product->id,
-            'qty' => $stock,
-            'recieved' => $stock,
-            'purchase_unit_id' => $product->unit_id ?? $product->purchase_unit_id ?? 1,
-            'net_unit_cost' => $netUnitCost,
-            'net_unit_price' => $netUnitCost, // Same as cost for auto purchase
-            'discount' => 0,
-            'tax_rate' => $taxRate,
-            'tax' => $tax,
-            'total' => $cost ?? $purchaseData['total_cost'],
-        ]);
-
-        // Create Payment record
-        $paymentPrefix = config('references.payment.purchase', 'ppr');
-        Payment::create([
-            'payment_reference' => $paymentPrefix . '-' . date("Ymd") . '-' . date("his"),
-            'user_id' => $userId,
-            'purchase_id' => $purchase->id,
-            'account_id' => 0,
-            'amount' => $purchaseData['grand_total'],
-            'change' => 0,
-            'paying_method' => PaymentMethodEnum::CASH->value,
-            'payment_at' => now(),
-        ]);
     }
 
     /**
@@ -1265,9 +1261,9 @@ class ProductService extends BaseService
         $this->requirePermission('products-index');
 
         $units = Unit::where(function ($query) use ($unitId) {
-                $query->where('base_unit', $unitId)
-                    ->orWhere('id', $unitId);
-            })
+            $query->where('base_unit', $unitId)
+                ->orWhere('id', $unitId);
+        })
             ->where('is_active', true)
             ->pluck('name', 'id')
             ->toArray();
@@ -1344,9 +1340,9 @@ class ProductService extends BaseService
 
         // Get unit options as structured data
         $units = Unit::where(function ($query) use ($product) {
-                $query->where('base_unit', $product->unit_id)
-                    ->orWhere('id', $product->unit_id);
-            })
+            $query->where('base_unit', $product->unit_id)
+                ->orWhere('id', $product->unit_id);
+        })
             ->where('is_active', true)
             ->get()
             ->map(function ($unit) use ($product) {

@@ -30,7 +30,9 @@ class UnitsExport implements FromQuery, WithHeadings, WithMapping
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {}
+    )
+    {
+    }
 
     /**
      * Build the query for the export.
@@ -41,7 +43,7 @@ class UnitsExport implements FromQuery, WithHeadings, WithMapping
     {
         return Unit::query()
             ->with('baseUnitRelation:id,code,name')
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('code');
     }
 
@@ -69,7 +71,7 @@ class UnitsExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }
@@ -89,7 +91,7 @@ class UnitsExport implements FromQuery, WithHeadings, WithMapping
             'is_active', 'created_at', 'updated_at',
         ];
 
-        return array_map(fn ($col) => match ($col) {
+        return array_map(fn($col) => match ($col) {
             'base_unit_name' => $unit->baseUnitRelation?->name ?? '',
             'is_active' => $unit->is_active ? 'Active' : 'Inactive',
             'created_at' => $unit->created_at?->toDateTimeString(),

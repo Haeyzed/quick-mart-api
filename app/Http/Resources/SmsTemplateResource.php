@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\SmsTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Transforms SmsTemplate model into a consistent JSON structure for API responses.
  *
- * @mixin \App\Models\SmsTemplate
+ * @mixin SmsTemplate
  */
 class SmsTemplateResource extends JsonResource
 {

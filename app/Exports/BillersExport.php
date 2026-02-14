@@ -18,12 +18,14 @@ class BillersExport implements FromQuery, WithHeadings, WithMapping
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {}
+    )
+    {
+    }
 
     public function query(): Builder
     {
         return Biller::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('company_name');
     }
 
@@ -52,7 +54,7 @@ class BillersExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }

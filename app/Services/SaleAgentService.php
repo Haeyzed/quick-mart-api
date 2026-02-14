@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Traits\CheckPermissionsTrait;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +22,9 @@ class SaleAgentService extends BaseService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     public function getSaleAgent(Employee $employee): Employee
     {
@@ -32,8 +35,15 @@ class SaleAgentService extends BaseService
         return $employee->fresh(['department', 'designation', 'shift', 'user']);
     }
 
+    private function ensureIsSaleAgent(Employee $employee): void
+    {
+        if (!$employee->is_sale_agent) {
+            abort(404, 'Employee is not a sale agent.');
+        }
+    }
+
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<Employee>
      */
     public function getSaleAgents(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -43,11 +53,11 @@ class SaleAgentService extends BaseService
         return Employee::query()
             ->saleAgents()
             ->with(['department', 'designation', 'shift', 'user'])
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(isset($filters['department_id']), fn ($q) => $q->where('department_id', $filters['department_id']))
-            ->when(! empty($filters['search']), function ($q) use ($filters) {
-                $term = '%'.$filters['search'].'%';
-                $q->where(fn ($subQ) => $subQ
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
+            ->when(isset($filters['department_id']), fn($q) => $q->where('department_id', $filters['department_id']))
+            ->when(!empty($filters['search']), function ($q) use ($filters) {
+                $term = '%' . $filters['search'] . '%';
+                $q->where(fn($subQ) => $subQ
                     ->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
                     ->orWhere('phone_number', 'like', $term)
@@ -59,7 +69,7 @@ class SaleAgentService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createSaleAgent(array $data): Employee
     {
@@ -77,7 +87,23 @@ class SaleAgentService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function handleImageUpload(array $data): array
+    {
+        $path = $this->uploadService->upload(
+            $data['image'],
+            config('storage.sale_agents.images', self::DEFAULT_SALE_AGENT_IMAGES_PATH)
+        );
+
+        $data['image'] = $path;
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
      */
     public function updateSaleAgent(Employee $employee, array $data): Employee
     {
@@ -100,24 +126,10 @@ class SaleAgentService extends BaseService
         });
     }
 
-    public function deleteSaleAgent(Employee $employee): void
-    {
-        $this->requirePermission('employees-delete');
-
-        $this->ensureIsSaleAgent($employee);
-
-        DB::transaction(function () use ($employee) {
-            if ($employee->image) {
-                $this->uploadService->delete($employee->image);
-            }
-            $employee->update(['is_active' => false]);
-        });
-    }
-
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, Employee>
+     * @return Collection<int, Employee>
      */
-    public function getAllActive(): \Illuminate\Database\Eloquent\Collection
+    public function getAllActive(): Collection
     {
         $this->requirePermission('sale-agents');
 
@@ -130,7 +142,7 @@ class SaleAgentService extends BaseService
     }
 
     /**
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkDeleteSaleAgents(array $ids): int
     {
@@ -146,26 +158,17 @@ class SaleAgentService extends BaseService
         return $count;
     }
 
-    private function ensureIsSaleAgent(Employee $employee): void
+    public function deleteSaleAgent(Employee $employee): void
     {
-        if (! $employee->is_sale_agent) {
-            abort(404, 'Employee is not a sale agent.');
-        }
-    }
+        $this->requirePermission('employees-delete');
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function handleImageUpload(array $data): array
-    {
-        $path = $this->uploadService->upload(
-            $data['image'],
-            config('storage.sale_agents.images', self::DEFAULT_SALE_AGENT_IMAGES_PATH)
-        );
+        $this->ensureIsSaleAgent($employee);
 
-        $data['image'] = $path;
-
-        return $data;
+        DB::transaction(function () use ($employee) {
+            if ($employee->image) {
+                $this->uploadService->delete($employee->image);
+            }
+            $employee->update(['is_active' => false]);
+        });
     }
 }

@@ -24,7 +24,9 @@ class GeneralSettingController extends Controller
      */
     public function __construct(
         private readonly GeneralSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display the general setting.
@@ -44,7 +46,7 @@ class GeneralSettingController extends Controller
     /**
      * Update the general setting.
      *
-     * @param  GeneralSettingRequest  $request  Validated general setting data.
+     * @param GeneralSettingRequest $request Validated general setting data.
      * @return JsonResponse The updated general setting.
      */
     public function update(GeneralSettingRequest $request): JsonResponse

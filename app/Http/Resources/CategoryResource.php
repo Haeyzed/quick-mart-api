@@ -4,26 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * API Resource for Category entity.
- *
- * Transforms Category model into a consistent JSON structure for API responses.
- * Compatible with Scramble/OpenAPI documentation.
- *
- * @mixin \App\Models\Category
+ * @mixin Category
  */
 class CategoryResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request The incoming HTTP request.
-     * @return array<string, mixed> The transformed category data for API response.
+     * @param Request $request
+     * @return array<string, mixed>
      */
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
@@ -32,21 +28,22 @@ class CategoryResource extends JsonResource
             'short_description' => $this->short_description,
             'page_title' => $this->page_title,
             'image' => $this->image,
-            'image_url' => $this->image_url,
             'icon' => $this->icon,
+            'image_url' => $this->image_url,
             'icon_url' => $this->icon_url,
-            'parent_id' => $this->parent_id,
-            'parent_name' => $this->parent?->name,
             'is_active' => $this->is_active,
-            'status' => $this->status,
-            'is_featured' => $this->featured,
-            'featured_status' => $this->featured_status,
+            'featured' => $this->featured,
             'is_sync_disable' => $this->is_sync_disable,
-            'sync_status' => $this->sync_status,
             'woocommerce_category_id' => $this->woocommerce_category_id,
-            'is_root' => $this->isRoot(),
+            'active_status' => $this->is_active ? 'active' : 'inactive',
+            'featured_status' => $this->featured ? 'yes' : 'no',
+            'sync_status' => $this->is_sync_disable ? 'disabled' : 'enabled',
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            'parent' => [
+                'id' => $this->parent?->id,
+                'name' => $this->parent?->name,
+            ]
         ];
     }
 }

@@ -36,14 +36,16 @@ class TaxService extends BaseService
     /**
      * Create a new TaxService instance.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve a single tax by instance.
      *
      * Requires taxes-index permission. Use for show/display operations.
      *
-     * @param  Tax  $tax  The tax instance to retrieve.
+     * @param Tax $tax The tax instance to retrieve.
      * @return Tax The refreshed tax instance.
      */
     public function getTax(Tax $tax): Tax
@@ -59,8 +61,8 @@ class TaxService extends BaseService
      * Supports filtering by status (active/inactive) and search term.
      * Requires taxes-index permission.
      *
-     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'search'.
-     * @param  int  $perPage  Number of items per page.
+     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
+     * @param int $perPage Number of items per page.
      * @return LengthAwarePaginator<Tax> Paginated tax collection.
      */
     public function getTaxes(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -68,9 +70,9 @@ class TaxService extends BaseService
         $this->requirePermission('taxes-index');
 
         return Tax::query()
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active')
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active')
             )
-            ->when(! empty($filters['search']), function ($q) use ($filters) {
+            ->when(!empty($filters['search']), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
                 $q->where('name', 'like', $term);
             })
@@ -83,7 +85,7 @@ class TaxService extends BaseService
      *
      * Requires taxes-create permission.
      *
-     * @param  array<string, mixed>  $data  Validated tax data.
+     * @param array<string, mixed> $data Validated tax data.
      * @return Tax The created tax instance.
      */
     public function createTax(array $data): Tax
@@ -98,12 +100,36 @@ class TaxService extends BaseService
     }
 
     /**
+     * Normalize tax data to match database schema requirements.
+     *
+     * Handles boolean conversions and default values for is_active.
+     *
+     * @param array<string, mixed> $data Input data.
+     * @param bool $isUpdate Whether this is an update operation.
+     * @return array<string, mixed> Normalized data.
+     */
+    private function normalizeTaxData(array $data, bool $isUpdate = false): array
+    {
+        if (!isset($data['is_active']) && !$isUpdate) {
+            $data['is_active'] = true;
+        } elseif (isset($data['is_active'])) {
+            $data['is_active'] = (bool)filter_var(
+                $data['is_active'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+        }
+
+        return $data;
+    }
+
+    /**
      * Update an existing tax.
      *
      * Requires taxes-update permission.
      *
-     * @param  Tax  $tax  The tax instance to update.
-     * @param  array<string, mixed>  $data  Validated tax data.
+     * @param Tax $tax The tax instance to update.
+     * @param array<string, mixed> $data Validated tax data.
      * @return Tax The updated tax instance (refreshed).
      */
     public function updateTax(Tax $tax, array $data): Tax
@@ -124,7 +150,7 @@ class TaxService extends BaseService
      * Fails if the tax has associated products.
      * Requires taxes-delete permission.
      *
-     * @param  Tax  $tax  The tax instance to delete.
+     * @param Tax $tax The tax instance to delete.
      *
      * @throws ConflictHttpException When tax has associated products (409 Conflict).
      */
@@ -147,7 +173,7 @@ class TaxService extends BaseService
      * Skips taxes with products. Returns the count of successfully deleted taxes.
      * Requires taxes-delete permission.
      *
-     * @param  array<int>  $ids  Tax IDs to delete.
+     * @param array<int> $ids Tax IDs to delete.
      * @return int Number of taxes successfully deleted.
      */
     public function bulkDeleteTaxes(array $ids): int
@@ -179,7 +205,7 @@ class TaxService extends BaseService
      *
      * Sets is_active to true for all matching taxes. Requires taxes-update permission.
      *
-     * @param  array<int>  $ids  Tax IDs to activate.
+     * @param array<int> $ids Tax IDs to activate.
      * @return int Number of taxes updated.
      */
     public function bulkActivateTaxes(array $ids): int
@@ -194,7 +220,7 @@ class TaxService extends BaseService
      *
      * Sets is_active to false for all matching taxes. Requires taxes-update permission.
      *
-     * @param  array<int>  $ids  Tax IDs to deactivate.
+     * @param array<int> $ids Tax IDs to deactivate.
      * @return int Number of taxes updated.
      */
     public function bulkDeactivateTaxes(array $ids): int
@@ -209,7 +235,7 @@ class TaxService extends BaseService
      *
      * Requires taxes-import permission.
      *
-     * @param  UploadedFile  $file  The uploaded import file.
+     * @param UploadedFile $file The uploaded import file.
      */
     public function importTaxes(UploadedFile $file): void
     {
@@ -222,32 +248,33 @@ class TaxService extends BaseService
      *
      * Supports download or email delivery. Requires taxes-export permission.
      *
-     * @param  array<int>  $ids  Tax IDs to export. Empty array exports all.
-     * @param  string  $format  Export format: 'excel' or 'pdf'.
-     * @param  User|null  $user  Recipient when method is 'email'. Required for email delivery.
-     * @param  array<string>  $columns  Column keys to include in export.
-     * @param  string  $method  Delivery method: 'download' or 'email'.
+     * @param array<int> $ids Tax IDs to export. Empty array exports all.
+     * @param string $format Export format: 'excel' or 'pdf'.
+     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
+     * @param array<string> $columns Column keys to include in export.
+     * @param string $method Delivery method: 'download' or 'email'.
      * @return string Relative storage path of the generated file.
      *
      * @throws RuntimeException When mail settings are not configured and method is 'email'.
      */
     public function exportTaxes(
-        array $ids,
+        array  $ids,
         string $format,
-        ?User $user,
-        array $columns,
+        ?User  $user,
+        array  $columns,
         string $method
-    ): string {
+    ): string
+    {
         $this->requirePermission('taxes-export');
 
-        $fileName = 'taxes_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'taxes_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new TaxesExport($ids, $columns), $relativePath, 'public');
         } else {
             $taxes = Tax::query()
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('name')
                 ->get();
 
@@ -263,42 +290,18 @@ class TaxService extends BaseService
     }
 
     /**
-     * Normalize tax data to match database schema requirements.
-     *
-     * Handles boolean conversions and default values for is_active.
-     *
-     * @param  array<string, mixed>  $data  Input data.
-     * @param  bool  $isUpdate  Whether this is an update operation.
-     * @return array<string, mixed> Normalized data.
-     */
-    private function normalizeTaxData(array $data, bool $isUpdate = false): array
-    {
-        if (! isset($data['is_active']) && ! $isUpdate) {
-            $data['is_active'] = true;
-        } elseif (isset($data['is_active'])) {
-            $data['is_active'] = (bool) filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
-    }
-
-    /**
      * Send export completion email to the user.
      *
-     * @param  User  $user  Recipient of the export email.
-     * @param  string  $path  Relative storage path of the export file.
-     * @param  string  $fileName  Display filename for the attachment.
+     * @param User $user Recipient of the export email.
+     * @param string $path Relative storage path of the export file.
+     * @param string $fileName Display filename for the attachment.
      *
      * @throws RuntimeException When mail settings are not configured.
      */
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
 

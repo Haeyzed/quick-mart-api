@@ -37,7 +37,9 @@ class TaxController extends Controller
      */
     public function __construct(
         private readonly TaxService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of taxes.
@@ -49,10 +51,10 @@ class TaxController extends Controller
     {
         $taxes = $this->service->getTaxes(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $taxes->through(fn (Tax $tax) => new TaxResource($tax));
+        $taxes->through(fn(Tax $tax) => new TaxResource($tax));
 
         return response()->success(
             $taxes,

@@ -30,7 +30,9 @@ class TaxesExport implements FromQuery, WithHeadings, WithMapping
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = []
-    ) {}
+    )
+    {
+    }
 
     /**
      * Build the query for the export.
@@ -40,7 +42,7 @@ class TaxesExport implements FromQuery, WithHeadings, WithMapping
     public function query(): Builder
     {
         return Tax::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('name');
     }
 
@@ -66,7 +68,7 @@ class TaxesExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return array_map(
-            fn ($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
+            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
             $this->columns
         );
     }
@@ -86,7 +88,7 @@ class TaxesExport implements FromQuery, WithHeadings, WithMapping
             'created_at', 'updated_at',
         ];
 
-        return array_map(fn ($col) => match ($col) {
+        return array_map(fn($col) => match ($col) {
             'is_active' => $tax->is_active ? 'Active' : 'Inactive',
             'created_at' => $tax->created_at?->toDateTimeString(),
             'updated_at' => $tax->updated_at?->toDateTimeString(),

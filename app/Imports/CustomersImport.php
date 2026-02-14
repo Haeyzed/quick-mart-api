@@ -29,31 +29,31 @@ class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
     {
         $data = $row->toArray();
 
-        $name = trim((string) ($data['name'] ?? ''));
+        $name = trim((string)($data['name'] ?? ''));
         if ($name === '') {
             return;
         }
 
-        $customerGroupName = trim((string) ($data['customer_group'] ?? $data['customergroup'] ?? ''));
+        $customerGroupName = trim((string)($data['customer_group'] ?? $data['customergroup'] ?? ''));
         $customerGroupId = null;
         if ($customerGroupName !== '') {
             $group = CustomerGroup::where('name', $customerGroupName)->where('is_active', true)->first();
             $customerGroupId = $group?->id;
         }
 
-        $phoneNumber = trim((string) ($data['phone_number'] ?? $data['phonenumber'] ?? ''));
+        $phoneNumber = trim((string)($data['phone_number'] ?? $data['phonenumber'] ?? ''));
         $attrs = [
             'customer_group_id' => $customerGroupId,
             'name' => $name,
-            'company_name' => trim((string) ($data['company_name'] ?? $data['companyname'] ?? '')) ?: null,
-            'email' => trim((string) ($data['email'] ?? '')) ?: null,
+            'company_name' => trim((string)($data['company_name'] ?? $data['companyname'] ?? '')) ?: null,
+            'email' => trim((string)($data['email'] ?? '')) ?: null,
             'phone_number' => $phoneNumber ?: null,
-            'address' => trim((string) ($data['address'] ?? '')) ?: null,
-            'city' => trim((string) ($data['city'] ?? '')) ?: null,
-            'state' => trim((string) ($data['state'] ?? '')) ?: null,
-            'postal_code' => trim((string) ($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
-            'country' => trim((string) ($data['country'] ?? '')) ?: null,
-            'deposit' => (float) ($data['deposit'] ?? 0),
+            'address' => trim((string)($data['address'] ?? '')) ?: null,
+            'city' => trim((string)($data['city'] ?? '')) ?: null,
+            'state' => trim((string)($data['state'] ?? '')) ?: null,
+            'postal_code' => trim((string)($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
+            'country' => trim((string)($data['country'] ?? '')) ?: null,
+            'deposit' => (float)($data['deposit'] ?? 0),
             'is_active' => true,
         ];
 

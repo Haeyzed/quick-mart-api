@@ -42,7 +42,7 @@ class WarehouseService extends BaseService
      *
      * Requires warehouses-index permission. Use for show/display operations.
      *
-     * @param  Warehouse  $warehouse  The warehouse instance to retrieve.
+     * @param Warehouse $warehouse The warehouse instance to retrieve.
      * @return Warehouse The refreshed warehouse instance.
      */
     public function getWarehouse(Warehouse $warehouse): Warehouse
@@ -58,8 +58,8 @@ class WarehouseService extends BaseService
      * Supports filtering by status (active/inactive) and search term.
      * Requires warehouses-index permission.
      *
-     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'search'.
-     * @param  int  $perPage  Number of items per page.
+     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
+     * @param int $perPage Number of items per page.
      * @return LengthAwarePaginator<Warehouse> Paginated warehouse collection.
      */
     public function getWarehouses(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -67,12 +67,12 @@ class WarehouseService extends BaseService
         $this->requirePermission('warehouses-index');
 
         return Warehouse::query()
-            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
-            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(! empty($filters['search'] ?? null), function ($q) use ($filters) {
+            ->withCount(['productWarehouses as number_of_products' => fn($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn($q) => $q->where('qty', '>', 0)], 'qty')
+            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
+            ->when(!empty($filters['search'] ?? null), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
-                $q->where(fn ($subQ) => $subQ
+                $q->where(fn($subQ) => $subQ
                     ->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
                     ->orWhere('phone', 'like', $term)
@@ -88,7 +88,7 @@ class WarehouseService extends BaseService
      * Creates ProductWarehouse entries for all existing products (qty=0) per quick-mart-old logic.
      * Requires warehouses-create permission.
      *
-     * @param  array<string, mixed>  $data  Validated warehouse attributes.
+     * @param array<string, mixed> $data Validated warehouse attributes.
      * @return Warehouse The created warehouse instance.
      */
     public function createWarehouse(array $data): Warehouse
@@ -114,12 +114,33 @@ class WarehouseService extends BaseService
     }
 
     /**
+     * Normalize warehouse data to match database schema requirements.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeWarehouseData(array $data): array
+    {
+        if (!isset($data['is_active'])) {
+            $data['is_active'] = false;
+        } else {
+            $data['is_active'] = (bool)filter_var(
+                $data['is_active'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+        }
+
+        return $data;
+    }
+
+    /**
      * Update an existing warehouse.
      *
      * Requires warehouses-update permission.
      *
-     * @param  Warehouse  $warehouse  The warehouse instance to update.
-     * @param  array<string, mixed>  $data  Validated warehouse attributes.
+     * @param Warehouse $warehouse The warehouse instance to update.
+     * @param array<string, mixed> $data Validated warehouse attributes.
      * @return Warehouse The updated warehouse instance (refreshed).
      */
     public function updateWarehouse(Warehouse $warehouse, array $data): Warehouse
@@ -140,7 +161,7 @@ class WarehouseService extends BaseService
      * Per quick-mart-old: warehouse delete means deactivate, not soft delete.
      * Requires warehouses-delete permission.
      *
-     * @param  Warehouse  $warehouse  The warehouse instance to delete.
+     * @param Warehouse $warehouse The warehouse instance to delete.
      */
     public function deleteWarehouse(Warehouse $warehouse): void
     {
@@ -157,7 +178,7 @@ class WarehouseService extends BaseService
      * Skips non-existent IDs. Returns the count of successfully deactivated warehouses.
      * Requires warehouses-delete permission.
      *
-     * @param  array<int>  $ids  Warehouse IDs to delete (deactivate).
+     * @param array<int> $ids Warehouse IDs to delete (deactivate).
      * @return int Number of warehouses successfully deactivated.
      */
     public function bulkDeleteWarehouses(array $ids): int
@@ -182,7 +203,7 @@ class WarehouseService extends BaseService
      *
      * Sets is_active to true for all matching warehouses. Requires warehouses-update permission.
      *
-     * @param  array<int>  $ids  Warehouse IDs to activate.
+     * @param array<int> $ids Warehouse IDs to activate.
      * @return int Number of warehouses updated.
      */
     public function bulkActivateWarehouses(array $ids): int
@@ -197,7 +218,7 @@ class WarehouseService extends BaseService
      *
      * Sets is_active to false for all matching warehouses. Requires warehouses-update permission.
      *
-     * @param  array<int>  $ids  Warehouse IDs to deactivate.
+     * @param array<int> $ids Warehouse IDs to deactivate.
      * @return int Number of warehouses updated.
      */
     public function bulkDeactivateWarehouses(array $ids): int
@@ -212,7 +233,7 @@ class WarehouseService extends BaseService
      *
      * Uses WarehousesImport for upsert logic (name, phone, email, address). Requires warehouses-import permission.
      *
-     * @param  UploadedFile  $file  The uploaded import file.
+     * @param UploadedFile $file The uploaded import file.
      */
     public function importWarehouses(UploadedFile $file): void
     {
@@ -226,11 +247,11 @@ class WarehouseService extends BaseService
      *
      * Supports download or email delivery. Requires warehouses-export permission.
      *
-     * @param  array<int>  $ids  Warehouse IDs to export. Empty array exports all.
-     * @param  string  $format  Export format: 'excel' or 'pdf'.
-     * @param  User|null  $user  Recipient when method is 'email'. Required for email delivery.
-     * @param  array<string>  $columns  Column keys to include in export.
-     * @param  string  $method  Delivery method: 'download' or 'email'.
+     * @param array<int> $ids Warehouse IDs to export. Empty array exports all.
+     * @param string $format Export format: 'excel' or 'pdf'.
+     * @param User|null $user Recipient when method is 'email'. Required for email delivery.
+     * @param array<string> $columns Column keys to include in export.
+     * @param string $method Delivery method: 'download' or 'email'.
      * @return string Relative storage path of the generated file.
      *
      * @throws RuntimeException When mail settings are not configured and method is 'email'.
@@ -239,16 +260,16 @@ class WarehouseService extends BaseService
     {
         $this->requirePermission('warehouses-export');
 
-        $fileName = 'warehouses_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'warehouses_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new WarehousesExport($ids, $columns), $relativePath, 'public');
         } else {
             $warehouses = Warehouse::query()
-                ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
-                ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty')
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->withCount(['productWarehouses as number_of_products' => fn($q) => $q->where('qty', '>', 0)])
+                ->withSum(['productWarehouses as stock_quantity' => fn($q) => $q->where('qty', '>', 0)], 'qty')
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('name')
                 ->get();
 
@@ -266,16 +287,16 @@ class WarehouseService extends BaseService
     /**
      * Send export completion email to the user.
      *
-     * @param  User  $user  Recipient of the export email.
-     * @param  string  $path  Relative storage path of the export file.
-     * @param  string  $fileName  Display filename for the attachment.
+     * @param User $user Recipient of the export email.
+     * @param string $path Relative storage path of the export file.
+     * @param string $fileName Display filename for the attachment.
      *
      * @throws RuntimeException When mail settings are not configured.
      */
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
 
@@ -292,7 +313,7 @@ class WarehouseService extends BaseService
      * Role-based: users with role_id > 2 only see their assigned warehouse (per quick-mart-old warehouseAll).
      * Requires warehouses-index permission.
      *
-     * @param  User|null  $user  Optional user instance (defaults to authenticated user).
+     * @param User|null $user Optional user instance (defaults to authenticated user).
      * @return Collection<int, Warehouse>
      */
     public function getAllActive(?User $user = null): Collection
@@ -302,8 +323,8 @@ class WarehouseService extends BaseService
         $user = $user ?? Auth::user();
 
         $query = Warehouse::query()
-            ->withCount(['productWarehouses as number_of_products' => fn ($q) => $q->where('qty', '>', 0)])
-            ->withSum(['productWarehouses as stock_quantity' => fn ($q) => $q->where('qty', '>', 0)], 'qty');
+            ->withCount(['productWarehouses as number_of_products' => fn($q) => $q->where('qty', '>', 0)])
+            ->withSum(['productWarehouses as stock_quantity' => fn($q) => $q->where('qty', '>', 0)], 'qty');
 
         if ($user && $user->role_id > 2 && $user->warehouse_id) {
             return $query->where('is_active', true)
@@ -312,26 +333,5 @@ class WarehouseService extends BaseService
         }
 
         return $query->where('is_active', true)->get();
-    }
-
-    /**
-     * Normalize warehouse data to match database schema requirements.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function normalizeWarehouseData(array $data): array
-    {
-        if (! isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
-            $data['is_active'] = (bool) filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
     }
 }

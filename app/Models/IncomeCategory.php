@@ -52,7 +52,7 @@ class IncomeCategory extends Model implements AuditableContract
     public static function generateCode(): string
     {
         do {
-            $code = str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $code = str_pad((string)random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
         } while (self::where('code', $code)->where('is_active', true)->exists());
 
         return $code;

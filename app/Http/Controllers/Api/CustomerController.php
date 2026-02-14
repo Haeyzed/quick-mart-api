@@ -34,13 +34,15 @@ class CustomerController extends Controller
 {
     public function __construct(
         private readonly CustomerService $service
-    ) {}
+    )
+    {
+    }
 
     public function index(CustomerIndexRequest $request): JsonResponse
     {
         $customers = $this->service->getCustomers(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         $customers->through(function (Customer $customer) {
@@ -183,7 +185,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $deposit = $this->service->addDeposit(
             $customer,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null
         );
 
@@ -205,7 +207,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $deposit = $this->service->updateDeposit(
             $deposit,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null
         );
 
@@ -246,7 +248,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $point = $this->service->addPoint(
             $customer,
-            (float) $validated['points'],
+            (float)$validated['points'],
             $validated['note'] ?? null
         );
 
@@ -268,7 +270,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $point = $this->service->updatePoint(
             $point,
-            (float) $validated['points'],
+            (float)$validated['points'],
             $validated['note'] ?? null
         );
 
@@ -294,11 +296,11 @@ class CustomerController extends Controller
     public function payments(Customer $customer): JsonResponse
     {
         $payments = $this->service->getCustomerPayments($customer);
-        $data = $payments->map(fn ($p) => [
+        $data = $payments->map(fn($p) => [
             'id' => $p->id,
             'created_at' => $p->created_at?->format('Y-m-d'),
             'payment_reference' => $p->payment_reference ?? '-',
-            'amount' => number_format((float) $p->amount, 2),
+            'amount' => number_format((float)$p->amount, 2),
             'paying_method' => ucfirst($p->paying_method ?? '-'),
             'payment_at' => $p->payment_at
                 ? $p->payment_at->format('Y-m-d H:i')

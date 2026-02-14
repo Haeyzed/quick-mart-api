@@ -27,13 +27,13 @@ class UserReportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('user_id')) {
-            $this->merge(['user_id' => (int) $this->user_id]);
+            $this->merge(['user_id' => (int)$this->user_id]);
         }
         if ($this->has('per_page')) {
-            $this->merge(['per_page' => (int) $this->per_page]);
+            $this->merge(['per_page' => (int)$this->per_page]);
         }
         if ($this->has('page')) {
-            $this->merge(['page' => (int) $this->page]);
+            $this->merge(['page' => (int)$this->page]);
         }
     }
 }

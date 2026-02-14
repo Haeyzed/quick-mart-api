@@ -29,16 +29,16 @@ class UnitsImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows, WithVali
     public function onRow(Row $row): void
     {
         $data = $row->toArray();
-        $code = trim((string) ($data['code'] ?? ''));
+        $code = trim((string)($data['code'] ?? ''));
 
         if ($code === '') {
             return;
         }
 
-        $name = trim((string) ($data['name'] ?? ''));
-        $baseUnitCode = trim((string) ($data['baseunit'] ?? ''));
-        $operator = trim((string) ($data['operator'] ?? '*'));
-        $operationValue = ! empty($data['operationvalue'] ?? null) ? (float) $data['operationvalue'] : 1.0;
+        $name = trim((string)($data['name'] ?? ''));
+        $baseUnitCode = trim((string)($data['baseunit'] ?? ''));
+        $operator = trim((string)($data['operator'] ?? '*'));
+        $operationValue = !empty($data['operationvalue'] ?? null) ? (float)$data['operationvalue'] : 1.0;
 
         $baseUnitId = null;
         if ($baseUnitCode !== '') {

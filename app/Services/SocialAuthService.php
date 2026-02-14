@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\GeneralSetting;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -20,7 +21,40 @@ class SocialAuthService extends BaseService
 {
     public function __construct(
         private readonly PermissionService $permissionService
-    ) {
+    )
+    {
+    }
+
+    /**
+     * Redirect to OAuth provider.
+     *
+     * @param string $provider Provider name ('google', 'facebook', or 'github')
+     * @return string Redirect URL
+     * @throws HttpException
+     */
+    public function redirectToProvider(string $provider): string
+    {
+        $this->configureSocialite($provider);
+
+        return Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
+    }
+
+    /**
+     * Configure Socialite for a provider.
+     *
+     * @param string $provider Provider name ('google' or 'facebook')
+     * @return void
+     * @throws HttpException
+     */
+    public function configureSocialite(string $provider): void
+    {
+        $config = $this->getOAuthConfig($provider);
+
+        config([
+            "services.{$provider}.client_id" => $config['client_id'],
+            "services.{$provider}.client_secret" => $config['client_secret'],
+            "services.{$provider}.redirect" => $config['redirect'],
+        ]);
     }
 
     /**
@@ -59,38 +93,6 @@ class SocialAuthService extends BaseService
     }
 
     /**
-     * Configure Socialite for a provider.
-     *
-     * @param string $provider Provider name ('google' or 'facebook')
-     * @return void
-     * @throws HttpException
-     */
-    public function configureSocialite(string $provider): void
-    {
-        $config = $this->getOAuthConfig($provider);
-
-        config([
-            "services.{$provider}.client_id" => $config['client_id'],
-            "services.{$provider}.client_secret" => $config['client_secret'],
-            "services.{$provider}.redirect" => $config['redirect'],
-        ]);
-    }
-
-    /**
-     * Redirect to OAuth provider.
-     *
-     * @param string $provider Provider name ('google', 'facebook', or 'github')
-     * @return string Redirect URL
-     * @throws HttpException
-     */
-    public function redirectToProvider(string $provider): string
-    {
-        $this->configureSocialite($provider);
-
-        return Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
-    }
-
-    /**
      * Handle OAuth callback and authenticate user.
      *
      * @param string $provider Provider name ('google' or 'facebook')
@@ -122,7 +124,7 @@ class SocialAuthService extends BaseService
                 'user' => $user,
                 'token' => $token,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new HttpException(400, "Failed to authenticate with {$provider}: " . $e->getMessage());
         }
     }

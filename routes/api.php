@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\HrmSettingController;
+use App\Http\Controllers\Api\ImportTemplateController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\MailSettingController;
@@ -482,4 +483,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('gift-cards.generate-code');
     Route::post('gift-cards/{gift_card}/recharge', [GiftCardController::class, 'recharge'])
         ->name('gift-cards.recharge');
+
+    Route::get('import-template/{module}', [ImportTemplateController::class, 'download']);
 });

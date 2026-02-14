@@ -28,7 +28,7 @@ class BillerReportExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('biller_id')) {
-            $this->merge(['biller_id' => (int) $this->biller_id]);
+            $this->merge(['biller_id' => (int)$this->biller_id]);
         }
     }
 }

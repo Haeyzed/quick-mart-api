@@ -30,7 +30,7 @@ class MonthlyPurchaseExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('warehouse_id')) {
-            $this->merge(['warehouse_id' => (int) $this->warehouse_id]);
+            $this->merge(['warehouse_id' => (int)$this->warehouse_id]);
         }
     }
 }

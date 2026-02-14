@@ -19,7 +19,9 @@ class RewardPointSettingService extends BaseService
     /**
      * RewardPointSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve the reward point setting (singleton).
@@ -41,7 +43,7 @@ class RewardPointSettingService extends BaseService
      * Requires reward_point_setting permission.
      * If no setting exists, creates one (same as quick-mart-old).
      *
-     * @param  array<string, mixed>  $data  Validated data.
+     * @param array<string, mixed> $data Validated data.
      * @return RewardPointSetting The updated or created reward point setting instance.
      */
     public function updateRewardPointSetting(array $data): RewardPointSetting

@@ -23,16 +23,18 @@ class SaleAgentController extends Controller
 {
     public function __construct(
         private readonly SaleAgentService $service
-    ) {}
+    )
+    {
+    }
 
     public function index(SaleAgentIndexRequest $request): JsonResponse
     {
         $saleAgents = $this->service->getSaleAgents(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $saleAgents->through(fn (Employee $employee) => new SaleAgentResource($employee));
+        $saleAgents->through(fn(Employee $employee) => new SaleAgentResource($employee));
 
         return response()->success($saleAgents, 'Sale agents fetched successfully');
     }

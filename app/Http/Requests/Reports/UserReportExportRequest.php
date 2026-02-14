@@ -28,7 +28,7 @@ class UserReportExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('filter_user_id')) {
-            $this->merge(['filter_user_id' => (int) $this->filter_user_id]);
+            $this->merge(['filter_user_id' => (int)$this->filter_user_id]);
         }
     }
 }

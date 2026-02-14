@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Customers;
 
-use App\Models\Supplier;
 use App\Http\Requests\BaseRequest;
+use App\Models\Supplier;
 use Illuminate\Validation\Rule;
 
 /**
@@ -87,7 +87,7 @@ class CustomerRequest extends BaseRequest
             ];
             $emailRules = ['required', 'email', 'max:255', Rule::unique('suppliers', 'email')->ignore($supplierIdToIgnore)->where('is_active', true)];
             if ($isUser) {
-                $emailRules[] = Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
+                $emailRules[] = Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
             }
             $rules['email'] = $emailRules;
             $rules['address'] = ['required', 'string', 'max:500'];
@@ -98,14 +98,14 @@ class CustomerRequest extends BaseRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'username')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                Rule::unique('users', 'username')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
             ];
-            if (! $isBoth) {
+            if (!$isBoth) {
                 $rules['email'] = [
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                    Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
                 ];
             }
             $rules['password'] = ['required', 'string', 'min:8', 'max:255'];

@@ -37,7 +37,9 @@ class UnitController extends Controller
      */
     public function __construct(
         private readonly UnitService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of units.
@@ -49,10 +51,10 @@ class UnitController extends Controller
     {
         $units = $this->service->getUnits(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $units->through(fn (Unit $unit) => new UnitResource($unit));
+        $units->through(fn(Unit $unit) => new UnitResource($unit));
 
         return response()->success(
             $units,
@@ -103,7 +105,7 @@ class UnitController extends Controller
     public function getBaseUnits(): JsonResponse
     {
         $baseUnits = $this->service->getBaseUnits()
-            ->map(fn (Unit $unit) => [
+            ->map(fn(Unit $unit) => [
                 'value' => $unit->id,
                 'label' => $unit->name . ' (' . $unit->code . ')',
                 'code' => $unit->code,

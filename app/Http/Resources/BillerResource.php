@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Biller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * API Resource for Biller entity.
  *
- * @mixin \App\Models\Biller
+ * @mixin Biller
  */
 class BillerResource extends JsonResource
 {

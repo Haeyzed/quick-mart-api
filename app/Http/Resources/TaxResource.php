@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Tax;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Transforms Tax model into a consistent JSON structure for API responses.
  * Compatible with Scramble/OpenAPI documentation.
  *
- * @mixin \App\Models\Tax
+ * @mixin Tax
  */
 class TaxResource extends JsonResource
 {

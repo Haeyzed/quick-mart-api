@@ -37,10 +37,10 @@ class CustomerDueReportExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('customer_id')) {
-            $this->merge(['customer_id' => (int) $this->customer_id]);
+            $this->merge(['customer_id' => (int)$this->customer_id]);
         }
         if ($this->has('user_id')) {
-            $this->merge(['user_id' => (int) $this->user_id]);
+            $this->merge(['user_id' => (int)$this->user_id]);
         }
     }
 }

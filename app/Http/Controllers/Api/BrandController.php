@@ -39,7 +39,9 @@ class BrandController extends Controller
      */
     public function __construct(
         private readonly BrandService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of brands.
@@ -52,7 +54,7 @@ class BrandController extends Controller
 
         $brands = $this->service->getPaginatedBrands(
             $request->all(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success(
@@ -224,13 +226,13 @@ class BrandController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -240,7 +242,7 @@ class BrandController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'brands_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'brands_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Brand Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -249,7 +251,7 @@ class BrandController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

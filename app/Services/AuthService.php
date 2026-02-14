@@ -10,16 +10,13 @@ use App\Models\Customer;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
-use App\Services\PermissionService;
-use App\Services\UploadService;
 use App\Traits\MailInfo;
+use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -35,8 +32,9 @@ class AuthService extends BaseService
 
     public function __construct(
         private readonly PermissionService $permissionService,
-        private readonly UploadService $uploadService
-    ) {
+        private readonly UploadService     $uploadService
+    )
+    {
     }
 
     /**
@@ -49,7 +47,7 @@ class AuthService extends BaseService
     public function login(array $credentials): array
     {
         $loginField = $credentials['identifier'];
-        
+
         // Determine if login is by email or username (not name)
         $fieldType = 'username'; // default to username
         if (filter_var($loginField, FILTER_VALIDATE_EMAIL)) {
@@ -66,15 +64,15 @@ class AuthService extends BaseService
         // Check if email is verified first
         if (!$user->hasVerifiedEmail()) {
             Auth::logout();
-            
+
             // Try to resend verification email
             try {
                 $this->sendEmailVerification($user);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error but continue with the response
                 $this->logError('Failed to resend verification email during login: ' . $e->getMessage());
             }
-            
+
             throw ValidationException::withMessages([
                 'email' => ['Please verify your email address before logging in. A verification email has been sent to your email address.'],
             ]);
@@ -99,6 +97,53 @@ class AuthService extends BaseService
             'user' => $user,
             'token' => $token,
         ];
+    }
+
+    /**
+     * Logout the authenticated user (revoke current token).
+     *
+     * @param User $user
+     * @return void
+     */
+    public function logout(User $user): void
+    {
+        // Revoke the current access token
+        $user->currentAccessToken()?->delete();
+    }
+
+    /**
+     * Send email verification notification.
+     *
+     * @param User $user
+     * @return void
+     * @throws ValidationException
+     */
+    public function sendEmailVerification(User $user): void
+    {
+        if ($user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email' => ['Email is already verified.'],
+            ]);
+        }
+
+        // Get mail settings
+        $mailSetting = MailSetting::default()->first();
+        if (!$mailSetting) {
+            throw ValidationException::withMessages([
+                'email' => ['Mail settings are not configured. Please contact the administrator.'],
+            ]);
+        }
+
+        // Set mail info
+        $this->setMailInfo($mailSetting);
+
+        // Get general settings
+        $generalSetting = GeneralSetting::latest()->first();
+
+        // Send custom verification email
+        Mail::to($user->email)->send(
+            new EmailVerification($user, $generalSetting)
+        );
     }
 
     /**
@@ -158,18 +203,6 @@ class AuthService extends BaseService
 
             return $user;
         });
-    }
-
-    /**
-     * Logout the authenticated user (revoke current token).
-     *
-     * @param User $user
-     * @return void
-     */
-    public function logout(User $user): void
-    {
-        // Revoke the current access token
-        $user->currentAccessToken()?->delete();
     }
 
     /**
@@ -270,41 +303,6 @@ class AuthService extends BaseService
     }
 
     /**
-     * Send email verification notification.
-     *
-     * @param User $user
-     * @return void
-     * @throws ValidationException
-     */
-    public function sendEmailVerification(User $user): void
-    {
-        if ($user->hasVerifiedEmail()) {
-            throw ValidationException::withMessages([
-                'email' => ['Email is already verified.'],
-            ]);
-        }
-
-        // Get mail settings
-        $mailSetting = MailSetting::default()->first();
-        if (!$mailSetting) {
-            throw ValidationException::withMessages([
-                'email' => ['Mail settings are not configured. Please contact the administrator.'],
-            ]);
-        }
-
-        // Set mail info
-        $this->setMailInfo($mailSetting);
-
-        // Get general settings
-        $generalSetting = GeneralSetting::latest()->first();
-
-        // Send custom verification email
-        Mail::to($user->email)->send(
-            new EmailVerification($user, $generalSetting)
-        );
-    }
-
-    /**
      * Verify user's email address.
      *
      * @param User $user
@@ -332,7 +330,7 @@ class AuthService extends BaseService
             // Set user as active when email is verified
             $user->is_active = true;
             $user->save();
-            
+
             return true;
         }
 
@@ -395,7 +393,7 @@ class AuthService extends BaseService
                 if ($user->avatar) {
                     $this->uploadService->delete($user->avatar);
                 }
-                
+
                 // Upload new avatar
                 $avatarPath = $this->uploadService->upload(
                     $data['avatar'],
@@ -407,7 +405,7 @@ class AuthService extends BaseService
 
             // Only update fields that are provided and allowed
             $allowedFields = ['name', 'username', 'email', 'avatar', 'avatar_url', 'phone', 'company_name'];
-            
+
             $updateData = [];
             foreach ($allowedFields as $field) {
                 if (isset($data[$field])) {

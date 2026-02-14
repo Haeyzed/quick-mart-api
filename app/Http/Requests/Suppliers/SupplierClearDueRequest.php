@@ -31,7 +31,7 @@ class SupplierClearDueRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('amount')) {
-            $this->merge(['amount' => (float) $this->amount]);
+            $this->merge(['amount' => (float)$this->amount]);
         }
     }
 }

@@ -5,83 +5,67 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Categories\CategoryBulkDestroyRequest;
-use App\Http\Requests\Categories\CategoryBulkUpdateRequest;
-use App\Http\Requests\Categories\CategoryIndexRequest;
-use App\Http\Requests\Categories\CategoryRequest;
+use App\Http\Requests\Categories\CategoryBulkActionRequest;
+use App\Http\Requests\Categories\StoreCategoryRequest;
+use App\Http\Requests\Categories\UpdateCategoryRequest;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
-use App\Http\Resources\CategoryOptionResource;
 use App\Http\Resources\CategoryResource;
+use App\Mail\ExportMail;
 use App\Models\Category;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * API Controller for Category CRUD and bulk operations.
- *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/featured/sync/destroy,
- * import, and export. All responses use the ResponseServiceProvider macros.
+ * Class CategoryController
  *
  * @group Category Management
  */
 class CategoryController extends Controller
 {
-    /**
-     * CategoryController constructor.
-     *
-     * @param CategoryService $service
-     */
     public function __construct(
         private readonly CategoryService $service
-    ) {}
-
-    /**
-     * Get parent category options for select inputs.
-     *
-     * @return JsonResponse
-     */
-    public function parents(): JsonResponse
+    )
     {
-        $categories = $this->service->getParentCategoriesForSelect();
-
-        return response()->success(
-            CategoryOptionResource::collection($categories),
-            'Parent categories fetched successfully'
-        );
     }
 
     /**
      * Display a paginated listing of categories.
-     *
-     * @param CategoryIndexRequest $request
-     * @return JsonResponse
      */
-    public function index(CategoryIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $categories = $this->service->getCategories(
-            $request->validated(),
-            (int) $request->input('per_page', 10)
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing categories list.');
+        }
+
+        $categories = $this->service->getPaginatedCategories(
+            $request->all(),
+            (int)$request->input('per_page', 10)
         );
 
-        // Transform collection while keeping pagination metadata for the Response Macro
-        $categories->through(fn (Category $category) => new CategoryResource($category));
-
-        return response()->success($categories, 'Categories fetched successfully');
+        return response()->success(
+            CategoryResource::collection($categories),
+            'Categories retrieved successfully'
+        );
     }
 
     /**
      * Store a newly created category.
-     *
-     * @param CategoryRequest $request
-     * @return JsonResponse
      */
-    public function store(CategoryRequest $request): JsonResponse
+    public function store(StoreCategoryRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('create categories')) {
+            return response()->forbidden('Permission denied for create category.');
+        }
+
         $category = $this->service->createCategory($request->validated());
 
         return response()->success(
@@ -93,31 +77,28 @@ class CategoryController extends Controller
 
     /**
      * Display the specified category.
-     *
-     * Requires categories-index permission. Returns the category as a resource.
-     *
-     * @param Category $category The category instance resolved via route model binding.
-     * @return JsonResponse
      */
     public function show(Category $category): JsonResponse
     {
-        $category = $this->service->getCategory($category);
+        if (auth()->user()->denies('view category details')) {
+            return response()->forbidden('Permission denied for view category.');
+        }
 
         return response()->success(
             new CategoryResource($category),
-            'Category retrieved successfully'
+            'Category details retrieved successfully'
         );
     }
 
     /**
      * Update the specified category.
-     *
-     * @param CategoryRequest $request
-     * @param Category $category
-     * @return JsonResponse
      */
-    public function update(CategoryRequest $request, Category $category): JsonResponse
+    public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for update category.');
+        }
+
         $updatedCategory = $this->service->updateCategory($category, $request->validated());
 
         return response()->success(
@@ -128,145 +109,231 @@ class CategoryController extends Controller
 
     /**
      * Remove the specified category.
-     *
-     * @param Category $category
-     * @return JsonResponse
      */
     public function destroy(Category $category): JsonResponse
     {
+        if (auth()->user()->denies('delete categories')) {
+            return response()->forbidden('Permission denied for delete category.');
+        }
+
         $this->service->deleteCategory($category);
 
         return response()->success(null, 'Category deleted successfully');
     }
 
     /**
-     * Bulk delete categories.
-     *
-     * @param CategoryBulkDestroyRequest $request
-     * @return JsonResponse
+     * Get parent category options.
      */
-    public function bulkDestroy(CategoryBulkDestroyRequest $request): JsonResponse
+    public function parents(): JsonResponse
     {
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing categories list.');
+        }
+
+        $parents = $this->service->getParentOptions();
+
+        return response()->success(
+            $parents,
+            'Parent categories retrieved successfully'
+        );
+    }
+
+    /**
+     * Bulk delete categories.
+     */
+    public function bulkDestroy(CategoryBulkActionRequest $request): JsonResponse
+    {
+        if (auth()->user()->denies('delete categories')) {
+            return response()->forbidden('Permission denied for bulk delete categories.');
+        }
+
         $count = $this->service->bulkDeleteCategories($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
-            "Successfully deleted {$count} " . str('category')->plural($count)
+            "Successfully deleted {$count} categories"
         );
     }
 
     /**
      * Bulk activate categories.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkActivate(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateCategories($request->validated()['ids']);
-        return response()->success(['activated_count' => $count], "{$count} categories activated");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} categories activated"
+        );
     }
 
     /**
      * Bulk deactivate categories.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkDeactivate(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateCategories($request->validated()['ids']);
-        return response()->success(['deactivated_count' => $count], "{$count} categories deactivated");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} categories deactivated"
+        );
     }
 
     /**
      * Bulk enable featured status.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkEnableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkEnableFeatured(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkEnableFeatured($request->validated()['ids']);
-        return response()->success(['updated_count' => $count], "Enabled featured for {$count} categories");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateFeatured($request->validated()['ids'], true);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Enabled featured for {$count} categories"
+        );
     }
 
     /**
      * Bulk disable featured status.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkDisableFeatured(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkDisableFeatured(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDisableFeatured($request->validated()['ids']);
-        return response()->success(['updated_count' => $count], "Disabled featured for {$count} categories");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateFeatured($request->validated()['ids'], false);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Disabled featured for {$count} categories"
+        );
     }
 
     /**
      * Bulk enable sync.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkEnableSync(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkEnableSync(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkEnableSync($request->validated()['ids']);
-        return response()->success(['updated_count' => $count], "Enabled sync for {$count} categories");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateSync($request->validated()['ids'], false);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Enabled sync for {$count} categories"
+        );
     }
 
     /**
      * Bulk disable sync.
-     *
-     * @param CategoryBulkUpdateRequest $request
-     * @return JsonResponse
      */
-    public function bulkDisableSync(CategoryBulkUpdateRequest $request): JsonResponse
+    public function bulkDisableSync(CategoryBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDisableSync($request->validated()['ids']);
-        return response()->success(['updated_count' => $count], "Disabled sync for {$count} categories");
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for bulk update categories.');
+        }
+
+        $count = $this->service->bulkUpdateSync($request->validated()['ids'], true);
+
+        return response()->success(
+            ['updated_count' => $count],
+            "Disabled sync for {$count} categories"
+        );
     }
 
     /**
      * Import categories.
-     *
-     * @param ImportRequest $request
-     * @return JsonResponse
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('import categories')) {
+            return response()->forbidden('Permission denied for import categories.');
+        }
+
         $this->service->importCategories($request->file('file'));
+
         return response()->success(null, 'Categories imported successfully');
     }
 
     /**
-     * Export categories.
-     *
-     * @param ExportRequest $request
-     * @return JsonResponse|BinaryFileResponse
+     * Export categories to Excel or PDF.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
-        $validated = $request->validated();
-        
-        $user = ($validated['method'] === 'email') 
-            ? User::findOrFail($validated['user_id']) 
-            : null;
+        if (auth()->user()->denies('export categories')) {
+            return response()->forbidden('Permission denied for export categories.');
+        }
 
-        $filePath = $this->service->exportCategories(
+        $validated = $request->validated();
+
+        // 1. Generate the file via service
+        $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
-            $user,
             $validated['columns'] ?? [],
-            $validated['method']
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
         );
 
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
+        // 2. Handle Download Method
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        // 3. Handle Email Method
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (!$user) {
+                return response()->error('User not found for email delivery.');
+            }
+
+            $mailSetting = MailSetting::default()->first();
+
+            if (!$mailSetting) {
+                return response()->error('System mail settings are not configured. Cannot send email.');
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'categories_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Categories Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(
+                null,
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        return response()->error('Invalid export method provided.');
     }
 }

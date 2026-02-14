@@ -74,7 +74,9 @@ class ReportController extends Controller
 {
     public function __construct(
         private readonly ReportService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Customer due report: paginated listing of sales with outstanding balance.
@@ -83,10 +85,10 @@ class ReportController extends Controller
     {
         $report = $this->service->getCustomerDueReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $report->through(fn ($row) => new DueReportResource($row));
+        $report->through(fn($row) => new DueReportResource($row));
 
         return response()->success(
             $report,
@@ -131,10 +133,10 @@ class ReportController extends Controller
     {
         $audits = $this->service->getAudits(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $audits->through(fn (Audit $audit) => new AuditResource($audit));
+        $audits->through(fn(Audit $audit) => new AuditResource($audit));
 
         return response()->success(
             $audits,
@@ -175,10 +177,10 @@ class ReportController extends Controller
     {
         $products = $this->service->getProductQtyAlert(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $products->through(fn ($product) => new ProductResource($product));
+        $products->through(fn($product) => new ProductResource($product));
 
         return response()->success(
             $products,
@@ -193,7 +195,7 @@ class ReportController extends Controller
     {
         $batches = $this->service->getProductExpiry(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         $data = [
@@ -221,7 +223,7 @@ class ReportController extends Controller
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'warehouse_id' => $item->warehouse_id,
-                'qty' => (float) $item->qty,
+                'qty' => (float)$item->qty,
                 'price' => $item->price,
                 'product' => $item->product ? new ProductResource($item->product) : null,
                 'warehouse' => $item->warehouse ? [
@@ -294,7 +296,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getSaleReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Sale report fetched successfully');
@@ -307,7 +309,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getPurchaseReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Purchase report fetched successfully');
@@ -320,7 +322,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getPaymentReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Payment report fetched successfully');
@@ -333,7 +335,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getSupplierDueReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Supplier due report fetched successfully');
@@ -346,7 +348,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getChallanReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Challan report fetched successfully');
@@ -359,7 +361,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getProductReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Product report fetched successfully');
@@ -372,7 +374,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getCustomerReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Customer report fetched successfully');
@@ -385,7 +387,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getCustomerGroupReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Customer group report fetched successfully');
@@ -398,7 +400,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getSupplierReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Supplier report fetched successfully');
@@ -411,7 +413,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getUserReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'User report fetched successfully');
@@ -424,7 +426,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getBillerReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Biller report fetched successfully');
@@ -437,7 +439,7 @@ class ReportController extends Controller
     {
         $report = $this->service->getWarehouseReport(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Warehouse report fetched successfully');
@@ -470,10 +472,15 @@ class ReportController extends Controller
     {
         $report = $this->service->getDailySaleObjective(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success($report, 'Daily sale objective report fetched successfully');
+    }
+
+    public function exportProductQtyAlert(ProductQtyAlertExportRequest $request): JsonResponse|BinaryFileResponse
+    {
+        return $this->handleExport($request->validated(), fn($v, $u) => $this->service->exportProductQtyAlert([], $v['format'], $u, $v['columns'] ?? [], $v['method']));
     }
 
     private function handleExport(array $validated, callable $exportFn): JsonResponse|BinaryFileResponse
@@ -491,16 +498,11 @@ class ReportController extends Controller
         return response()->success(null, 'Export processed and sent via email');
     }
 
-    public function exportProductQtyAlert(ProductQtyAlertExportRequest $request): JsonResponse|BinaryFileResponse
-    {
-        return $this->handleExport($request->validated(), fn ($v, $u) => $this->service->exportProductQtyAlert([], $v['format'], $u, $v['columns'] ?? [], $v['method']));
-    }
-
     public function exportProductExpiry(ProductExpiryExportRequest $request): JsonResponse|BinaryFileResponse
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProductExpiry(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportProductExpiry(
             array_filter(['expired_before' => $v['expired_before'] ?? null]),
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -510,7 +512,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportWarehouseStock(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportWarehouseStock(
             array_filter(['warehouse_id' => $v['warehouse_id'] ?? null]),
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -520,7 +522,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailySale(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportDailySale(
             ['year' => $v['year'], 'month' => $v['month'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -530,7 +532,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportMonthlySale(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportMonthlySale(
             ['year' => $v['year'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -540,7 +542,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailyPurchase(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportDailyPurchase(
             ['year' => $v['year'], 'month' => $v['month'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -550,7 +552,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportMonthlyPurchase(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportMonthlyPurchase(
             ['year' => $v['year'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -560,7 +562,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportBestSeller(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportBestSeller(
             ['months' => $v['months'] ?? null, 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -570,7 +572,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSaleReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportSaleReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -580,7 +582,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportPurchaseReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportPurchaseReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -590,7 +592,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportPaymentReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportPaymentReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'type' => $v['type'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -600,7 +602,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSupplierDueReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportSupplierDueReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'supplier_id' => $v['supplier_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -610,7 +612,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportChallanReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportChallanReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'based_on' => $v['based_on'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -620,7 +622,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProductReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportProductReport(
             ['warehouse_id' => $v['warehouse_id'] ?? null, 'category_id' => $v['category_id'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -630,7 +632,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportCustomerReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportCustomerReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'customer_id' => $v['customer_id']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -640,7 +642,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportCustomerGroupReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportCustomerGroupReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'customer_group_id' => $v['customer_group_id']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -650,7 +652,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSupplierReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportSupplierReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'supplier_id' => $v['supplier_id']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -660,7 +662,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportUserReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportUserReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'filter_user_id' => $v['filter_user_id']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -670,7 +672,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportBillerReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportBillerReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'biller_id' => $v['biller_id']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -680,7 +682,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportWarehouseReport(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportWarehouseReport(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'], 'type' => $v['type'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -690,7 +692,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportProfitLoss(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportProfitLoss(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -700,7 +702,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportSaleReportChart(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportSaleReportChart(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date'], 'warehouse_id' => $v['warehouse_id'] ?? null, 'time_period' => $v['time_period'] ?? null, 'product_list' => $v['product_list'] ?? null],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));
@@ -710,7 +712,7 @@ class ReportController extends Controller
     {
         $v = $request->validated();
 
-        return $this->handleExport($v, fn ($_, $u) => $this->service->exportDailySaleObjective(
+        return $this->handleExport($v, fn($_, $u) => $this->service->exportDailySaleObjective(
             ['start_date' => $v['start_date'], 'end_date' => $v['end_date']],
             $v['format'], $u, $v['columns'] ?? [], $v['method']
         ));

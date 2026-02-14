@@ -34,10 +34,11 @@ class PermissionService extends BaseService
      * @return void
      */
     public function assignRolesAndPermissions(
-        User $user,
+        User   $user,
         ?array $roles = null,
         ?array $directPermissions = null
-    ): void {
+    ): void
+    {
         $this->transaction(function () use ($user, $roles, $directPermissions) {
             // Assign roles if provided
             if ($roles !== null && !empty($roles)) {
@@ -63,6 +64,39 @@ class PermissionService extends BaseService
 
         // Sync roles to user (replaces existing roles)
         $user->syncRoles($roleModels);
+    }
+
+    /**
+     * Normalize role input to Role model instances.
+     *
+     * Accepts: role IDs, role names, or Role model instances.
+     *
+     * @param array<int|string|Role> $roles
+     * @return array<Role>
+     */
+    private function normalizeRoles(array $roles): array
+    {
+        $normalized = [];
+
+        foreach ($roles as $role) {
+            if ($role instanceof Role) {
+                $normalized[] = $role;
+            } elseif (is_numeric($role)) {
+                // ID
+                $roleModel = Role::find($role);
+                if ($roleModel) {
+                    $normalized[] = $roleModel;
+                }
+            } elseif (is_string($role)) {
+                // Name
+                $roleModel = Role::findByName($role);
+                if ($roleModel) {
+                    $normalized[] = $roleModel;
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -114,6 +148,39 @@ class PermissionService extends BaseService
 
         // Deduplicate by permission ID
         return $permissions->unique('id')->values();
+    }
+
+    /**
+     * Normalize permission input to Permission model instances.
+     *
+     * Accepts: permission IDs, permission names, or Permission model instances.
+     *
+     * @param array<int|string|Permission> $permissions
+     * @return SupportCollection<int, Permission>
+     */
+    private function normalizePermissions(array $permissions): SupportCollection
+    {
+        $normalized = collect();
+
+        foreach ($permissions as $permission) {
+            if ($permission instanceof Permission) {
+                $normalized->push($permission);
+            } elseif (is_numeric($permission)) {
+                // ID
+                $permissionModel = Permission::findById($permission);
+                if ($permissionModel) {
+                    $normalized->push($permissionModel);
+                }
+            } elseif (is_string($permission)) {
+                // Name
+                $permissionModel = Permission::findByName($permission);
+                if ($permissionModel) {
+                    $normalized->push($permissionModel);
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -204,6 +271,17 @@ class PermissionService extends BaseService
     }
 
     /**
+     * Get all permissions for a specific guard.
+     *
+     * @param string $guardName Guard name (default: 'web')
+     * @return Collection<int, Permission>
+     */
+    public function getAllPermissions(string $guardName = 'web'): Collection
+    {
+        return Permission::where('guard_name', $guardName)->get();
+    }
+
+    /**
      * Get all roles for a user.
      *
      * @param User $user
@@ -258,83 +336,6 @@ class PermissionService extends BaseService
             $user->syncRoles([]);
             $user->syncPermissions([]);
         });
-    }
-
-    /**
-     * Normalize role input to Role model instances.
-     *
-     * Accepts: role IDs, role names, or Role model instances.
-     *
-     * @param array<int|string|Role> $roles
-     * @return array<Role>
-     */
-    private function normalizeRoles(array $roles): array
-    {
-        $normalized = [];
-
-        foreach ($roles as $role) {
-            if ($role instanceof Role) {
-                $normalized[] = $role;
-            } elseif (is_numeric($role)) {
-                // ID
-                $roleModel = Role::find($role);
-                if ($roleModel) {
-                    $normalized[] = $roleModel;
-                }
-            } elseif (is_string($role)) {
-                // Name
-                $roleModel = Role::findByName($role);
-                if ($roleModel) {
-                    $normalized[] = $roleModel;
-                }
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Normalize permission input to Permission model instances.
-     *
-     * Accepts: permission IDs, permission names, or Permission model instances.
-     *
-     * @param array<int|string|Permission> $permissions
-     * @return SupportCollection<int, Permission>
-     */
-    private function normalizePermissions(array $permissions): SupportCollection
-    {
-        $normalized = collect();
-
-        foreach ($permissions as $permission) {
-            if ($permission instanceof Permission) {
-                $normalized->push($permission);
-            } elseif (is_numeric($permission)) {
-                // ID
-                $permissionModel = Permission::findById($permission);
-                if ($permissionModel) {
-                    $normalized->push($permissionModel);
-                }
-            } elseif (is_string($permission)) {
-                // Name
-                $permissionModel = Permission::findByName($permission);
-                if ($permissionModel) {
-                    $normalized->push($permissionModel);
-                }
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Get all permissions for a specific guard.
-     *
-     * @param string $guardName Guard name (default: 'web')
-     * @return Collection<int, Permission>
-     */
-    public function getAllPermissions(string $guardName = 'web'): Collection
-    {
-        return Permission::where('guard_name', $guardName)->get();
     }
 
     /**

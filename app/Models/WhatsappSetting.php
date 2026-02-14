@@ -47,8 +47,8 @@ class WhatsappSetting extends Model implements AuditableContract
     /**
      * Send WhatsApp message to multiple phone numbers.
      *
-     * @param  array<int, string>  $phoneNumbers
-     * @param  array<string, mixed>|string  $messageContent
+     * @param array<int, string> $phoneNumbers
+     * @param array<string, mixed>|string $messageContent
      * @return array<string, mixed>
      */
     public function sendMessage(array $phoneNumbers, string $type, array|string $messageContent): array
@@ -88,7 +88,7 @@ class WhatsappSetting extends Model implements AuditableContract
                         'messaging_product' => 'whatsapp',
                     ]);
 
-                if (! $uploadResponse->successful()) {
+                if (!$uploadResponse->successful()) {
                     return [
                         'success' => false,
                         'message' => 'Failed to upload media to WhatsApp',
@@ -97,7 +97,7 @@ class WhatsappSetting extends Model implements AuditableContract
                 }
 
                 $mediaId = $uploadResponse->json('id');
-                if (! $mediaId) {
+                if (!$mediaId) {
                     return [
                         'success' => false,
                         'message' => 'Media ID not returned from WhatsApp',
@@ -111,7 +111,7 @@ class WhatsappSetting extends Model implements AuditableContract
                     $payload[$type]['filename'] = $originalName;
                 }
 
-                if (! empty($messageContent['caption'])) {
+                if (!empty($messageContent['caption'])) {
                     $payload[$type]['caption'] = $messageContent['caption'];
                 }
             }
@@ -136,7 +136,7 @@ class WhatsappSetting extends Model implements AuditableContract
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Exception: '.$e->getMessage(),
+                'message' => 'Exception: ' . $e->getMessage(),
             ];
         }
     }

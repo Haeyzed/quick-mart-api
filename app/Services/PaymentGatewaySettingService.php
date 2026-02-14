@@ -22,7 +22,9 @@ class PaymentGatewaySettingService extends BaseService
     /**
      * PaymentGatewaySettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve all payment gateways.
@@ -43,7 +45,7 @@ class PaymentGatewaySettingService extends BaseService
      *
      * Requires payment_gateway_setting permission.
      *
-     * @param  int  $id  External service ID.
+     * @param int $id External service ID.
      * @return ExternalService|null The payment gateway or null if not found.
      */
     public function getPaymentGateway(int $id): ?ExternalService
@@ -58,8 +60,8 @@ class PaymentGatewaySettingService extends BaseService
      *
      * Requires payment_gateway_setting permission.
      *
-     * @param  int  $id  External service ID.
-     * @param  array<string, mixed>  $data  Validated data (details, active, module_status).
+     * @param int $id External service ID.
+     * @param array<string, mixed> $data Validated data (details, active, module_status).
      * @return ExternalService The updated payment gateway instance.
      */
     public function updatePaymentGateway(int $id, array $data): ExternalService
@@ -73,11 +75,11 @@ class PaymentGatewaySettingService extends BaseService
         }
 
         if (array_key_exists('active', $data)) {
-            $gateway->active = (bool) $data['active'];
+            $gateway->active = (bool)$data['active'];
         }
 
         if (isset($data['module_status']) && is_array($data['module_status'])) {
-            $existing = is_string($gateway->module_status) ? json_decode($gateway->module_status, true) ?? [] : (array) $gateway->module_status;
+            $existing = is_string($gateway->module_status) ? json_decode($gateway->module_status, true) ?? [] : (array)$gateway->module_status;
             $gateway->module_status = json_encode(array_merge($existing, $data['module_status']));
         }
 
@@ -89,8 +91,8 @@ class PaymentGatewaySettingService extends BaseService
     /**
      * Merge existing details with incoming and encode.
      *
-     * @param  string|null  $existing  Existing encoded details string.
-     * @param  array<string, string>  $incoming  New details to merge.
+     * @param string|null $existing Existing encoded details string.
+     * @param array<string, string> $incoming New details to merge.
      * @return string Encoded details string.
      */
     private function encodeDetails(?string $existing, array $incoming): string
@@ -98,18 +100,18 @@ class PaymentGatewaySettingService extends BaseService
         $parsed = $this->parseDetails($existing);
         $merged = array_merge($parsed, $incoming);
 
-        return implode(',', array_keys($merged)).';'.implode(',', array_values($merged));
+        return implode(',', array_keys($merged)) . ';' . implode(',', array_values($merged));
     }
 
     /**
      * Parse encoded details string into associative array.
      *
-     * @param  string|null  $details  Encoded string (keys;values format).
+     * @param string|null $details Encoded string (keys;values format).
      * @return array<string, string> Parsed details.
      */
     public function parseDetails(?string $details): array
     {
-        if (empty($details) || ! str_contains($details, ';')) {
+        if (empty($details) || !str_contains($details, ';')) {
             return [];
         }
         [$keysStr, $valsStr] = explode(';', $details, 2);

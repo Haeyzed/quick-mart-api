@@ -32,16 +32,16 @@ class ProductReportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('warehouse_id')) {
-            $this->merge(['warehouse_id' => (int) $this->warehouse_id]);
+            $this->merge(['warehouse_id' => (int)$this->warehouse_id]);
         }
         if ($this->has('category_id')) {
-            $this->merge(['category_id' => (int) $this->category_id]);
+            $this->merge(['category_id' => (int)$this->category_id]);
         }
         if ($this->has('per_page')) {
-            $this->merge(['per_page' => (int) $this->per_page]);
+            $this->merge(['per_page' => (int)$this->per_page]);
         }
         if ($this->has('page')) {
-            $this->merge(['page' => (int) $this->page]);
+            $this->merge(['page' => (int)$this->page]);
         }
     }
 }

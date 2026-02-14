@@ -26,7 +26,9 @@ class HrmSettingController extends Controller
      */
     public function __construct(
         private readonly HrmSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display the HRM setting.
@@ -37,7 +39,7 @@ class HrmSettingController extends Controller
     {
         $setting = $this->service->getHrmSetting();
 
-        if (! $setting) {
+        if (!$setting) {
             return response()->success(null, 'No HRM setting configured');
         }
 

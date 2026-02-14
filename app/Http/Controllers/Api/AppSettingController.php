@@ -20,7 +20,9 @@ class AppSettingController extends Controller
 {
     public function __construct(
         private readonly AppSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display app setting (install URL, app key, QR payload, active devices).

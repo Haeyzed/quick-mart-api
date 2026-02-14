@@ -1,0 +1,86 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Categories;
+
+use App\Models\Category;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateCategoryRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(): array
+    {
+        /** @var Category|null $category */
+        $category = $this->route('category');
+
+        return [
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'name')->ignore($category)->withoutTrashed(),
+            ],
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'slug')->ignore($category)->withoutTrashed(),
+            ],
+            'short_description' => ['nullable', 'string', 'max:1000'],
+            'page_title' => ['nullable', 'string', 'max:255'],
+            'image' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:5120',
+            ],
+            'icon' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:5120',
+            ],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')
+                    ->whereNot('id', $category->id ?? null)
+                    ->withoutTrashed(),
+            ],
+            'is_active' => ['nullable', 'boolean'],
+            'featured' => ['nullable', 'boolean'],
+            'is_sync_disable' => ['nullable', 'boolean'],
+            'woocommerce_category_id' => [
+                'nullable',
+                'integer',
+                Rule::unique('categories', 'woocommerce_category_id')->ignore($category)->withoutTrashed(),
+            ],
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $toBoolean = fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => $toBoolean($this->is_active)]);
+        }
+        if ($this->has('featured')) {
+            $this->merge(['featured' => $toBoolean($this->featured)]);
+        }
+        if ($this->has('is_sync_disable')) {
+            $this->merge(['is_sync_disable' => $toBoolean($this->is_sync_disable)]);
+        }
+    }
+}

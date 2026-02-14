@@ -19,7 +19,9 @@ class PosSettingService extends BaseService
     /**
      * PosSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve the POS setting (singleton).
@@ -40,7 +42,7 @@ class PosSettingService extends BaseService
      *
      * Requires pos_setting permission.
      *
-     * @param  array<string, mixed>  $data  Validated data.
+     * @param array<string, mixed> $data Validated data.
      * @return PosSetting The updated POS setting instance.
      */
     public function updatePosSetting(array $data): PosSetting
@@ -54,17 +56,17 @@ class PosSettingService extends BaseService
             $data['payment_options'] = implode(',', $data['payment_options']);
         }
 
-        if (! empty($data['stripe_secret_key'])) {
+        if (!empty($data['stripe_secret_key'])) {
             $data['stripe_secret_key'] = trim($data['stripe_secret_key']);
         } else {
             unset($data['stripe_secret_key']);
         }
-        if (! empty($data['paypal_live_api_password'])) {
+        if (!empty($data['paypal_live_api_password'])) {
             $data['paypal_live_api_password'] = trim($data['paypal_live_api_password']);
         } else {
             unset($data['paypal_live_api_password']);
         }
-        if (! empty($data['paypal_live_api_secret'])) {
+        if (!empty($data['paypal_live_api_secret'])) {
             $data['paypal_live_api_secret'] = trim($data['paypal_live_api_secret']);
         } else {
             unset($data['paypal_live_api_secret']);
@@ -78,12 +80,12 @@ class PosSettingService extends BaseService
     /**
      * Normalize and cast incoming data.
      *
-     * @param  array<string, mixed>  $data  Raw input data.
+     * @param array<string, mixed> $data Raw input data.
      * @return array<string, mixed> Normalized data.
      */
     private function normalizeData(array $data): array
     {
-        $toBool = fn ($v) => filter_var($v, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $toBool = fn($v) => filter_var($v, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         if (array_key_exists('keybord_active', $data)) {
             $data['keybord_active'] = $toBool($data['keybord_active']);
         }
@@ -100,7 +102,7 @@ class PosSettingService extends BaseService
             $data['cash_register'] = $toBool($data['cash_register']);
         }
         if (array_key_exists('product_number', $data)) {
-            $data['product_number'] = (int) $data['product_number'];
+            $data['product_number'] = (int)$data['product_number'];
         }
 
         return $data;

@@ -119,6 +119,14 @@ class Unit extends Model implements AuditableContract
     }
 
     /**
+     * Get the human-readable status.
+     */
+    public function getStatusAttribute(): string
+    {
+        return $this->is_active ? 'active' : 'inactive';
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -130,13 +138,5 @@ class Unit extends Model implements AuditableContract
             'operation_value' => 'float',
             'is_active' => 'boolean',
         ];
-    }
-
-    /**
-     * Get the human-readable status.
-     */
-    public function getStatusAttribute(): string
-    {
-        return $this->is_active ? 'active' : 'inactive';
     }
 }

@@ -175,7 +175,7 @@ class UserRequest extends BaseRequest
             /**
              * Array of role IDs to assign to the user.
              *
-             * @var array<int>|null $roles.*
+             * @var array<int>|null $roles .*
              * @example 1
              */
             'roles.*' => [
@@ -197,7 +197,7 @@ class UserRequest extends BaseRequest
             /**
              * Array of permission IDs to assign directly to the user.
              *
-             * @var array<int>|null $permissions.*
+             * @var array<int>|null $permissions .*
              * @example 4
              */
             'permissions.*' => [

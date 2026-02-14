@@ -51,27 +51,6 @@ class MailSetting extends Model implements AuditableContract
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'port' => 'integer',
-            'is_default' => 'boolean',
-        ];
-    }
-
-    /**
-     * Scope to get the default mail setting.
-     */
-    public function scopeDefault($query)
-    {
-        return $query->where('is_default', true);
-    }
-
-    /**
      * Boot the model.
      */
     protected static function booted(): void
@@ -85,5 +64,26 @@ class MailSetting extends Model implements AuditableContract
                 $query->update(['is_default' => false]);
             }
         });
+    }
+
+    /**
+     * Scope to get the default mail setting.
+     */
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'port' => 'integer',
+            'is_default' => 'boolean',
+        ];
     }
 }

@@ -27,7 +27,7 @@ class AuditResource extends JsonResource
             'user_type' => $this->user_type,
             'user_id' => $this->user_id,
             'user' => $this->whenLoaded('user', function () {
-                if (! $this->user) {
+                if (!$this->user) {
                     return null;
                 }
 

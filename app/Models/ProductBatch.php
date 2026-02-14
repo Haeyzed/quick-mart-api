@@ -84,11 +84,11 @@ class ProductBatch extends Model implements AuditableContract
      */
     public function isExpiringSoon(int $days = 30): bool
     {
-        if (! $this->expired_date) {
+        if (!$this->expired_date) {
             return false;
         }
 
-        return now()->addDays($days)->isAfter($this->expired_date) && ! $this->isExpired();
+        return now()->addDays($days)->isAfter($this->expired_date) && !$this->isExpired();
     }
 
     /**
@@ -96,7 +96,7 @@ class ProductBatch extends Model implements AuditableContract
      */
     public function isExpired(): bool
     {
-        if (! $this->expired_date) {
+        if (!$this->expired_date) {
             return false;
         }
 

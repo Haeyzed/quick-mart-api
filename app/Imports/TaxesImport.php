@@ -29,13 +29,13 @@ class TaxesImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows, WithVali
     public function onRow(Row $row): void
     {
         $data = $row->toArray();
-        $name = trim((string) ($data['name'] ?? ''));
+        $name = trim((string)($data['name'] ?? ''));
 
         if ($name === '') {
             return;
         }
 
-        $rate = ! empty($data['rate'] ?? null) ? (float) $data['rate'] : 0.0;
+        $rate = !empty($data['rate'] ?? null) ? (float)$data['rate'] : 0.0;
 
         Tax::updateOrCreate(
             ['name' => $name],

@@ -6,195 +6,94 @@ namespace App\Services;
 
 use App\Exports\CategoriesExport;
 use App\Imports\CategoriesImport;
-use App\Mail\ExportMail;
 use App\Models\Category;
-use App\Models\GeneralSetting;
-use App\Models\MailSetting;
-use App\Models\User;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\MailInfo;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
-use RuntimeException;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * Service class for Category entity lifecycle operations.
- *
- * Centralizes business logic for Category CRUD, bulk actions, imports/exports,
- * and file handling. Delegates permission checks to CheckPermissionsTrait.
+ * Class CategoryService
+ * Handles business logic for Categories.
  */
-class CategoryService extends BaseService
+class CategoryService
 {
-    use CheckPermissionsTrait, MailInfo;
+    private const IMAGE_PATH = 'images/categories';
+    private const ICON_PATH = 'images/categories/icons';
 
-    /**
-     * Default storage path for category images when config is missing.
-     */
-    private const DEFAULT_CATEGORY_IMAGES_PATH = 'images/category';
-
-    /**
-     * Default storage path for category icons when config is missing.
-     */
-    private const DEFAULT_CATEGORY_ICONS_PATH = 'images/category/icon';
-
-    /**
-     * Create a new CategoryService instance.
-     *
-     * @param  UploadService  $uploadService  Handles file uploads for category images and icons.
-     */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
-
-    /**
-     * Retrieve a single category by instance.
-     *
-     * Requires categories-index permission. Use for show/display operations.
-     *
-     * @param  Category  $category  The category instance to retrieve.
-     * @return Category The refreshed category instance.
-     */
-    public function getCategory(Category $category): Category
-    {
-        $this->requirePermission('categories-index');
-
-        return $category->fresh(['parent:id,name']);
+    ) {
     }
 
     /**
-     * Retrieve categories with optional filters and pagination.
+     * Get paginated categories based on filters.
      *
-     * Supports filtering by status, featured_status, sync_status, parent_id and search term.
-     * Requires categories-index permission.
-     *
-     * @param  array<string, mixed>  $filters  Associative array with optional keys: 'status', 'featured_status', 'sync_status', 'parent_id', 'search'.
-     * @param  int  $perPage  Number of items per page.
-     * @return LengthAwarePaginator<Category> Paginated category collection.
+     * @param array<string, mixed> $filters
      */
-    public function getCategories(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('categories-index');
-
         return Category::query()
             ->with('parent:id,name')
-            ->when(isset($filters['status']), fn ($q) => $q->where('is_active', $filters['status'] === 'active')
-            )
-            ->when(isset($filters['featured_status']), fn ($q) => $q->where('featured', $filters['featured_status'] === 'featured')
-            )
-            ->when(isset($filters['sync_status']), fn ($q) => $q->where('is_sync_disable', $filters['sync_status'] === 'disabled')
-            )
-            ->when(isset($filters['parent_id']), fn ($q) => $q->where('parent_id', $filters['parent_id'])
-            )
-            ->when(! empty($filters['search']), function ($q) use ($filters) {
-                $term = "%{$filters['search']}%";
-                $q->where(fn ($sub) => $sub
-                    ->where('name', 'like', $term)
-                    ->orWhere('short_description', 'like', $term)
-                    ->orWhere('slug', 'like', $term)
-                );
-            })
+            ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get parent category options for select inputs.
-     *
-     * Requires categories-index permission.
-     *
-     * @return Collection<int, Category> Active categories with id and name only.
+     * Get list of potential parent categories.
      */
-    public function getParentCategoriesForSelect(): Collection
+    public function getParentOptions(): Collection
     {
-        $this->requirePermission('categories-index');
-
-        return Category::query()
-            ->where('is_active', true)
+        return Category::active()
+            ->select('id', 'name')
             ->orderBy('name')
-            ->select(['id', 'name'])
             ->get();
     }
 
     /**
      * Create a new category.
      *
-     * Handles image and icon upload when present. Slug is auto-generated by the model.
-     * Requires categories-create permission.
-     *
-     * @param  array<string, mixed>  $data  Validated category attributes including optional 'image' and 'icon' UploadedFile.
-     * @return Category The created category instance.
+     * @param array<string, mixed> $data
      */
     public function createCategory(array $data): Category
     {
-        $this->requirePermission('categories-create');
-
         return DB::transaction(function () use ($data) {
-            $data = $this->handleFileUploads($data);
-            $data['is_active'] = $data['is_active'] ?? true;
-            $data['featured'] = $data['featured'] ?? false;
-
-            return Category::create($data);
+            $data = $this->handleUploads($data);
+            return Category::query()->create($data);
         });
     }
 
     /**
      * Update an existing category.
      *
-     * Replaces existing image/icon when new ones are provided. Requires categories-update permission.
-     *
-     * @param  Category  $category  The category instance to update.
-     * @param  array<string, mixed>  $data  Validated category attributes including optional 'image' and 'icon' UploadedFile.
-     * @return Category The updated category instance (refreshed).
+     * @param array<string, mixed> $data
      */
     public function updateCategory(Category $category, array $data): Category
     {
-        $this->requirePermission('categories-update');
-
         return DB::transaction(function () use ($category, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile && $category->image) {
-                $this->uploadService->delete($category->image);
-            }
-            if (isset($data['icon']) && $data['icon'] instanceof UploadedFile && $category->icon) {
-                $this->uploadService->delete($category->icon);
-            }
-
-            $data = $this->handleFileUploads($data);
+            $data = $this->handleUploads($data, $category);
             $category->update($data);
-
             return $category->fresh();
         });
     }
 
     /**
-     * Delete a category and remove its files from storage.
+     * Delete a category.
      *
-     * Fails if the category has children or associated products. Requires categories-delete permission.
-     *
-     * @param  Category  $category  The category instance to delete.
-     *
-     * @throws ConflictHttpException When category has children or associated products (409 Conflict).
+     * @throws ConflictHttpException
      */
     public function deleteCategory(Category $category): void
     {
-        $this->requirePermission('categories-delete');
-
         if ($category->children()->exists()) {
-            throw new ConflictHttpException(
-                "Cannot delete category '{$category->name}' because it has child categories."
-            );
+            throw new ConflictHttpException("Cannot delete category '{$category->name}' as it has child categories.");
         }
 
         if ($category->products()->exists()) {
-            throw new ConflictHttpException(
-                "Cannot delete category '{$category->name}' because it has associated products."
-            );
+            throw new ConflictHttpException("Cannot delete category '{$category->name}' as it has associated products.");
         }
 
         DB::transaction(function () use ($category) {
@@ -204,184 +103,127 @@ class CategoryService extends BaseService
     }
 
     /**
-     * Bulk delete categories that have no children and no products.
+     * Bulk delete categories.
      *
-     * Skips categories with children or products. Returns the count of successfully deleted categories.
-     * Requires categories-delete permission.
-     *
-     * @param  array<int>  $ids  Category IDs to delete.
-     * @return int Number of categories successfully deleted.
+     * @param array<int> $ids
+     * @return int Count of deleted items.
      */
     public function bulkDeleteCategories(array $ids): int
     {
-        $this->requirePermission('categories-delete');
-
         return DB::transaction(function () use ($ids) {
-            $categories = Category::whereIn('id', $ids)
-                ->withCount(['products', 'children'])
-                ->get();
-
-            $deletedCount = 0;
+            $categories = Category::query()->whereIn('id', $ids)->withCount(['products', 'children'])->get();
+            $count = 0;
 
             foreach ($categories as $category) {
-                if ($category->products_count === 0 && $category->children_count === 0) {
-                    $this->cleanupFiles($category);
-                    $category->delete();
-                    $deletedCount++;
+                if ($category->products_count > 0 || $category->children_count > 0) {
+                    continue;
                 }
+
+                $this->cleanupFiles($category);
+                $category->delete();
+                $count++;
             }
 
-            return $deletedCount;
+            return $count;
         });
     }
 
     /**
-     * Bulk activate categories by ID.
+     * Bulk update status.
      *
-     * Sets is_active to true for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to activate.
-     * @return int Number of categories updated.
+     * @param array<int> $ids
      */
-    public function bulkActivateCategories(array $ids): int
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['is_active' => true]);
+        return Category::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 
     /**
-     * Bulk deactivate categories by ID.
+     * Bulk update featured status.
      *
-     * Sets is_active to false for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to deactivate.
-     * @return int Number of categories updated.
+     * @param array<int> $ids
      */
-    public function bulkDeactivateCategories(array $ids): int
+    public function bulkUpdateFeatured(array $ids, bool $isFeatured): int
     {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['is_active' => false]);
+        return Category::query()->whereIn('id', $ids)->update(['featured' => $isFeatured]);
     }
 
     /**
-     * Bulk enable featured status for categories.
+     * Bulk update sync status.
      *
-     * Sets featured to true for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to update.
-     * @return int Number of categories updated.
+     * @param array<int> $ids
      */
-    public function bulkEnableFeatured(array $ids): int
+    public function bulkUpdateSync(array $ids, bool $isSyncDisabled): int
     {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['featured' => true]);
+        return Category::query()->whereIn('id', $ids)->update(['is_sync_disable' => $isSyncDisabled]);
     }
 
     /**
-     * Bulk disable featured status for categories.
-     *
-     * Sets featured to false for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to update.
-     * @return int Number of categories updated.
-     */
-    public function bulkDisableFeatured(array $ids): int
-    {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['featured' => false]);
-    }
-
-    /**
-     * Bulk enable sync for categories.
-     *
-     * Sets is_sync_disable to false for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to update.
-     * @return int Number of categories updated.
-     */
-    public function bulkEnableSync(array $ids): int
-    {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['is_sync_disable' => false]);
-    }
-
-    /**
-     * Bulk disable sync for categories.
-     *
-     * Sets is_sync_disable to true for all matching categories. Requires categories-update permission.
-     *
-     * @param  array<int>  $ids  Category IDs to update.
-     * @return int Number of categories updated.
-     */
-    public function bulkDisableSync(array $ids): int
-    {
-        $this->requirePermission('categories-update');
-
-        return Category::whereIn('id', $ids)->update(['is_sync_disable' => true]);
-    }
-
-    /**
-     * Import categories from an Excel or CSV file.
-     *
-     * Uses CategoriesImport for upsert logic. Requires categories-import permission.
-     *
-     * @param  UploadedFile  $file  The uploaded import file.
+     * Import categories from file.
      */
     public function importCategories(UploadedFile $file): void
     {
-        $this->requirePermission('categories-import');
-        Excel::import(new CategoriesImport, $file);
+        ExcelFacade::import(new CategoriesImport, $file);
     }
 
     /**
-     * Export categories to Excel or PDF file.
+     * Export categories to file.
      *
-     * Supports download or email delivery. Requires categories-export permission.
-     *
-     * @param  array<int>  $ids  Category IDs to export. Empty array exports all.
-     * @param  string  $format  Export format: 'excel' or 'pdf'.
-     * @param  User|null  $user  Recipient when method is 'email'. Required for email delivery.
-     * @param  array<string>  $columns  Column keys to include in export.
-     * @param  string  $method  Delivery method: 'download' or 'email'.
-     * @return string Relative storage path of the generated file.
-     *
-     * @throws RuntimeException When mail settings are not configured and method is 'email'.
+     * @param array<int> $ids
+     * @param string $format
+     * @param array<string> $columns
+     * @param array $filters
+     * @return string Relative file path.
      */
-    public function exportCategories(array $ids, string $format, ?User $user, array $columns, string $method): string
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $this->requirePermission('categories-export');
+        $fileName = 'categories_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
-        $fileName = 'categories_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
-
-        if ($format === 'excel') {
-            Excel::store(new CategoriesExport($ids, $columns), $relativePath, 'public');
-        } else {
-            $categories = Category::query()
-                ->with('parent:id,name')
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
-                ->get();
-
-            $pdf = PDF::loadView('exports.categories-pdf', compact('categories', 'columns'));
-            Storage::disk('public')->put($relativePath, $pdf->output());
-        }
-
-        if ($method === 'email' && $user) {
-            $this->sendExportEmail($user, $relativePath, $fileName);
-        }
+        ExcelFacade::store(
+            new CategoriesExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
 
         return $relativePath;
     }
 
     /**
-     * Remove category image and icon from storage.
+     * Handle Image/Icon Upload via UploadService.
      *
-     * @param  Category  $category  The category instance.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function handleUploads(array $data, ?Category $category = null): array
+    {
+        // Handle Image
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if ($category?->image) {
+                $this->uploadService->delete($category->image);
+            }
+            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+            $data['image'] = $path;
+            $data['image_url'] = $this->uploadService->url($path);
+        }
+
+        // Handle Icon
+        if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
+            if ($category?->icon) {
+                $this->uploadService->delete($category->icon);
+            }
+            $path = $this->uploadService->upload($data['icon'], self::ICON_PATH);
+            $data['icon'] = $path;
+            $data['icon_url'] = $this->uploadService->url($path);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Remove associated files.
      */
     private function cleanupFiles(Category $category): void
     {
@@ -391,57 +233,5 @@ class CategoryService extends BaseService
         if ($category->icon) {
             $this->uploadService->delete($category->icon);
         }
-    }
-
-    /**
-     * Process image and icon uploads and merge paths/URLs into category data.
-     *
-     * @param  array<string, mixed>  $data  Input data containing optional 'image' and 'icon' as UploadedFile.
-     * @return array<string, mixed> Data with image/icon paths and URLs set when uploaded.
-     */
-    private function handleFileUploads(array $data): array
-    {
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            $path = $this->uploadService->upload(
-                $data['image'],
-                config('storage.categories.images', self::DEFAULT_CATEGORY_IMAGES_PATH)
-            );
-            $data['image'] = $path;
-            $data['image_url'] = $this->uploadService->url($path);
-        }
-
-        if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
-            $path = $this->uploadService->upload(
-                $data['icon'],
-                config('storage.categories.icons', self::DEFAULT_CATEGORY_ICONS_PATH)
-            );
-            $data['icon'] = $path;
-            $data['icon_url'] = $this->uploadService->url($path);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Send export completion email to the user.
-     *
-     * @param  User  $user  Recipient of the export email.
-     * @param  string  $path  Relative storage path of the export file.
-     * @param  string  $fileName  Display filename for the attachment.
-     *
-     * @throws RuntimeException When mail settings are not configured.
-     */
-    private function sendExportEmail(User $user, string $path, string $fileName): void
-    {
-        $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
-        );
-        $generalSetting = GeneralSetting::latest()->first();
-
-        $this->setMailInfo($mailSetting);
-
-        Mail::to($user->email)->send(
-            new ExportMail($user, $path, $fileName, 'Categories List', $generalSetting)
-        );
     }
 }

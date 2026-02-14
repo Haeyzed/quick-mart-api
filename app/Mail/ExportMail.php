@@ -35,13 +35,15 @@ class ExportMail extends Mailable implements ShouldQueue
      * @param MailSetting $mailSetting The mail configuration to use.
      */
     public function __construct(
-        public User $user,
-        public string $filePath,
-        public string $fileName,
-        public string $subjectLine,
+        public User            $user,
+        public string          $filePath,
+        public string          $fileName,
+        public string          $subjectLine,
         public ?GeneralSetting $generalSettings,
-        public MailSetting $mailSetting
-    ) {}
+        public MailSetting     $mailSetting
+    )
+    {
+    }
 
     /**
      * Build the message.

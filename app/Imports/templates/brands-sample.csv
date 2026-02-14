@@ -1,0 +1,4 @@
+name,slug,short_description,page_title,image_url,is_active
+Nike,nike,Global sports brand,Nike Official Store,https://example.com/nike.jpg,1
+Adidas,adidas,Sportswear manufacturer,Adidas Brand Page,https://example.com/adidas.jpg,1
+Puma,puma,Athletic apparel company,Puma Collection,https://example.com/puma.jpg,0

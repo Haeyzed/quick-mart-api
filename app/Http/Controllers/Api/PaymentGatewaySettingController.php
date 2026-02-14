@@ -26,7 +26,9 @@ class PaymentGatewaySettingController extends Controller
      */
     public function __construct(
         private readonly PaymentGatewaySettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List all payment gateways.
@@ -53,7 +55,7 @@ class PaymentGatewaySettingController extends Controller
     {
         $gateway = $this->service->getPaymentGateway($id);
 
-        if (! $gateway) {
+        if (!$gateway) {
             return response()->notFound('Payment gateway not found');
         }
 

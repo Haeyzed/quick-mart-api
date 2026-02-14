@@ -16,9 +16,11 @@ use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuthService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AuthController
@@ -69,9 +71,9 @@ class AuthController extends Controller
         if ($user->email) {
             try {
                 $this->service->sendEmailVerification($user);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error but don't fail registration
-                \Illuminate\Support\Facades\Log::error('Failed to send verification email: ' . $e->getMessage());
+                Log::error('Failed to send verification email: ' . $e->getMessage());
             }
         }
 
@@ -79,21 +81,6 @@ class AuthController extends Controller
             new UserResource($user),
             'Registration successful. Please verify your email address. Your account is pending approval.',
             201
-        );
-    }
-
-    /**
-     * Get the authenticated user.
-     *
-     * @return JsonResponse
-     */
-    public function user(): JsonResponse
-    {
-        $user = $this->service->getAuthenticatedUser(Auth::user());
-
-        return response()->success(
-            new UserResource($user),
-            'User retrieved successfully'
         );
     }
 
@@ -109,6 +96,21 @@ class AuthController extends Controller
         return response()->success(
             null,
             'Logged out successfully'
+        );
+    }
+
+    /**
+     * Get the authenticated user.
+     *
+     * @return JsonResponse
+     */
+    public function user(): JsonResponse
+    {
+        $user = $this->service->getAuthenticatedUser(Auth::user());
+
+        return response()->success(
+            new UserResource($user),
+            'User retrieved successfully'
         );
     }
 

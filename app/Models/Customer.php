@@ -164,6 +164,25 @@ class Customer extends Model implements AuditableContract
     }
 
     /**
+     * Get custom field values for this customer (for API resource).
+     *
+     * @return array<string, mixed>
+     */
+    public function getCustomFieldValues(): array
+    {
+        $cols = self::getCustomFieldColumnNames();
+        $attrs = $this->getAttributes();
+        $out = [];
+        foreach ($cols as $col) {
+            if (array_key_exists($col, $attrs)) {
+                $out[$col] = $attrs[$col];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Get custom field column names for customer that exist on the table (quick-mart-old).
      *
      * @return array<int, string>
@@ -184,25 +203,6 @@ class Customer extends Model implements AuditableContract
         }
 
         return $result;
-    }
-
-    /**
-     * Get custom field values for this customer (for API resource).
-     *
-     * @return array<string, mixed>
-     */
-    public function getCustomFieldValues(): array
-    {
-        $cols = self::getCustomFieldColumnNames();
-        $attrs = $this->getAttributes();
-        $out = [];
-        foreach ($cols as $col) {
-            if (array_key_exists($col, $attrs)) {
-                $out[$col] = $attrs[$col];
-            }
-        }
-
-        return $out;
     }
 
     /**

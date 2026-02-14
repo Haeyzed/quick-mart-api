@@ -9,6 +9,9 @@ use App\Http\Requests\SendSmsRequest;
 use App\Http\Resources\SmsTemplateResource;
 use App\Services\CreateSmsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * API Controller for Create/Send SMS.
@@ -26,7 +29,9 @@ class CreateSmsController extends Controller
      */
     public function __construct(
         private readonly CreateSmsService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List SMS templates.
@@ -55,16 +60,16 @@ class CreateSmsController extends Controller
     {
         try {
             $result = $this->service->sendSms($request->validated());
-        } catch (\InvalidArgumentException $e) {
-            return response()->error($e->getMessage(), \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
-        } catch (\RuntimeException $e) {
-            return response()->error($e->getMessage(), \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (InvalidArgumentException $e) {
+            return response()->error($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (RuntimeException $e) {
+            return response()->error($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($result === false) {
             return response()->error(
                 'SMS could not be sent. Please check your SMS provider configuration.',
-                \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY
+                Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
 

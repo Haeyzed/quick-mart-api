@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\ExternalService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Transforms SMS provider model into a consistent JSON structure for API responses.
  * Masks sensitive credential keys in details for security.
  *
- * @mixin \App\Models\ExternalService
+ * @mixin ExternalService
  */
 class SmsSettingResource extends JsonResource
 {
@@ -32,7 +33,7 @@ class SmsSettingResource extends JsonResource
     {
         $details = is_string($this->details)
             ? json_decode($this->details, true) ?? []
-            : (array) $this->details;
+            : (array)$this->details;
 
         return [
             'id' => $this->id,
@@ -63,7 +64,7 @@ class SmsSettingResource extends JsonResource
                     break;
                 }
             }
-            $masked[$key] = ($shouldMask && ! empty($value)) ? '********' : $value;
+            $masked[$key] = ($shouldMask && !empty($value)) ? '********' : $value;
         }
 
         return $masked;

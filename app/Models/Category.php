@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
@@ -18,7 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Category
  *
- * Represents a product category with hierarchical structure support.
+ * Represents a product category.
  *
  * @property int $id
  * @property string $name
@@ -36,20 +37,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $woocommerce_category_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read string $status
- * @property-read string $featured_status
- * @property-read string $sync_status
- * @property-read Category|null $parent
- * @property-read Collection<int, Category> $children
- * @property-read Collection<int, Product> $products
+ * @property Carbon|null $deleted_at
  *
+ * @method static Builder|Category newModelQuery()
+ * @method static Builder|Category newQuery()
+ * @method static Builder|Category query()
  * @method static Builder|Category active()
  * @method static Builder|Category featured()
- * @method static Builder|Category root()
+ * @method static Builder|Category syncDisabled()
+ * @method static Builder|Category filter(array $filters)
  */
+
 class Category extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, HasFactory, SoftDeletes, FilterableByDates;
 
     /**
      * The attributes that are mass assignable.
@@ -78,37 +79,27 @@ class Category extends Model implements AuditableContract
      * @var array<string, string>
      */
     protected $casts = [
-        'parent_id' => 'integer',
         'is_active' => 'boolean',
         'featured' => 'boolean',
         'is_sync_disable' => 'boolean',
+        'parent_id' => 'integer',
         'woocommerce_category_id' => 'integer',
     ];
 
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
-    protected $appends = ['status'];
-
-    /**
-     * Boot the model.
+     * Bootstrap the model and its traits.
      */
     protected static function booted(): void
     {
-        // Automatically generate slug on saving if not present
-        static::saving(function (Category $category) {
-            $category->slug = $category->generateUniqueSlug(
-                $category->name,
-                $category->slug
-            );
+        static::saving(static function (Category $category): void {
+            if (empty($category->slug)) {
+                $category->slug = $category->generateUniqueSlug($category->name);
+            }
         });
     }
 
     /**
      * Generate a unique slug for the category.
-     * Uses iterative loop to avoid recursion stack overflow.
      */
     public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
@@ -122,64 +113,64 @@ class Category extends Model implements AuditableContract
         $count = 1;
 
         while ($this->slugExists($slug)) {
-            $slug = "{$originalSlug}-".$count++;
+            $slug = "{$originalSlug}-{$count}";
+            $count++;
         }
 
         return $slug;
     }
 
     /**
-     * Check if the slug exists for another category, excluding the current model when persisted.
-     *
-     * Handles both new (unsaved) and existing records. For new records,
-     * where('id', '!=', null) would produce invalid SQL semantics, so we only
-     * exclude the current model when it has been persisted.
-     *
-     * @param  string  $slug  The slug to check for uniqueness.
-     * @return bool True if another category already uses this slug.
+     * Check if the slug exists, excluding the current ID.
      */
     protected function slugExists(string $slug): bool
     {
-        $query = static::where('slug', $slug);
-
-        if ($this->exists) {
-            $query->whereKeyNot($this->getKey());
-        }
-
-        return $query->exists();
+        return static::query()
+            ->where('slug', $slug)
+            ->when($this->exists, fn(Builder $query) => $query->whereKeyNot($this->getKey()))
+            ->exists();
     }
-
-    /* -----------------------------------------------------------------
-     |  Relationships
-     | -----------------------------------------------------------------
-     */
-
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(Category::class, 'parent_id');
-    }
-
-    public function children(): HasMany
-    {
-        return $this->hasMany(Category::class, 'parent_id');
-    }
-
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class);
-    }
-
-    /* -----------------------------------------------------------------
-     |  Scopes & Helpers
-     | -----------------------------------------------------------------
-     */
 
     /**
-     * Check if this is a root category.
+     * Scope a query to apply filters.
+     *
+     * @param Builder $query
+     * @param array<string, mixed> $filters
+     * @return Builder
      */
-    public function isRoot(): bool
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->parent_id === null;
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn(Builder $q) => $q->active()
+            )
+            ->when(
+                isset($filters['featured']),
+                fn(Builder $q) => $q->featured()
+            )
+            ->when(
+                isset($filters['is_sync_disable']),
+                fn(Builder $q) => $q->syncDisabled()
+            )
+            ->when(
+                isset($filters['parent_id']),
+                fn(Builder $q) => $q->where('parent_id', $filters['parent_id'])
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn(Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('slug', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 
     /**
@@ -199,30 +190,34 @@ class Category extends Model implements AuditableContract
     }
 
     /**
-     * Scope a query to only include root categories.
+     * Scope a query to only include categories with sync disabled.
      */
-    public function scopeRoot(Builder $query): Builder
+    public function scopeSyncDisabled(Builder $query): Builder
     {
-        return $query->whereNull('parent_id');
+        return $query->where('is_sync_disable', true);
     }
 
-    /* -----------------------------------------------------------------
-     |  Accessors
-     | -----------------------------------------------------------------
+    /**
+     * Get the parent category.
      */
-
-    public function getStatusAttribute(): string
+    public function parent(): BelongsTo
     {
-        return $this->is_active ? 'active' : 'inactive';
+        return $this->belongsTo(Category::class, 'parent_id');
     }
 
-    public function getFeaturedStatusAttribute(): string
+    /**
+     * Get the child categories.
+     */
+    public function children(): HasMany
     {
-        return $this->featured ? 'featured' : 'not featured';
+        return $this->hasMany(Category::class, 'parent_id');
     }
 
-    public function getSyncStatusAttribute(): string
+    /**
+     * Get the products associated with this category.
+     */
+    public function products(): HasMany
     {
-        return $this->is_sync_disable ? 'disabled' : 'enabled';
+        return $this->hasMany(Product::class);
     }
 }

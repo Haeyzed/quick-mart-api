@@ -77,7 +77,7 @@ class Discount extends Model implements AuditableContract
      */
     public function calculateDiscount(float $price, int $quantity = 1): float
     {
-        if (! $this->isValid()) {
+        if (!$this->isValid()) {
             return 0;
         }
 
@@ -101,7 +101,7 @@ class Discount extends Model implements AuditableContract
      */
     public function isValid(): bool
     {
-        if (! $this->is_active) {
+        if (!$this->is_active) {
             return false;
         }
 
@@ -176,13 +176,13 @@ class Discount extends Model implements AuditableContract
     /**
      * Set the product list from an array or string.
      *
-     * @param  array<int>|string|null  $value
+     * @param array<int>|string|null $value
      */
     protected function setProductListAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['product_list'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && ! empty($value)) {
+        } elseif (is_string($value) && !empty($value)) {
             $this->attributes['product_list'] = $value;
         } else {
             $this->attributes['product_list'] = null;
@@ -206,13 +206,13 @@ class Discount extends Model implements AuditableContract
     /**
      * Set the days from an array or string.
      *
-     * @param  array<string>|string|null  $value
+     * @param array<string>|string|null $value
      */
     protected function setDaysAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['days'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && ! empty($value)) {
+        } elseif (is_string($value) && !empty($value)) {
             $this->attributes['days'] = $value;
         } else {
             $this->attributes['days'] = null;

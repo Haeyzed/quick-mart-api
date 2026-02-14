@@ -35,22 +35,24 @@ class CustomerGroupController extends Controller
      */
     public function __construct(
         private readonly CustomerGroupService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of customer groups.
      *
-     * @param  CustomerGroupIndexRequest  $request  Validated query params: per_page, page, status, search.
+     * @param CustomerGroupIndexRequest $request Validated query params: per_page, page, status, search.
      * @return JsonResponse Paginated customer groups with meta and links.
      */
     public function index(CustomerGroupIndexRequest $request): JsonResponse
     {
         $customerGroups = $this->service->getCustomerGroups(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $customerGroups->through(fn (CustomerGroup $customerGroup) => new CustomerGroupResource($customerGroup));
+        $customerGroups->through(fn(CustomerGroup $customerGroup) => new CustomerGroupResource($customerGroup));
 
         return response()->success(
             $customerGroups,
@@ -61,7 +63,7 @@ class CustomerGroupController extends Controller
     /**
      * Store a newly created customer group.
      *
-     * @param  CustomerGroupRequest  $request  Validated customer group attributes.
+     * @param CustomerGroupRequest $request Validated customer group attributes.
      * @return JsonResponse Created customer group with 201 status.
      */
     public function store(CustomerGroupRequest $request): JsonResponse
@@ -78,7 +80,7 @@ class CustomerGroupController extends Controller
     /**
      * Display the specified customer group.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group instance resolved via route model binding.
+     * @param CustomerGroup $customerGroup The customer group instance resolved via route model binding.
      */
     public function show(CustomerGroup $customerGroup): JsonResponse
     {
@@ -93,8 +95,8 @@ class CustomerGroupController extends Controller
     /**
      * Update the specified customer group.
      *
-     * @param  CustomerGroupRequest  $request  Validated customer group attributes.
-     * @param  CustomerGroup  $customerGroup  The customer group instance to update.
+     * @param CustomerGroupRequest $request Validated customer group attributes.
+     * @param CustomerGroup $customerGroup The customer group instance to update.
      * @return JsonResponse Updated customer group.
      */
     public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup): JsonResponse
@@ -110,7 +112,7 @@ class CustomerGroupController extends Controller
     /**
      * Remove the specified customer group.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group instance to delete.
+     * @param CustomerGroup $customerGroup The customer group instance to delete.
      * @return JsonResponse Success message.
      */
     public function destroy(CustomerGroup $customerGroup): JsonResponse
@@ -123,7 +125,7 @@ class CustomerGroupController extends Controller
     /**
      * Bulk delete customer groups.
      *
-     * @param  CustomerGroupBulkDestroyRequest  $request  Validated ids array.
+     * @param CustomerGroupBulkDestroyRequest $request Validated ids array.
      * @return JsonResponse Deleted count and message.
      */
     public function bulkDestroy(CustomerGroupBulkDestroyRequest $request): JsonResponse
@@ -139,7 +141,7 @@ class CustomerGroupController extends Controller
     /**
      * Bulk activate customer groups by ID.
      *
-     * @param  CustomerGroupBulkUpdateRequest  $request  Validated ids array.
+     * @param CustomerGroupBulkUpdateRequest $request Validated ids array.
      * @return JsonResponse Activated count and message.
      */
     public function bulkActivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
@@ -152,7 +154,7 @@ class CustomerGroupController extends Controller
     /**
      * Bulk deactivate customer groups by ID.
      *
-     * @param  CustomerGroupBulkUpdateRequest  $request  Validated ids array.
+     * @param CustomerGroupBulkUpdateRequest $request Validated ids array.
      * @return JsonResponse Deactivated count and message.
      */
     public function bulkDeactivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
@@ -165,7 +167,7 @@ class CustomerGroupController extends Controller
     /**
      * Import customer groups from Excel/CSV file.
      *
-     * @param  ImportRequest  $request  Validated file upload.
+     * @param ImportRequest $request Validated file upload.
      * @return JsonResponse Success message.
      */
     public function import(ImportRequest $request): JsonResponse
@@ -178,7 +180,7 @@ class CustomerGroupController extends Controller
     /**
      * Export customer groups to Excel or PDF.
      *
-     * @param  ExportRequest  $request  Validated export params: ids, format, method, columns, user_id (if email).
+     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
      * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse

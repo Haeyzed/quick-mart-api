@@ -18,6 +18,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -194,7 +195,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user has a specific permission.
      * This is a convenience wrapper around Spatie's hasPermissionTo method.
      *
-     * @param  string  $permission  Permission name
+     * @param string $permission Permission name
      */
     public function canPerform(string $permission): bool
     {
@@ -205,13 +206,13 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user denies (lacks) a specific permission.
      * Treats non-existent permissions as denied (avoids 500 when permission name is invalid).
      *
-     * @param  string  $permission  Permission name
+     * @param string $permission Permission name
      */
     public function denies(string $permission): bool
     {
         try {
-            return ! $this->hasPermissionTo($permission);
-        } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
+            return !$this->hasPermissionTo($permission);
+        } catch (PermissionDoesNotExist) {
             return true;
         }
     }
@@ -219,7 +220,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has any of the given permissions.
      *
-     * @param  array<string>  $permissions  Array of permission names
+     * @param array<string> $permissions Array of permission names
      */
     public function canPerformAny(array $permissions): bool
     {
@@ -229,7 +230,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has all of the given permissions.
      *
-     * @param  array<string>  $permissions  Array of permission names
+     * @param array<string> $permissions Array of permission names
      */
     public function canPerformAll(array $permissions): bool
     {

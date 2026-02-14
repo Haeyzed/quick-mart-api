@@ -35,10 +35,11 @@ class UploadService
      */
     public function uploadAndGetUrl(
         UploadedFile $file,
-        string $directory = 'uploads',
-        ?string $disk = null,
-        ?string $fileName = null
-    ): string {
+        string       $directory = 'uploads',
+        ?string      $disk = null,
+        ?string      $fileName = null
+    ): string
+    {
         $resolvedDisk = $this->resolveDisk($disk);
         $filePath = $this->upload($file, $directory, $resolvedDisk, $fileName);
 
@@ -53,6 +54,23 @@ class UploadService
     }
 
     /**
+     * Centralized disk resolution logic.
+     *
+     * @param string|null $disk
+     * @return string The resolved disk name.
+     */
+    private function resolveDisk(?string $disk): string
+    {
+        // 1. Use requested disk OR fallback to system default provider
+        $resolved = $disk ?: $this->getStorageProvider();
+
+        // 2. Configure the dynamic config for this provider (from Trait)
+        $this->setStorageProviderInfo($resolved);
+
+        return $resolved;
+    }
+
+    /**
      * Pure file storage logic.
      *
      * @param UploadedFile $file The file to upload.
@@ -64,10 +82,11 @@ class UploadService
      */
     public function upload(
         UploadedFile $file,
-        string $directory = 'uploads',
-        ?string $disk = null,
-        ?string $fileName = null
-    ): string {
+        string       $directory = 'uploads',
+        ?string      $disk = null,
+        ?string      $fileName = null
+    ): string
+    {
         $resolvedDisk = $this->resolveDisk($disk);
         $extension = $file->getClientOriginalExtension();
 
@@ -82,6 +101,17 @@ class UploadService
         }
 
         return $path;
+    }
+
+    /**
+     * Generate a collision-resistant filename.
+     *
+     * @param string $extension
+     * @return string
+     */
+    protected function generateFileName(string $extension): string
+    {
+        return Str::uuid()->toString() . '.' . $extension;
     }
 
     /**
@@ -124,33 +154,5 @@ class UploadService
         }
 
         return false;
-    }
-
-    /**
-     * Centralized disk resolution logic.
-     *
-     * @param string|null $disk
-     * @return string The resolved disk name.
-     */
-    private function resolveDisk(?string $disk): string
-    {
-        // 1. Use requested disk OR fallback to system default provider
-        $resolved = $disk ?: $this->getStorageProvider();
-
-        // 2. Configure the dynamic config for this provider (from Trait)
-        $this->setStorageProviderInfo($resolved);
-
-        return $resolved;
-    }
-
-    /**
-     * Generate a collision-resistant filename.
-     *
-     * @param string $extension
-     * @return string
-     */
-    protected function generateFileName(string $extension): string
-    {
-        return Str::uuid()->toString() . '.' . $extension;
     }
 }

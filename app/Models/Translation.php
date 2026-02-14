@@ -53,7 +53,7 @@ class Translation extends Model implements AuditableContract
             return self::where('locale', $locale)
                 ->get()
                 ->mapWithKeys(function ($item) {
-                    return [$item->group.'.'.$item->key => $item->value];
+                    return [$item->group . '.' . $item->key => $item->value];
                 })
                 ->toArray();
         });

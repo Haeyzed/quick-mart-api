@@ -33,13 +33,13 @@ class SupplierDueReportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('supplier_id')) {
-            $this->merge(['supplier_id' => (int) $this->supplier_id]);
+            $this->merge(['supplier_id' => (int)$this->supplier_id]);
         }
         if ($this->has('per_page')) {
-            $this->merge(['per_page' => (int) $this->per_page]);
+            $this->merge(['per_page' => (int)$this->per_page]);
         }
         if ($this->has('page')) {
-            $this->merge(['page' => (int) $this->page]);
+            $this->merge(['page' => (int)$this->page]);
         }
     }
 }

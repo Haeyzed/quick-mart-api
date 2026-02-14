@@ -28,7 +28,7 @@ class SupplierDueExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('supplier_id')) {
-            $this->merge(['supplier_id' => (int) $this->supplier_id]);
+            $this->merge(['supplier_id' => (int)$this->supplier_id]);
         }
     }
 }

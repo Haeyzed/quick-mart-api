@@ -6,6 +6,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 /**
@@ -82,7 +83,7 @@ class RegisterRequest extends BaseRequest
             /**
              * User's avatar image file.
              *
-             * @var \Illuminate\Http\UploadedFile|null @avatar
+             * @var UploadedFile|null @avatar
              * @example avatar.jpg
              */
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],

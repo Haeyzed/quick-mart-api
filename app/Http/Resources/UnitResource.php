@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Transforms Unit model into a consistent JSON structure for API responses.
  * Compatible with Scramble/OpenAPI documentation.
  *
- * @mixin \App\Models\Unit
+ * @mixin Unit
  */
 class UnitResource extends JsonResource
 {

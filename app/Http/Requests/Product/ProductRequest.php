@@ -6,6 +6,7 @@ namespace App\Http\Requests\Product;
 
 use App\Http\Requests\BaseRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 /**
@@ -97,7 +98,7 @@ class ProductRequest extends BaseRequest
              * @example EAN13
              */
             'barcode_symbology' => ['nullable', 'string', Rule::in(['C128', 'C39', 'UPCA', 'UPCE', 'EAN8', 'EAN13'])],
-            
+
             /**
              * Brand ID. Must exist in brands table.
              *
@@ -154,7 +155,7 @@ class ProductRequest extends BaseRequest
              * @example 1
              */
             'kitchen_id' => ['nullable', 'integer', 'exists:kitchens,id'],
-            
+
             /**
              * Product cost price. Must be numeric and non-negative.
              *
@@ -190,7 +191,7 @@ class ProductRequest extends BaseRequest
              * @example percentage
              */
             'profit_margin_type' => ['nullable', 'string', Rule::in(['percentage', 'flat'])],
-            
+
             /**
              * Current stock quantity. Must be numeric and non-negative.
              *
@@ -212,7 +213,7 @@ class ProductRequest extends BaseRequest
              * @example true
              */
             'track_inventory' => ['nullable', 'boolean'],
-            
+
             /**
              * Whether the product is currently on promotion.
              *
@@ -241,7 +242,7 @@ class ProductRequest extends BaseRequest
              * @example 2024-12-31
              */
             'last_date' => ['nullable', 'date', 'after_or_equal:starting_date'],
-            
+
             /**
              * Previous image filenames array (for update operations). Array of string filenames.
              *
@@ -252,32 +253,32 @@ class ProductRequest extends BaseRequest
             /**
              * Previous image filename (individual item).
              *
-             * @var string|null $prev_img.*
+             * @var string|null $prev_img .*
              * @example image1.jpg
              */
             'prev_img.*' => ['nullable', 'string'],
             /**
              * New product images to upload. Array of image files. Accepts JPEG, PNG, JPG, GIF, or WebP. Max 5MB each.
              *
-             * @var array<\Illuminate\Http\UploadedFile>|null $image
+             * @var array<UploadedFile>|null $image
              * @example [UploadedFile, UploadedFile]
              */
             'image' => ['nullable', 'array'],
             /**
              * New product image (individual file). Accepts JPEG, PNG, JPG, GIF, or WebP. Max 5MB.
              *
-             * @var \Illuminate\Http\UploadedFile|null $image.*
+             * @var UploadedFile|null $image .*
              * @example UploadedFile
              */
             'image.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             /**
              * Digital product file. Max 10MB.
              *
-             * @var \Illuminate\Http\UploadedFile|null $file
+             * @var UploadedFile|null $file
              * @example digital-product.pdf
              */
             'file' => ['nullable', 'file', 'max:10240'],
-            
+
             /**
              * Full product description/details. Long text content.
              *
@@ -306,7 +307,7 @@ class ProductRequest extends BaseRequest
              * @example JSON string of SerializedEditorState
              */
             'specification' => ['nullable', 'json'],
-            
+
             /**
              * Whether the product has variants.
              *
@@ -391,7 +392,7 @@ class ProductRequest extends BaseRequest
              * @example false
              */
             'is_sync_disable' => ['nullable', 'boolean'],
-            
+
             /**
              * Variant option names array. Used for product variants.
              *
@@ -402,7 +403,7 @@ class ProductRequest extends BaseRequest
             /**
              * Variant option name (individual item).
              *
-             * @var string|null $variant_option.*
+             * @var string|null $variant_option .*
              * @example Color
              */
             'variant_option.*' => ['nullable', 'string'],
@@ -416,7 +417,7 @@ class ProductRequest extends BaseRequest
             /**
              * Variant option value (individual item).
              *
-             * @var string|null $variant_value.*
+             * @var string|null $variant_value .*
              * @example Red,Blue
              */
             'variant_value.*' => ['nullable', 'string'],
@@ -430,7 +431,7 @@ class ProductRequest extends BaseRequest
             /**
              * Variant name (individual item).
              *
-             * @var string|null $variant_name.*
+             * @var string|null $variant_name .*
              * @example Red Small
              */
             'variant_name.*' => ['nullable', 'string'],
@@ -444,7 +445,7 @@ class ProductRequest extends BaseRequest
             /**
              * Item code for variant (individual item). Max 255 characters.
              *
-             * @var string|null $item_code.*
+             * @var string|null $item_code .*
              * @example VAR-001
              */
             'item_code.*' => ['nullable', 'string', 'max:255'],
@@ -458,7 +459,7 @@ class ProductRequest extends BaseRequest
             /**
              * Additional cost for variant (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $additional_cost.*
+             * @var float|null $additional_cost .*
              * @example 5.00
              */
             'additional_cost.*' => ['nullable', 'numeric', 'min:0'],
@@ -472,11 +473,11 @@ class ProductRequest extends BaseRequest
             /**
              * Additional price for variant (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $additional_price.*
+             * @var float|null $additional_price .*
              * @example 10.00
              */
             'additional_price.*' => ['nullable', 'numeric', 'min:0'],
-            
+
             /**
              * Combo product IDs array. Required if type is 'combo'. Must exist in products table.
              *
@@ -487,7 +488,7 @@ class ProductRequest extends BaseRequest
             /**
              * Combo product ID (individual item). Must exist in products table.
              *
-             * @var int|null $product_id.*
+             * @var int|null $product_id .*
              * @example 1
              */
             'product_id.*' => ['nullable', 'integer', 'exists:products,id'],
@@ -501,7 +502,7 @@ class ProductRequest extends BaseRequest
             /**
              * Combo product variant ID (individual item). Must exist in product_variants table.
              *
-             * @var int|null $variant_id.*
+             * @var int|null $variant_id .*
              * @example 5
              */
             'variant_id.*' => ['nullable', 'integer', 'exists:product_variants,id'],
@@ -515,7 +516,7 @@ class ProductRequest extends BaseRequest
             /**
              * Combo product quantity (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $product_qty.*
+             * @var float|null $product_qty .*
              * @example 2.00
              */
             'product_qty.*' => ['nullable', 'numeric', 'min:0'],
@@ -529,7 +530,7 @@ class ProductRequest extends BaseRequest
             /**
              * Combo product unit price (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $unit_price.*
+             * @var float|null $unit_price .*
              * @example 25.00
              */
             'unit_price.*' => ['nullable', 'numeric', 'min:0'],
@@ -543,7 +544,7 @@ class ProductRequest extends BaseRequest
             /**
              * Wastage percent for combo product (individual item). Must be numeric, between 0 and 100.
              *
-             * @var float|null $wastage_percent.*
+             * @var float|null $wastage_percent .*
              * @example 5.00
              */
             'wastage_percent.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -557,11 +558,11 @@ class ProductRequest extends BaseRequest
             /**
              * Combo product unit ID (individual item). Must exist in units table.
              *
-             * @var int|null $combo_unit_id.*
+             * @var int|null $combo_unit_id .*
              * @example 2
              */
             'combo_unit_id.*' => ['nullable', 'integer', 'exists:units,id'],
-            
+
             /**
              * Whether to set initial stock for this product.
              *
@@ -579,7 +580,7 @@ class ProductRequest extends BaseRequest
             /**
              * Warehouse ID for initial stock (individual item). Must exist in warehouses table.
              *
-             * @var int|null $stock_warehouse_id.*
+             * @var int|null $stock_warehouse_id .*
              * @example 1
              */
             'stock_warehouse_id.*' => ['nullable', 'integer', 'exists:warehouses,id'],
@@ -593,11 +594,11 @@ class ProductRequest extends BaseRequest
             /**
              * Initial stock quantity per warehouse (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $stock.*
+             * @var float|null $stock .*
              * @example 100.00
              */
             'stock.*' => ['nullable', 'numeric', 'min:0'],
-            
+
             /**
              * Warehouse IDs array for different prices. Must exist in warehouses table.
              *
@@ -608,7 +609,7 @@ class ProductRequest extends BaseRequest
             /**
              * Warehouse ID for different price (individual item). Must exist in warehouses table.
              *
-             * @var int|null $warehouse_id.*
+             * @var int|null $warehouse_id .*
              * @example 1
              */
             'warehouse_id.*' => ['nullable', 'integer', 'exists:warehouses,id'],
@@ -622,11 +623,11 @@ class ProductRequest extends BaseRequest
             /**
              * Different price per warehouse (individual item). Must be numeric and non-negative.
              *
-             * @var float|null $diff_price.*
+             * @var float|null $diff_price .*
              * @example 70.00
              */
             'diff_price.*' => ['nullable', 'numeric', 'min:0'],
-            
+
             /**
              * Warranty period in days/months/years. Must be a non-negative integer.
              *
@@ -655,7 +656,7 @@ class ProductRequest extends BaseRequest
              * @example days
              */
             'guarantee_type' => ['nullable', 'string', 'required_with:guarantee', Rule::in(['days', 'months', 'years'])],
-            
+
             /**
              * Comma-separated list of related product IDs for ecommerce.
              *
@@ -684,7 +685,7 @@ class ProductRequest extends BaseRequest
              * @example Shop the best smartphones with great deals...
              */
             'meta_description' => ['nullable', 'string', 'max:1000'],
-            
+
             /**
              * Menu type IDs array for restaurant module. Must exist in menu_type table.
              *
@@ -695,7 +696,7 @@ class ProductRequest extends BaseRequest
             /**
              * Menu type ID (individual item). Must exist in menu_type table.
              *
-             * @var int|null $menu_type.*
+             * @var int|null $menu_type .*
              * @example 1
              */
             'menu_type.*' => ['nullable', 'integer', 'exists:menu_type,id'],
@@ -713,7 +714,7 @@ class ProductRequest extends BaseRequest
              * @example 1000.00
              */
             'daily_sale_objective' => ['nullable', 'numeric', 'min:0'],
-            
+
             /**
              * Production cost. Must be numeric and non-negative.
              *
@@ -721,7 +722,7 @@ class ProductRequest extends BaseRequest
              * @example 40.00
              */
             'production_cost' => ['nullable', 'numeric', 'min:0'],
-            
+
             /**
              * WooCommerce product ID for external system sync.
              *

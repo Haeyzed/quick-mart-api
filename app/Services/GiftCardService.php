@@ -17,7 +17,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\ValidationException;
 
 /**
  * GiftCardService

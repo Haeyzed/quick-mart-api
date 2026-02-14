@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Settings;
 
 use App\Http\Requests\BaseRequest;
+
 class RewardPointSettingRequest extends BaseRequest
 {
     public function authorize(): bool

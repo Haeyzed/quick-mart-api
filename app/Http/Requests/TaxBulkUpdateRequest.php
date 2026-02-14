@@ -41,7 +41,7 @@ class TaxBulkUpdateRequest extends BaseRequest
             /**
              * Each ID in the ids array must be a valid tax ID.
              *
-             * @var int $ids.*
+             * @var int $ids .*
              * @example 1
              */
             'ids.*' => ['required', 'integer', Rule::exists('taxes', 'id')],

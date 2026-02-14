@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\HrmSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,7 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Transforms HrmSetting model into a consistent JSON structure for API responses.
  *
- * @mixin \App\Models\HrmSetting
+ * @mixin HrmSetting
  */
 class HrmSettingResource extends JsonResource
 {

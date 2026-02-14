@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\MailSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Transforms MailSetting model into a consistent JSON structure for API responses.
  * Masks password for security.
  *
- * @mixin \App\Models\MailSetting
+ * @mixin MailSetting
  */
 class MailSettingResource extends JsonResource
 {

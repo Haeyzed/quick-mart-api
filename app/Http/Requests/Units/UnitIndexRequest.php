@@ -71,8 +71,8 @@ class UnitIndexRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'per_page' => $this->per_page ? (int) $this->per_page : null,
-            'page' => $this->page ? (int) $this->page : null,
+            'per_page' => $this->per_page ? (int)$this->per_page : null,
+            'page' => $this->page ? (int)$this->page : null,
         ]);
     }
 }

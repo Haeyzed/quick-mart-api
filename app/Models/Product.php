@@ -189,6 +189,45 @@ class Product extends Model implements AuditableContract
     ];
 
     /**
+     * Boot the model and set up event listeners for slug generation.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saving(function (Product $product) {
+            $product->generateSlugIfNeeded();
+        });
+    }
+
+    /**
+     * Generate and normalize slug if ecommerce/restaurant module is enabled and slug is missing.
+     */
+    protected function generateSlugIfNeeded(): void
+    {
+        // Check if ecommerce or restaurant module is enabled
+        $generalSetting = GeneralSetting::latest()->first();
+        $modules = explode(',', $generalSetting->modules ?? '');
+        $hasEcommerce = in_array('ecommerce', $modules);
+        $hasRestaurant = in_array('restaurant', $modules);
+
+        if (!$hasEcommerce && !$hasRestaurant) {
+            return;
+        }
+
+        // Generate slug if name exists and slug is missing
+        if ($this->name && !$this->slug) {
+            $this->slug = Str::slug($this->name, '-');
+        }
+
+        // Normalize slug if it exists
+        if ($this->slug) {
+            $this->slug = preg_replace('/[^A-Za-z0-9\-]/', '', $this->slug);
+            $this->slug = str_replace('\/', '/', $this->slug);
+        }
+    }
+
+    /**
      * Get the category for this product.
      *
      * @return BelongsTo<Category, self>
@@ -332,7 +371,7 @@ class Product extends Model implements AuditableContract
     public function getEffectivePrice(): float
     {
         return $this->isOnPromotion() && $this->promotion_price
-            ? (float) $this->promotion_price
+            ? (float)$this->promotion_price
             : $this->price;
     }
 
@@ -341,7 +380,7 @@ class Product extends Model implements AuditableContract
      */
     public function isOnPromotion(): bool
     {
-        if (! $this->promotion) {
+        if (!$this->promotion) {
             return false;
         }
 
@@ -365,7 +404,7 @@ class Product extends Model implements AuditableContract
      */
     public function isLowStock(): bool
     {
-        if (! $this->alert_quantity || ! $this->track_inventory) {
+        if (!$this->alert_quantity || !$this->track_inventory) {
             return false;
         }
 
@@ -467,44 +506,5 @@ class Product extends Model implements AuditableContract
             'product_details' => 'array', // Cast JSON column to array/object
             'specification' => 'array', // Cast JSON column to array/object
         ];
-    }
-
-    /**
-     * Boot the model and set up event listeners for slug generation.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::saving(function (Product $product) {
-            $product->generateSlugIfNeeded();
-        });
-    }
-
-    /**
-     * Generate and normalize slug if ecommerce/restaurant module is enabled and slug is missing.
-     */
-    protected function generateSlugIfNeeded(): void
-    {
-        // Check if ecommerce or restaurant module is enabled
-        $generalSetting = \App\Models\GeneralSetting::latest()->first();
-        $modules = explode(',', $generalSetting->modules ?? '');
-        $hasEcommerce = in_array('ecommerce', $modules);
-        $hasRestaurant = in_array('restaurant', $modules);
-
-        if (! $hasEcommerce && ! $hasRestaurant) {
-            return;
-        }
-
-        // Generate slug if name exists and slug is missing
-        if ($this->name && ! $this->slug) {
-            $this->slug = Str::slug($this->name, '-');
-        }
-
-        // Normalize slug if it exists
-        if ($this->slug) {
-            $this->slug = preg_replace('/[^A-Za-z0-9\-]/', '', $this->slug);
-            $this->slug = str_replace('\/', '/', $this->slug);
-        }
     }
 }

@@ -19,6 +19,7 @@ use Spatie\Permission\Models\Role;
 class UserService extends BaseService
 {
     use CheckPermissionsTrait;
+
     /**
      * Permission service instance.
      *
@@ -66,10 +67,11 @@ class UserService extends BaseService
      * @return void
      */
     public function assignRolesAndPermissions(
-        User $user,
+        User   $user,
         ?array $roles = null,
         ?array $directPermissions = null
-    ): void {
+    ): void
+    {
         // Check permission: user needs 'users-edit' permission to assign roles/permissions
         $this->requirePermission('users-edit');
 

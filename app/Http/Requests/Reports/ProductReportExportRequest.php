@@ -27,10 +27,10 @@ class ProductReportExportRequest extends BaseRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('warehouse_id')) {
-            $this->merge(['warehouse_id' => (int) $this->warehouse_id]);
+            $this->merge(['warehouse_id' => (int)$this->warehouse_id]);
         }
         if ($this->has('category_id')) {
-            $this->merge(['category_id' => (int) $this->category_id]);
+            $this->merge(['category_id' => (int)$this->category_id]);
         }
     }
 }

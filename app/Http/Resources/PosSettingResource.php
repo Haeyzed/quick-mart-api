@@ -11,7 +11,7 @@ class PosSettingResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $options = ! empty($this->payment_options)
+        $options = !empty($this->payment_options)
             ? explode(',', $this->payment_options)
             : [];
 
@@ -23,8 +23,8 @@ class PosSettingResource extends JsonResource
             'product_number' => $this->product_number,
             'keybord_active' => $this->keybord_active,
             'is_table' => $this->is_table,
-            'send_sms' => (bool) ($this->send_sms ?? false),
-            'cash_register' => (bool) ($this->cash_register ?? false),
+            'send_sms' => (bool)($this->send_sms ?? false),
+            'cash_register' => (bool)($this->cash_register ?? false),
             'stripe_public_key' => $this->stripe_public_key,
             'stripe_secret_key' => $this->stripe_secret_key ? '********' : null,
             'paypal_live_api_username' => $this->paypal_live_api_username,
