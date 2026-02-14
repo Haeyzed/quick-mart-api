@@ -272,6 +272,24 @@ class CategoryController extends Controller
     }
 
     /**
+     * Download module import sample template.
+     */
+    public function download(): JsonResponse|BinaryFileResponse
+    {
+        if (auth()->user()->denies('import brands')) {
+            return response()->forbidden('Permission denied for downloading categories import template.');
+        }
+
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
+        );
+    }
+
+    /**
      * Export categories to Excel or PDF.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse

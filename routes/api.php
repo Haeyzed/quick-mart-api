@@ -74,26 +74,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('users', UserController::class);
 
     // All other API routes require authentication
-    Route::get('categories/parents', [CategoryController::class, 'parents'])
-        ->name('categories.parents');
-    Route::patch('categories/bulk-activate', [CategoryController::class, 'bulkActivate'])
-        ->name('categories.bulkActivate');
-    Route::patch('categories/bulk-deactivate', [CategoryController::class, 'bulkDeactivate'])
-        ->name('categories.bulkDeactivate');
-    Route::patch('categories/bulk-enable-featured', [CategoryController::class, 'bulkEnableFeatured'])
-        ->name('categories.bulkEnableFeatured');
-    Route::patch('categories/bulk-disable-featured', [CategoryController::class, 'bulkDisableFeatured'])
-        ->name('categories.bulkDisableFeatured');
-    Route::patch('categories/bulk-enable-sync', [CategoryController::class, 'bulkEnableSync'])
-        ->name('categories.bulkEnableSync');
-    Route::patch('categories/bulk-disable-sync', [CategoryController::class, 'bulkDisableSync'])
-        ->name('categories.bulkDisableSync');
-    Route::delete('categories/bulk-destroy', [CategoryController::class, 'bulkDestroy'])
-        ->name('categories.bulkDestroy');
-    Route::post('categories/import', [CategoryController::class, 'import'])
-        ->name('categories.import');
-    Route::post('categories/export', [CategoryController::class, 'export'])
-        ->name('categories.export');
+
+    Route::prefix('brands')->name('brands.')->group(function () {
+        Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [BrandController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [BrandController::class, 'import'])->name('import');
+        Route::post('export', [BrandController::class, 'export'])->name('export');
+        Route::get('download', [BrandController::class, 'download'])->name('download');
+    });
+    Route::apiResource('brands', BrandController::class);
+
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::post('bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [CategoryController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [CategoryController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('bulk-enable-featured', [CategoryController::class, 'bulkEnableFeatured'])->name('bulk-enable-featured');
+        Route::post('bulk-disable-featured', [CategoryController::class, 'bulkDisableFeatured'])->name('bulk-disable-featured');
+        Route::post('bulk-enable-sync', [CategoryController::class, 'bulkEnableSync'])->name('bulk-enable-sync');
+        Route::post('bulk-disable-sync', [CategoryController::class, 'bulkDisableSync'])->name('bulk-disable-sync');
+        Route::post('import', [CategoryController::class, 'import'])->name('import');
+        Route::post('export', [CategoryController::class, 'export'])->name('export');
+        Route::get('download', [CategoryController::class, 'download'])->name('download');
+        Route::get('parents', [CategoryController::class, 'parents'])->name('parents');
+    });
     Route::apiResource('categories', CategoryController::class);
 
     // People: Billers (under people prefix, Warehouse-style CRUD + import + bulk delete)
@@ -112,15 +116,6 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('billers.export');
         Route::apiResource('billers', BillerController::class);
     });
-
-    Route::prefix('brands')->name('brands.')->group(function () {
-        Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
-        Route::post('bulk-deactivate', [BrandController::class, 'bulkDeactivate'])->name('bulk-deactivate');
-        Route::post('import', [BrandController::class, 'import'])->name('import');
-        Route::post('export', [BrandController::class, 'export'])->name('export');
-    });
-    Route::apiResource('brands', BrandController::class);
 
     Route::get('units/base-units', [UnitController::class, 'getBaseUnits'])
         ->name('units.baseUnits');
@@ -483,6 +478,4 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('gift-cards.generate-code');
     Route::post('gift-cards/{gift_card}/recharge', [GiftCardController::class, 'recharge'])
         ->name('gift-cards.recharge');
-
-    Route::get('import-template/{module}', [ImportTemplateController::class, 'download']);
 });

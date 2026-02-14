@@ -12,8 +12,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -26,6 +28,7 @@ class BrandService
      *
      */
     private const IMAGE_PATH = 'images/brands';
+    private const TEMPLATE_PATH = 'imports/templates';
 
     /**
      * @param UploadService $uploadService
@@ -135,6 +138,22 @@ class BrandService
     public function importBrands(UploadedFile $file): void
     {
         ExcelFacade::import(new BrandsImport, $file);
+    }
+
+    /**
+     * Download a CSV template by module name.
+     */
+    public function download(): string
+    {
+        $fileName = "brands-sample.csv";
+
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+
+        if (!File::exists($path)) {
+            throw new RuntimeException("Template brands not found.");
+        }
+
+        return $path;
     }
 
     /**

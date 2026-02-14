@@ -11,8 +11,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -23,6 +25,7 @@ class CategoryService
 {
     private const IMAGE_PATH = 'images/categories';
     private const ICON_PATH = 'images/categories/icons';
+    private const TEMPLATE_PATH = 'imports/templates';
 
     public function __construct(
         private readonly UploadService $uploadService
@@ -164,6 +167,22 @@ class CategoryService
     public function importCategories(UploadedFile $file): void
     {
         ExcelFacade::import(new CategoriesImport, $file);
+    }
+
+    /**
+     * Download a CSV template by module name.
+     */
+    public function download(): string
+    {
+        $fileName = "categories-sample.csv";
+
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+
+        if (!File::exists($path)) {
+            throw new RuntimeException("Template categories not found.");
+        }
+
+        return $path;
     }
 
     /**
