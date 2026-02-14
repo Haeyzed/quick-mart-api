@@ -170,7 +170,7 @@ class CategoryService
     }
 
     /**
-     * Download a CSV template by module name.
+     * Download a categories CSV template.
      */
     public function download(): string
     {

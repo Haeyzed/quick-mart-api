@@ -141,7 +141,7 @@ class BrandService
     }
 
     /**
-     * Download a CSV template by module name.
+     * Download a brands CSV template.
      */
     public function download(): string
     {

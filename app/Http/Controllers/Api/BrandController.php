@@ -193,7 +193,7 @@ class BrandController extends Controller
     }
 
     /**
-     * Download module import sample template.
+     * Download brands module import sample template.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

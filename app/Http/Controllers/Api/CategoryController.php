@@ -272,7 +272,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Download module import sample template.
+     * Download categories import sample template.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
