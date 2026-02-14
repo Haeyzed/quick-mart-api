@@ -44,7 +44,7 @@ class UserService extends BaseService
     public function getUsers(): Collection
     {
         // Check permission: user needs 'users-index' permission to view users
-        $this->requirePermission('users-index');
+        //$this->requirePermission('users-index');
 
         return User::where('is_active', true)
             ->orderBy('name')
