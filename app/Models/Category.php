@@ -209,6 +209,14 @@ class Category extends Model implements AuditableContract
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
+    
+    /**
+     * Get the child categories recursively.
+     */
+    public function childrenRecursive(): HasMany
+    {
+        return $this->children()->with('childrenRecursive');
+    }
 
     /**
      * Get the products associated with this category.
