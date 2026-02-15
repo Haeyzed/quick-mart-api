@@ -131,6 +131,17 @@ class TenantDatabaseSeeder extends Seeder
                 'import taxes',
                 'export taxes',
             ],
+            'warehouses' => [
+                'view warehouses',
+                'view warehouse details',
+                'create warehouses',
+                'update warehouses',
+                'delete warehouses',
+                'import warehouses',
+                'export warehouses',
+                'view warehouse report',
+                'view warehouse stock report',
+            ],
             'purchases' => [
                 'view purchases',
                 'create purchases',
@@ -219,16 +230,6 @@ class TenantDatabaseSeeder extends Seeder
                 'create employees',
                 'update employees',
                 'delete employees',
-            ],
-            'warehouses' => [
-                'view warehouses',
-                'create warehouses',
-                'update warehouses',
-                'delete warehouses',
-                'import warehouses',
-                'export warehouses',
-                'view warehouse report',
-                'view warehouse stock report',
             ],
             'accounting' => [
                 'view accounts',
@@ -357,7 +358,7 @@ class TenantDatabaseSeeder extends Seeder
         if ($legacyStaff) {
             $legacyStaff->syncPermissions($staffPermissions);
         }
-        
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
