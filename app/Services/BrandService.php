@@ -87,7 +87,6 @@ class BrandService
      */
     private function handleUploads(array $data, ?Brand $brand = null): array
     {
-        // Handle Image
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             if ($brand?->image) {
                 $this->uploadService->delete($brand->image);

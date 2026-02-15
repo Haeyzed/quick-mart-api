@@ -123,7 +123,6 @@ class CategoryService
      */
     private function handleUploads(array $data, ?Category $category = null): array
     {
-        // Handle Image
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             if ($category?->image) {
                 $this->uploadService->delete($category->image);
@@ -133,7 +132,6 @@ class CategoryService
             $data['image_url'] = $this->uploadService->url($path);
         }
 
-        // Handle Icon
         if (isset($data['icon']) && $data['icon'] instanceof UploadedFile) {
             if ($category?->icon) {
                 $this->uploadService->delete($category->icon);
