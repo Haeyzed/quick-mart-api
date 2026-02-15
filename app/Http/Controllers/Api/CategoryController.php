@@ -33,9 +33,7 @@ class CategoryController extends Controller
 {
     public function __construct(
         private readonly CategoryService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display a paginated listing of categories.
@@ -48,7 +46,7 @@ class CategoryController extends Controller
 
         $categories = $this->service->getPaginatedCategories(
             $request->all(),
-            (int)$request->input('per_page', 10)
+            (int) $request->input('per_page', 10)
         );
 
         return response()->success(
@@ -59,14 +57,17 @@ class CategoryController extends Controller
 
     /**
      * Display a tree-view listing of categories.
+     *
+     * Query params: include_inactive=1 to include inactive categories (for admin).
      */
-    public function tree(): JsonResponse
+    public function tree(Request $request): JsonResponse
     {
         if (auth()->user()->denies('view categories')) {
             return response()->forbidden('Permission denied for viewing categories tree.');
         }
 
-        $tree = $this->service->getCategoryTree();
+        $includeInactive = filter_var($request->query('include_inactive', false), FILTER_VALIDATE_BOOLEAN);
+        $tree = $this->service->getCategoryTree($includeInactive);
 
         return response()->success(
             CategoryResource::collection($tree),
@@ -340,13 +341,13 @@ class CategoryController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -356,7 +357,7 @@ class CategoryController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'categories_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'categories_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Categories Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -365,7 +366,7 @@ class CategoryController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 

@@ -24,18 +24,19 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 class CategoryService
 {
     private const IMAGE_PATH = 'images/categories';
+
     private const ICON_PATH = 'images/categories/icons';
+
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {
-    }
+    ) {}
 
     /**
      * Get paginated categories based on filters.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -48,13 +49,15 @@ class CategoryService
 
     /**
      * Get categories in a tree structure.
+     *
+     * @param  bool  $includeInactive  When true, includes inactive categories (for admin tree view).
      */
-    public function getCategoryTree(): Collection
+    public function getCategoryTree(bool $includeInactive = false): Collection
     {
         return Category::query()
             ->whereNull('parent_id')
             ->with('childrenRecursive')
-            ->active()
+            ->when(! $includeInactive, fn ($q) => $q->active())
             ->orderBy('name')
             ->get();
     }
@@ -73,12 +76,13 @@ class CategoryService
     /**
      * Create a new category.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createCategory(array $data): Category
     {
         return DB::transaction(function () use ($data) {
             $data = $this->handleUploads($data);
+
             return Category::query()->create($data);
         });
     }
@@ -86,13 +90,14 @@ class CategoryService
     /**
      * Update an existing category.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateCategory(Category $category, array $data): Category
     {
         return DB::transaction(function () use ($category, $data) {
             $data = $this->handleUploads($data, $category);
             $category->update($data);
+
             return $category->fresh();
         });
     }
@@ -121,7 +126,7 @@ class CategoryService
     /**
      * Bulk delete categories.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      * @return int Count of deleted items.
      */
     public function bulkDeleteCategories(array $ids): int
@@ -147,7 +152,7 @@ class CategoryService
     /**
      * Bulk update status.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -157,7 +162,7 @@ class CategoryService
     /**
      * Bulk update featured status.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      */
     public function bulkUpdateFeatured(array $ids, bool $isFeatured): int
     {
@@ -167,7 +172,7 @@ class CategoryService
     /**
      * Bulk update sync status.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      */
     public function bulkUpdateSync(array $ids, bool $isSyncDisabled): int
     {
@@ -187,12 +192,12 @@ class CategoryService
      */
     public function download(): string
     {
-        $fileName = "categories-sample.csv";
+        $fileName = 'categories-sample.csv';
 
-        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
 
-        if (!File::exists($path)) {
-            throw new RuntimeException("Template categories not found.");
+        if (! File::exists($path)) {
+            throw new RuntimeException('Template categories not found.');
         }
 
         return $path;
@@ -201,16 +206,14 @@ class CategoryService
     /**
      * Export categories to file.
      *
-     * @param array<int> $ids
-     * @param string $format
-     * @param array<string> $columns
-     * @param array $filters
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
      * @return string Relative file path.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'categories_' . now()->timestamp;
-        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'categories_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(
@@ -226,7 +229,7 @@ class CategoryService
     /**
      * Handle Image/Icon Upload via UploadService.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function handleUploads(array $data, ?Category $category = null): array
