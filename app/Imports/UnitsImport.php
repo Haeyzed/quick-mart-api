@@ -41,7 +41,7 @@ class UnitsImport implements
         $baseUnitCode = trim((string)($row['base_unit_code'] ?? ''));
 
         if ($baseUnitCode !== '') {
-            $baseUnitId = Unit::where('code', $baseUnitCode)->value('id');
+            $baseUnitId = Unit::query()->where('code', $baseUnitCode)->value('id');
         }
 
         return new Unit([

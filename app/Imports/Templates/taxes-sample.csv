@@ -19,3 +19,44 @@ Entertainment Tax,5,1
 Property Tax,11,1
 Road Tax,6,1
 Insurance Tax,13,1
+Zero Rated VAT,0,1
+Reduced VAT,5,1
+Standard VAT,20,1
+Input VAT,15,1
+Output VAT,15,1
+Purchase Tax,8,1
+Retail Tax,9,1
+Wholesale Tax,7,1
+Local Government Levy,3,1
+State Tax,6,1
+Federal Tax,12,1
+Ecommerce Marketplace Tax,5,1
+Platform Service Fee Tax,4,1
+Advertising Tax,6,1
+Subscription Tax,8,1
+Telecommunication Tax,10,1
+Fuel Tax,14,1
+Carbon Tax,3,1
+Packaging Tax,2,1
+Recycling Tax,1,1
+Import VAT,15,1
+Export VAT,0,1
+Interstate Tax,7,1
+Cross-border Tax,9,1
+Digital Goods VAT,10,1
+Software License Tax,12,1
+Food Tax,5,1
+Beverage Tax,6,1
+Alcohol Tax,18,1
+Tobacco Tax,22,1
+Luxury Goods VAT,25,1
+Medical Tax,0,1
+Education Tax,2,1
+Agricultural Tax,1,1
+Logistics Tax,4,1
+Handling Fee Tax,3,1
+Warehouse Service Tax,5,1
+Delivery Service Tax,6,1
+Payment Processing Tax,2,1
+Banking Transaction Tax,3,1
+International Transaction Tax,8,1
