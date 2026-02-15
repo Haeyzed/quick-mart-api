@@ -19,11 +19,16 @@ class ReparentCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var \App\Models\Category|null $category */
+        $category = $this->route('category');
+
         return [
             'parent_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('categories', 'id')->withoutTrashed(),
+                Rule::exists('categories', 'id')
+                    ->whereNot('id', $category?->id)
+                    ->withoutTrashed(),
             ],
         ];
     }
