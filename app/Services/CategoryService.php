@@ -35,29 +35,47 @@ class CategoryService
 
     /**
      * Get paginated categories based on filters.
+     * Includes children as a nested tree for each category.
      *
      * @param  array<string, mixed>  $filters
      */
     public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Category::query()
-            ->with('parent:id,name')
+            ->with([
+                'parent:id,name',
+                'children' => $this->childrenTreeLoader(),
+            ])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get categories in a tree structure.
-     *
-     * @param  bool  $includeInactive  When true, includes inactive categories (for admin tree view).
+     * Build a recursive eager loader for children (up to 5 levels).
      */
-    public function getCategoryTree(bool $includeInactive = false): Collection
+    private function childrenTreeLoader(int $depth = 0, int $maxDepth = 5): \Closure
+    {
+        return function ($query) use ($depth, $maxDepth) {
+            if ($depth >= $maxDepth) {
+                return;
+            }
+
+            $query->with([
+                'children' => $this->childrenTreeLoader($depth + 1, $maxDepth),
+            ]);
+        };
+    }
+
+    /**
+     * Get categories in a tree structure.
+     */
+    public function getCategoryTree(): Collection
     {
         return Category::query()
             ->whereNull('parent_id')
-            ->with('childrenRecursive')
-            ->when(! $includeInactive, fn ($q) => $q->active())
+            ->with('children')
+            ->active()
             ->orderBy('name')
             ->get();
     }

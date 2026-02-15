@@ -57,17 +57,14 @@ class CategoryController extends Controller
 
     /**
      * Display a tree-view listing of categories.
-     *
-     * Query params: include_inactive=1 to include inactive categories (for admin).
      */
-    public function tree(Request $request): JsonResponse
+    public function tree(): JsonResponse
     {
         if (auth()->user()->denies('view categories')) {
             return response()->forbidden('Permission denied for viewing categories tree.');
         }
 
-        $includeInactive = filter_var($request->query('include_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $tree = $this->service->getCategoryTree($includeInactive);
+        $tree = $this->service->getCategoryTree();
 
         return response()->success(
             CategoryResource::collection($tree),
