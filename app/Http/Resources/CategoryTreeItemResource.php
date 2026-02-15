@@ -22,6 +22,7 @@ class CategoryTreeItemResource extends JsonResource
         return [
             'id' => (string) $this->id,
             'name' => $this->name,
+            'icon_url' => $this->icon_url,
             'children' => CategoryTreeItemResource::collection($this->whenLoaded('children')),
         ];
     }
