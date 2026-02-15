@@ -48,7 +48,7 @@ class UpdateCategoryRequest extends FormRequest
             'icon' => [
                 'nullable',
                 'image',
-                'mimes:jpeg,png,jpg,webp',
+                'mimes:jpeg,png,jpg,webp,svg',
                 'max:5120',
             ],
             'parent_id' => [
