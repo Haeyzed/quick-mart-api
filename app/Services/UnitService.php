@@ -70,9 +70,14 @@ class UnitService
     public function getBaseUnits(): Collection
     {
         return Unit::active()
+            ->select('id', 'name', 'code')
             ->whereNull('base_unit')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(fn(Unit $unit) => [
+                'value' => $unit->id,
+                'label' => "{$unit->name} ({$unit->code})",
+            ]);
     }
 
     /**

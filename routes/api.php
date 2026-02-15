@@ -115,7 +115,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('import', [UnitController::class, 'import'])->name('import');
         Route::post('export', [UnitController::class, 'export'])->name('export');
         Route::get('download', [UnitController::class, 'download'])->name('download');
+        Route::get('download', [UnitController::class, 'download'])->name('download');
         Route::get('options', [UnitController::class, 'options'])->name('options');
+        Route::get('base-units', [UnitController::class, 'getBaseUnits'])->name('base-units');
     });
     Route::apiResource('units', UnitController::class);
 
