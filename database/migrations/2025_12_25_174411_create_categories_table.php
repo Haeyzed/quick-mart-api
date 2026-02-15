@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('image')->nullable();
             $table->string('image_url')->nullable();
+            $table->string('icon_url')->nullable();
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->string('page_title')->nullable();
             $table->text('short_description')->nullable();
