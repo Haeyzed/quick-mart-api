@@ -1,0 +1,21 @@
+name,phone,email,address,is_active
+Main Warehouse,+1234567890,warehouse@example.com,123 Main St,1
+Secondary Warehouse,+0987654321,secondary@example.com,456 Oak Ave,1
+Central Distribution Hub,+1122334455,central@example.com,12 Industrial Road,1
+Lagos Mainland Warehouse,+2348010000001,lagosmain@example.com,45 Ikorodu Road Lagos,1
+Lagos Island Warehouse,+2348010000002,lagosisland@example.com,22 Marina Lagos,1
+Abuja Central Warehouse,+2348010000003,abuja@example.com,10 Garki District Abuja,1
+Port Harcourt Depot,+2348010000004,ph@example.com,18 Aba Road Port Harcourt,1
+Kano Storage Facility,+2348010000005,kano@example.com,55 Bompai Kano,1
+Ibadan Warehouse,+2348010000006,ibadan@example.com,7 Dugbe Road Ibadan,1
+Enugu Distribution Center,+2348010000007,enugu@example.com,9 Ogui Road Enugu,1
+Kaduna Logistics Hub,+2348010000008,kaduna@example.com,21 Ahmadu Bello Way Kaduna,1
+Benin City Warehouse,+2348010000009,benin@example.com,14 Ring Road Benin City,1
+Jos Storage Depot,+2348010000010,jos@example.com,33 Terminus Market Jos,1
+Ilorin Warehouse,+2348010000011,ilorin@example.com,5 Unity Road Ilorin,1
+Abeokuta Warehouse,+2348010000012,abeokuta@example.com,19 Sapon Abeokuta,1
+Onitsha Distribution Hub,+2348010000013,onitsha@example.com,8 Upper Iweka Onitsha,1
+Uyo Warehouse,+2348010000014,uyo@example.com,16 Aka Road Uyo,1
+Owerri Logistics Center,+2348010000015,owerri@example.com,11 Wetheral Road Owerri,1
+Asaba Warehouse,+2348010000016,asaba@example.com,6 Nnebisi Road Asaba,1
+Maiduguri Storage Facility,+2348010000017,maiduguri@example.com,4 Baga Road Maiduguri,1
