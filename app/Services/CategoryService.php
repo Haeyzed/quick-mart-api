@@ -53,7 +53,7 @@ class CategoryService
     {
         return Category::query()
             ->whereNull('parent_id')
-            ->with('children:id,name')
+            ->with('childrenRecursive')
             ->active()
             ->orderBy('name')
             ->get();
