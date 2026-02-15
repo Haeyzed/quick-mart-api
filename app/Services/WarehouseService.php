@@ -56,10 +56,7 @@ class WarehouseService
     }
 
     /**
-     * Get list of warehouse options.
-     * Returns value/label format for select/combobox components.
-     *
-     * @return Collection<int, array{value: int, label: string}>
+     * Get list of unit options (value/label format).
      */
     public function getOptions(): Collection
     {

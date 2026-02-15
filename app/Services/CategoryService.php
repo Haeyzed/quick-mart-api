@@ -77,19 +77,19 @@ class CategoryService
     {
         return Category::query()
             ->whereNull('parent_id')
-            ->with('children')
+            ->with([
+                'parent:id,name',
+                'children' => $this->childrenTreeLoader(0),
+            ])
             ->active()
             ->orderBy('name')
             ->get();
     }
 
     /**
-     * Get list of potential parent categories.
-     * Returns value/label format for select/combobox components.
-     *
-     * @return \Illuminate\Support\Collection<int, array{value: int, label: string}>
+     * Get list of unit options (value/label format).
      */
-    public function getParentOptions(): Collection
+    public function getOptions(): Collection
     {
         return Category::active()
             ->select('id', 'name')

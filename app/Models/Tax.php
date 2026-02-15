@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +15,7 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Tax Model
+ * Class Tax
  *
  * Represents a tax rate configuration.
  *
@@ -26,14 +26,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $woocommerce_tax_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read string $status
- * @property-read Collection<int, Product> $products
+ * @property Carbon|null $deleted_at
  *
+ * @method static Builder|Tax newModelQuery()
+ * @method static Builder|Tax newQuery()
+ * @method static Builder|Tax query()
  * @method static Builder|Tax active()
+ * @method static Builder|Tax filter(array $filters)
  */
 class Tax extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
 
     /**
      * The attributes that are mass assignable.
@@ -48,13 +51,39 @@ class Tax extends Model implements AuditableContract
     ];
 
     /**
-     * Get the products using this tax.
+     * The attributes that should be cast.
      *
-     * @return HasMany<Product>
+     * @var array<string, string>
      */
-    public function products(): HasMany
+    protected $casts = [
+        'rate' => 'float',
+        'is_active' => 'boolean',
+        'woocommerce_tax_id' => 'integer',
+    ];
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->hasMany(Product::class);
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn(Builder $q) => $q->active()
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn(Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 
     /**
@@ -67,6 +96,9 @@ class Tax extends Model implements AuditableContract
 
     /**
      * Scope a query to only include active taxes.
+     *
+     * @param Builder $query
+     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -74,24 +106,12 @@ class Tax extends Model implements AuditableContract
     }
 
     /**
-     * Get the human-readable status.
-     */
-    public function getStatusAttribute(): string
-    {
-        return $this->is_active ? 'active' : 'inactive';
-    }
-
-    /**
-     * Get the attributes that should be cast.
+     * Get the products using this tax.
      *
-     * @return array<string, string>
+     * @return HasMany
      */
-    protected function casts(): array
+    public function products(): HasMany
     {
-        return [
-            'rate' => 'float',
-            'is_active' => 'boolean',
-            'woocommerce_tax_id' => 'integer',
-        ];
+        return $this->hasMany(Product::class);
     }
 }

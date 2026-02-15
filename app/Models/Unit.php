@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +16,7 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Unit Model
+ * Class Unit
  *
  * Represents a measurement unit with support for base unit conversion.
  *
@@ -29,16 +29,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read string $status
- * @property-read Unit|null $baseUnitRelation
- * @property-read Collection<int, Unit> $subUnits
- * @property-read Collection<int, Product> $products
+ * @property Carbon|null $deleted_at
  *
+ * @method static Builder|Unit newModelQuery()
+ * @method static Builder|Unit newQuery()
+ * @method static Builder|Unit query()
  * @method static Builder|Unit active()
+ * @method static Builder|Unit filter(array $filters)
  */
 class Unit extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
 
     /**
      * The attributes that are mass assignable.
@@ -55,59 +56,40 @@ class Unit extends Model implements AuditableContract
     ];
 
     /**
-     * Get the base unit for this unit.
+     * The attributes that should be cast.
      *
-     * @return BelongsTo<Unit, self>
+     * @var array<string, string>
      */
-    public function baseUnitRelation(): BelongsTo
-    {
-        return $this->belongsTo(Unit::class, 'base_unit');
-    }
+    protected $casts = [
+        'base_unit' => 'integer',
+        'operation_value' => 'float',
+        'is_active' => 'boolean',
+    ];
 
     /**
-     * Get the sub-units that use this unit as base.
-     *
-     * @return HasMany<Unit>
+     * Scope a query to apply filters.
      */
-    public function subUnits(): HasMany
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->hasMany(Unit::class, 'base_unit');
-    }
-
-    /**
-     * Get the products using this unit.
-     *
-     * @return HasMany<Product>
-     */
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class);
-    }
-
-    /**
-     * Convert a value from this unit to base unit.
-     */
-    public function convertToBase(float $value): float
-    {
-        if ($this->isBaseUnit()) {
-            return $value;
-        }
-
-        return match ($this->operator) {
-            '*' => $value * ($this->operation_value ?? 1),
-            '/' => $value / ($this->operation_value ?? 1),
-            '+' => $value + ($this->operation_value ?? 0),
-            '-' => $value - ($this->operation_value ?? 0),
-            default => $value,
-        };
-    }
-
-    /**
-     * Check if this is a base unit.
-     */
-    public function isBaseUnit(): bool
-    {
-        return $this->base_unit === null;
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn(Builder $q) => $q->active()
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn(Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('code', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 
     /**
@@ -119,24 +101,26 @@ class Unit extends Model implements AuditableContract
     }
 
     /**
-     * Get the human-readable status.
+     * Get the base unit for this unit.
      */
-    public function getStatusAttribute(): string
+    public function baseUnitRelation(): BelongsTo
     {
-        return $this->is_active ? 'active' : 'inactive';
+        return $this->belongsTo(Unit::class, 'base_unit');
     }
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Get the sub-units that use this unit as base.
      */
-    protected function casts(): array
+    public function subUnits(): HasMany
     {
-        return [
-            'base_unit' => 'integer',
-            'operation_value' => 'float',
-            'is_active' => 'boolean',
-        ];
+        return $this->hasMany(Unit::class, 'base_unit');
+    }
+
+    /**
+     * Get the products using this unit.
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

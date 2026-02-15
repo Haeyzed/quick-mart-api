@@ -7,24 +7,28 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
-use App\Http\Requests\Units\UnitBulkDestroyRequest;
-use App\Http\Requests\Units\UnitBulkUpdateRequest;
-use App\Http\Requests\Units\UnitIndexRequest;
-use App\Http\Requests\Units\UnitRequest;
+use App\Http\Requests\Units\StoreUnitRequest;
+use App\Http\Requests\Units\UpdateUnitRequest;
+use App\Http\Requests\Units\UnitBulkActionRequest;
 use App\Http\Resources\UnitResource;
+use App\Mail\ExportMail;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\UnitService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * API Controller for Unit CRUD and bulk operations.
+ * Class UnitController
  *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
- * import, and export. All responses use the ResponseServiceProvider macros.
+ * API Controller for Unit CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to UnitService.
  *
  * @group Unit Management
  */
@@ -32,8 +36,6 @@ class UnitController extends Controller
 {
     /**
      * UnitController constructor.
-     *
-     * @param UnitService $service
      */
     public function __construct(
         private readonly UnitService $service
@@ -43,33 +45,57 @@ class UnitController extends Controller
 
     /**
      * Display a paginated listing of units.
-     *
-     * @param UnitIndexRequest $request Validated query params: per_page, page, status, search.
-     * @return JsonResponse Paginated units with meta and links.
      */
-    public function index(UnitIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $units = $this->service->getUnits(
-            $request->validated(),
+        if (auth()->user()->denies('view units')) {
+            return response()->forbidden('Permission denied for viewing units list.');
+        }
+
+        $units = $this->service->getPaginatedUnits(
+            $request->all(),
             (int)$request->input('per_page', 10)
         );
 
-        $units->through(fn(Unit $unit) => new UnitResource($unit));
-
         return response()->success(
-            $units,
-            'Units fetched successfully'
+            UnitResource::collection($units),
+            'Units retrieved successfully'
         );
     }
 
     /**
-     * Store a newly created unit.
-     *
-     * @param UnitRequest $request Validated unit attributes.
-     * @return JsonResponse Created unit with 201 status.
+     * Get unit options for select components.
      */
-    public function store(UnitRequest $request): JsonResponse
+    public function options(): JsonResponse
     {
+        if (auth()->user()->denies('view units')) {
+            return response()->forbidden('Permission denied for viewing unit options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Unit options retrieved successfully');
+    }
+
+    /**
+     * Get active base units.
+     */
+    public function getBaseUnits(): JsonResponse
+    {
+        if (auth()->user()->denies('view units')) {
+            return response()->forbidden('Permission denied for viewing base units.');
+        }
+
+        return response()->success($this->service->getBaseUnits(), 'Base units retrieved successfully');
+    }
+
+    /**
+     * Store a newly created unit.
+     */
+    public function store(StoreUnitRequest $request): JsonResponse
+    {
+        if (auth()->user()->denies('create units')) {
+            return response()->forbidden('Permission denied for create unit.');
+        }
+
         $unit = $this->service->createUnit($request->validated());
 
         return response()->success(
@@ -81,48 +107,28 @@ class UnitController extends Controller
 
     /**
      * Display the specified unit.
-     *
-     * Requires units-index permission. Returns the unit as a resource.
-     *
-     * @param Unit $unit The unit instance resolved via route model binding.
-     * @return JsonResponse
      */
     public function show(Unit $unit): JsonResponse
     {
-        $unit = $this->service->getUnit($unit);
+        if (auth()->user()->denies('view unit details')) {
+            return response()->forbidden('Permission denied for view unit.');
+        }
 
         return response()->success(
-            new UnitResource($unit),
+            new UnitResource($unit->fresh('baseUnitRelation')),
             'Unit retrieved successfully'
         );
     }
 
     /**
-     * Get all active base units (for dropdown selection).
-     *
-     * @return JsonResponse
-     */
-    public function getBaseUnits(): JsonResponse
-    {
-        $baseUnits = $this->service->getBaseUnits()
-            ->map(fn(Unit $unit) => [
-                'value' => $unit->id,
-                'label' => $unit->name . ' (' . $unit->code . ')',
-                'code' => $unit->code,
-            ]);
-
-        return response()->success($baseUnits, 'Base units fetched successfully');
-    }
-
-    /**
      * Update the specified unit.
-     *
-     * @param UnitRequest $request Validated unit attributes.
-     * @param Unit $unit The unit instance to update.
-     * @return JsonResponse Updated unit.
      */
-    public function update(UnitRequest $request, Unit $unit): JsonResponse
+    public function update(UpdateUnitRequest $request, Unit $unit): JsonResponse
     {
+        if (auth()->user()->denies('update units')) {
+            return response()->forbidden('Permission denied for update unit.');
+        }
+
         $updatedUnit = $this->service->updateUnit($unit, $request->validated());
 
         return response()->success(
@@ -132,26 +138,28 @@ class UnitController extends Controller
     }
 
     /**
-     * Remove the specified unit (soft delete).
-     *
-     * @param Unit $unit The unit instance to delete.
-     * @return JsonResponse Success message.
+     * Remove the specified unit.
      */
     public function destroy(Unit $unit): JsonResponse
     {
+        if (auth()->user()->denies('delete units')) {
+            return response()->forbidden('Permission denied for delete unit.');
+        }
+
         $this->service->deleteUnit($unit);
 
         return response()->success(null, 'Unit deleted successfully');
     }
 
     /**
-     * Bulk delete units (soft delete). Skips units with products or sub-units.
-     *
-     * @param UnitBulkDestroyRequest $request Validated ids array.
-     * @return JsonResponse Deleted count and message.
+     * Bulk delete units.
      */
-    public function bulkDestroy(UnitBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(UnitBulkActionRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('delete units')) {
+            return response()->forbidden('Permission denied for bulk delete units.');
+        }
+
         $count = $this->service->bulkDeleteUnits($request->validated()['ids']);
 
         return response()->success(
@@ -161,75 +169,123 @@ class UnitController extends Controller
     }
 
     /**
-     * Bulk activate units by ID.
-     *
-     * @param UnitBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Activated count and message.
+     * Bulk activate units.
      */
-    public function bulkActivate(UnitBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(UnitBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateUnits($request->validated()['ids']);
+        if (auth()->user()->denies('update units')) {
+            return response()->forbidden('Permission denied for bulk update units.');
+        }
 
-        return response()->success(['activated_count' => $count], "{$count} units activated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} units activated"
+        );
     }
 
     /**
-     * Bulk deactivate units by ID.
-     *
-     * @param UnitBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Deactivated count and message.
+     * Bulk deactivate units.
      */
-    public function bulkDeactivate(UnitBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(UnitBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateUnits($request->validated()['ids']);
+        if (auth()->user()->denies('update units')) {
+            return response()->forbidden('Permission denied for bulk update units.');
+        }
 
-        return response()->success(['deactivated_count' => $count], "{$count} units deactivated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} units deactivated"
+        );
     }
 
     /**
-     * Import units from Excel/CSV file.
-     *
-     * @param ImportRequest $request Validated file upload.
-     * @return JsonResponse Success message.
+     * Import units from file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('import units')) {
+            return response()->forbidden('Permission denied for import units.');
+        }
+
         $this->service->importUnits($request->file('file'));
 
         return response()->success(null, 'Units imported successfully');
     }
 
     /**
-     * Export units to Excel or PDF.
-     *
-     * Supports download or email delivery based on method.
-     *
-     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
-     * @return JsonResponse|BinaryFileResponse Success message or file download.
+     * Export units to file.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
-        $validated = $request->validated();
-
-        $user = ($validated['method'] === 'email')
-            ? User::findOrFail($validated['user_id'])
-            : null;
-
-        $filePath = $this->service->exportUnits(
-            $validated['ids'] ?? [],
-            $validated['format'],
-            $user,
-            $validated['columns'] ?? [],
-            $validated['method']
-        );
-
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
-            );
+        if (auth()->user()->denies('export units')) {
+            return response()->forbidden('Permission denied for export units.');
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        $validated = $request->validated();
+
+        $path = $this->service->generateExportFile(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $validated['columns'] ?? [],
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
+        );
+
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (!$user) {
+                return response()->error('User not found for email delivery.');
+            }
+
+            $mailSetting = MailSetting::default()->first();
+            if (!$mailSetting) {
+                return response()->error('System mail settings are not configured. Cannot send email.');
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'units_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Unit Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
+        }
+
+        return response()->error('Invalid export method provided.');
+    }
+
+    /**
+     * Download unit import template.
+     */
+    public function download(): JsonResponse|BinaryFileResponse
+    {
+        if (auth()->user()->denies('import units')) {
+            return response()->forbidden('Permission denied for downloading template.');
+        }
+
+        $path = $this->service->download();
+
+        return response()->download($path, basename($path), ['Content-Type' => 'text/csv']);
     }
 }
-

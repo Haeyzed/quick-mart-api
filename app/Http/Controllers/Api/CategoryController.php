@@ -20,10 +20,11 @@ use App\Models\User;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
  * Class CategoryController
@@ -59,6 +60,24 @@ class CategoryController extends Controller
     }
 
     /**
+     * Get list of category options.
+     * Returns value/label format for select/combobox components.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getOptions(): Collection
+    {
+        return Category::active()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(Category $category) => [
+                'value' => $category->id,
+                'label' => $category->name,
+            ]);
+    }
+
+    /**
      * Display a tree-view listing of categories.
      */
     public function tree(): JsonResponse
@@ -76,6 +95,18 @@ class CategoryController extends Controller
     }
 
     /**
+     * Get category options for select components.
+     */
+    public function options(): JsonResponse
+    {
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing categories options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Category options retrieved successfully');
+    }
+
+    /**
      * Store a newly created category.
      */
     public function store(StoreCategoryRequest $request): JsonResponse
@@ -89,7 +120,7 @@ class CategoryController extends Controller
         return response()->success(
             new CategoryResource($category),
             'Category created successfully',
-            Response::HTTP_CREATED
+            ResponseAlias::HTTP_CREATED
         );
     }
 
@@ -157,19 +188,6 @@ class CategoryController extends Controller
         $this->service->deleteCategory($category);
 
         return response()->success(null, 'Category deleted successfully');
-    }
-
-    /**
-     * Get parent category options.
-     */
-    public function parents(): JsonResponse
-    {
-        if (auth()->user()->denies('view categories')) {
-            return response()->forbidden('Permission denied for viewing categories list.');
-        }
-
-            return response()->success($this->service->getParentOptions(), 'Parent categories retrieved successfully'
-        );
     }
 
     /**
@@ -376,7 +394,7 @@ class CategoryController extends Controller
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
-        if (auth()->user()->denies('import brands')) {
+        if (auth()->user()->denies('import categories')) {
             return response()->forbidden('Permission denied for downloading categories import template.');
         }
 

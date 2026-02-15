@@ -75,7 +75,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // All other API routes require authentication
 
-    // Brand Routes
     Route::prefix('brands')->name('brands.')->group(function () {
         Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
@@ -87,7 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('brands', BrandController::class);
 
-// Warehouse Routes (Revamped to follow Brand pattern)
     Route::prefix('warehouses')->name('warehouses.')->group(function () {
         Route::post('bulk-destroy', [WarehouseController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [WarehouseController::class, 'bulkActivate'])->name('bulk-activate');
@@ -98,6 +96,28 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [WarehouseController::class, 'options'])->name('options');
     });
     Route::apiResource('warehouses', WarehouseController::class);
+
+    Route::prefix('taxes')->name('taxes.')->group(function () {
+        Route::post('bulk-destroy', [TaxController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [TaxController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [TaxController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [TaxController::class, 'import'])->name('import');
+        Route::post('export', [TaxController::class, 'export'])->name('export');
+        Route::get('download', [TaxController::class, 'download'])->name('download');
+        Route::get('options', [TaxController::class, 'options'])->name('options');
+    });
+    Route::apiResource('taxes', TaxController::class);
+
+    Route::prefix('units')->name('units.')->group(function () {
+        Route::post('bulk-destroy', [UnitController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [UnitController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [UnitController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [UnitController::class, 'import'])->name('import');
+        Route::post('export', [UnitController::class, 'export'])->name('export');
+        Route::get('download', [UnitController::class, 'download'])->name('download');
+        Route::get('options', [UnitController::class, 'options'])->name('options');
+    });
+    Route::apiResource('units', UnitController::class);
 
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::post('bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('bulk-destroy');
@@ -110,8 +130,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('import', [CategoryController::class, 'import'])->name('import');
         Route::post('export', [CategoryController::class, 'export'])->name('export');
         Route::get('download', [CategoryController::class, 'download'])->name('download');
-        Route::get('parents', [CategoryController::class, 'parents'])->name('parents');
         Route::get('tree', [CategoryController::class, 'tree']);
+        Route::get('options', [CategoryController::class, 'options'])->name('options');
         Route::patch('{category}/reparent', [CategoryController::class, 'reparent'])->name('reparent');
     });
     Route::apiResource('categories', CategoryController::class);
@@ -133,45 +153,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('billers', BillerController::class);
     });
 
-    Route::get('units/base-units', [UnitController::class, 'getBaseUnits'])
-        ->name('units.baseUnits');
-    Route::patch('units/bulk-activate', [UnitController::class, 'bulkActivate'])
-        ->name('units.bulkActivate');
-    Route::patch('units/bulk-deactivate', [UnitController::class, 'bulkDeactivate'])
-        ->name('units.bulkDeactivate');
-    Route::delete('units/bulk-destroy', [UnitController::class, 'bulkDestroy'])
-        ->name('units.bulkDestroy');
-    Route::post('units/import', [UnitController::class, 'import'])
-        ->name('units.import');
-    Route::post('units/export', [UnitController::class, 'export'])
-        ->name('units.export');
-    Route::apiResource('units', UnitController::class);
-
-    Route::patch('taxes/bulk-activate', [TaxController::class, 'bulkActivate'])
-        ->name('taxes.bulkActivate');
-    Route::patch('taxes/bulk-deactivate', [TaxController::class, 'bulkDeactivate'])
-        ->name('taxes.bulkDeactivate');
-    Route::delete('taxes/bulk-destroy', [TaxController::class, 'bulkDestroy'])
-        ->name('taxes.bulkDestroy');
-    Route::post('taxes/import', [TaxController::class, 'import'])
-        ->name('taxes.import');
-    Route::post('taxes/export', [TaxController::class, 'export'])
-        ->name('taxes.export');
-    Route::apiResource('taxes', TaxController::class);
-
-    Route::patch('warehouses/bulk-activate', [WarehouseController::class, 'bulkActivate'])
-        ->name('warehouses.bulkActivate');
-    Route::patch('warehouses/bulk-deactivate', [WarehouseController::class, 'bulkDeactivate'])
-        ->name('warehouses.bulkDeactivate');
-    Route::delete('warehouses/bulk-destroy', [WarehouseController::class, 'bulkDestroy'])
-        ->name('warehouses.bulkDestroy');
-    Route::post('warehouses/import', [WarehouseController::class, 'import'])
-        ->name('warehouses.import');
-    Route::post('warehouses/export', [WarehouseController::class, 'export'])
-        ->name('warehouses.export');
-    Route::get('warehouses/all/active', [WarehouseController::class, 'getAllActive'])
-        ->name('warehouses.all-active');
-    Route::apiResource('warehouses', WarehouseController::class);
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');

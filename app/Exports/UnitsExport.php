@@ -12,91 +12,79 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Excel export for Unit entities.
- *
- * Exports units by ID or all when ids is empty. Supports column selection.
- * Uses query-based chunking for memory efficiency.
- */
+ * */
 class UnitsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
     /**
-     * Create a new UnitsExport instance.
      *
-     * @param array<int> $ids Unit IDs to export. Empty array exports all.
-     * @param array<string> $columns Column keys to include. Empty uses defaults.
+     */
+    private const DEFAULT_COLUMNS = [
+        'id',
+        'code',
+        'name',
+        'base_unit_name',
+        'operator',
+        'operation_value',
+        'is_active',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array<string> $filters
      */
     public function __construct(
         private readonly array $ids = [],
-        private readonly array $columns = []
+        private readonly array $columns = [],
+        private readonly array $filters = [],
     )
     {
     }
 
     /**
-     * Build the query for the export.
-     *
-     * @return Builder<Unit>
+     * @return Builder
      */
     public function query(): Builder
     {
         return Unit::query()
             ->with('baseUnitRelation:id,code,name')
             ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->filter($this->filters)
             ->orderBy('code');
     }
 
     /**
-     * Get the column headings for the export.
-     *
-     * @return array<string> Column header labels.
+     * @return array
      */
     public function headings(): array
     {
-        $labelMap = [
-            'id' => 'ID',
-            'code' => 'Code',
-            'name' => 'Name',
-            'base_unit_name' => 'Base Unit',
-            'operator' => 'Operator',
-            'operation_value' => 'Operation Value',
-            'is_active' => 'Status',
-            'created_at' => 'Date Created',
-            'updated_at' => 'Last Updated',
-        ];
-
-        if (empty($this->columns)) {
-            return array_values($labelMap);
-        }
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
-            $this->columns
+            fn(string $col) => ucfirst(str_replace('_', ' ', $col)),
+            $columns
         );
     }
 
     /**
-     * Map a unit model to an export row.
-     *
-     * @param Unit $unit The unit instance to map.
-     * @return array<string|int|float|null> Row data matching the headings order.
+     * @param Unit $row
      */
-    public function map($unit): array
+    public function map($row): array
     {
-        /** @var Unit $unit */
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        $columnsToExport = $this->columns ?: [
-            'id', 'code', 'name', 'base_unit_name', 'operator', 'operation_value',
-            'is_active', 'created_at', 'updated_at',
-        ];
-
-        return array_map(fn($col) => match ($col) {
-            'base_unit_name' => $unit->baseUnitRelation?->name ?? '',
-            'is_active' => $unit->is_active ? 'Active' : 'Inactive',
-            'created_at' => $unit->created_at?->toDateTimeString(),
-            'updated_at' => $unit->updated_at?->toDateTimeString(),
-            default => $unit->{$col} ?? '',
-        }, $columnsToExport);
+        return array_map(function ($col) use ($row) {
+            return match ($col) {
+                'base_unit_name' => $row->baseUnitRelation?->name ?? 'Base',
+                'is_active' => $row->is_active ? 'Active' : 'Inactive',
+                'created_at' => $row->created_at?->toDateTimeString(),
+                'updated_at' => $row->updated_at?->toDateTimeString(),
+                default => $row->{$col} ?? '',
+            };
+        }, $columns);
     }
 }

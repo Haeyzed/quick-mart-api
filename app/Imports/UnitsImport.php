@@ -5,79 +5,91 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Unit;
-use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Row;
 
 /**
- * Excel/CSV import for Unit entities.
- *
- * Uses upsert logic: creates new units or updates existing ones by code.
- * Base unit lookup by code. Skips empty rows.
+ * Excel/CSV import for Unit entities with batching and upsert support.
  */
-class UnitsImport implements OnEachRow, WithHeadingRow, SkipsEmptyRows, WithValidation
+class UnitsImport implements
+    ToModel,
+    WithHeadingRow,
+    WithValidation,
+    WithUpserts,
+    WithBatchInserts,
+    WithChunkReading,
+    SkipsEmptyRows
 {
     /**
-     * Process a single row from the import file.
-     *
-     * Skips rows with empty code. Uses updateOrCreate on code for upsert behavior.
-     *
-     * @param Row $row The current row being imported.
+     * @param array<string, mixed> $row
+     * @return Unit|null
      */
-    public function onRow(Row $row): void
+    public function model(array $row): ?Unit
     {
-        $data = $row->toArray();
-        $code = trim((string)($data['code'] ?? ''));
+        $code = trim((string)($row['code'] ?? ''));
 
         if ($code === '') {
-            return;
+            return null;
         }
-
-        $name = trim((string)($data['name'] ?? ''));
-        $baseUnitCode = trim((string)($data['baseunit'] ?? ''));
-        $operator = trim((string)($data['operator'] ?? '*'));
-        $operationValue = !empty($data['operationvalue'] ?? null) ? (float)$data['operationvalue'] : 1.0;
 
         $baseUnitId = null;
+        $baseUnitCode = trim((string)($row['base_unit_code'] ?? ''));
+
         if ($baseUnitCode !== '') {
-            $baseUnit = Unit::where('code', $baseUnitCode)->first();
-            if ($baseUnit) {
-                $baseUnitId = $baseUnit->id;
-            }
+            $baseUnitId = Unit::where('code', $baseUnitCode)->value('id');
         }
 
-        if ($baseUnitId === null) {
-            $operator = '*';
-            $operationValue = 1;
-        }
-
-        Unit::updateOrCreate(
-            ['code' => $code],
-            [
-                'name' => $name ?: $code,
-                'base_unit' => $baseUnitId,
-                'operator' => $operator,
-                'operation_value' => $operationValue,
-                'is_active' => true,
-            ]
-        );
+        return new Unit([
+            'code' => $code,
+            'name' => trim((string)($row['name'] ?? $code)),
+            'base_unit' => $baseUnitId,
+            'operator' => $row['operator'] ?? ($baseUnitId ? '*' : null),
+            'operation_value' => isset($row['operation_value']) ? (float)$row['operation_value'] : ($baseUnitId ? 1.0 : null),
+            'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
+        ]);
     }
 
     /**
-     * Get validation rules for each row.
-     *
-     * @return array<string, array<int, string>> Validation rules keyed by column heading.
+     * @return string
+     */
+    public function uniqueBy(): string
+    {
+        return 'code';
+    }
+
+    /**
+     * @return array[]
      */
     public function rules(): array
     {
         return [
             'code' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
-            'baseunit' => ['nullable', 'string', 'max:255'],
+            'base_unit_code' => ['nullable', 'string', 'exists:units,code'],
             'operator' => ['nullable', 'string', 'in:*,/,+,-'],
-            'operationvalue' => ['nullable', 'numeric', 'min:0'],
+            'operation_value' => ['nullable', 'numeric', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+
+    /**
+     * @return int
+     */
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

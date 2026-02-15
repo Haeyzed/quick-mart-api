@@ -7,24 +7,28 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
-use App\Http\Requests\Taxes\TaxBulkDestroyRequest;
-use App\Http\Requests\Taxes\TaxBulkUpdateRequest;
-use App\Http\Requests\Taxes\TaxIndexRequest;
-use App\Http\Requests\Taxes\TaxRequest;
+use App\Http\Requests\Taxes\StoreTaxRequest;
+use App\Http\Requests\Taxes\TaxBulkActionRequest;
+use App\Http\Requests\Taxes\UpdateTaxRequest;
 use App\Http\Resources\TaxResource;
+use App\Mail\ExportMail;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\Tax;
 use App\Models\User;
 use App\Services\TaxService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
- * API Controller for Tax CRUD and bulk operations.
+ * Class TaxController
  *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
- * import, and export. All responses use the ResponseServiceProvider macros.
+ * API Controller for Tax CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to TaxService.
  *
  * @group Tax Management
  */
@@ -32,8 +36,6 @@ class TaxController extends Controller
 {
     /**
      * TaxController constructor.
-     *
-     * @param TaxService $service
      */
     public function __construct(
         private readonly TaxService $service
@@ -43,69 +45,78 @@ class TaxController extends Controller
 
     /**
      * Display a paginated listing of taxes.
-     *
-     * @param TaxIndexRequest $request Validated query params: per_page, page, status, search.
-     * @return JsonResponse Paginated taxes with meta and links.
      */
-    public function index(TaxIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $taxes = $this->service->getTaxes(
-            $request->validated(),
+        if (auth()->user()->denies('view taxes')) {
+            return response()->forbidden('Permission denied for viewing taxes list.');
+        }
+
+        $taxes = $this->service->getPaginatedTaxes(
+            $request->all(),
             (int)$request->input('per_page', 10)
         );
 
-        $taxes->through(fn(Tax $tax) => new TaxResource($tax));
-
         return response()->success(
-            $taxes,
-            'Taxes fetched successfully'
+            TaxResource::collection($taxes),
+            'Taxes retrieved successfully'
         );
     }
 
     /**
-     * Store a newly created tax.
-     *
-     * @param TaxRequest $request Validated tax attributes.
-     * @return JsonResponse Created tax with 201 status.
+     * Get tax options for select components.
      */
-    public function store(TaxRequest $request): JsonResponse
+    public function options(): JsonResponse
     {
+        if (auth()->user()->denies('view taxes')) {
+            return response()->forbidden('Permission denied for viewing taxes options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Tax options retrieved successfully');
+    }
+
+    /**
+     * Store a newly created tax.
+     */
+    public function store(StoreTaxRequest $request): JsonResponse
+    {
+        if (auth()->user()->denies('create taxes')) {
+            return response()->forbidden('Permission denied for create tax.');
+        }
+
         $tax = $this->service->createTax($request->validated());
 
         return response()->success(
             new TaxResource($tax),
             'Tax created successfully',
-            Response::HTTP_CREATED
+            ResponseAlias::HTTP_CREATED
         );
     }
 
     /**
      * Display the specified tax.
-     *
-     * Requires taxes-index permission. Returns the tax as a resource.
-     *
-     * @param Tax $tax The tax instance resolved via route model binding.
-     * @return JsonResponse
      */
     public function show(Tax $tax): JsonResponse
     {
-        $tax = $this->service->getTax($tax);
+        if (auth()->user()->denies('view tax details')) {
+            return response()->forbidden('Permission denied for view tax.');
+        }
 
         return response()->success(
             new TaxResource($tax),
-            'Tax retrieved successfully'
+            'Tax details retrieved successfully'
         );
     }
 
     /**
      * Update the specified tax.
-     *
-     * @param TaxRequest $request Validated tax attributes.
-     * @param Tax $tax The tax instance to update.
-     * @return JsonResponse Updated tax.
      */
-    public function update(TaxRequest $request, Tax $tax): JsonResponse
+    public function update(UpdateTaxRequest $request, Tax $tax): JsonResponse
     {
+        if (auth()->user()->denies('update taxes')) {
+            return response()->forbidden('Permission denied for update tax.');
+        }
+
         $updatedTax = $this->service->updateTax($tax, $request->validated());
 
         return response()->success(
@@ -116,25 +127,27 @@ class TaxController extends Controller
 
     /**
      * Remove the specified tax (soft delete).
-     *
-     * @param Tax $tax The tax instance to delete.
-     * @return JsonResponse Success message.
      */
     public function destroy(Tax $tax): JsonResponse
     {
+        if (auth()->user()->denies('delete taxes')) {
+            return response()->forbidden('Permission denied for delete tax.');
+        }
+
         $this->service->deleteTax($tax);
 
         return response()->success(null, 'Tax deleted successfully');
     }
 
     /**
-     * Bulk delete taxes (soft delete). Skips taxes with products.
-     *
-     * @param TaxBulkDestroyRequest $request Validated ids array.
-     * @return JsonResponse Deleted count and message.
+     * Bulk delete taxes.
      */
-    public function bulkDestroy(TaxBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(TaxBulkActionRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('delete taxes')) {
+            return response()->forbidden('Permission denied for bulk delete taxes.');
+        }
+
         $count = $this->service->bulkDeleteTaxes($request->validated()['ids']);
 
         return response()->success(
@@ -144,39 +157,48 @@ class TaxController extends Controller
     }
 
     /**
-     * Bulk activate taxes by ID.
-     *
-     * @param TaxBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Activated count and message.
+     * Bulk activate taxes.
      */
-    public function bulkActivate(TaxBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(TaxBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateTaxes($request->validated()['ids']);
+        if (auth()->user()->denies('update taxes')) {
+            return response()->forbidden('Permission denied for bulk update taxes.');
+        }
 
-        return response()->success(['activated_count' => $count], "{$count} taxes activated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} taxes activated"
+        );
     }
 
     /**
-     * Bulk deactivate taxes by ID.
-     *
-     * @param TaxBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Deactivated count and message.
+     * Bulk deactivate taxes.
      */
-    public function bulkDeactivate(TaxBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(TaxBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateTaxes($request->validated()['ids']);
+        if (auth()->user()->denies('update taxes')) {
+            return response()->forbidden('Permission denied for bulk update taxes.');
+        }
 
-        return response()->success(['deactivated_count' => $count], "{$count} taxes deactivated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} taxes deactivated"
+        );
     }
 
     /**
-     * Import taxes from Excel/CSV file.
-     *
-     * @param ImportRequest $request Validated file upload.
-     * @return JsonResponse Success message.
+     * Import taxes from Excel/CSV.
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('import taxes')) {
+            return response()->forbidden('Permission denied for import taxes.');
+        }
+
         $this->service->importTaxes($request->file('file'));
 
         return response()->success(null, 'Taxes imported successfully');
@@ -184,34 +206,78 @@ class TaxController extends Controller
 
     /**
      * Export taxes to Excel or PDF.
-     *
-     * Supports download or email delivery based on method.
-     *
-     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
-     * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
-        $validated = $request->validated();
-
-        $user = ($validated['method'] === 'email')
-            ? User::findOrFail($validated['user_id'])
-            : null;
-
-        $filePath = $this->service->exportTaxes(
-            $validated['ids'] ?? [],
-            $validated['format'],
-            $user,
-            $validated['columns'] ?? [],
-            $validated['method']
-        );
-
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
-            );
+        if (auth()->user()->denies('export taxes')) {
+            return response()->forbidden('Permission denied for export taxes.');
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        $validated = $request->validated();
+
+        $path = $this->service->generateExportFile(
+            $validated['ids'] ?? [],
+            $validated['format'],
+            $validated['columns'] ?? [],
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
+        );
+
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (!$user) {
+                return response()->error('User not found for email delivery.');
+            }
+
+            $mailSetting = MailSetting::default()->first();
+            if (!$mailSetting) {
+                return response()->error('System mail settings are not configured. Cannot send email.');
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'taxes_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Tax Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
+        }
+
+        return response()->error('Invalid export method provided.');
+    }
+
+    /**
+     * Download taxes module import sample template.
+     */
+    public function download(): JsonResponse|BinaryFileResponse
+    {
+        if (auth()->user()->denies('import taxes')) {
+            return response()->forbidden('Permission denied for downloading taxes import template.');
+        }
+
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
+        );
     }
 }

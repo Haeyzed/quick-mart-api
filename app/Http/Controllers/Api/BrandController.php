@@ -19,10 +19,10 @@ use App\Models\User;
 use App\Services\BrandService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
  * Class BrandController
@@ -89,7 +89,7 @@ class BrandController extends Controller
         return response()->success(
             new BrandResource($brand),
             'Brand created successfully',
-            Response::HTTP_CREATED
+            ResponseAlias::HTTP_CREATED
         );
     }
 

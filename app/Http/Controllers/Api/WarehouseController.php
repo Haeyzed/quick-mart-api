@@ -19,10 +19,10 @@ use App\Models\Warehouse;
 use App\Services\WarehouseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
  * Class WarehouseController
@@ -89,7 +89,7 @@ class WarehouseController extends Controller
         return response()->success(
             new WarehouseResource($warehouse),
             'Warehouse created successfully',
-            Response::HTTP_CREATED
+            ResponseAlias::HTTP_CREATED
         );
     }
 
