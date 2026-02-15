@@ -42,7 +42,7 @@ class StoreCategoryRequest extends FormRequest
             ],
             'icon' => [
                 'nullable',
-                'image',
+                'file',
                 'mimes:jpeg,png,jpg,webp,svg',
                 'max:5120', // 5MB
             ],
