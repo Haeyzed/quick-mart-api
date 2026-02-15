@@ -44,11 +44,27 @@ class CategoryService
         return Category::query()
             ->with([
                 'parent:id,name',
-                'childrenRecursive',
+                'children' => $this->childrenTreeLoader(0),
             ])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
+    }
+
+    /**
+     * Recursive eager loader for children (up to 5 levels).
+     */
+    private function childrenTreeLoader(int $depth, int $maxDepth = 5): \Closure
+    {
+        return function ($query) use ($depth, $maxDepth) {
+            if ($depth >= $maxDepth) {
+                return;
+            }
+
+            $query->with([
+                'children' => $this->childrenTreeLoader($depth + 1, $maxDepth),
+            ]);
+        };
     }
 
     /**
@@ -58,7 +74,7 @@ class CategoryService
     {
         return Category::query()
             ->whereNull('parent_id')
-            ->with('childrenRecursive')
+            ->with('children')
             ->active()
             ->orderBy('name')
             ->get();
