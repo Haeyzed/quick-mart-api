@@ -39,8 +39,8 @@ class CategoriesImport implements
         }
 
         $parentId = null;
-        if (!empty($row['parentcategory'])) {
-            $parentName = trim((string)$row['parentcategory']);
+        if (!empty($row['parent_category'])) {
+            $parentName = trim((string)$row['parent_category']);
             $parent = Category::query()->firstOrCreate(
                 ['name' => $parentName],
                 ['is_active' => true]
@@ -77,7 +77,7 @@ class CategoriesImport implements
             'name'              => ['required', 'string', 'max:255'],
             'page_title'        => ['nullable', 'string', 'max:255'],
             'short_description' => ['nullable', 'string', 'max:1000'],
-            'parentcategory'    => ['nullable', 'string', 'max:255'],
+            'parent_category'    => ['nullable', 'string', 'max:255'],
             'is_active'         => ['nullable', 'boolean'],
             'featured'          => ['nullable', 'boolean'],
             'is_sync_disable'   => ['nullable', 'boolean'],

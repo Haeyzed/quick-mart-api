@@ -1,0 +1,94 @@
+name,slug,parent_category,page_title,short_description,featured,is_sync_disabled,is_active
+Electronics,electronics,,Electronics Store,All electronic products,1,0,1
+Mobile Phones,mobile-phones,Electronics,Mobile Phones,Smartphones and accessories,1,0,1
+Smartphones,smartphones,Mobile Phones,Smartphones,Latest smartphones,1,0,1
+Feature Phones,feature-phones,Mobile Phones,Feature Phones,Basic mobile phones,0,0,1
+Phone Accessories,phone-accessories,Mobile Phones,Phone Accessories,Cases chargers and more,0,0,1
+Laptops,laptops,Electronics,Laptops Shop,All laptop computers,1,0,1
+Gaming Laptops,gaming-laptops,Laptops,Gaming Laptops,High performance laptops,1,0,1
+Business Laptops,business-laptops,Laptops,Business Laptops,Professional laptops,0,0,1
+Laptop Accessories,laptop-accessories,Laptops,Laptop Accessories,Bags mice and keyboards,0,0,1
+Televisions,televisions,Electronics,Televisions,Smart and LED TVs,1,0,1
+Smart TVs,smart-tvs,Televisions,Smart TVs,Internet enabled TVs,1,0,1
+LED TVs,led-tvs,Televisions,LED TVs,Energy efficient televisions,0,0,1
+Audio,audio,Electronics,Audio Devices,Sound systems and speakers,1,0,1
+Headphones,headphones,Audio,Headphones,Wireless and wired headphones,1,0,1
+Speakers,speakers,Audio,Speakers,Portable speakers,0,0,1
+Home Appliances,home-appliances,,Home Appliances,Household electronics,1,0,1
+Refrigerators,refrigerators,Home Appliances,Refrigerators,Cooling appliances,1,0,1
+Washing Machines,washing-machines,Home Appliances,Washing Machines,Laundry appliances,0,0,1
+Microwaves,microwaves,Home Appliances,Microwaves,Kitchen heating appliances,0,0,1
+Air Conditioners,air-conditioners,Home Appliances,Air Conditioners,Cooling systems,1,0,1
+Fashion,fashion,,Fashion Store,Clothing and accessories,1,0,1
+Men's Fashion,mens-fashion,Fashion,Men Fashion,Men clothing styles,1,0,1
+Men Shirts,men-shirts,Men's Fashion,Men Shirts,Formal and casual shirts,0,0,1
+Men Trousers,men-trousers,Men's Fashion,Men Trousers,Men trousers collection,0,0,1
+Men Shoes,men-shoes,Men's Fashion,Men Shoes,Men footwear,1,0,1
+Women's Fashion,womens-fashion,Fashion,Women Fashion,Women clothing styles,1,0,1
+Dresses,dresses,Women's Fashion,Dresses,Women dresses,1,0,1
+Women Shoes,women-shoes,Women's Fashion,Women Shoes,Women footwear,0,0,1
+Handbags,handbags,Women's Fashion,Handbags,Fashion handbags,0,0,1
+Kids Fashion,kids-fashion,Fashion,Kids Fashion,Children clothing,0,0,1
+Baby Clothing,baby-clothing,Kids Fashion,Baby Clothing,Baby outfits,0,0,1
+Toys,toys,,Toys Store,Children toys,1,0,1
+Educational Toys,educational-toys,Toys,Educational Toys,Learning toys,1,0,1
+Action Figures,action-figures,Toys,Action Figures,Character toys,0,0,1
+Outdoor Toys,outdoor-toys,Toys,Outdoor Toys,Outdoor play items,0,0,1
+Sports,sports,,Sports Equipment,Sports gear and equipment,1,0,1
+Football,football,Sports,Football Equipment,Football gear,1,0,1
+Basketball,basketball,Sports,Basketball Gear,Basketball items,0,0,1
+Fitness,fitness,Sports,Fitness Equipment,Gym equipment,1,0,1
+Yoga,yoga,Fitness,Yoga Equipment,Yoga accessories,0,0,1
+Beauty,beauty,,Beauty Products,Beauty and cosmetics,1,0,1
+Skincare,skincare,Beauty,Skincare Products,Face and body care,1,0,1
+Makeup,makeup,Beauty,Makeup Products,Cosmetics collection,1,0,1
+Haircare,haircare,Beauty,Haircare Products,Hair treatments,0,0,1
+Health,health,,Health Products,Healthcare items,1,0,1
+Vitamins,vitamins,Health,Vitamins,Health supplements,0,0,1
+Medical Supplies,medical-supplies,Health,Medical Supplies,Healthcare essentials,0,1,1
+Groceries,groceries,,Groceries Store,Daily food items,1,0,1
+Beverages,beverages,Groceries,Beverages,Drinks and juices,1,0,1
+Snacks,snacks,Groceries,Snacks,Quick snacks,0,0,1
+Frozen Foods,frozen-foods,Groceries,Frozen Foods,Frozen meals,0,0,1
+Furniture,furniture,,Furniture Store,Home furniture,1,0,1
+Living Room,living-room,Furniture,Living Room Furniture,Sofas and tables,1,0,1
+Bedroom,bedroom,Furniture,Bedroom Furniture,Beds and wardrobes,1,0,1
+Office Furniture,office-furniture,Furniture,Office Furniture,Office desks and chairs,0,0,1
+Books,books,,Books Store,Books and literature,0,0,1
+Fiction,fiction,Books,Fiction Books,Story books,0,0,1
+Non Fiction,non-fiction,Books,Non Fiction Books,Educational reading,0,0,1
+Comics,comics,Books,Comics,Comic books,0,0,1
+Automotive,automotive,,Automotive Store,Car accessories,1,0,1
+Car Electronics,car-electronics,Automotive,Car Electronics,Vehicle gadgets,1,0,1
+Car Care,car-care,Automotive,Car Care,Car maintenance products,0,0,1
+Motorcycle Accessories,motorcycle-accessories,Automotive,Motorcycle Accessories,Bike accessories,0,0,1
+Pet Supplies,pet-supplies,,Pet Supplies,Pet products,1,0,1
+Dog Supplies,dog-supplies,Pet Supplies,Dog Supplies,Dog food and toys,1,0,1
+Cat Supplies,cat-supplies,Pet Supplies,Cat Supplies,Cat essentials,0,0,1
+Garden,garden,,Garden Supplies,Garden tools,0,0,1
+Plants,plants,Garden,Plants,Indoor and outdoor plants,0,0,1
+Tools,tools,,Tools Store,Construction tools,1,0,1
+Power Tools,power-tools,Tools,Power Tools,Electric tools,1,0,1
+Hand Tools,hand-tools,Tools,Hand Tools,Manual tools,0,0,1
+Stationery,stationery,,Stationery Shop,Office supplies,0,0,1
+Pens,pens,Stationery,Pens,Writing pens,0,0,1
+Notebooks,notebooks,Stationery,Notebooks,School notebooks,0,0,1
+Gaming,gaming,,Gaming Store,Video games and consoles,1,0,1
+Consoles,consoles,Gaming,Game Consoles,Playstation Xbox etc,1,0,1
+Video Games,video-games,Gaming,Video Games,Game titles,1,0,1
+Accessories,game-accessories,Gaming,Gaming Accessories,Controllers and gear,0,0,1
+Music,music,,Music Store,Music instruments,0,0,1
+Guitars,guitars,Music,Guitars,String instruments,0,0,1
+Keyboards,keyboards,Music,Keyboards,Electronic keyboards,0,0,1
+Cameras,cameras,,Cameras Store,Photography equipment,1,0,1
+DSLR Cameras,dslr-cameras,Cameras,DSLR Cameras,Professional cameras,1,0,1
+Camera Accessories,camera-accessories,Cameras,Camera Accessories,Lenses and tripods,0,0,1
+Travel,travel,,Travel Essentials,Travel products,0,0,1
+Luggage,luggage,Travel,Luggage,Bags and suitcases,0,0,1
+Travel Accessories,travel-accessories,Travel,Travel Accessories,Travel essentials,0,0,1
+Jewelry,jewelry,,Jewelry Store,Jewelry collections,1,0,1
+Necklaces,necklaces,Jewelry,Necklaces,Stylish necklaces,0,0,1
+Watches,watches,Jewelry,Watches,Luxury watches,1,0,1
+Smart Home,smart-home,,Smart Home Devices,Home automation,1,0,1
+Smart Lights,smart-lights,Smart Home,Smart Lights,Automated lighting,0,0,1
+Security Cameras,security-cameras,Smart Home,Security Cameras,Home surveillance,1,0,1

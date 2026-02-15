@@ -27,7 +27,6 @@ trait MailInfo
      */
     public function setMailInfo(MailSetting $mailSetting): void
     {
-        config()->set('mail.default', $mailSetting->driver);
         config()->set('mail.mailers.smtp.host', $mailSetting->host);
         config()->set('mail.mailers.smtp.port', $mailSetting->port);
         config()->set('mail.mailers.smtp.encryption', $mailSetting->encryption);
@@ -35,6 +34,11 @@ trait MailInfo
         config()->set('mail.mailers.smtp.password', $mailSetting->password);
         config()->set('mail.from.address', $mailSetting->from_address);
         config()->set('mail.from.name', $mailSetting->from_name);
+
+        // For Laravel 12, also set the default mailer if needed
+        if ($mailSetting->driver) {
+            config()->set('mail.default', $mailSetting->driver);
+        }
     }
 }
 
