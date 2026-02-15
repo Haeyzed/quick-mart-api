@@ -42,10 +42,29 @@ class CategoryService
     public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Category::query()
-            ->with(['parent:id,name', 'children'])
+            ->with([
+                'parent:id,name',
+                'children' => $this->childrenTreeLoader(0),
+            ])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
+    }
+
+    /**
+     * Recursive eager loader for children (up to 5 levels).
+     */
+    private function childrenTreeLoader(int $depth, int $maxDepth = 5): \Closure
+    {
+        return function ($query) use ($depth, $maxDepth) {
+            if ($depth >= $maxDepth) {
+                return;
+            }
+
+            $query->with([
+                'children' => $this->childrenTreeLoader($depth + 1, $maxDepth),
+            ]);
+        };
     }
 
     /**
