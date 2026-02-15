@@ -64,6 +64,18 @@ class BrandController extends Controller
     }
 
     /**
+     * Get brand options for select components.
+     */
+    public function options(): JsonResponse
+    {
+        if (auth()->user()->denies('view brands')) {
+            return response()->forbidden('Permission denied for viewing brands options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Brand options retrieved successfully');
+    }
+
+    /**
      * Store a newly created brand.
      */
     public function store(StoreBrandRequest $request): JsonResponse
@@ -193,24 +205,6 @@ class BrandController extends Controller
     }
 
     /**
-     * Download brands module import sample template.
-     */
-    public function download(): JsonResponse|BinaryFileResponse
-    {
-        if (auth()->user()->denies('import brands')) {
-            return response()->forbidden('Permission denied for downloading brands import template.');
-        }
-
-        $path = $this->service->download();
-
-        return response()->download(
-            $path,
-            basename($path),
-            ['Content-Type' => 'text/csv']
-        );
-    }
-
-    /**
      * Export brands to Excel or PDF.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
@@ -274,5 +268,23 @@ class BrandController extends Controller
         }
 
         return response()->error('Invalid export method provided.');
+    }
+
+    /**
+     * Download brands module import sample template.
+     */
+    public function download(): JsonResponse|BinaryFileResponse
+    {
+        if (auth()->user()->denies('import brands')) {
+            return response()->forbidden('Permission denied for downloading brands import template.');
+        }
+
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
+        );
     }
 }

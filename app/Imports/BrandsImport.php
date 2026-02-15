@@ -39,12 +39,12 @@ class BrandsImport implements
         }
 
         return new Brand([
-            'name'              => $name,
-            'slug'              => Str::slug($name),
-            'page_title'        => $row['page_title'] ?? null,
+            'name' => $name,
+            'slug' => Str::slug($name),
+            'page_title' => $row['page_title'] ?? null,
             'short_description' => $row['short_description'] ?? null,
-            'image_url'         => $row['image_url'] ?? null,
-            'is_active'         => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
+            'image_url' => $row['image_url'] ?? null,
+            'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
         ]);
     }
 
@@ -62,11 +62,11 @@ class BrandsImport implements
     public function rules(): array
     {
         return [
-            'name'              => ['required', 'string', 'max:255'],
-            'image_url'         => ['nullable', 'url'],
-            'page_title'        => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'image_url' => ['nullable', 'url'],
+            'page_title' => ['nullable', 'string', 'max:255'],
             'short_description' => ['nullable', 'string', 'max:1000'],
-            'is_active'         => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 

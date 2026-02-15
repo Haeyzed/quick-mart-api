@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 /**
  * Trait FilterableByDates

@@ -74,13 +74,13 @@ class CategoriesImport implements
     public function rules(): array
     {
         return [
-            'name'              => ['required', 'string', 'max:255'],
-            'page_title'        => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'page_title' => ['nullable', 'string', 'max:255'],
             'short_description' => ['nullable', 'string', 'max:1000'],
-            'parent_category'    => ['nullable', 'string', 'max:255'],
-            'is_active'         => ['nullable', 'boolean'],
-            'featured'          => ['nullable', 'boolean'],
-            'is_sync_disable'   => ['nullable', 'boolean'],
+            'parent_category' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+            'featured' => ['nullable', 'boolean'],
+            'is_sync_disable' => ['nullable', 'boolean'],
         ];
     }
 

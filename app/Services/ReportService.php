@@ -814,14 +814,14 @@ class ReportService
      */
     private function exportReportTable(
         Collection $rows,
-        array                          $columnLabels,
-        array                          $columns,
-        string                         $fileName,
-        string                         $reportTitle,
-        string                         $format,
-        ?User                          $user,
-        string                         $method,
-        ?array                         $rightAlignColumns = null
+        array      $columnLabels,
+        array      $columns,
+        string     $fileName,
+        string     $reportTitle,
+        string     $format,
+        ?User      $user,
+        string     $method,
+        ?array     $rightAlignColumns = null
     ): string
     {
         $ext = $format === 'pdf' ? 'pdf' : 'xlsx';

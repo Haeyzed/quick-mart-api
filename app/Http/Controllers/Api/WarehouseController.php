@@ -7,24 +7,28 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
-use App\Http\Requests\Warehouses\WarehouseBulkDestroyRequest;
-use App\Http\Requests\Warehouses\WarehouseBulkUpdateRequest;
-use App\Http\Requests\Warehouses\WarehouseIndexRequest;
-use App\Http\Requests\Warehouses\WarehouseRequest;
+use App\Http\Requests\Warehouses\StoreWarehouseRequest;
+use App\Http\Requests\Warehouses\UpdateWarehouseRequest;
+use App\Http\Requests\Warehouses\WarehouseBulkActionRequest;
 use App\Http\Resources\WarehouseResource;
+use App\Mail\ExportMail;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\WarehouseService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * API Controller for Warehouse CRUD and bulk operations.
+ * Class WarehouseController
  *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
- * import, and getAllActive. All responses use the ResponseServiceProvider macros.
+ * API Controller for Warehouse CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to WarehouseService.
  *
  * @group Warehouse Management
  */
@@ -32,8 +36,6 @@ class WarehouseController extends Controller
 {
     /**
      * WarehouseController constructor.
-     *
-     * @param WarehouseService $service
      */
     public function __construct(
         private readonly WarehouseService $service
@@ -43,33 +45,45 @@ class WarehouseController extends Controller
 
     /**
      * Display a paginated listing of warehouses.
-     *
-     * @param WarehouseIndexRequest $request Validated query params: per_page, page, status, search.
-     * @return JsonResponse Paginated warehouses with meta and links.
      */
-    public function index(WarehouseIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $warehouses = $this->service->getWarehouses(
-            $request->validated(),
+        if (auth()->user()->denies('view warehouses')) {
+            return response()->forbidden('Permission denied for viewing warehouses list.');
+        }
+
+        $warehouses = $this->service->getPaginatedWarehouses(
+            $request->all(),
             (int)$request->input('per_page', 10)
         );
 
-        $warehouses->through(fn(Warehouse $warehouse) => new WarehouseResource($warehouse));
-
         return response()->success(
-            $warehouses,
-            'Warehouses fetched successfully'
+            WarehouseResource::collection($warehouses),
+            'Warehouses retrieved successfully'
         );
     }
 
     /**
-     * Store a newly created warehouse.
-     *
-     * @param WarehouseRequest $request Validated warehouse attributes.
-     * @return JsonResponse Created warehouse with 201 status.
+     * Get warehouse options for select components.
      */
-    public function store(WarehouseRequest $request): JsonResponse
+    public function options(): JsonResponse
     {
+        if (auth()->user()->denies('view warehouses')) {
+            return response()->forbidden('Permission denied for viewing warehouses options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Warehouse options retrieved successfully');
+    }
+
+    /**
+     * Store a newly created warehouse.
+     */
+    public function store(StoreWarehouseRequest $request): JsonResponse
+    {
+        if (auth()->user()->denies('create warehouses')) {
+            return response()->forbidden('Permission denied for create warehouse.');
+        }
+
         $warehouse = $this->service->createWarehouse($request->validated());
 
         return response()->success(
@@ -81,29 +95,28 @@ class WarehouseController extends Controller
 
     /**
      * Display the specified warehouse.
-     *
-     * @param Warehouse $warehouse The warehouse instance resolved via route model binding.
-     * @return JsonResponse
      */
     public function show(Warehouse $warehouse): JsonResponse
     {
-        $warehouse = $this->service->getWarehouse($warehouse);
+        if (auth()->user()->denies('view warehouse details')) {
+            return response()->forbidden('Permission denied for view warehouse.');
+        }
 
         return response()->success(
             new WarehouseResource($warehouse),
-            'Warehouse retrieved successfully'
+            'Warehouse details retrieved successfully'
         );
     }
 
     /**
      * Update the specified warehouse.
-     *
-     * @param WarehouseRequest $request Validated warehouse attributes.
-     * @param Warehouse $warehouse The warehouse instance to update.
-     * @return JsonResponse Updated warehouse.
      */
-    public function update(WarehouseRequest $request, Warehouse $warehouse): JsonResponse
+    public function update(UpdateWarehouseRequest $request, Warehouse $warehouse): JsonResponse
     {
+        if (auth()->user()->denies('update warehouses')) {
+            return response()->forbidden('Permission denied for update warehouse.');
+        }
+
         $updatedWarehouse = $this->service->updateWarehouse($warehouse, $request->validated());
 
         return response()->success(
@@ -113,26 +126,28 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Remove the specified warehouse (deactivates it).
-     *
-     * @param Warehouse $warehouse The warehouse instance to delete.
-     * @return JsonResponse Success message.
+     * Remove the specified warehouse (soft delete).
      */
     public function destroy(Warehouse $warehouse): JsonResponse
     {
+        if (auth()->user()->denies('delete warehouses')) {
+            return response()->forbidden('Permission denied for delete warehouse.');
+        }
+
         $this->service->deleteWarehouse($warehouse);
 
         return response()->success(null, 'Warehouse deleted successfully');
     }
 
     /**
-     * Bulk delete warehouses (deactivates them).
-     *
-     * @param WarehouseBulkDestroyRequest $request Validated ids array.
-     * @return JsonResponse Deleted count and message.
+     * Bulk delete warehouses.
      */
-    public function bulkDestroy(WarehouseBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(WarehouseBulkActionRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('delete warehouses')) {
+            return response()->forbidden('Permission denied for bulk delete warehouses.');
+        }
+
         $count = $this->service->bulkDeleteWarehouses($request->validated()['ids']);
 
         return response()->success(
@@ -142,39 +157,48 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Bulk activate warehouses by ID.
-     *
-     * @param WarehouseBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Activated count and message.
+     * Bulk activate warehouses.
      */
-    public function bulkActivate(WarehouseBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(WarehouseBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateWarehouses($request->validated()['ids']);
+        if (auth()->user()->denies('update warehouses')) {
+            return response()->forbidden('Permission denied for bulk update warehouses.');
+        }
 
-        return response()->success(['activated_count' => $count], "{$count} warehouses activated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} warehouses activated"
+        );
     }
 
     /**
-     * Bulk deactivate warehouses by ID.
-     *
-     * @param WarehouseBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Deactivated count and message.
+     * Bulk deactivate warehouses.
      */
-    public function bulkDeactivate(WarehouseBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(WarehouseBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateWarehouses($request->validated()['ids']);
+        if (auth()->user()->denies('update warehouses')) {
+            return response()->forbidden('Permission denied for bulk update warehouses.');
+        }
 
-        return response()->success(['deactivated_count' => $count], "{$count} warehouses deactivated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} warehouses deactivated"
+        );
     }
 
     /**
-     * Import warehouses from Excel/CSV file.
-     *
-     * @param ImportRequest $request Validated file upload.
-     * @return JsonResponse Success message.
+     * Import warehouses from Excel/CSV.
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('import warehouses')) {
+            return response()->forbidden('Permission denied for import warehouses.');
+        }
+
         $this->service->importWarehouses($request->file('file'));
 
         return response()->success(null, 'Warehouses imported successfully');
@@ -182,49 +206,85 @@ class WarehouseController extends Controller
 
     /**
      * Export warehouses to Excel or PDF.
-     *
-     * Supports download or email delivery based on method.
-     *
-     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
-     * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
+        if (auth()->user()->denies('export warehouses')) {
+            return response()->forbidden('Permission denied for export warehouses.');
+        }
+
         $validated = $request->validated();
 
-        $user = ($validated['method'] === 'email')
-            ? User::findOrFail($validated['user_id'])
-            : null;
-
-        $filePath = $this->service->exportWarehouses(
+        // 1. Generate the file via service
+        $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
-            $user,
             $validated['columns'] ?? [],
-            $validated['method']
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
         );
 
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
+        // 2. Handle Download Method
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        // 3. Handle Email Method
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (!$user) {
+                return response()->error('User not found for email delivery.');
+            }
+
+            $mailSetting = MailSetting::default()->first();
+
+            if (!$mailSetting) {
+                return response()->error('System mail settings are not configured. Cannot send email.');
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'warehouses_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Warehouse Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(
+                null,
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Get all active warehouses.
-     *
-     * @return JsonResponse
+     * Download warehouses module import sample template.
      */
-    public function getAllActive(): JsonResponse
+    public function download(): JsonResponse|BinaryFileResponse
     {
-        $warehouses = $this->service->getAllActive();
+        if (auth()->user()->denies('import warehouses')) {
+            return response()->forbidden('Permission denied for downloading warehouses import template.');
+        }
 
-        return response()->success(
-            WarehouseResource::collection($warehouses),
-            'Active warehouses retrieved successfully'
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
         );
     }
 }

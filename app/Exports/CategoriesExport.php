@@ -44,9 +44,9 @@ class CategoriesExport implements FromQuery, WithHeadings, WithMapping
      * @param array<string> $filters
      */
     public function __construct(
-        private readonly array   $ids = [],
-        private readonly array   $columns = [],
-        private readonly array   $filters = [],
+        private readonly array $ids = [],
+        private readonly array $columns = [],
+        private readonly array $filters = [],
     )
     {
     }

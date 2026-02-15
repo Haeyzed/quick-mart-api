@@ -89,7 +89,7 @@ class Brand extends Model implements AuditableContract
     {
         $slug = $existingSlug ?: Str::slug($name);
 
-        if (! $this->slugExists($slug)) {
+        if (!$this->slugExists($slug)) {
             return $slug;
         }
 

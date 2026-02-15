@@ -7,10 +7,9 @@ namespace App\Services;
 use App\Exports\BrandsExport;
 use App\Imports\BrandsImport;
 use App\Models\Brand;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
@@ -53,6 +52,24 @@ class BrandService
     }
 
     /**
+     * Get list of brand options.
+     * Returns value/label format for select/combobox components.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getOptions(): Collection
+    {
+        return Brand::active()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(Brand $brand) => [
+                'value' => $brand->id,
+                'label' => $brand->name,
+            ]);
+    }
+
+    /**
      * Create a new brand.
      *
      * @param array<string, mixed> $data
@@ -63,6 +80,27 @@ class BrandService
             $data = $this->handleUploads($data);
             return Brand::query()->create($data);
         });
+    }
+
+    /**
+     * Handle Image/Icon Upload via UploadService.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function handleUploads(array $data, ?Brand $brand = null): array
+    {
+        // Handle Image
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if ($brand?->image) {
+                $this->uploadService->delete($brand->image);
+            }
+            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+            $data['image'] = $path;
+            $data['image_url'] = $this->uploadService->url($path);
+        }
+
+        return $data;
     }
 
     /**
@@ -94,6 +132,16 @@ class BrandService
             $this->cleanupFiles($brand);
             $brand->delete();
         });
+    }
+
+    /**
+     * Remove associated files.
+     */
+    private function cleanupFiles(Brand $brand): void
+    {
+        if ($brand->image) {
+            $this->uploadService->delete($brand->image);
+        }
     }
 
     /**
@@ -179,36 +227,5 @@ class BrandService
         );
 
         return $relativePath;
-    }
-
-    /**
-     * Handle Image/Icon Upload via UploadService.
-     *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function handleUploads(array $data, ?Brand $brand = null): array
-    {
-        // Handle Image
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            if ($brand?->image) {
-                $this->uploadService->delete($brand->image);
-            }
-            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-            $data['image'] = $path;
-            $data['image_url'] = $this->uploadService->url($path);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Remove associated files.
-     */
-    private function cleanupFiles(Brand $brand): void
-    {
-        if ($brand->image) {
-            $this->uploadService->delete($brand->image);
-        }
     }
 }

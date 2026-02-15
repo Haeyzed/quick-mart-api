@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // All other API routes require authentication
 
+    // Brand Routes
     Route::prefix('brands')->name('brands.')->group(function () {
         Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [BrandController::class, 'bulkActivate'])->name('bulk-activate');
@@ -82,8 +83,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('import', [BrandController::class, 'import'])->name('import');
         Route::post('export', [BrandController::class, 'export'])->name('export');
         Route::get('download', [BrandController::class, 'download'])->name('download');
+        Route::get('options', [BrandController::class, 'options'])->name('options');
     });
     Route::apiResource('brands', BrandController::class);
+
+// Warehouse Routes (Revamped to follow Brand pattern)
+    Route::prefix('warehouses')->name('warehouses.')->group(function () {
+        Route::post('bulk-destroy', [WarehouseController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [WarehouseController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [WarehouseController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [WarehouseController::class, 'import'])->name('import');
+        Route::post('export', [WarehouseController::class, 'export'])->name('export');
+        Route::get('download', [WarehouseController::class, 'download'])->name('download');
+        Route::get('options', [WarehouseController::class, 'options'])->name('options');
+    });
+    Route::apiResource('warehouses', WarehouseController::class);
 
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::post('bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('bulk-destroy');

@@ -104,7 +104,7 @@ class Category extends Model implements AuditableContract
     {
         $slug = $existingSlug ?: Str::slug($name);
 
-        if (! $this->slugExists($slug)) {
+        if (!$this->slugExists($slug)) {
             return $slug;
         }
 
@@ -126,47 +126,47 @@ class Category extends Model implements AuditableContract
     {
         return static::query()
             ->where('slug', $slug)
-            ->when($this->exists, fn (Builder $query) => $query->whereKeyNot($this->getKey()))
+            ->when($this->exists, fn(Builder $query) => $query->whereKeyNot($this->getKey()))
             ->exists();
     }
 
     /**
      * Scope a query to apply filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
                 isset($filters['featured']),
-                fn (Builder $q) => $q->featured()
+                fn(Builder $q) => $q->featured()
             )
             ->when(
                 isset($filters['is_sync_disable']),
-                fn (Builder $q) => $q->syncDisabled()
+                fn(Builder $q) => $q->syncDisabled()
             )
             ->when(
                 isset($filters['parent_id']),
-                fn (Builder $q) => $q->where('parent_id', $filters['parent_id'])
+                fn(Builder $q) => $q->where('parent_id', $filters['parent_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('slug', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
@@ -203,19 +203,19 @@ class Category extends Model implements AuditableContract
     }
 
     /**
-     * Get the child categories.
-     */
-    public function children(): HasMany
-    {
-        return $this->hasMany(Category::class, 'parent_id');
-    }
-    
-    /**
      * Get the child categories recursively.
      */
     public function childrenRecursive(): HasMany
     {
         return $this->children()->with('childrenRecursive');
+    }
+
+    /**
+     * Get the child categories.
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id');
     }
 
     /**

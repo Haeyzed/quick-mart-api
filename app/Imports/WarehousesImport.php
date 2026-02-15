@@ -5,49 +5,82 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Warehouse;
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
- * WarehousesImport
- *
- * Handles importing warehouses from CSV/Excel files.
+ * Excel/CSV import for Warehouse entities with batching and upsert support.
  */
-class WarehousesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class WarehousesImport implements
+    ToModel,
+    WithHeadingRow,
+    WithValidation,
+    WithUpserts,
+    WithBatchInserts,
+    WithChunkReading,
+    SkipsEmptyRows
 {
     /**
-     * Process the collection of rows.
-     *
-     * @param Collection $collection
-     * @return void
+     * @param array<string, mixed> $row
+     * @return Warehouse|null
      */
-    public function collection(Collection $collection): void
+    public function model(array $row): ?Warehouse
     {
-        foreach ($collection as $row) {
-            // Skip if name is empty
-            if (empty($row['name'] ?? null)) {
-                continue;
-            }
+        $name = trim((string)($row['name'] ?? ''));
 
-            $name = trim((string)($row['name'] ?? ''));
-            $phone = trim((string)($row['phone'] ?? '')) ?: null;
-            $email = trim((string)($row['email'] ?? '')) ?: null;
-            $address = trim((string)($row['address'] ?? '')) ?: null;
-
-            // Find or create warehouse
-            $warehouse = Warehouse::firstOrNew(
-                ['name' => $name, 'is_active' => true]
-            );
-
-            $warehouse->name = $name;
-            $warehouse->phone = $phone;
-            $warehouse->email = $email;
-            $warehouse->address = $address;
-            $warehouse->is_active = true;
-
-            $warehouse->save();
+        if ($name === '') {
+            return null;
         }
+
+        return new Warehouse([
+            'name' => $name,
+            'phone' => $row['phone'] ?? null,
+            'email' => $row['email'] ?? null,
+            'address' => $row['address'] ?? null,
+            'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
+        ]);
+    }
+
+    /**
+     * @return string
+     */
+    public function uniqueBy(): string
+    {
+        return 'name';
+    }
+
+    /**
+     * @return array[]
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string'],
+            'is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+
+    /**
+     * @return int
+     */
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

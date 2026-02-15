@@ -20,7 +20,7 @@ class CategoryTreeItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (string) $this->id,
+            'id' => (string)$this->id,
             'name' => $this->name,
             'icon_url' => $this->icon_url,
             'children' => CategoryTreeItemResource::collection($this->whenLoaded('children')),

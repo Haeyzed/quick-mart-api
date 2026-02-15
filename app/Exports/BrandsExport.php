@@ -39,9 +39,9 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
      * @param array<string> $filters
      */
     public function __construct(
-        private readonly array   $ids = [],
-        private readonly array   $columns = [],
-        private readonly array   $filters = [],
+        private readonly array $ids = [],
+        private readonly array $columns = [],
+        private readonly array $filters = [],
     )
     {
     }
@@ -79,7 +79,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping
 
         return array_map(function ($col) use ($row) {
             return match ($col) {
-                'is_active' => $row->is_active ? 'Yes' : 'No',
+                'is_active' => $row->is_active ? 'Active' : 'Inactive',
                 'created_at' => $row->created_at?->toDateTimeString(),
                 'updated_at' => $row->updated_at?->toDateTimeString(),
                 default => $row->{$col} ?? '',

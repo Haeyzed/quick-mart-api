@@ -34,7 +34,9 @@ class CategoryController extends Controller
 {
     public function __construct(
         private readonly CategoryService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of categories.
@@ -47,7 +49,7 @@ class CategoryController extends Controller
 
         $categories = $this->service->getPaginatedCategories(
             $request->all(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         return response()->success(
@@ -166,11 +168,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for viewing categories list.');
         }
 
-        $parents = $this->service->getParentOptions();
-
-        return response()->success(
-            $parents,
-            'Parent categories retrieved successfully'
+            return response()->success($this->service->getParentOptions(), 'Parent categories retrieved successfully'
         );
     }
 
@@ -308,24 +306,6 @@ class CategoryController extends Controller
     }
 
     /**
-     * Download categories import sample template.
-     */
-    public function download(): JsonResponse|BinaryFileResponse
-    {
-        if (auth()->user()->denies('import brands')) {
-            return response()->forbidden('Permission denied for downloading categories import template.');
-        }
-
-        $path = $this->service->download();
-
-        return response()->download(
-            $path,
-            basename($path),
-            ['Content-Type' => 'text/csv']
-        );
-    }
-
-    /**
      * Export categories to Excel or PDF.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
@@ -359,13 +339,13 @@ class CategoryController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -375,7 +355,7 @@ class CategoryController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'categories_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'categories_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Categories Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -384,10 +364,28 @@ class CategoryController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
         return response()->error('Invalid export method provided.');
+    }
+
+    /**
+     * Download categories import sample template.
+     */
+    public function download(): JsonResponse|BinaryFileResponse
+    {
+        if (auth()->user()->denies('import brands')) {
+            return response()->forbidden('Permission denied for downloading categories import template.');
+        }
+
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
+        );
     }
 }
