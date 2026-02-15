@@ -58,6 +58,23 @@ class CategoryController extends Controller
     }
 
     /**
+     * Display a tree-view listing of categories.
+     */
+    public function tree(): JsonResponse
+    {
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing categories tree.');
+        }
+
+        $tree = $this->service->getCategoryTree();
+
+        return response()->success(
+            CategoryResource::collection($tree),
+            'Category tree retrieved successfully'
+        );
+    }
+
+    /**
      * Store a newly created category.
      */
     public function store(StoreCategoryRequest $request): JsonResponse

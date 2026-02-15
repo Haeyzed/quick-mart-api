@@ -97,6 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('export', [CategoryController::class, 'export'])->name('export');
         Route::get('download', [CategoryController::class, 'download'])->name('download');
         Route::get('parents', [CategoryController::class, 'parents'])->name('parents');
+        Route::get('tree', [CategoryController::class, 'tree']);
     });
     Route::apiResource('categories', CategoryController::class);
 

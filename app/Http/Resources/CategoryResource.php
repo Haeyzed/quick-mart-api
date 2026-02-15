@@ -43,7 +43,8 @@ class CategoryResource extends JsonResource
             'parent' => [
                 'id' => $this->parent?->id,
                 'name' => $this->parent?->name,
-            ]
+            ],
+            'children' => CategoryResource::collection($this->whenLoaded('childrenRecursive')),
         ];
     }
 }

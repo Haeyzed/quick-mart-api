@@ -47,6 +47,19 @@ class CategoryService
     }
 
     /**
+     * Get categories in a tree structure.
+     */
+    public function getCategoryTree(): Collection
+    {
+        return Category::query()
+            ->whereNull('parent_id')
+            ->with('childrenRecursive')
+            ->active()
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
      * Get list of potential parent categories.
      */
     public function getParentOptions(): Collection
