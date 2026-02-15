@@ -42,29 +42,10 @@ class CategoryService
     public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Category::query()
-            ->with([
-                'parent:id,name',
-                'children' => $this->childrenTreeLoader(),
-            ])
+            ->with(['parent:id,name', 'children'])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
-    }
-
-    /**
-     * Build a recursive eager loader for children (up to 5 levels).
-     */
-    private function childrenTreeLoader(int $depth = 0, int $maxDepth = 5): \Closure
-    {
-        return function ($query) use ($depth, $maxDepth) {
-            if ($depth >= $maxDepth) {
-                return;
-            }
-
-            $query->with([
-                'children' => $this->childrenTreeLoader($depth + 1, $maxDepth),
-            ]);
-        };
     }
 
     /**
@@ -82,13 +63,20 @@ class CategoryService
 
     /**
      * Get list of potential parent categories.
+     * Returns value/label format for select/combobox components.
+     *
+     * @return \Illuminate\Support\Collection<int, array{value: int, label: string}>
      */
-    public function getParentOptions(): Collection
+    public function getParentOptions(): \Illuminate\Support\Collection
     {
         return Category::active()
             ->select('id', 'name')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(fn (Category $category) => [
+                'value' => $category->id,
+                'label' => $category->name,
+            ]);
     }
 
     /**
