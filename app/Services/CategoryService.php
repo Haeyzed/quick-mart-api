@@ -113,6 +113,44 @@ class CategoryService
     }
 
     /**
+     * Reparent a category (change its parent_id).
+     * Prevents moving to self or to a descendant (would create a cycle).
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\ConflictHttpException
+     */
+    public function reparentCategory(Category $category, ?int $parentId): Category
+    {
+        if ($parentId === $category->id) {
+            throw new ConflictHttpException('Cannot move category to itself.');
+        }
+
+        if ($parentId !== null && $this->isDescendantOf($category->id, $parentId)) {
+            throw new ConflictHttpException('Cannot move category to a descendant (would create a cycle).');
+        }
+
+        $category->update(['parent_id' => $parentId]);
+
+        return $category->fresh();
+    }
+
+    /**
+     * Check if $descendantId is a descendant of $ancestorId in the category tree.
+     */
+    private function isDescendantOf(int $ancestorId, int $descendantId): bool
+    {
+        $current = Category::query()->find($descendantId);
+
+        while ($current?->parent_id !== null) {
+            if ($current->parent_id === $ancestorId) {
+                return true;
+            }
+            $current = $current->parent;
+        }
+
+        return false;
+    }
+
+    /**
      * Update an existing category.
      *
      * @param  array<string, mixed>  $data

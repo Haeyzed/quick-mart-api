@@ -98,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('download', [CategoryController::class, 'download'])->name('download');
         Route::get('parents', [CategoryController::class, 'parents'])->name('parents');
         Route::get('tree', [CategoryController::class, 'tree']);
+        Route::patch('{category}/reparent', [CategoryController::class, 'reparent'])->name('reparent');
     });
     Route::apiResource('categories', CategoryController::class);
 

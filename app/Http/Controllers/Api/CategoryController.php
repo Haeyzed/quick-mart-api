@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Categories\CategoryBulkActionRequest;
+use App\Http\Requests\Categories\ReparentCategoryRequest;
 use App\Http\Requests\Categories\StoreCategoryRequest;
 use App\Http\Requests\Categories\UpdateCategoryRequest;
 use App\Http\Requests\ExportRequest;
@@ -119,6 +120,26 @@ class CategoryController extends Controller
         return response()->success(
             new CategoryResource($updatedCategory),
             'Category updated successfully'
+        );
+    }
+
+    /**
+     * Reparent a category (update parent_id via drag-and-drop).
+     */
+    public function reparent(ReparentCategoryRequest $request, Category $category): JsonResponse
+    {
+        if (auth()->user()->denies('update categories')) {
+            return response()->forbidden('Permission denied for updating categories.');
+        }
+
+        $updatedCategory = $this->service->reparentCategory(
+            $category,
+            $request->validated()['parent_id']
+        );
+
+        return response()->success(
+            new CategoryResource($updatedCategory),
+            'Category reparented successfully'
         );
     }
 
