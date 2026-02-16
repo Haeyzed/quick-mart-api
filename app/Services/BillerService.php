@@ -39,7 +39,11 @@ class BillerService
     public function getPaginatedBillers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Biller::query()
-            ->with(['country', 'state', 'city'])
+            ->with([
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);

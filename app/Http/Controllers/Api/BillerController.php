@@ -101,7 +101,11 @@ class BillerController extends Controller
         }
 
         return response()->success(
-            new BillerResource($biller->load(['country', 'state', 'city'])),
+            new BillerResource($biller->load([
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ])),
             'Biller details retrieved successfully'
         );
     }
