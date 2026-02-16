@@ -16,7 +16,6 @@ class BillerResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -25,14 +24,18 @@ class BillerResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'phone' => $this->phone,
+            'phone' => $this->phone_number,
+            'phone_number' => $this->phone_number,
             'company_name' => $this->company_name,
             'vat_number' => $this->vat_number,
             'address' => $this->address,
-            'city' => $this->city,
-            'state' => $this->state,
+            'country_id' => $this->country_id,
+            'state_id' => $this->state_id,
+            'city_id' => $this->city_id,
+            'country' => $this->whenLoaded('country', fn () => $this->country ? new CountryResource($this->country) : null),
+            'state' => $this->whenLoaded('state', fn () => $this->state ? new StateResource($this->state) : null),
+            'city' => $this->whenLoaded('city', fn () => $this->city ? new CityResource($this->city) : null),
             'postal_code' => $this->postal_code,
-            'country' => $this->country,
             'image' => $this->image,
             'image_url' => $this->image_url,
             'is_active' => $this->is_active,

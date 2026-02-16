@@ -8,6 +8,7 @@ use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -22,14 +23,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int $id
  * @property string $name
  * @property string $email
- * @property string $phone
+ * @property string $phone_number
  * @property string|null $company_name
  * @property string|null $vat_number
  * @property string|null $address
- * @property string|null $city
- * @property string|null $state
+ * @property int|null $country_id
+ * @property int|null $state_id
+ * @property int|null $city_id
  * @property string|null $postal_code
- * @property string|null $country
  * @property string|null $image
  * @property string|null $image_url
  * @property bool $is_active
@@ -42,10 +43,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Biller query()
  * @method static Builder|Biller active()
  * @method static Builder|Biller filter(array $filters)
+ *
+ * @property-read Country|null $country
+ * @property-read State|null $state
+ * @property-read City|null $city
  */
 class Biller extends Model implements AuditableContract
 {
-    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -55,14 +60,14 @@ class Biller extends Model implements AuditableContract
     protected $fillable = [
         'name',
         'email',
-        'phone',
+        'phone_number',
         'company_name',
         'vat_number',
         'address',
-        'city',
-        'state',
+        'country_id',
+        'state_id',
+        'city_id',
         'postal_code',
-        'country',
         'image',
         'image_url',
         'is_active',
@@ -85,36 +90,63 @@ class Biller extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn(Builder $q) => $q->active()
+                fn (Builder $q) => $q->active()
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
-                        ->orWhere('phone', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
                         ->orWhere('company_name', 'like', $term)
                         ->orWhere('vat_number', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active billers.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Get the country.
+     *
+     * @return BelongsTo<Country, $this>
+     */
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    /**
+     * Get the state.
+     *
+     * @return BelongsTo<State, $this>
+     */
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    /**
+     * Get the city.
+     *
+     * @return BelongsTo<City, $this>
+     */
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
     }
 
     /**
@@ -129,8 +161,6 @@ class Biller extends Model implements AuditableContract
 
     /**
      * Get the sales associated with this biller.
-     *
-     * @return HasMany
      */
     public function sales(): HasMany
     {

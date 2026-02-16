@@ -19,7 +19,6 @@ use App\Models\User;
 use App\Services\BillerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -40,9 +39,7 @@ class BillerController extends Controller
      */
     public function __construct(
         private readonly BillerService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display a paginated listing of billers.
@@ -55,7 +52,7 @@ class BillerController extends Controller
 
         $billers = $this->service->getPaginatedBillers(
             $request->all(),
-            (int)$request->input('per_page', 10)
+            (int) $request->input('per_page', 10)
         );
 
         return response()->success(
@@ -104,7 +101,7 @@ class BillerController extends Controller
         }
 
         return response()->success(
-            new BillerResource($biller),
+            new BillerResource($biller->load(['country', 'state', 'city'])),
             'Biller details retrieved successfully'
         );
     }
@@ -236,13 +233,13 @@ class BillerController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -252,7 +249,7 @@ class BillerController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'billers_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'billers_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Biller Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -261,7 +258,7 @@ class BillerController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 

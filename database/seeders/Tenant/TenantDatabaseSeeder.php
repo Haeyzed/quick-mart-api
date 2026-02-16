@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\PermissionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -528,6 +527,11 @@ class TenantDatabaseSeeder extends Seeder
             return;
         }
 
+        $countryId = DB::table('countries')->where('iso2', 'US')->value('id')
+            ?? DB::table('countries')->value('id');
+        $stateId = $countryId ? DB::table('states')->where('country_id', $countryId)->value('id') : null;
+        $cityId = $stateId ? DB::table('cities')->where('state_id', $stateId)->value('id') : null;
+
         DB::table('billers')->insert([
             [
                 'id' => 1,
@@ -538,10 +542,10 @@ class TenantDatabaseSeeder extends Seeder
                 'email' => 'biller@quickmart.com',
                 'phone_number' => '+1234567890',
                 'address' => '123 Main St',
-                'city' => 'New York',
-                'state' => 'NY',
+                'country_id' => $countryId,
+                'state_id' => $stateId,
+                'city_id' => $cityId,
                 'postal_code' => '10001',
-                'country' => 'USA',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -555,10 +559,10 @@ class TenantDatabaseSeeder extends Seeder
                 'email' => 'branch@quickmart.com',
                 'phone_number' => '+0987654321',
                 'address' => '456 Oak Ave',
-                'city' => 'Los Angeles',
-                'state' => 'CA',
+                'country_id' => $countryId,
+                'state_id' => $stateId,
+                'city_id' => $cityId,
                 'postal_code' => '90001',
-                'country' => 'USA',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
