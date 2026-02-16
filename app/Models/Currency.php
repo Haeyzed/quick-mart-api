@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Currency as WorldCurrencyBase;
 
 /**
@@ -22,9 +23,10 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @property string $decimal_mark
  * @property string $thousands_separator
  *
- * @method static \Illuminate\Database\Eloquent\Builder|Currency newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Currency newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Currency query()
+ * @method static Builder|Currency newModelQuery()
+ * @method static Builder|Currency newQuery()
+ * @method static Builder|Currency query()
+ * @method static Builder|Currency filter(array $filters)
  */
 class Currency extends WorldCurrencyBase
 {
@@ -44,4 +46,26 @@ class Currency extends WorldCurrencyBase
         'decimal_mark',
         'thousands_separator',
     ];
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['search'] ?? null),
+                fn ($query) => $query->where(function ($q) use ($filters) {
+                    $q->where('name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('code', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('symbol', 'like', '%'.$filters['search'].'%');
+                })
+            )
+            ->when(
+                ! empty($filters['country_id'] ?? null),
+                fn (Builder $q) => $q->where('country_id', $filters['country_id'])
+            );
+    }
 }

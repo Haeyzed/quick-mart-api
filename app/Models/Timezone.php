@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Timezone as WorldTimezone;
 
 /**
@@ -15,9 +16,10 @@ use Nnjeim\World\Models\Timezone as WorldTimezone;
  * @property int $country_id
  * @property string $name
  *
- * @method static \Illuminate\Database\Eloquent\Builder|Timezone newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Timezone newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Timezone query()
+ * @method static Builder|Timezone newModelQuery()
+ * @method static Builder|Timezone newQuery()
+ * @method static Builder|Timezone query()
+ * @method static Builder|Timezone filter(array $filters)
  */
 class Timezone extends WorldTimezone
 {
@@ -30,4 +32,22 @@ class Timezone extends WorldTimezone
         'country_id',
         'name',
     ];
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['search']),
+                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
+            )
+            ->when(
+                ! empty($filters['country_id']),
+                fn ($q) => $q->where('country_id', $filters['country_id'])
+            );
+    }
 }

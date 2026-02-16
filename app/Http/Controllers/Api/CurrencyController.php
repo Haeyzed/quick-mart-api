@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CurrencyResource;
 use App\Models\Currency;
-use App\Services\WorldCurrencyService;
+use App\Services\CurrencyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
  * Class CurrencyController
  *
  * API Controller for Currency listing and options (World reference data).
- * Handles authorization via Policy and delegates logic to WorldCurrencyService.
+ * Handles authorization via Policy and delegates logic to CurrencyService.
  *
  * @group Currency Management
  */
@@ -25,7 +25,7 @@ class CurrencyController extends Controller
      * CurrencyController constructor.
      */
     public function __construct(
-        private readonly WorldCurrencyService $service
+        private readonly CurrencyService $service
     ) {}
 
     /**
@@ -37,7 +37,7 @@ class CurrencyController extends Controller
             return response()->forbidden('Permission denied for viewing currencies list.');
         }
 
-        $currencies = $this->service->getPaginatedWorldCurrencies(
+        $currencies = $this->service->getPaginatedCurrencies(
             $request->all(),
             (int) $request->input('per_page', 10)
         );

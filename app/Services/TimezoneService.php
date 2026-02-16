@@ -23,31 +23,40 @@ class TimezoneService
     {
         return Timezone::query()
             ->with('country:id,name,iso2')
-            ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-            )
-            ->when(
-                ! empty($filters['country_id']),
-                fn ($q) => $q->where('country_id', $filters['country_id'])
-            )
+            ->filter($filters)
             ->orderBy('name')
             ->paginate($perPage);
     }
 
     /**
-     * Get list of timezone options (value/label format).
+     * Get list of timezone options grouped by region (value/label format).
+     *
+     * @return array<int, array{region: string, options: array<int, array{value: int, label: string, country_id: int|null}>}>
      */
-    public function getOptions(): Collection
+    public function getOptions(): array
     {
-        return Timezone::query()
+        $timezones = Timezone::query()
             ->select('id', 'name', 'country_id')
             ->orderBy('name')
-            ->get()
-            ->map(fn (Timezone $timezone) => [
-                'value' => $timezone->id,
-                'label' => $timezone->name,
-                'country_id' => $timezone->country_id,
-            ]);
+            ->get();
+
+        $grouped = $timezones->groupBy(function (Timezone $timezone): string {
+            return str_contains($timezone->name, '/')
+                ? explode('/', $timezone->name, 2)[0]
+                : 'Other';
+        });
+
+        $grouped = $grouped->sortKeys();
+
+        return $grouped->map(function (Collection $items, string $region): array {
+            return [
+                'region' => $region,
+                'options' => $items->map(fn (Timezone $tz) => [
+                    'value' => $tz->id,
+                    'label' => $tz->name,
+                    'country_id' => $tz->country_id,
+                ])->values()->all(),
+            ];
+        })->values()->all();
     }
 }
