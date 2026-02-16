@@ -142,6 +142,14 @@ class TenantDatabaseSeeder extends Seeder
                 'view warehouse report',
                 'view warehouse stock report',
             ],
+            'world' => [
+                'view countries',
+                'view states',
+                'view cities',
+                'view timezones',
+                'view currencies',
+                'view languages',
+            ],
             'purchases' => [
                 'view purchases',
                 'create purchases',
