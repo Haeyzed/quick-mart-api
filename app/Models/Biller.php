@@ -4,43 +4,48 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Biller Model
+ * Class Biller
  *
- * Represents a biller/outlet location in the system.
+ * Represents a biller entity.
  *
  * @property int $id
  * @property string $name
- * @property string|null $image
+ * @property string $email
+ * @property string $phone
  * @property string|null $company_name
  * @property string|null $vat_number
- * @property string|null $email
- * @property string|null $phone_number
  * @property string|null $address
  * @property string|null $city
  * @property string|null $state
  * @property string|null $postal_code
  * @property string|null $country
+ * @property string|null $image
+ * @property string|null $image_url
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Collection<int, Sale> $sales
- * @property-read Collection<int, User> $users
+ * @property Carbon|null $deleted_at
  *
+ * @method static Builder|Biller newModelQuery()
+ * @method static Builder|Biller newQuery()
+ * @method static Builder|Biller query()
  * @method static Builder|Biller active()
+ * @method static Builder|Biller filter(array $filters)
  */
 class Biller extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
 
     /**
      * The attributes that are mass assignable.
@@ -49,27 +54,67 @@ class Biller extends Model implements AuditableContract
      */
     protected $fillable = [
         'name',
-        'image',
+        'email',
+        'phone',
         'company_name',
         'vat_number',
-        'email',
-        'phone_number',
         'address',
         'city',
         'state',
         'postal_code',
         'country',
+        'image',
+        'image_url',
         'is_active',
     ];
 
     /**
-     * Get the sales for this biller.
+     * The attributes that should be cast.
      *
-     * @return HasMany<Sale>
+     * @var array<string, string>
      */
-    public function sales(): HasMany
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->hasMany(Sale::class);
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn(Builder $q) => $q->active()
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn(Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone', 'like', $term)
+                        ->orWhere('company_name', 'like', $term)
+                        ->orWhere('vat_number', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
+    /**
+     * Scope a query to only include active billers.
+     *
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     /**
@@ -83,22 +128,12 @@ class Biller extends Model implements AuditableContract
     }
 
     /**
-     * Scope a query to only include active billers.
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Get the attributes that should be cast.
+     * Get the sales associated with this biller.
      *
-     * @return array<string, string>
+     * @return HasMany
      */
-    protected function casts(): array
+    public function sales(): HasMany
     {
-        return [
-            'is_active' => 'boolean',
-        ];
+        return $this->hasMany(Sale::class);
     }
 }

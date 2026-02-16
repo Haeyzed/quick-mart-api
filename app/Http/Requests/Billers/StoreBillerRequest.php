@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Billers;
 
-use App\Http\Requests\BaseRequest;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/**
- * Form request for biller create and update validation.
- */
-class BillerRequest extends BaseRequest
+class StoreBillerRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -22,34 +19,27 @@ class BillerRequest extends BaseRequest
      */
     public function rules(): array
     {
-        $billerId = $this->route('biller')?->id;
-
         return [
             'name' => ['required', 'string', 'max:255'],
-            'company_name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('billers', 'company_name')->ignore($billerId)->where('is_active', true),
-            ],
-            'vat_number' => ['nullable', 'string', 'max:255'],
             'email' => [
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('billers', 'email')->ignore($billerId)->where('is_active', true),
+                Rule::unique('billers', 'email')->withoutTrashed(),
             ],
-            'phone_number' => ['required', 'string', 'max:255'],
-            'address' => ['required', 'string', 'max:500'],
-            'city' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:255'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'vat_number' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
-            'postal_code' => ['nullable', 'string', 'max:50'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:255'],
             'image' => [
                 'nullable',
                 'image',
-                'mimes:jpeg,png,jpg,gif,webp',
-                'max:5120',
+                'mimes:jpeg,png,jpg,webp',
+                'max:5120', // 5MB
             ],
             'is_active' => ['nullable', 'boolean'],
         ];

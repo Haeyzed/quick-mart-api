@@ -5,56 +5,90 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Biller;
-use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Row;
 
 /**
- * Excel/CSV import for Biller entities.
- *
- * Uses heading row; column names normalized (lowercase, no spaces).
- * Old app CSV: companyname, name, image, vatnumber, email, phonenumber, address, city, state, postalcode, country.
+ * Excel/CSV import for Biller entities with batching and upsert support.
  */
-class BillersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, WithValidation
+class BillersImport implements
+    ToModel,
+    WithHeadingRow,
+    WithValidation,
+    WithUpserts,
+    WithBatchInserts,
+    WithChunkReading,
+    SkipsEmptyRows
 {
-    public function onRow(Row $row): void
+    /**
+     * @param array<string, mixed> $row
+     * @return Biller|null
+     */
+    public function model(array $row): ?Biller
     {
-        $data = $row->toArray();
+        $email = trim((string)($row['email'] ?? ''));
 
-        $companyName = trim((string)($data['company_name'] ?? $data['companyname'] ?? ''));
-        if ($companyName === '') {
-            return;
+        if ($email === '') {
+            return null;
         }
 
-        $attributes = [
-            'name' => trim((string)($data['name'] ?? '')),
-            'vat_number' => trim((string)($data['vat_number'] ?? $data['vatnumber'] ?? '')) ?: null,
-            'email' => trim((string)($data['email'] ?? '')) ?: null,
-            'phone_number' => trim((string)($data['phone_number'] ?? $data['phonenumber'] ?? '')) ?: null,
-            'address' => trim((string)($data['address'] ?? '')) ?: null,
-            'city' => trim((string)($data['city'] ?? '')) ?: null,
-            'state' => trim((string)($data['state'] ?? '')) ?: null,
-            'postal_code' => trim((string)($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
-            'country' => trim((string)($data['country'] ?? '')) ?: null,
-            'is_active' => true,
-        ];
-
-        Biller::updateOrCreate(
-            ['company_name' => $companyName],
-            array_merge($attributes, [
-                'name' => $attributes['name'] ?: $companyName,
-                'company_name' => $companyName,
-            ])
-        );
+        return new Biller([
+            'name' => $row['name'] ?? null,
+            'email' => $email,
+            'phone' => $row['phone'] ?? null,
+            'company_name' => $row['company_name'] ?? null,
+            'vat_number' => $row['vat_number'] ?? null,
+            'address' => $row['address'] ?? null,
+            'city' => $row['city'] ?? null,
+            'state' => $row['state'] ?? null,
+            'postal_code' => $row['postal_code'] ?? null,
+            'country' => $row['country'] ?? null,
+            'image_url' => $row['image_url'] ?? null,
+            'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
+        ]);
     }
 
+    /**
+     * @return string
+     */
+    public function uniqueBy(): string
+    {
+        return 'email';
+    }
+
+    /**
+     * @return array[]
+     */
     public function rules(): array
     {
         return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'companyname' => ['nullable', 'string', 'max:255'],
+            'image_url' => ['nullable', 'url'],
+            'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+
+    /**
+     * @return int
+     */
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

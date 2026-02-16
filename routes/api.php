@@ -138,22 +138,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('categories', CategoryController::class);
 
-    // People: Billers (under people prefix, Warehouse-style CRUD + import + bulk delete)
-    Route::prefix('people')->group(function () {
-        Route::get('billers/all/active', [BillerController::class, 'getAllActive'])
-            ->name('billers.all-active');
-        Route::patch('billers/bulk-activate', [BillerController::class, 'bulkActivate'])
-            ->name('billers.bulkActivate');
-        Route::patch('billers/bulk-deactivate', [BillerController::class, 'bulkDeactivate'])
-            ->name('billers.bulkDeactivate');
-        Route::delete('billers/bulk-destroy', [BillerController::class, 'bulkDestroy'])
-            ->name('billers.bulkDestroy');
-        Route::post('billers/import', [BillerController::class, 'import'])
-            ->name('billers.import');
-        Route::post('billers/export', [BillerController::class, 'export'])
-            ->name('billers.export');
-        Route::apiResource('billers', BillerController::class);
+    Route::prefix('billers')->name('billers.')->group(function () {
+        Route::post('bulk-destroy', [BillerController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [BillerController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [BillerController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [BillerController::class, 'import'])->name('import');
+        Route::post('export', [BillerController::class, 'export'])->name('export');
+        Route::get('download', [BillerController::class, 'download'])->name('download');
+        Route::get('options', [BillerController::class, 'options'])->name('options');
     });
+    Route::apiResource('billers', BillerController::class);
 
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])

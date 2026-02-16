@@ -1,0 +1,51 @@
+name,email,phone,company_name,vat_number,address,city,state,postal_code,country,image,image_url,is_active
+Alpha Utilities,contact@alphautilities.com,+2348012345678,Alpha Utilities Ltd,VAT-001234,12 Marina Road,Lagos,Lagos,100001,Nigeria,alpha.png,https://example.com/images/alpha.png,1
+Beta Power,info@betapower.ng,+2348098765432,Beta Power Plc,VAT-005678,45 Ahmadu Bello Way,Abuja,FCT,900001,Nigeria,beta.png,https://example.com/images/beta.png,1
+Gamma Telecom,support@gammatelecom.com,+2348034567890,Gamma Telecom Nigeria,VAT-009999,22 Ring Road,Ibadan,Oyo,200001,Nigeria,gamma.png,https://example.com/images/gamma.png,1
+Delta Water Services,hello@deltawater.ng,+2348123456789,Delta Water Services Ltd,VAT-002211,8 Okpanam Road,Asaba,Delta,320001,Nigeria,delta.png,https://example.com/images/delta.png,1
+Epsilon Internet,admin@epsiloninternet.com,+2347012345678,Epsilon Internet Services,VAT-003333,17 Aminu Kano Crescent,Kano,Kano,700001,Nigeria,epsilon.png,https://example.com/images/epsilon.png,1
+Zeta Energy,contact@zetaenergy.ng,+2348021112233,Zeta Energy Ltd,VAT-004001,10 Aba Road,Port Harcourt,Rivers,500001,Nigeria,zeta.png,https://example.com/images/zeta.png,1
+Eta Gas,info@etagas.com,+2348032223344,Eta Gas Nigeria,VAT-004002,5 Stadium Road,Benin City,Edo,300001,Nigeria,eta.png,https://example.com/images/eta.png,1
+Theta Cable,support@thetacable.ng,+2348043334455,Theta Cable Network,VAT-004003,19 IBB Way,Uyo,Akwa Ibom,520001,Nigeria,theta.png,https://example.com/images/theta.png,1
+Iota Waste,hello@iotawaste.ng,+2348054445566,Iota Waste Management,VAT-004004,3 Independence Layout,Enugu,Enugu,400001,Nigeria,iota.png,https://example.com/images/iota.png,1
+Kappa Solar,admin@kappasolar.com,+2348065556677,Kappa Solar Solutions,VAT-004005,14 Yakubu Gowon Way,Jos,Plateau,930001,Nigeria,kappa.png,https://example.com/images/kappa.png,1
+Lambda Transport,contact@lambdatransport.ng,+2348076667788,Lambda Transport Ltd,VAT-004006,9 Emir Road,Ilorin,Kwara,240001,Nigeria,lambda.png,https://example.com/images/lambda.png,1
+Mu Logistics,info@mulogistics.com,+2348087778899,Mu Logistics Nigeria,VAT-004007,21 Warehouse Road,Onitsha,Anambra,430001,Nigeria,mu.png,https://example.com/images/mu.png,1
+Nu Broadband,support@nubroadband.ng,+2348098889900,Nu Broadband Ltd,VAT-004008,16 Admiralty Way,Lekki,Lagos,105102,Nigeria,nu.png,https://example.com/images/nu.png,1
+Xi Finance,admin@xifinance.ng,+2348101112233,Xi Finance Services,VAT-004009,7 Bank Road,Abeokuta,Ogun,110001,Nigeria,xi.png,https://example.com/images/xi.png,1
+Omicron Tech,hello@omicrontech.com,+2348112223344,Omicron Technologies,VAT-004010,2 Innovation Hub,Yaba,Lagos,101245,Nigeria,omicron.png,https://example.com/images/omicron.png,1
+Pi Security,contact@pisecurity.ng,+2348123334455,Pi Security Ltd,VAT-004011,11 GRA Phase 2,Oworonshoki,Lagos,100213,Nigeria,pi.png,https://example.com/images/pi.png,1
+Rho Systems,info@rhosystems.ng,+2348134445566,Rho Systems Nigeria,VAT-004012,5 Secretariat Road,Bauchi,Bauchi,740001,Nigeria,rho.png,https://example.com/images/rho.png,1
+Sigma Health,support@sigmahealth.ng,+2348145556677,Sigma Health Services,VAT-004013,18 Hospital Road,Owerri,Imo,460001,Nigeria,sigma.png,https://example.com/images/sigma.png,1
+Tau Pharmacy,admin@taupharmacy.com,+2348156667788,Tau Pharmacy Ltd,VAT-004014,33 Medical Avenue,Calabar,Cross River,540001,Nigeria,tau.png,https://example.com/images/tau.png,1
+Upsilon Foods,contact@upsilonfoods.ng,+2348167778899,Upsilon Foods Ltd,VAT-004015,44 Market Road,Akure,Ondo,340001,Nigeria,upsilon.png,https://example.com/images/upsilon.png,1
+Phi Agro,info@phiagro.ng,+2348178889900,Phi Agro Industries,VAT-004016,12 Farm Estate,Makurdi,Benue,970001,Nigeria,phi.png,https://example.com/images/phi.png,1
+Chi Motors,support@chimotors.ng,+2348189990011,Chi Motors Nigeria,VAT-004017,6 Auto Street,Nnewi,Anambra,435001,Nigeria,chi.png,https://example.com/images/chi.png,1
+Psi Electronics,hello@psielectronics.ng,+2348191112233,Psi Electronics Ltd,VAT-004018,25 Electronics Market,Alaba,Lagos,102102,Nigeria,psi.png,https://example.com/images/psi.png,1
+Omega Stores,contact@omegastore.ng,+2348202223344,Omega Stores Ltd,VAT-004019,8 Shopping Complex,Minna,Niger,920001,Nigeria,omega.png,https://example.com/images/omega.png,1
+Prime Energy,info@primeenergy.ng,+2348213334455,Prime Energy Ltd,VAT-004020,4 Refinery Road,Warri,Delta,332001,Nigeria,prime.png,https://example.com/images/prime.png,1
+Nova Gas,support@novagas.ng,+2348224445566,Nova Gas Nigeria,VAT-004021,17 Energy Close,Kaduna,Kaduna,800001,Nigeria,nova.png,https://example.com/images/nova.png,1
+Orbit Telecom,admin@orbittelecom.ng,+2348235556677,Orbit Telecom Ltd,VAT-004022,28 Digital Avenue,Abuja,FCT,900211,Nigeria,orbit.png,https://example.com/images/orbit.png,1
+Vertex Water,contact@vertexwater.ng,+2348246667788,Vertex Water Ltd,VAT-004023,3 River Basin Road,Yola,Adamawa,640001,Nigeria,vertex.png,https://example.com/images/vertex.png,1
+Apex Cable,info@apexcable.ng,+2348257778899,Apex Cable Network,VAT-004024,14 Media Street,Lagos Island,Lagos,101001,Nigeria,apex.png,https://example.com/images/apex.png,1
+Metro Power,support@metropower.ng,+2348268889900,Metro Power Plc,VAT-004025,7 Electricity Close,Ikeja,Lagos,100271,Nigeria,metro.png,https://example.com/images/metro.png,1
+Unity Broadband,admin@unitybroadband.ng,+2348271112233,Unity Broadband Ltd,VAT-004026,15 Tech Park,Yenagoa,Bayelsa,561001,Nigeria,unity.png,https://example.com/images/unity.png,1
+Green Earth Waste,contact@greenearth.ng,+2348282223344,Green Earth Waste Ltd,VAT-004027,9 Recycling Road,Osogbo,Osun,230001,Nigeria,greenearth.png,https://example.com/images/greenearth.png,1
+City Transport,info@citytransport.ng,+2348293334455,City Transport Services,VAT-004028,11 Motor Park Road,Lafia,Nasarawa,962001,Nigeria,citytransport.png,https://example.com/images/citytransport.png,1
+Sky Internet,support@skyinternet.ng,+2348304445566,Sky Internet Ltd,VAT-004029,2 Satellite Town,Lagos,Lagos,102263,Nigeria,sky.png,https://example.com/images/sky.png,1
+Blue Gas,admin@bluegas.ng,+2348315556677,Blue Gas Ltd,VAT-004030,13 Industrial Layout,Aba,Abia,450001,Nigeria,bluegas.png,https://example.com/images/bluegas.png,1
+Rapid Courier,contact@rapidcourier.ng,+2348326667788,Rapid Courier Services,VAT-004031,21 Delivery Lane,Ibadan,Oyo,200212,Nigeria,rapid.png,https://example.com/images/rapid.png,1
+Smart Energy,info@smartenergy.ng,+2348337778899,Smart Energy Solutions,VAT-004032,30 Power Line Street,Kano,Kano,700212,Nigeria,smart.png,https://example.com/images/smart.png,1
+Golden Water,support@goldenwater.ng,+2348348889900,Golden Water Ltd,VAT-004033,6 Borehole Avenue,Ilorin,Kwara,240212,Nigeria,golden.png,https://example.com/images/golden.png,1
+Bright Cable,admin@brightcable.ng,+2348351112233,Bright Cable TV,VAT-004034,19 Broadcast Road,Umuahia,Abia,440001,Nigeria,bright.png,https://example.com/images/bright.png,1
+Eco Power,contact@ecopower.ng,+2348362223344,Eco Power Nigeria,VAT-004035,23 Solar Street,Maiduguri,Borno,600001,Nigeria,eco.png,https://example.com/images/eco.png,1
+Swift Telecom,info@swifttelecom.ng,+2348373334455,Swift Telecom Ltd,VAT-004036,8 Fiber Road,Lagos,Lagos,101212,Nigeria,swift.png,https://example.com/images/swift.png,1
+National Gas,support@nationalgas.ng,+2348384445566,National Gas Plc,VAT-004037,14 Pipeline Way,Port Harcourt,Rivers,500212,Nigeria,nationalgas.png,https://example.com/images/nationalgas.png,1
+Urban Waste,admin@urbanwaste.ng,+2348395556677,Urban Waste Ltd,VAT-004038,5 Sanitation Road,Awka,Anambra,420001,Nigeria,urban.png,https://example.com/images/urban.png,1
+Future Energy,contact@futureenergy.ng,+2348406667788,Future Energy Ltd,VAT-004039,16 Innovation Drive,Abuja,FCT,900321,Nigeria,future.png,https://example.com/images/future.png,1
+Reliable Water,info@reliablewater.ng,+2348417778899,Reliable Water Services,VAT-004040,9 Aqua Street,Sokoto,Sokoto,840001,Nigeria,reliable.png,https://example.com/images/reliable.png,1
+NextGen Internet,support@nextgeninternet.ng,+2348428889900,NextGen Internet Ltd,VAT-004041,27 Data Center Road,Lagos,Lagos,105101,Nigeria,nextgen.png,https://example.com/images/nextgen.png,1
+PowerGrid Nigeria,admin@powergrid.ng,+2348431112233,PowerGrid Nigeria Plc,VAT-004042,31 Transmission Avenue,Kaduna,Kaduna,800212,Nigeria,powergrid.png,https://example.com/images/powergrid.png,1
+CleanCity Services,contact@cleancity.ng,+2348442223344,CleanCity Services Ltd,VAT-004043,4 Civic Center Road,Ado Ekiti,Ekiti,360001,Nigeria,cleancity.png,https://example.com/images/cleancity.png,1
+Infinity Telecom,info@infinitytelecom.ng,+2348453334455,Infinity Telecom Ltd,VAT-004044,20 Network Close,Lagos,Lagos,101233,Nigeria,infinity.png,https://example.com/images/infinity.png,1
+Evergreen Energy,support@evergreenenergy.ng,+2348464445566,Evergreen Energy Ltd,VAT-004045,11 Green Estate,Owerri,Imo,460212,Nigeria,evergreen.png,https://example.com/images/evergreen.png,1

@@ -6,227 +6,225 @@ namespace App\Services;
 
 use App\Exports\BillersExport;
 use App\Imports\BillersImport;
-use App\Mail\ExportMail;
 use App\Models\Biller;
-use App\Models\GeneralSetting;
-use App\Models\MailSetting;
-use App\Models\User;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\MailInfo;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * Service class for Biller CRUD and listing.
- *
- * Follows the same pattern as BrandService: index with filters, create/update with
- * optional image upload, soft delete via is_active.
+ * Class BillerService
+ * Handles business logic for Billers.
  */
-class BillerService extends BaseService
+class BillerService
 {
-    use CheckPermissionsTrait, MailInfo;
+    /**
+     *
+     */
+    private const IMAGE_PATH = 'images/billers';
+    private const TEMPLATE_PATH = 'Imports/Templates';
 
-    private const DEFAULT_BILLER_IMAGES_PATH = 'images/biller';
-
+    /**
+     * @param UploadService $uploadService
+     */
     public function __construct(
         private readonly UploadService $uploadService
     )
     {
     }
 
-    public function getBiller(Biller $biller): Biller
-    {
-        $this->requirePermission('billers-index');
-
-        return $biller->fresh();
-    }
-
     /**
+     * Get paginated billers based on filters.
+     *
      * @param array<string, mixed> $filters
-     * @return LengthAwarePaginator<Biller>
      */
-    public function getBillers(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getPaginatedBillers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('billers-index');
-
         return Biller::query()
-            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(!empty($filters['search']), function ($q) use ($filters) {
-                $term = '%' . $filters['search'] . '%';
-                $q->where(fn($subQ) => $subQ
-                    ->where('name', 'like', $term)
-                    ->orWhere('company_name', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('phone_number', 'like', $term)
-                );
-            })
+            ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
 
     /**
+     * Get list of biller options.
+     * Returns value/label format for select/combobox components.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getOptions(): Collection
+    {
+        return Biller::active()
+            ->select('id', 'name', 'company_name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(Biller $biller) => [
+                'value' => $biller->id,
+                'label' => $biller->company_name ? "{$biller->name} ({$biller->company_name})" : $biller->name,
+            ]);
+    }
+
+    /**
+     * Create a new biller.
+     *
      * @param array<string, mixed> $data
      */
     public function createBiller(array $data): Biller
     {
-        $this->requirePermission('billers-create');
-
         return DB::transaction(function () use ($data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                $data = $this->handleImageUpload($data);
-            }
-            $data['is_active'] = $data['is_active'] ?? true;
-
-            return Biller::create($data);
+            $data = $this->handleUploads($data);
+            return Biller::query()->create($data);
         });
     }
 
     /**
-     * Process image upload and merge path into biller data.
+     * Handle Image Upload via UploadService.
      *
-     * @param array<string, mixed> $data Input data containing 'image' as UploadedFile.
-     * @return array<string, mixed> Data with 'image' (path) set.
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    private function handleImageUpload(array $data): array
+    private function handleUploads(array $data, ?Biller $biller = null): array
     {
-        $path = $this->uploadService->upload(
-            $data['image'],
-            config('storage.billers.images', self::DEFAULT_BILLER_IMAGES_PATH)
-        );
-
-        $data['image'] = $path;
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if ($biller?->image) {
+                $this->uploadService->delete($biller->image);
+            }
+            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+            $data['image'] = $path;
+            $data['image_url'] = $this->uploadService->url($path);
+        }
 
         return $data;
     }
 
     /**
+     * Update an existing biller.
+     *
      * @param array<string, mixed> $data
      */
     public function updateBiller(Biller $biller, array $data): Biller
     {
-        $this->requirePermission('billers-update');
-
         return DB::transaction(function () use ($biller, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                if ($biller->image) {
-                    $this->uploadService->delete($biller->image);
-                }
-                $data = $this->handleImageUpload($data);
-            }
-
+            $data = $this->handleUploads($data, $biller);
             $biller->update($data);
-
             return $biller->fresh();
         });
     }
 
     /**
-     * @return Collection<int, Biller>
+     * Delete a biller.
+     *
+     * @throws ConflictHttpException
      */
-    public function getAllActive(): Collection
-    {
-        $this->requirePermission('billers-index');
-
-        return Biller::query()->where('is_active', true)->orderBy('name')->get();
-    }
-
-    /**
-     * @param array<int> $ids
-     */
-    public function bulkDeleteBillers(array $ids): int
-    {
-        $this->requirePermission('billers-delete');
-
-        $count = 0;
-        foreach ($ids as $id) {
-            $biller = Biller::find($id);
-            if ($biller) {
-                $this->deleteBiller($biller);
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
     public function deleteBiller(Biller $biller): void
     {
-        $this->requirePermission('billers-delete');
+        if ($biller->sales()->exists()) {
+            throw new ConflictHttpException("Cannot delete biller '{$biller->name}' as it has associated sales.");
+        }
 
         DB::transaction(function () use ($biller) {
-            if ($biller->image) {
-                $this->uploadService->delete($biller->image);
-            }
-            $biller->update(['is_active' => false]);
+            $this->cleanupFiles($biller);
+            $biller->delete();
         });
     }
 
-    public function bulkActivateBillers(array $ids): int
+    /**
+     * Remove associated files.
+     */
+    private function cleanupFiles(Biller $biller): void
     {
-        $this->requirePermission('billers-update');
-
-        return Biller::whereIn('id', $ids)->update(['is_active' => true]);
-    }
-
-    public function bulkDeactivateBillers(array $ids): int
-    {
-        $this->requirePermission('billers-update');
-
-        return Biller::whereIn('id', $ids)->update(['is_active' => false]);
-    }
-
-    public function importBillers(UploadedFile $file): void
-    {
-        $this->requirePermission('billers-import');
-        Excel::import(new BillersImport, $file);
+        if ($biller->image) {
+            $this->uploadService->delete($biller->image);
+        }
     }
 
     /**
+     * Bulk delete billers.
+     *
      * @param array<int> $ids
-     * @param array<string> $columns
+     * @return int Count of deleted items.
      */
-    public function exportBillers(array $ids, string $format, ?User $user, array $columns, string $method): string
+    public function bulkDeleteBillers(array $ids): int
     {
-        $this->requirePermission('billers-export');
+        return DB::transaction(function () use ($ids) {
+            $billers = Biller::query()->whereIn('id', $ids)->withCount('sales')->get();
+            $count = 0;
 
-        $fileName = 'billers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
+            foreach ($billers as $biller) {
+                if ($biller->sales_count > 0) {
+                    continue;
+                }
 
-        if ($format === 'excel') {
-            Excel::store(new BillersExport($ids, $columns), $relativePath, 'public');
-        } else {
-            $billers = Biller::query()
-                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
-                ->orderBy('company_name')
-                ->get();
+                $this->cleanupFiles($biller);
+                $biller->delete();
+                $count++;
+            }
 
-            $pdf = PDF::loadView('exports.billers-pdf', compact('billers', 'columns'));
-            Storage::disk('public')->put($relativePath, $pdf->output());
-        }
-
-        if ($method === 'email' && $user) {
-            $this->sendExportEmail($user, $relativePath, $fileName);
-        }
-
-        return $relativePath;
+            return $count;
+        });
     }
 
-    private function sendExportEmail(User $user, string $path, string $fileName): void
+    /**
+     * Update status for multiple billers.
+     *
+     * @param array<int> $ids
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        $mailSetting = MailSetting::default()->firstOr(
-            fn() => throw new RuntimeException('Mail settings are not configured.')
+        return Biller::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+    }
+
+    /**
+     * Import billers from file.
+     */
+    public function importBillers(UploadedFile $file): void
+    {
+        ExcelFacade::import(new BillersImport, $file);
+    }
+
+    /**
+     * Download a billers CSV template.
+     */
+    public function download(): string
+    {
+        $fileName = "billers-sample.csv";
+
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+
+        if (!File::exists($path)) {
+            throw new RuntimeException("Template billers not found.");
+        }
+
+        return $path;
+    }
+
+    /**
+     * Export billers to file.
+     *
+     * @param array<int> $ids
+     * @param string $format 'excel' or 'pdf'
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters for created_at
+     * @return string Relative file path.
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'billers_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new BillersExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
         );
-        $generalSetting = GeneralSetting::latest()->first();
-        $this->setMailInfo($mailSetting);
-        Mail::to($user->email)->send(
-            new ExportMail($user, $path, $fileName, 'Billers List', $generalSetting)
-        );
+
+        return $relativePath;
     }
 }
