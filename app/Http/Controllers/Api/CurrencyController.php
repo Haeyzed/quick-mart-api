@@ -5,124 +5,73 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CurrencyBulkDestroyRequest;
-use App\Http\Requests\CurrencyIndexRequest;
-use App\Http\Requests\CurrencyRequest;
 use App\Http\Resources\CurrencyResource;
 use App\Models\Currency;
-use App\Services\CurrencyService;
+use App\Services\WorldCurrencyService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
- * CurrencyController
+ * Class CurrencyController
  *
- * API controller for managing currencies with full CRUD operations.
+ * API Controller for Currency listing and options (World reference data).
+ * Handles authorization via Policy and delegates logic to WorldCurrencyService.
+ *
+ * @group Currency Management
  */
 class CurrencyController extends Controller
 {
     /**
-     * Create a new controller instance.
-     *
-     * @param CurrencyService $service
+     * CurrencyController constructor.
      */
     public function __construct(
-        private readonly CurrencyService $service
-    )
-    {
-    }
+        private readonly WorldCurrencyService $service
+    ) {}
 
     /**
      * Display a paginated listing of currencies.
-     *
-     * @param CurrencyIndexRequest $request
-     * @return JsonResponse
      */
-    public function index(CurrencyIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = $validated['per_page'] ?? 10;
-        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
+        if (auth()->user()->denies('view currencies')) {
+            return response()->forbidden('Permission denied for viewing currencies list.');
+        }
 
-        $currencies = $this->service->getCurrencies($filters, $perPage)
-            ->through(fn($currency) => new CurrencyResource($currency));
+        $currencies = $this->service->getPaginatedWorldCurrencies(
+            $request->all(),
+            (int) $request->input('per_page', 10)
+        );
 
-        return response()->success($currencies, 'Currencies fetched successfully');
+        return response()->success(
+            CurrencyResource::collection($currencies),
+            'Currencies retrieved successfully'
+        );
     }
 
     /**
-     * Store a newly created currency.
-     *
-     * @param CurrencyRequest $request
-     * @return JsonResponse
+     * Get currency options for select components.
      */
-    public function store(CurrencyRequest $request): JsonResponse
+    public function options(): JsonResponse
     {
-        $currency = $this->service->createCurrency($request->validated());
+        if (auth()->user()->denies('view currencies')) {
+            return response()->forbidden('Permission denied for viewing currency options.');
+        }
 
-        return response()->success(
-            new CurrencyResource($currency),
-            'Currency created successfully',
-            201
-        );
+        return response()->success($this->service->getOptions(), 'Currency options retrieved successfully');
     }
 
     /**
      * Display the specified currency.
-     *
-     * @param Currency $currency
-     * @return JsonResponse
      */
     public function show(Currency $currency): JsonResponse
     {
-        return response()->success(
-            new CurrencyResource($currency),
-            'Currency retrieved successfully'
-        );
-    }
-
-    /**
-     * Update the specified currency.
-     *
-     * @param CurrencyRequest $request
-     * @param Currency $currency
-     * @return JsonResponse
-     */
-    public function update(CurrencyRequest $request, Currency $currency): JsonResponse
-    {
-        $currency = $this->service->updateCurrency($currency, $request->validated());
+        if (auth()->user()->denies('view currencies')) {
+            return response()->forbidden('Permission denied for view currency.');
+        }
 
         return response()->success(
-            new CurrencyResource($currency),
-            'Currency updated successfully'
-        );
-    }
-
-    /**
-     * Remove the specified currency from storage.
-     *
-     * @param Currency $currency
-     * @return JsonResponse
-     */
-    public function destroy(Currency $currency): JsonResponse
-    {
-        $this->service->deleteCurrency($currency);
-
-        return response()->success(null, 'Currency deleted successfully');
-    }
-
-    /**
-     * Bulk delete multiple currencies.
-     *
-     * @param CurrencyBulkDestroyRequest $request
-     * @return JsonResponse
-     */
-    public function bulkDestroy(CurrencyBulkDestroyRequest $request): JsonResponse
-    {
-        $count = $this->service->bulkDeleteCurrencies($request->validated()['ids']);
-
-        return response()->success(
-            ['deleted_count' => $count],
-            "Deleted {$count} currencies successfully"
+            new CurrencyResource($currency->load('country')),
+            'Currency details retrieved successfully'
         );
     }
 }

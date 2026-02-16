@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\City;
+use App\Models\State;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+
+/**
+ * Class StateService
+ * Handles business logic for States (World reference data).
+ */
+class StateService
+{
+    /**
+     * Get paginated states.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function getPaginatedStates(array $filters, int $perPage = 10): LengthAwarePaginator
+    {
+        return State::query()
+            ->with('country:id,name,iso2')
+            ->when(
+                ! empty($filters['search']),
+                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('state_code', 'like', '%'.$filters['search'].'%')
+            )
+            ->when(
+                ! empty($filters['country_id']),
+                fn ($q) => $q->where('country_id', $filters['country_id'])
+            )
+            ->orderBy('name')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get list of state options (value/label format).
+     */
+    public function getOptions(): Collection
+    {
+        return State::query()
+            ->select('id', 'name', 'state_code', 'country_id')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (State $state) => [
+                'value' => $state->id,
+                'label' => $state->name,
+                'state_code' => $state->state_code,
+                'country_id' => $state->country_id,
+            ]);
+    }
+
+    /**
+     * Get cities for a given state.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, City>
+     */
+    public function getCitiesByState(State $state): \Illuminate\Database\Eloquent\Collection
+    {
+        return $state->cities()->orderBy('name')->get();
+    }
+}

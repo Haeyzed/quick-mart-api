@@ -4,41 +4,50 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
-use OwenIt\Auditing\Auditable;
-use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use Nnjeim\World\Models\Country as WorldCountry;
 
 /**
- * Country Model
+ * Class Country
  *
- * Represents a country (used for testing/seeding purposes).
+ * Represents a country from World reference data. Extends Nnjeim\World Country.
  *
  * @property int $id
- * @property string $code
+ * @property string $iso2
  * @property string $name
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property int $status
+ * @property string|null $phone_code
+ * @property string|null $iso3
+ * @property string|null $region
+ * @property string|null $subregion
+ * @property string|null $native
+ * @property string|null $latitude
+ * @property string|null $longitude
+ * @property string|null $emoji
+ * @property string|null $emojiU
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder|Country newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Country newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Country query()
  */
-class Country extends Model implements AuditableContract
+class Country extends WorldCountry
 {
-    use Auditable, HasFactory;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'countries';
-
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'code',
+        'iso2',
         'name',
+        'status',
+        'phone_code',
+        'iso3',
+        'region',
+        'subregion',
+        'native',
+        'latitude',
+        'longitude',
+        'emoji',
+        'emojiU',
     ];
 }

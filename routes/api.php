@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillerController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\CourierController;
 use App\Http\Controllers\Api\CreateSmsController;
 use App\Http\Controllers\Api\CurrencyController;
@@ -19,9 +21,9 @@ use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\HrmSettingController;
-use App\Http\Controllers\Api\ImportTemplateController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\MailSettingController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
 use App\Http\Controllers\Api\PosSettingController;
@@ -31,8 +33,10 @@ use App\Http\Controllers\Api\RewardPointSettingController;
 use App\Http\Controllers\Api\SaleAgentController;
 use App\Http\Controllers\Api\SmsSettingController;
 use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\StateController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\TaxController;
+use App\Http\Controllers\Api\TimezoneController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
@@ -97,6 +101,38 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('warehouses', WarehouseController::class);
 
+    Route::prefix('countries')->name('countries.')->group(function () {
+        Route::get('options', [CountryController::class, 'options'])->name('options');
+        Route::get('{country}/states', [CountryController::class, 'states'])->name('states');
+    });
+    Route::apiResource('countries', CountryController::class)->only(['index', 'show']);
+
+    Route::prefix('states')->name('states.')->group(function () {
+        Route::get('options', [StateController::class, 'options'])->name('options');
+        Route::get('{state}/cities', [StateController::class, 'cities'])->name('cities');
+    });
+    Route::apiResource('states', StateController::class)->only(['index', 'show']);
+
+    Route::prefix('cities')->name('cities.')->group(function () {
+        Route::get('options', [CityController::class, 'options'])->name('options');
+    });
+    Route::apiResource('cities', CityController::class)->only(['index', 'show']);
+
+    Route::prefix('timezones')->name('timezones.')->group(function () {
+        Route::get('options', [TimezoneController::class, 'options'])->name('options');
+    });
+    Route::apiResource('timezones', TimezoneController::class)->only(['index', 'show']);
+
+    Route::prefix('currencies')->name('currencies.')->group(function () {
+        Route::get('options', [CurrencyController::class, 'options'])->name('options');
+    });
+    Route::apiResource('currencies', CurrencyController::class)->only(['index', 'show']);
+
+    Route::prefix('languages')->name('languages.')->group(function () {
+        Route::get('options', [LanguageController::class, 'options'])->name('options');
+    });
+    Route::apiResource('languages', LanguageController::class)->only(['index', 'show']);
+
     Route::prefix('taxes')->name('taxes.')->group(function () {
         Route::post('bulk-destroy', [TaxController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [TaxController::class, 'bulkActivate'])->name('bulk-activate');
@@ -148,7 +184,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [BillerController::class, 'options'])->name('options');
     });
     Route::apiResource('billers', BillerController::class);
-
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');
@@ -351,10 +386,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('reports.customer-due');
     Route::post('reports/customer-due/export', [ReportController::class, 'exportCustomerDueReport'])
         ->name('reports.customer-due.export');
-
-    Route::apiResource('currencies', CurrencyController::class);
-    Route::delete('currencies/bulk-destroy', [CurrencyController::class, 'bulkDestroy'])
-        ->name('currencies.bulkDestroy');
 
     Route::apiResource('couriers', CourierController::class);
     Route::delete('couriers/bulk-destroy', [CourierController::class, 'bulkDestroy'])

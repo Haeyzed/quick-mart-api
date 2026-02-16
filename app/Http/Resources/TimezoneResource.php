@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\Currency;
+use App\Models\Timezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Currency
+ * @mixin Timezone
  */
-class CurrencyResource extends JsonResource
+class TimezoneResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -23,13 +23,6 @@ class CurrencyResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'code' => $this->code,
-            'precision' => $this->precision,
-            'symbol' => $this->symbol,
-            'symbol_native' => $this->symbol_native,
-            'symbol_first' => $this->symbol_first,
-            'decimal_mark' => $this->decimal_mark,
-            'thousands_separator' => $this->thousands_separator,
             'country_id' => $this->country_id,
             'country' => $this->whenLoaded('country', fn () => new CountryResource($this->country)),
         ];
