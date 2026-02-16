@@ -21,9 +21,20 @@ return new class extends Migration
             $table->string('email');
             $table->string('phone_number');
             $table->string('address');
-            $table->foreignId('country_id')->references('id')->on('countries')->nullOnDelete();
-            $table->foreignId('state_id')->references('id')->on('states')->nullOnDelete();
-            $table->foreignId('city_id')->references('id')->on('cities')->nullOnDelete();
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained('countries')
+                ->nullOnDelete();
+    
+            $table->foreignId('state_id')
+                ->nullable()
+                ->constrained('states')
+                ->nullOnDelete();
+    
+            $table->foreignId('city_id')
+                ->nullable()
+                ->constrained('cities')
+                ->nullOnDelete();
             $table->string('postal_code')->nullable();
             $table->boolean('is_active')->nullable();
             $table->timestamps();
