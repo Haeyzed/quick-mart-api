@@ -24,15 +24,7 @@ class StateService
     {
         return State::query()
             ->with('country:id,name,iso2')
-            ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-                    ->orWhere('state_code', 'like', '%'.$filters['search'].'%')
-            )
-            ->when(
-                ! empty($filters['country_id']),
-                fn ($q) => $q->where('country_id', $filters['country_id'])
-            )
+            ->filter($filters)
             ->orderBy('name')
             ->paginate($perPage);
     }
@@ -52,16 +44,6 @@ class StateService
                 'state_code' => $state->state_code,
                 'country_id' => $state->country_id,
             ]);
-    }
-
-    /**
-     * Get cities for a given state.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, City>
-     */
-    public function getCitiesByState(State $state): \Illuminate\Database\Eloquent\Collection
-    {
-        return $state->cities()->orderBy('name')->get();
     }
 
     /**

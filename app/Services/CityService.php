@@ -23,18 +23,7 @@ class CityService
     {
         return City::query()
             ->with(['country:id,name,iso2', 'state:id,name,state_code'])
-            ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-            )
-            ->when(
-                ! empty($filters['country_id']),
-                fn ($q) => $q->where('country_id', $filters['country_id'])
-            )
-            ->when(
-                ! empty($filters['state_id']),
-                fn ($q) => $q->where('state_id', $filters['state_id'])
-            )
+            ->filter($filters)
             ->orderBy('name')
             ->paginate($perPage);
     }

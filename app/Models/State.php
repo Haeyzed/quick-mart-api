@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\State as WorldState;
 
 /**
@@ -21,9 +22,10 @@ use Nnjeim\World\Models\State as WorldState;
  * @property string|null $latitude
  * @property string|null $longitude
  *
- * @method static \Illuminate\Database\Eloquent\Builder|State newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|State newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|State query()
+ * @method static Builder|State newModelQuery()
+ * @method static Builder|State newQuery()
+ * @method static Builder|State query()
+ * @method static Builder|State filter(array $filters)
  */
 class State extends WorldState
 {
@@ -42,4 +44,23 @@ class State extends WorldState
         'latitude',
         'longitude',
     ];
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['search']),
+                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('state_code', 'like', '%'.$filters['search'].'%')
+            )
+            ->when(
+                ! empty($filters['country_id']),
+                fn ($q) => $q->where('country_id', $filters['country_id'])
+            );
+    }
 }

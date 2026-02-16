@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Country as WorldCountry;
 
 /**
@@ -25,9 +26,10 @@ use Nnjeim\World\Models\Country as WorldCountry;
  * @property string|null $emoji
  * @property string|null $emojiU
  *
- * @method static \Illuminate\Database\Eloquent\Builder|Country newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Country newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Country query()
+ * @method static Builder|Country newModelQuery()
+ * @method static Builder|Country newQuery()
+ * @method static Builder|Country query()
+ * @method static Builder|Country filter(array $filters)
  */
 class Country extends WorldCountry
 {
@@ -50,4 +52,20 @@ class Country extends WorldCountry
         'emoji',
         'emojiU',
     ];
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['search']),
+                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('iso2', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('iso3', 'like', '%'.$filters['search'].'%')
+            );
+    }
 }

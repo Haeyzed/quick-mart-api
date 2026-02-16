@@ -23,12 +23,7 @@ class CountryService
     public function getPaginatedCountries(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Country::query()
-            ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-                    ->orWhere('iso2', 'like', '%'.$filters['search'].'%')
-                    ->orWhere('iso3', 'like', '%'.$filters['search'].'%')
-            )
+            ->filter($filters)
             ->orderBy('name')
             ->paginate($perPage);
     }
@@ -47,16 +42,6 @@ class CountryService
                 'label' => $country->name,
                 'iso2' => $country->iso2,
             ]);
-    }
-
-    /**
-     * Get states for a given country.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, State>
-     */
-    public function getStatesByCountry(Country $country): \Illuminate\Database\Eloquent\Collection
-    {
-        return $country->states()->orderBy('name')->get();
     }
 
     /**
