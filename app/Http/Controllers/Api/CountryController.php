@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CountryResource;
-use App\Http\Resources\StateResource;
 use App\Models\Country;
 use App\Services\CountryService;
 use Illuminate\Http\JsonResponse;
@@ -77,7 +76,7 @@ class CountryController extends Controller
     }
 
     /**
-     * Get states for the specified country.
+     * Get state options (value/label) for the specified country.
      */
     public function states(Country $country): JsonResponse
     {
@@ -85,11 +84,8 @@ class CountryController extends Controller
             return response()->forbidden('Permission denied for viewing states by country.');
         }
 
-        $states = $this->service->getStatesByCountry($country);
+        $options = $this->service->getStateOptionsByCountry($country);
 
-        return response()->success(
-            StateResource::collection($states),
-            'States retrieved successfully'
-        );
+        return response()->success($options, 'States retrieved successfully');
     }
 }

@@ -58,4 +58,21 @@ class CountryService
     {
         return $country->states()->orderBy('name')->get();
     }
+
+    /**
+     * Get state options (value/label) for a given country.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getStateOptionsByCountry(Country $country): Collection
+    {
+        return $country->states()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (State $state) => [
+                'value' => $state->id,
+                'label' => $state->name,
+            ]);
+    }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\CityResource;
 use App\Http\Resources\StateResource;
 use App\Models\State;
 use App\Services\StateService;
@@ -77,7 +76,7 @@ class StateController extends Controller
     }
 
     /**
-     * Get cities for the specified state.
+     * Get city options (value/label) for the specified state.
      */
     public function cities(State $state): JsonResponse
     {
@@ -85,11 +84,8 @@ class StateController extends Controller
             return response()->forbidden('Permission denied for viewing cities by state.');
         }
 
-        $cities = $this->service->getCitiesByState($state);
+        $options = $this->service->getCityOptionsByState($state);
 
-        return response()->success(
-            CityResource::collection($cities),
-            'Cities retrieved successfully'
-        );
+        return response()->success($options, 'Cities retrieved successfully');
     }
 }

@@ -63,4 +63,21 @@ class StateService
     {
         return $state->cities()->orderBy('name')->get();
     }
+
+    /**
+     * Get city options (value/label) for a given state.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getCityOptionsByState(State $state): Collection
+    {
+        return $state->cities()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (City $city) => [
+                'value' => $city->id,
+                'label' => $city->name,
+            ]);
+    }
 }
