@@ -13,17 +13,17 @@ use App\Models\DiscountPlanCustomer;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Row;
 
 /**
  * Excel/CSV import for Customer entities.
- *
- * Old app CSV: customergroup, name, companyname, email, phonenumber, address, city, state, postalcode, country, deposit.
+ * Same pattern as BillersImport: WithChunkReading for memory efficiency.
  * Assigns generic discount plans and creates Deposit when deposit > 0.
  */
-class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, WithValidation
+class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, WithValidation, WithChunkReading
 {
     public function onRow(Row $row): void
     {
@@ -83,5 +83,10 @@ class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
         return [
             'name' => ['required', 'string', 'max:255'],
         ];
+    }
+
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

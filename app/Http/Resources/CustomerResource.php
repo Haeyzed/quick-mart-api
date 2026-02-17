@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Customer
+ */
 class CustomerResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
         return [
@@ -38,6 +47,7 @@ class CustomerResource extends JsonResource
             'pay_term_period' => $this->pay_term_period,
             'expense' => $this->expense,
             'is_active' => $this->is_active,
+            'active_status' => $this->is_active ? 'active' : 'inactive',
             'discount_plans' => $this->whenLoaded('discountPlans', fn() => $this->discountPlans->pluck('name')->toArray()),
             'custom_fields' => $this->resource->getCustomFieldValues(),
             'created_at' => $this->created_at?->toIso8601String(),

@@ -55,6 +55,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Deposit> $deposits
  *
  * @method static Builder|Customer active()
+ * @method static Builder|Customer filter(array $filters)
  */
 class Customer extends Model implements AuditableContract
 {
@@ -211,6 +212,36 @@ class Customer extends Model implements AuditableContract
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['customer_group_id']),
+                fn (Builder $q) => $q->where('customer_group_id', $filters['customer_group_id'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = '%'.$filters['search'].'%';
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('company_name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
+                    );
+                }
+            );
     }
 
     /**

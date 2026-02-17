@@ -5,45 +5,71 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\CustomerGroup;
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
- * CustomerGroupsImport
- *
- * Handles importing customer groups from CSV/Excel files.
+ * Excel/CSV import for Customer Group entities with batching and upsert support.
  */
-class CustomerGroupsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class CustomerGroupsImport implements
+    ToModel,
+    WithHeadingRow,
+    WithValidation,
+    WithUpserts,
+    WithBatchInserts,
+    WithChunkReading,
+    SkipsEmptyRows
 {
     /**
-     * Process the collection of rows.
-     *
-     * @param Collection $collection
-     * @return void
+     * @param  array<string, mixed>  $row
      */
-    public function collection(Collection $collection): void
+    public function model(array $row): ?CustomerGroup
     {
-        foreach ($collection as $row) {
-            // Skip if name is empty
-            if (empty($row['name'] ?? null)) {
-                continue;
-            }
+        $name = trim((string) ($row['name'] ?? ''));
 
-            $name = trim($row['name'] ?? '');
-            $percentage = !empty($row['percentage'] ?? null) ? (float)$row['percentage'] : 0;
-
-            // Find or create customer group
-            $customerGroup = CustomerGroup::firstOrNew(
-                ['name' => $name, 'is_active' => true]
-            );
-
-            $customerGroup->name = $name;
-            $customerGroup->percentage = $percentage;
-            $customerGroup->is_active = true;
-
-            $customerGroup->save();
+        if ($name === '') {
+            return null;
         }
+
+        $percentage = isset($row['percentage']) ? (float) $row['percentage'] : 0.0;
+        $isActive = isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
+
+        return new CustomerGroup([
+            'name' => $name,
+            'percentage' => $percentage,
+            'is_active' => $isActive,
+        ]);
+    }
+
+    public function uniqueBy(): string
+    {
+        return 'name';
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

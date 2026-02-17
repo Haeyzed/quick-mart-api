@@ -11,77 +11,77 @@ use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
+/**
+ * Customers export (Excel/PDF). Same pattern as BillersExport.
+ */
 class CustomersExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    private const DEFAULT_COLUMNS = [
+        'id',
+        'name',
+        'company_name',
+        'email',
+        'phone_number',
+        'customer_group',
+        'address',
+        'city',
+        'country',
+        'opening_balance',
+        'deposit',
+        'is_active',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  array<string, string>  $filters  Optional filters (e.g. start_date, end_date) for scopeFilter
+     */
     public function __construct(
         private readonly array $ids = [],
-        private readonly array $columns = []
-    )
-    {
+        private readonly array $columns = [],
+        private readonly array $filters = [],
+    ) {
     }
 
     public function query(): Builder
     {
         return Customer::query()
             ->with('customerGroup')
-            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->filter($this->filters)
             ->orderBy('name');
     }
 
     public function headings(): array
     {
-        $labelMap = [
-            'id' => 'ID',
-            'name' => 'Name',
-            'company_name' => 'Company Name',
-            'email' => 'Email',
-            'phone_number' => 'Phone Number',
-            'customer_group' => 'Customer Group',
-            'address' => 'Address',
-            'city' => 'City',
-            'country' => 'Country',
-            'opening_balance' => 'Opening Balance',
-            'deposit' => 'Deposit',
-            'is_active' => 'Status',
-            'created_at' => 'Date Created',
-            'updated_at' => 'Last Updated',
-        ];
-
-        if (empty($this->columns)) {
-            return array_values($labelMap);
-        }
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
-            $this->columns
+            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            $columns
         );
     }
 
-    public function map($customer): array
+    /**
+     * @param  Customer  $row
+     * @return array<int, mixed>
+     */
+    public function map($row): array
     {
-        /** @var Customer $customer */
-        $columnsToExport = $this->columns ?: [
-            'id', 'name', 'company_name', 'email', 'phone_number', 'customer_group',
-            'address', 'city', 'country', 'opening_balance', 'deposit', 'is_active', 'created_at', 'updated_at',
-        ];
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        $row = [];
-        foreach ($columnsToExport as $col) {
-            if ($col === 'customer_group') {
-                $row[] = $customer->customerGroup?->name ?? '';
-            } elseif ($col === 'is_active') {
-                $row[] = $customer->is_active ? 'Active' : 'Inactive';
-            } elseif ($col === 'created_at') {
-                $row[] = $customer->created_at?->toDateTimeString();
-            } elseif ($col === 'updated_at') {
-                $row[] = $customer->updated_at?->toDateTimeString();
-            } else {
-                $row[] = $customer->{$col} ?? '';
-            }
-        }
-
-        return $row;
+        return array_map(function (string $col) use ($row) {
+            return match ($col) {
+                'customer_group' => $row->customerGroup?->name ?? '',
+                'is_active' => $row->is_active ? 'Yes' : 'No',
+                'created_at' => $row->created_at?->toDateTimeString(),
+                'updated_at' => $row->updated_at?->toDateTimeString(),
+                default => $row->{$col} ?? '',
+            };
+        }, $columns);
     }
 }

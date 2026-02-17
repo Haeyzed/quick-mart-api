@@ -9,15 +9,12 @@ use App\Enums\DiscountPlanTypeEnum;
 use App\Enums\RewardPointTypeEnum;
 use App\Exports\CustomersExport;
 use App\Imports\CustomersImport;
-use App\Mail\ExportMail;
 use App\Models\Biller;
 use App\Models\Customer;
 use App\Models\CustomField;
 use App\Models\Deposit;
 use App\Models\DiscountPlan;
 use App\Models\DiscountPlanCustomer;
-use App\Models\GeneralSetting;
-use App\Models\MailSetting;
 use App\Models\Payment;
 use App\Models\Returns;
 use App\Models\RewardPoint;
@@ -26,86 +23,75 @@ use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\MailInfo;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
 
 /**
- * Service class for Customer entity lifecycle operations.
- *
- * Centralizes business logic for Customer CRUD, bulk destroy, import/export,
- * summary/ledger, deposits, reward points, and payments (from quick-mart-old).
- * Delegates permission checks to CheckPermissionsTrait.
+ * Class CustomerService
+ * Handles business logic for Customers.
  */
-class CustomerService extends BaseService
+class CustomerService
 {
-    use CheckPermissionsTrait, MailInfo;
+    private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * Retrieve a single customer by instance.
+     * Get paginated customers based on filters.
      *
-     * Requires customers-index permission.
+     * @param  array<string, mixed>  $filters
      */
-    public function getCustomer(Customer $customer): Customer
+    public function getPaginatedCustomers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('customers-index');
-
-        return $customer->fresh(['customerGroup', 'discountPlans']);
-    }
-
-    /**
-     * Retrieve customers with optional filters and pagination.
-     *
-     * Supports status, customer_group_id, and search. Requires customers-index permission.
-     *
-     * @param array<string, mixed> $filters
-     * @return LengthAwarePaginator<Customer>
-     */
-    public function getCustomers(array $filters = [], int $perPage = 10): LengthAwarePaginator
-    {
-        $this->requirePermission('customers-index');
-
         return Customer::query()
-            ->with(['customerGroup', 'discountPlans'])
-            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(isset($filters['customer_group_id']), fn($q) => $q->where('customer_group_id', $filters['customer_group_id']))
-            ->when(!empty($filters['search']), function ($q) use ($filters) {
-                $term = '%' . $filters['search'] . '%';
-                $q->where(fn($subQ) => $subQ
-                    ->where('name', 'like', $term)
-                    ->orWhere('company_name', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('phone_number', 'like', $term)
-                );
-            })
+            ->with(['customerGroup:id,name', 'discountPlans:id,name'])
+            ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
 
     /**
+     * Get list of customer options.
+     * Returns value/label format for select/combobox components.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getOptions(): Collection
+    {
+        return Customer::active()
+            ->select('id', 'name', 'company_name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Customer $customer) => [
+                'value' => $customer->id,
+                'label' => $customer->company_name ? "{$customer->name} ({$customer->company_name})" : $customer->name,
+            ]);
+    }
+
+    /**
+     * Retrieve a single customer by instance.
+     */
+    public function getCustomer(Customer $customer): Customer
+    {
+        return $customer->fresh(['customerGroup', 'discountPlans']);
+    }
+
+    /**
      * Create a new customer.
-     *
-     * Assigns generic discount plans and creates Deposit when deposit > 0 (quick-mart-old logic).
+     * Assigns generic discount plans and creates Deposit when deposit > 0.
      * When "user" is true, creates a User and links customer; when "both" is true, creates a Supplier with same details.
-     * Defaults type to REGULAR when not provided. Requires customers-create permission.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createCustomer(array $data): Customer
     {
-        $this->requirePermission('customers-create');
-
         return DB::transaction(function () use ($data) {
             $createSupplier = !empty($data['both']);
             $data['is_active'] = $data['is_active'] ?? true;
@@ -330,15 +316,10 @@ class CustomerService extends BaseService
     /**
      * Update an existing customer.
      *
-     * When "user" is true and customer has no user_id, creates a User and links (quick-mart-old).
-     * Requires customers-update permission.
-     *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateCustomer(Customer $customer, array $data): Customer
     {
-        $this->requirePermission('customers-update');
-
         return DB::transaction(function () use ($customer, $data) {
             if (!empty($data['user']) && !$customer->user_id) {
                 $user = $this->createUserForCustomer($data);
@@ -354,48 +335,40 @@ class CustomerService extends BaseService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, Customer>
-     */
-    public function getAllActive(): \Illuminate\Database\Eloquent\Collection
-    {
-        $this->requirePermission('customers-index');
-
-        return Customer::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-    }
-
-    /**
-     * Bulk soft-delete customers. Requires customers-delete permission.
+     * Bulk delete customers (soft: is_active = false).
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
+     * @return int Count of deleted items.
      */
     public function bulkDeleteCustomers(array $ids): int
     {
-        $this->requirePermission('customers-delete');
-
-        $count = 0;
-        foreach ($ids as $id) {
-            $customer = Customer::find($id);
-            if ($customer) {
+        return DB::transaction(function () use ($ids) {
+            $count = 0;
+            $customers = Customer::query()->whereIn('id', $ids)->get();
+            foreach ($customers as $customer) {
                 $this->deleteCustomer($customer);
                 $count++;
             }
-        }
 
-        return $count;
+            return $count;
+        });
     }
 
     /**
-     * Soft-delete a customer (is_active = false) and remove generic discount plan links.
+     * Update status for multiple customers.
      *
-     * Requires customers-delete permission.
+     * @param  array<int>  $ids
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return Customer::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+    }
+
+    /**
+     * Delete a customer (soft: is_active = false, remove generic discount plan links).
      */
     public function deleteCustomer(Customer $customer): void
     {
-        $this->requirePermission('customers-delete');
-
         DB::transaction(function () use ($customer) {
             $genericPlanIds = DiscountPlan::query()
                 ->where('is_active', true)
@@ -411,71 +384,61 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Import customers from Excel/CSV. Requires customers-import permission.
+     * Import customers from file.
      */
     public function importCustomers(UploadedFile $file): void
     {
-        $this->requirePermission('customers-import');
-        Excel::import(new CustomersImport, $file);
+        ExcelFacade::import(new CustomersImport, $file);
     }
 
     /**
-     * Export customers to Excel or PDF. Supports download or email.
-     *
-     * Requires customers-export permission.
-     *
-     * @param array<int> $ids
-     * @param array<string> $columns
+     * Download a customers CSV template.
      */
-    public function exportCustomers(array $ids, string $format, ?User $user, array $columns, string $method): string
+    public function download(): string
     {
-        $this->requirePermission('customers-export');
+        $fileName = 'customers-sample.csv';
 
-        $fileName = 'customers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
 
-        if ($format === 'excel') {
-            Excel::store(new CustomersExport($ids, $columns), $relativePath, 'public');
-        } else {
-            $customers = Customer::query()
-                ->with('customerGroup')
-                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
-                ->orderBy('name')
-                ->get();
-
-            $pdf = PDF::loadView('exports.customers-pdf', compact('customers', 'columns'));
-            Storage::disk('public')->put($relativePath, $pdf->output());
+        if (! File::exists($path)) {
+            throw new RuntimeException('Template customers not found.');
         }
 
-        if ($method === 'email' && $user) {
-            $this->sendExportEmail($user, $relativePath, $fileName);
-        }
+        return $path;
+    }
+
+    /**
+     * Export customers to file.
+     *
+     * @param  array<int>  $ids
+     * @param  string  $format  'excel' or 'pdf'
+     * @param  array<string>  $columns
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters for created_at
+     * @return string Relative file path.
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'customers_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new CustomersExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
 
         return $relativePath;
     }
 
-    private function sendExportEmail(User $user, string $path, string $fileName): void
-    {
-        $mailSetting = MailSetting::default()->firstOr(
-            fn() => throw new RuntimeException('Mail settings are not configured.')
-        );
-        $generalSetting = GeneralSetting::latest()->first();
-        $this->setMailInfo($mailSetting);
-        Mail::to($user->email)->send(
-            new ExportMail($user, $path, $fileName, 'Customers List', $generalSetting)
-        );
-    }
-
     /**
      * Get customer balance summary (opening_balance, total_sales, total_paid, total_returns, balance_due).
-     * Requires customers-index permission.
      *
      * @return array{opening_balance: float, total_sales: float, total_paid: float, total_returns: float, balance_due: float}
      */
     public function getCustomerSummary(Customer $customer): array
     {
-        $this->requirePermission('customers-index');
-
         $openingBalance = (float)($customer->opening_balance ?? 0);
         $sales = Sale::query()
             ->where('customer_id', $customer->id)
@@ -497,14 +460,11 @@ class CustomerService extends BaseService
 
     /**
      * Get customer ledger (sales as debit, payments and returns as credit) with running balance.
-     * Requires customers-index permission.
      *
      * @return array<int, array{date: string, type: string, reference: string, debit: float, credit: float, balance: string}>
      */
     public function getCustomerLedger(Customer $customer): array
     {
-        $this->requirePermission('customers-index');
-
         $sales = Sale::query()
             ->where('customer_id', $customer->id)
             ->whereNull('deleted_at')
@@ -565,24 +525,20 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Get deposits for a customer. Requires customers-index permission.
+     * Get deposits for a customer.
      *
      * @return Collection<int, Deposit>
      */
     public function getCustomerDeposits(Customer $customer): Collection
     {
-        $this->requirePermission('customers-index');
-
         return $customer->deposits()->with('user')->orderByDesc('created_at')->get();
     }
 
     /**
-     * Add a deposit for a customer. Updates customer.deposit and creates Deposit. Requires customers-update (or a dedicated permission if added).
+     * Add a deposit for a customer. Updates customer.deposit and creates Deposit.
      */
     public function addDeposit(Customer $customer, float $amount, ?string $note = null): Deposit
     {
-        $this->requirePermission('customers-update');
-
         $userId = Auth::id();
         if (!$userId) {
             throw new RuntimeException('Authenticated user required to add deposit.');
@@ -605,8 +561,6 @@ class CustomerService extends BaseService
      */
     public function updateDeposit(Deposit $deposit, float $amount, ?string $note = null): Deposit
     {
-        $this->requirePermission('customers-update');
-
         return DB::transaction(function () use ($deposit, $amount, $note) {
             $diff = $amount - $deposit->amount;
             $deposit->customer->increment('deposit', $diff);
@@ -621,8 +575,6 @@ class CustomerService extends BaseService
      */
     public function deleteDeposit(Deposit $deposit): void
     {
-        $this->requirePermission('customers-update');
-
         DB::transaction(function () use ($deposit) {
             $deposit->customer->decrement('deposit', $deposit->amount);
             $deposit->delete();
@@ -630,24 +582,20 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Get reward points for a customer. Requires customers-index permission.
+     * Get reward points for a customer.
      *
      * @return Collection<int, RewardPoint>
      */
     public function getCustomerPoints(Customer $customer): Collection
     {
-        $this->requirePermission('customers-index');
-
         return $customer->rewardPoints()->with('creator')->orderByDesc('created_at')->get();
     }
 
     /**
-     * Add reward points to a customer (manual). Requires customers-update.
+     * Add reward points to a customer (manual).
      */
     public function addPoint(Customer $customer, float $points, ?string $note = null): RewardPoint
     {
-        $this->requirePermission('customers-update');
-
         $userId = Auth::id();
 
         return DB::transaction(function () use ($customer, $points, $note, $userId) {
@@ -670,8 +618,6 @@ class CustomerService extends BaseService
      */
     public function updatePoint(RewardPoint $point, float $points, ?string $note = null): RewardPoint
     {
-        $this->requirePermission('customers-update');
-
         return DB::transaction(function () use ($point, $points, $note) {
             $customer = $point->customer;
             $customer->decrement('points', $point->points);
@@ -691,8 +637,6 @@ class CustomerService extends BaseService
      */
     public function deletePoint(RewardPoint $point): void
     {
-        $this->requirePermission('customers-update');
-
         DB::transaction(function () use ($point) {
             $point->customer->decrement('points', $point->points);
             $point->delete();
@@ -700,14 +644,12 @@ class CustomerService extends BaseService
     }
 
     /**
-     * Get payments for a customer (all payments linked to their sales). Requires customers-index permission.
+     * Get payments for a customer (all payments linked to their sales).
      *
      * @return Collection<int, Payment>
      */
     public function getCustomerPayments(Customer $customer): Collection
     {
-        $this->requirePermission('customers-index');
-
         return Payment::query()
             ->whereHas('sale', fn($q) => $q->where('customer_id', $customer->id)->whereNull('deleted_at'))
             ->with('sale')

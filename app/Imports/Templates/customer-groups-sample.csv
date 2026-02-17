@@ -1,0 +1,6 @@
+name,percentage,is_active
+General,0,1
+Wholesale,10,1
+VIP,15,1
+Retail,5,1
+Corporate,20,1

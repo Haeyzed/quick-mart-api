@@ -6,128 +6,83 @@ namespace App\Services;
 
 use App\Exports\CustomerGroupsExport;
 use App\Imports\CustomerGroupsImport;
-use App\Mail\ExportMail;
 use App\Models\CustomerGroup;
-use App\Models\GeneralSetting;
-use App\Models\MailSetting;
-use App\Models\User;
-use App\Traits\CheckPermissionsTrait;
-use App\Traits\MailInfo;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 /**
- * Service class for Customer Group entity lifecycle operations.
- *
- * Centralizes business logic for Customer Group CRUD, bulk actions, imports, and exports.
- * Delegates permission checks to CheckPermissionsTrait.
+ * Class CustomerGroupService
+ * Handles business logic for Customer Groups.
  */
-class CustomerGroupService extends BaseService
+class CustomerGroupService
 {
-    use CheckPermissionsTrait, MailInfo;
+    private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * Retrieve a single customer group by instance.
+     * Get paginated customer groups based on filters.
      *
-     * Requires customer-groups-index permission. Use for show/display operations.
-     *
-     * @param CustomerGroup $customerGroup The customer group instance to retrieve.
-     * @return CustomerGroup The refreshed customer group instance.
+     * @param  array<string, mixed>  $filters
      */
-    public function getCustomerGroup(CustomerGroup $customerGroup): CustomerGroup
+    public function getPaginatedCustomerGroups(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('customer-groups-index');
-
-        return $customerGroup->fresh();
+        return CustomerGroup::query()
+            ->filter($filters)
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**
-     * Retrieve customer groups with optional filters and pagination.
+     * Get list of customer group options (value/label format).
      *
-     * Supports filtering by status (active/inactive) and search term.
-     * Requires customer-groups-index permission.
-     *
-     * @param array<string, mixed> $filters Associative array with optional keys: 'status', 'search'.
-     * @param int $perPage Number of items per page.
-     * @return LengthAwarePaginator<CustomerGroup> Paginated customer group collection.
+     * @return Collection<int, array{value: int, label: string}>
      */
-    public function getCustomerGroups(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getOptions(): Collection
     {
-        $this->requirePermission('customer-groups-index');
-
-        return CustomerGroup::query()
-            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(!empty($filters['search'] ?? null), function ($q) use ($filters) {
-                $term = "%{$filters['search']}%";
-                $q->where('name', 'like', $term);
-            })
+        return CustomerGroup::active()
+            ->select('id', 'name')
             ->orderBy('name')
-            ->paginate($perPage);
+            ->get()
+            ->map(fn (CustomerGroup $group) => [
+                'value' => $group->id,
+                'label' => $group->name,
+            ]);
     }
 
     /**
      * Create a new customer group.
      *
-     * Requires customer-groups-create permission.
-     *
-     * @param array<string, mixed> $data Validated customer group attributes.
-     * @return CustomerGroup The created customer group instance.
+     * @param  array<string, mixed>  $data
      */
     public function createCustomerGroup(array $data): CustomerGroup
     {
-        $this->requirePermission('customer-groups-create');
-
         return DB::transaction(function () use ($data) {
-            $data = $this->normalizeCustomerGroupData($data);
+            $data['is_active'] = $data['is_active'] ?? false;
+            if (isset($data['is_active']) && ! is_bool($data['is_active'])) {
+                $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+            }
 
-            return CustomerGroup::create($data);
+            return CustomerGroup::query()->create($data);
         });
-    }
-
-    /**
-     * Normalize customer group data to match database schema requirements.
-     *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function normalizeCustomerGroupData(array $data): array
-    {
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
-            $data['is_active'] = (bool)filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
     }
 
     /**
      * Update an existing customer group.
      *
-     * Requires customer-groups-update permission.
-     *
-     * @param CustomerGroup $customerGroup The customer group instance to update.
-     * @param array<string, mixed> $data Validated customer group attributes.
-     * @return CustomerGroup The updated customer group (refreshed).
+     * @param  array<string, mixed>  $data
      */
     public function updateCustomerGroup(CustomerGroup $customerGroup, array $data): CustomerGroup
     {
-        $this->requirePermission('customer-groups-update');
-
         return DB::transaction(function () use ($customerGroup, $data) {
-            $data = $this->normalizeCustomerGroupData($data);
+            if (isset($data['is_active']) && ! is_bool($data['is_active'])) {
+                $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+            }
             $customerGroup->update($data);
 
             return $customerGroup->fresh();
@@ -135,167 +90,99 @@ class CustomerGroupService extends BaseService
     }
 
     /**
-     * Bulk delete customer groups.
-     *
-     * Skips non-existent IDs. Fails if any group has associated customers.
-     * Requires customer-groups-delete permission.
-     *
-     * @param array<int> $ids Customer group IDs to delete.
-     * @return int Number of customer groups successfully deleted.
-     */
-    public function bulkDeleteCustomerGroups(array $ids): int
-    {
-        $this->requirePermission('customer-groups-delete');
-
-        return DB::transaction(function () use ($ids) {
-            $customerGroups = CustomerGroup::whereIn('id', $ids)->get();
-            $deletedCount = 0;
-
-            foreach ($customerGroups as $customerGroup) {
-                $this->deleteCustomerGroup($customerGroup);
-                $deletedCount++;
-            }
-
-            return $deletedCount;
-        });
-    }
-
-    /**
      * Delete a customer group.
      *
-     * Fails with 422 if the group has associated customers.
-     * Requires customer-groups-delete permission.
-     *
-     * @param CustomerGroup $customerGroup The customer group instance to delete.
+     * @throws UnprocessableEntityHttpException
      */
     public function deleteCustomerGroup(CustomerGroup $customerGroup): void
     {
-        $this->requirePermission('customer-groups-delete');
+        if ($customerGroup->customers()->exists()) {
+            throw new UnprocessableEntityHttpException(
+                'Cannot delete customer group: group has associated customers.'
+            );
+        }
 
-        DB::transaction(function () use ($customerGroup) {
-            if ($customerGroup->customers()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete customer group: group has associated customers.');
+        DB::transaction(fn () => $customerGroup->delete());
+    }
+
+    /**
+     * Bulk delete customer groups.
+     *
+     * @param  array<int>  $ids
+     * @return int Count of deleted items.
+     */
+    public function bulkDeleteCustomerGroups(array $ids): int
+    {
+        return DB::transaction(function () use ($ids) {
+            $groups = CustomerGroup::query()->whereIn('id', $ids)->get();
+            $count = 0;
+            foreach ($groups as $group) {
+                if ($group->customers()->exists()) {
+                    continue;
+                }
+                $group->delete();
+                $count++;
             }
-            $customerGroup->delete();
+
+            return $count;
         });
     }
 
     /**
-     * Bulk activate customer groups by ID.
+     * Update status for multiple customer groups.
      *
-     * Sets is_active to true for all matching customer groups. Requires customer-groups-update permission.
-     *
-     * @param array<int> $ids Customer group IDs to activate.
-     * @return int Number of customer groups updated.
+     * @param  array<int>  $ids
      */
-    public function bulkActivateCustomerGroups(array $ids): int
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        $this->requirePermission('customer-groups-update');
-
-        return CustomerGroup::whereIn('id', $ids)->update(['is_active' => true]);
+        return CustomerGroup::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 
     /**
-     * Bulk deactivate customer groups by ID.
-     *
-     * Sets is_active to false for all matching customer groups. Requires customer-groups-update permission.
-     *
-     * @param array<int> $ids Customer group IDs to deactivate.
-     * @return int Number of customer groups updated.
-     */
-    public function bulkDeactivateCustomerGroups(array $ids): int
-    {
-        $this->requirePermission('customer-groups-update');
-
-        return CustomerGroup::whereIn('id', $ids)->update(['is_active' => false]);
-    }
-
-    /**
-     * Import customer groups from an Excel or CSV file.
-     *
-     * Requires customer-groups-import permission.
-     *
-     * @param UploadedFile $file The uploaded import file.
+     * Import customer groups from file.
      */
     public function importCustomerGroups(UploadedFile $file): void
     {
-        $this->requirePermission('customer-groups-import');
-
-        Excel::import(new CustomerGroupsImport, $file);
+        ExcelFacade::import(new CustomerGroupsImport, $file);
     }
 
     /**
-     * Export customer groups to Excel or PDF file.
-     *
-     * Supports download or email delivery. Requires customer-groups-export permission.
-     *
-     * @param array<int> $ids Customer group IDs to export. Empty array exports all.
-     * @param string $format Export format: 'excel' or 'pdf'.
-     * @param User|null $user Recipient when method is 'email'.
-     * @param array<string> $columns Column keys to include in export.
-     * @param string $method Delivery method: 'download' or 'email'.
-     * @return string Relative storage path of the generated file.
+     * Download a customer groups CSV template.
      */
-    public function exportCustomerGroups(array $ids, string $format, ?User $user, array $columns, string $method): string
+    public function download(): string
     {
-        $this->requirePermission('customer-groups-export');
+        $fileName = 'customer-groups-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
 
-        $fileName = 'customer_groups_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
-
-        if ($format === 'excel') {
-            Excel::store(new CustomerGroupsExport($ids, $columns), $relativePath, 'public');
-        } else {
-            $customerGroups = CustomerGroup::query()
-                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
-                ->orderBy('name')
-                ->get();
-
-            $pdf = PDF::loadView('exports.customer-groups-pdf', compact('customerGroups', 'columns'));
-            Storage::disk('public')->put($relativePath, $pdf->output());
+        if (! File::exists($path)) {
+            throw new RuntimeException('Template customer groups not found.');
         }
 
-        if ($method === 'email' && $user) {
-            $this->sendExportEmail($user, $relativePath, $fileName);
-        }
+        return $path;
+    }
+
+    /**
+     * Export customer groups to file.
+     *
+     * @param  array<int>  $ids
+     * @param  string  $format  'excel' or 'pdf'
+     * @param  array<string>  $columns
+     * @param  array{start_date?: string, end_date?: string}  $filters
+     * @return string Relative file path.
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'customer_groups_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new CustomerGroupsExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
 
         return $relativePath;
-    }
-
-    /**
-     * Send export completion email to the user.
-     *
-     * @param User $user Recipient of the export email.
-     * @param string $path Relative storage path of the export file.
-     * @param string $fileName Display filename for the attachment.
-     *
-     * @throws RuntimeException When mail settings are not configured.
-     */
-    private function sendExportEmail(User $user, string $path, string $fileName): void
-    {
-        $mailSetting = MailSetting::default()->firstOr(
-            fn() => throw new RuntimeException('Mail settings are not configured.')
-        );
-        $generalSetting = GeneralSetting::latest()->first();
-
-        $this->setMailInfo($mailSetting);
-
-        Mail::to($user->email)->send(
-            new ExportMail($user, $path, $fileName, 'Customer Groups List', $generalSetting)
-        );
-    }
-
-    /**
-     * Get all active customer groups.
-     *
-     * Requires customer-groups-index permission.
-     *
-     * @return Collection<int, CustomerGroup>
-     */
-    public function getAllActive(): Collection
-    {
-        $this->requirePermission('customer-groups-index');
-
-        return CustomerGroup::where('is_active', true)->orderBy('name')->get();
     }
 }

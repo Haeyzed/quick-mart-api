@@ -1,0 +1,4 @@
+customer_group,name,company_name,email,phone_number,address,city,state,postal_code,country,deposit
+General,Customer One,Acme Ltd,customer1@example.com,+1234567890,123 Main St,New York,NY,10001,USA,0
+General,Customer Two,,customer2@example.com,+0987654321,456 Oak Ave,Los Angeles,CA,90001,USA,100
+Wholesale,Bulk Buyer Co,Bulk Buyer Co,bulk@example.com,+1122334455,78 Industrial Rd,Houston,TX,77001,USA,0

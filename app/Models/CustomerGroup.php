@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,10 +29,11 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Customer> $customers
  *
  * @method static Builder|CustomerGroup active()
+ * @method static Builder|CustomerGroup filter(array $filters)
  */
 class CustomerGroup extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -60,6 +62,29 @@ class CustomerGroup extends Model implements AuditableContract
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['search'] ?? null),
+                function (Builder $q) use ($filters) {
+                    $term = '%'.$filters['search'].'%';
+                    $q->where('name', 'like', $term);
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date'] ?? null) ? $filters['start_date'] : null,
+                ! empty($filters['end_date'] ?? null) ? $filters['end_date'] : null,
+            );
     }
 
     /**

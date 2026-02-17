@@ -5,173 +5,195 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CustomerGroups\CustomerGroupBulkDestroyRequest;
-use App\Http\Requests\CustomerGroups\CustomerGroupBulkUpdateRequest;
-use App\Http\Requests\CustomerGroups\CustomerGroupIndexRequest;
-use App\Http\Requests\CustomerGroups\CustomerGroupRequest;
+use App\Http\Requests\CustomerGroups\CustomerGroupBulkActionRequest;
+use App\Http\Requests\CustomerGroups\StoreCustomerGroupRequest;
+use App\Http\Requests\CustomerGroups\UpdateCustomerGroupRequest;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Resources\CustomerGroupResource;
+use App\Mail\ExportMail;
 use App\Models\CustomerGroup;
+use App\Models\GeneralSetting;
+use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\CustomerGroupService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
- * API Controller for Customer Group CRUD and bulk operations.
+ * Class CustomerGroupController
  *
- * Handles index, store, show, update, destroy, bulk activate/deactivate/destroy,
- * import, and getAllActive. All responses use the ResponseServiceProvider macros.
+ * API Controller for Customer Group CRUD and bulk operations.
+ * Handles authorization via permissions and delegates logic to CustomerGroupService.
  *
  * @group Customer Group Management
  */
 class CustomerGroupController extends Controller
 {
-    /**
-     * CustomerGroupController constructor.
-     */
     public function __construct(
         private readonly CustomerGroupService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display a paginated listing of customer groups.
-     *
-     * @param CustomerGroupIndexRequest $request Validated query params: per_page, page, status, search.
-     * @return JsonResponse Paginated customer groups with meta and links.
      */
-    public function index(CustomerGroupIndexRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $customerGroups = $this->service->getCustomerGroups(
-            $request->validated(),
-            (int)$request->input('per_page', 10)
-        );
+        if (auth()->user()->denies('view customer groups')) {
+            return response()->forbidden('Permission denied for viewing customer groups list.');
+        }
 
-        $customerGroups->through(fn(CustomerGroup $customerGroup) => new CustomerGroupResource($customerGroup));
+        $customerGroups = $this->service->getPaginatedCustomerGroups(
+            $request->all(),
+            (int) $request->input('per_page', 10)
+        );
 
         return response()->success(
-            $customerGroups,
-            'Customer groups fetched successfully'
+            CustomerGroupResource::collection($customerGroups),
+            'Customer groups retrieved successfully'
         );
+    }
+
+    /**
+     * Get customer group options for select components.
+     */
+    public function options(): JsonResponse
+    {
+        if (auth()->user()->denies('view customer groups')) {
+            return response()->forbidden('Permission denied for viewing customer groups options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Customer group options retrieved successfully');
     }
 
     /**
      * Store a newly created customer group.
-     *
-     * @param CustomerGroupRequest $request Validated customer group attributes.
-     * @return JsonResponse Created customer group with 201 status.
      */
-    public function store(CustomerGroupRequest $request): JsonResponse
+    public function store(StoreCustomerGroupRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('create customer groups')) {
+            return response()->forbidden('Permission denied for create customer group.');
+        }
+
         $customerGroup = $this->service->createCustomerGroup($request->validated());
 
         return response()->success(
             new CustomerGroupResource($customerGroup),
             'Customer group created successfully',
-            Response::HTTP_CREATED
+            ResponseAlias::HTTP_CREATED
         );
     }
 
     /**
      * Display the specified customer group.
-     *
-     * @param CustomerGroup $customerGroup The customer group instance resolved via route model binding.
      */
-    public function show(CustomerGroup $customerGroup): JsonResponse
+    public function show(CustomerGroup $customer_group): JsonResponse
     {
-        $customerGroup = $this->service->getCustomerGroup($customerGroup);
+        if (auth()->user()->denies('view customer group details')) {
+            return response()->forbidden('Permission denied for view customer group.');
+        }
 
         return response()->success(
-            new CustomerGroupResource($customerGroup),
-            'Customer group retrieved successfully'
+            new CustomerGroupResource($customer_group),
+            'Customer group details retrieved successfully'
         );
     }
 
     /**
      * Update the specified customer group.
-     *
-     * @param CustomerGroupRequest $request Validated customer group attributes.
-     * @param CustomerGroup $customerGroup The customer group instance to update.
-     * @return JsonResponse Updated customer group.
      */
-    public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup): JsonResponse
+    public function update(UpdateCustomerGroupRequest $request, CustomerGroup $customer_group): JsonResponse
     {
-        $updatedCustomerGroup = $this->service->updateCustomerGroup($customerGroup, $request->validated());
+        if (auth()->user()->denies('update customer groups')) {
+            return response()->forbidden('Permission denied for update customer group.');
+        }
+
+        $updated = $this->service->updateCustomerGroup($customer_group, $request->validated());
 
         return response()->success(
-            new CustomerGroupResource($updatedCustomerGroup),
+            new CustomerGroupResource($updated),
             'Customer group updated successfully'
         );
     }
 
     /**
-     * Remove the specified customer group.
-     *
-     * @param CustomerGroup $customerGroup The customer group instance to delete.
-     * @return JsonResponse Success message.
+     * Remove the specified customer group (soft delete).
      */
-    public function destroy(CustomerGroup $customerGroup): JsonResponse
+    public function destroy(CustomerGroup $customer_group): JsonResponse
     {
-        $this->service->deleteCustomerGroup($customerGroup);
+        if (auth()->user()->denies('delete customer groups')) {
+            return response()->forbidden('Permission denied for delete customer group.');
+        }
+
+        $this->service->deleteCustomerGroup($customer_group);
 
         return response()->success(null, 'Customer group deleted successfully');
     }
 
     /**
      * Bulk delete customer groups.
-     *
-     * @param CustomerGroupBulkDestroyRequest $request Validated ids array.
-     * @return JsonResponse Deleted count and message.
      */
-    public function bulkDestroy(CustomerGroupBulkDestroyRequest $request): JsonResponse
+    public function bulkDestroy(CustomerGroupBulkActionRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('delete customer groups')) {
+            return response()->forbidden('Permission denied for bulk delete customer groups.');
+        }
+
         $count = $this->service->bulkDeleteCustomerGroups($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
-            "Successfully deleted {$count} customer group(s)"
+            "Successfully deleted {$count} customer groups"
         );
     }
 
     /**
-     * Bulk activate customer groups by ID.
-     *
-     * @param CustomerGroupBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Activated count and message.
+     * Bulk activate customer groups.
      */
-    public function bulkActivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
+    public function bulkActivate(CustomerGroupBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkActivateCustomerGroups($request->validated()['ids']);
+        if (auth()->user()->denies('update customer groups')) {
+            return response()->forbidden('Permission denied for bulk update customer groups.');
+        }
 
-        return response()->success(['activated_count' => $count], "{$count} customer group(s) activated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+
+        return response()->success(
+            ['activated_count' => $count],
+            "{$count} customer groups activated"
+        );
     }
 
     /**
-     * Bulk deactivate customer groups by ID.
-     *
-     * @param CustomerGroupBulkUpdateRequest $request Validated ids array.
-     * @return JsonResponse Deactivated count and message.
+     * Bulk deactivate customer groups.
      */
-    public function bulkDeactivate(CustomerGroupBulkUpdateRequest $request): JsonResponse
+    public function bulkDeactivate(CustomerGroupBulkActionRequest $request): JsonResponse
     {
-        $count = $this->service->bulkDeactivateCustomerGroups($request->validated()['ids']);
+        if (auth()->user()->denies('update customer groups')) {
+            return response()->forbidden('Permission denied for bulk update customer groups.');
+        }
 
-        return response()->success(['deactivated_count' => $count], "{$count} customer group(s) deactivated");
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
+
+        return response()->success(
+            ['deactivated_count' => $count],
+            "{$count} customer groups deactivated"
+        );
     }
 
     /**
-     * Import customer groups from Excel/CSV file.
-     *
-     * @param ImportRequest $request Validated file upload.
-     * @return JsonResponse Success message.
+     * Import customer groups from Excel/CSV.
      */
     public function import(ImportRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('import customer groups')) {
+            return response()->forbidden('Permission denied for import customer groups.');
+        }
+
         $this->service->importCustomerGroups($request->file('file'));
 
         return response()->success(null, 'Customer groups imported successfully');
@@ -179,45 +201,85 @@ class CustomerGroupController extends Controller
 
     /**
      * Export customer groups to Excel or PDF.
-     *
-     * @param ExportRequest $request Validated export params: ids, format, method, columns, user_id (if email).
-     * @return JsonResponse|BinaryFileResponse Success message or file download.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
+        if (auth()->user()->denies('export customer groups')) {
+            return response()->forbidden('Permission denied for export customer groups.');
+        }
+
         $validated = $request->validated();
 
-        $user = ($validated['method'] === 'email')
-            ? User::findOrFail($validated['user_id'])
-            : null;
-
-        $filePath = $this->service->exportCustomerGroups(
+        // 1. Generate the file via service
+        $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
-            $user,
             $validated['columns'] ?? [],
-            $validated['method']
+            [
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+            ]
         );
 
-        if ($validated['method'] === 'download') {
-            return response()->download(
-                Storage::disk('public')->path($filePath)
+        // 2. Handle Download Method
+        if (($validated['method'] ?? 'download') === 'download') {
+            return response()
+                ->download(Storage::disk('public')->path($path))
+                ->deleteFileAfterSend();
+        }
+
+        // 3. Handle Email Method
+        if ($validated['method'] === 'email') {
+            $userId = $validated['user_id'] ?? auth()->id();
+            $user = User::query()->find($userId);
+
+            if (! $user) {
+                return response()->error('User not found for email delivery.');
+            }
+
+            $mailSetting = MailSetting::default()->first();
+
+            if (! $mailSetting) {
+                return response()->error('System mail settings are not configured. Cannot send email.');
+            }
+
+            $generalSetting = GeneralSetting::query()->latest()->first();
+
+            Mail::to($user)->queue(
+                new ExportMail(
+                    $user,
+                    $path,
+                    'customer_groups_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'Your Customer Groups Export Is Ready',
+                    $generalSetting,
+                    $mailSetting
+                )
+            );
+
+            return response()->success(
+                null,
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
-        return response()->success(null, 'Export processed and sent via email');
+        return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Get all active customer groups.
+     * Download customer groups module import sample template.
      */
-    public function getAllActive(): JsonResponse
+    public function download(): JsonResponse|BinaryFileResponse
     {
-        $customerGroups = $this->service->getAllActive();
+        if (auth()->user()->denies('import customer groups')) {
+            return response()->forbidden('Permission denied for downloading customer groups import template.');
+        }
 
-        return response()->success(
-            CustomerGroupResource::collection($customerGroups),
-            'Active customer groups retrieved successfully'
+        $path = $this->service->download();
+
+        return response()->download(
+            $path,
+            basename($path),
+            ['Content-Type' => 'text/csv']
         );
     }
 }

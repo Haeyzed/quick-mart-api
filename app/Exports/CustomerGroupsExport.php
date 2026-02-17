@@ -12,66 +12,66 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Excel export for Customer Group entities.
- *
- * Exports customer groups by ID or all when ids is empty. Supports column selection.
+ * Customer groups export (Excel/PDF). Same pattern as WarehousesExport.
  */
 class CustomerGroupsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    private const DEFAULT_COLUMNS = [
+        'id',
+        'name',
+        'percentage',
+        'is_active',
+        'created_at',
+        'updated_at',
+    ];
+
     /**
-     * @param array<int> $ids Customer group IDs to export. Empty array exports all.
-     * @param array<string> $columns Column keys to include. Empty uses defaults.
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  array<string, string>  $filters
      */
     public function __construct(
         private readonly array $ids = [],
-        private readonly array $columns = []
-    )
-    {
+        private readonly array $columns = [],
+        private readonly array $filters = [],
+    ) {
     }
 
     public function query(): Builder
     {
         return CustomerGroup::query()
-            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->filter($this->filters)
             ->orderBy('name');
     }
 
     public function headings(): array
     {
-        $labelMap = [
-            'id' => 'ID',
-            'name' => 'Name',
-            'percentage' => 'Percentage',
-            'is_active' => 'Status',
-            'created_at' => 'Date Created',
-            'updated_at' => 'Last Updated',
-        ];
-
-        if (empty($this->columns)) {
-            return array_values($labelMap);
-        }
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn($col) => $labelMap[$col] ?? ucfirst(str_replace('_', ' ', $col)),
-            $this->columns
+            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            $columns
         );
     }
 
     /**
-     * @param CustomerGroup $customerGroup
-     * @return array<string|int|null>
+     * @param  CustomerGroup  $row
+     * @return array<int, mixed>
      */
-    public function map($customerGroup): array
+    public function map($row): array
     {
-        $columnsToExport = $this->columns ?: ['id', 'name', 'percentage', 'is_active', 'created_at', 'updated_at'];
+        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        return array_map(fn($col) => match ($col) {
-            'is_active' => $customerGroup->is_active ? 'Active' : 'Inactive',
-            'created_at' => $customerGroup->created_at?->toDateTimeString(),
-            'updated_at' => $customerGroup->updated_at?->toDateTimeString(),
-            default => $customerGroup->{$col} ?? '',
-        }, $columnsToExport);
+        return array_map(function ($col) use ($row) {
+            return match ($col) {
+                'is_active' => $row->is_active ? 'Yes' : 'No',
+                'created_at' => $row->created_at?->toDateTimeString(),
+                'updated_at' => $row->updated_at?->toDateTimeString(),
+                default => $row->{$col} ?? '',
+            };
+        }, $columns);
     }
 }

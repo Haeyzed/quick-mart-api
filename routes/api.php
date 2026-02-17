@@ -336,50 +336,37 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('settings/hrm', [HrmSettingController::class, 'update'])
         ->name('settings.hrm.update');
 
-    Route::get('customers/all/active', [CustomerController::class, 'getAllActive'])
-        ->name('customers.all-active');
-    Route::delete('customers/bulk-destroy', [CustomerController::class, 'bulkDestroy'])
-        ->name('customers.bulkDestroy');
-    Route::post('customers/import', [CustomerController::class, 'import'])
-        ->name('customers.import');
-    Route::post('customers/export', [CustomerController::class, 'export'])
-        ->name('customers.export');
-    Route::get('customers/{customer}/summary', [CustomerController::class, 'summary'])
-        ->name('customers.summary');
-    Route::get('customers/{customer}/ledger', [CustomerController::class, 'ledger'])
-        ->name('customers.ledger');
-    Route::get('customers/{customer}/payments', [CustomerController::class, 'payments'])
-        ->name('customers.payments');
-    Route::get('customers/{customer}/deposits', [CustomerController::class, 'deposits'])
-        ->name('customers.deposits.index');
-    Route::post('customers/{customer}/deposits', [CustomerController::class, 'storeDeposit'])
-        ->name('customers.deposits.store');
-    Route::put('customers/{customer}/deposits/{deposit}', [CustomerController::class, 'updateDeposit'])
-        ->name('customers.deposits.update');
-    Route::delete('customers/{customer}/deposits/{deposit}', [CustomerController::class, 'destroyDeposit'])
-        ->name('customers.deposits.destroy');
-    Route::get('customers/{customer}/points', [CustomerController::class, 'points'])
-        ->name('customers.points.index');
-    Route::post('customers/{customer}/points', [CustomerController::class, 'storePoint'])
-        ->name('customers.points.store');
-    Route::put('customers/{customer}/points/{point}', [CustomerController::class, 'updatePoint'])
-        ->name('customers.points.update');
-    Route::delete('customers/{customer}/points/{point}', [CustomerController::class, 'destroyPoint'])
-        ->name('customers.points.destroy');
+    Route::prefix('customers')->name('customers.')->group(function () {
+        Route::post('bulk-destroy', [CustomerController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [CustomerController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [CustomerController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [CustomerController::class, 'import'])->name('import');
+        Route::post('export', [CustomerController::class, 'export'])->name('export');
+        Route::get('download', [CustomerController::class, 'download'])->name('download');
+        Route::get('options', [CustomerController::class, 'options'])->name('options');
+        Route::get('{customer}/summary', [CustomerController::class, 'summary'])->name('summary');
+        Route::get('{customer}/ledger', [CustomerController::class, 'ledger'])->name('ledger');
+        Route::get('{customer}/payments', [CustomerController::class, 'payments'])->name('payments');
+        Route::get('{customer}/deposits', [CustomerController::class, 'deposits'])->name('deposits.index');
+        Route::post('{customer}/deposits', [CustomerController::class, 'storeDeposit'])->name('deposits.store');
+        Route::put('{customer}/deposits/{deposit}', [CustomerController::class, 'updateDeposit'])->name('deposits.update');
+        Route::delete('{customer}/deposits/{deposit}', [CustomerController::class, 'destroyDeposit'])->name('deposits.destroy');
+        Route::get('{customer}/points', [CustomerController::class, 'points'])->name('points.index');
+        Route::post('{customer}/points', [CustomerController::class, 'storePoint'])->name('points.store');
+        Route::put('{customer}/points/{point}', [CustomerController::class, 'updatePoint'])->name('points.update');
+        Route::delete('{customer}/points/{point}', [CustomerController::class, 'destroyPoint'])->name('points.destroy');
+    });
     Route::apiResource('customers', CustomerController::class);
 
-    Route::patch('customer-groups/bulk-activate', [CustomerGroupController::class, 'bulkActivate'])
-        ->name('customer-groups.bulkActivate');
-    Route::patch('customer-groups/bulk-deactivate', [CustomerGroupController::class, 'bulkDeactivate'])
-        ->name('customer-groups.bulkDeactivate');
-    Route::delete('customer-groups/bulk-destroy', [CustomerGroupController::class, 'bulkDestroy'])
-        ->name('customer-groups.bulkDestroy');
-    Route::post('customer-groups/import', [CustomerGroupController::class, 'import'])
-        ->name('customer-groups.import');
-    Route::post('customer-groups/export', [CustomerGroupController::class, 'export'])
-        ->name('customer-groups.export');
-    Route::get('customer-groups/all/active', [CustomerGroupController::class, 'getAllActive'])
-        ->name('customer-groups.all-active');
+    Route::prefix('customer-groups')->name('customer-groups.')->group(function () {
+        Route::post('bulk-destroy', [CustomerGroupController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [CustomerGroupController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [CustomerGroupController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [CustomerGroupController::class, 'import'])->name('import');
+        Route::post('export', [CustomerGroupController::class, 'export'])->name('export');
+        Route::get('download', [CustomerGroupController::class, 'download'])->name('download');
+        Route::get('options', [CustomerGroupController::class, 'options'])->name('options');
+    });
     Route::apiResource('customer-groups', CustomerGroupController::class);
 
     Route::get('reports/customer-due', [ReportController::class, 'customerDueReport'])
