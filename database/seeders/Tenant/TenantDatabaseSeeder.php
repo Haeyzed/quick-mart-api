@@ -757,6 +757,11 @@ class TenantDatabaseSeeder extends Seeder
             return;
         }
 
+        $countryId = DB::table('countries')->where('iso2', 'US')->value('id')
+            ?? DB::table('countries')->value('id');
+        $stateId = $countryId ? DB::table('states')->where('country_id', $countryId)->value('id') : null;
+        $cityId = $stateId ? DB::table('cities')->where('state_id', $stateId)->value('id') : null;
+
         DB::table('customers')->insert([
             [
                 'id' => 1,
@@ -768,10 +773,11 @@ class TenantDatabaseSeeder extends Seeder
                 'phone_number' => '231312',
                 'tax_no' => null,
                 'address' => 'Test address',
-                'city' => 'Test City',
-                'state' => null,
+                'country_id' => $countryId,
+                'state_id' => $stateId,
+                'city_id' => $cityId,
                 'postal_code' => null,
-                'country' => null,
+                'opening_balance' => 0,
                 'points' => null,
                 'is_active' => 1,
                 'deposit' => null,
