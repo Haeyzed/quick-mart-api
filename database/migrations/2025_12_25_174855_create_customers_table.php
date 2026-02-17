@@ -23,10 +23,19 @@ return new class extends Migration
             $table->string('wa_number')->nullable();
             $table->string('tax_no')->nullable();
             $table->string('address', 255)->nullable();
-            $table->string('city', 255)->nullable();
-            $table->string('state')->nullable();
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained('countries')
+                ->nullOnDelete();
+            $table->foreignId('state_id')
+                ->nullable()
+                ->constrained('states')
+                ->nullOnDelete();
+            $table->foreignId('city_id')
+                ->nullable()
+                ->constrained('cities')
+                ->nullOnDelete();
             $table->string('postal_code')->nullable();
-            $table->string('country')->nullable();
             $table->double('opening_balance')->default(0);
             $table->double('credit_limit')->nullable();
             $table->double('points')->nullable();

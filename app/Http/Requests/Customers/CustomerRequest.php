@@ -62,10 +62,10 @@ class CustomerRequest extends BaseRequest
             'wa_number' => ['nullable', 'string', 'max:255'],
             'tax_no' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
+            'country_id' => ['nullable', 'integer', 'exists:countries,id'],
+            'state_id' => ['nullable', 'integer', 'exists:states,id'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
             'postal_code' => ['nullable', 'string', 'max:50'],
-            'country' => ['nullable', 'string', 'max:255'],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'deposit' => ['nullable', 'numeric', 'min:0'],
@@ -91,7 +91,7 @@ class CustomerRequest extends BaseRequest
             }
             $rules['email'] = $emailRules;
             $rules['address'] = ['required', 'string', 'max:500'];
-            $rules['city'] = ['required', 'string', 'max:255'];
+            $rules['city_id'] = ['nullable', 'integer', 'exists:cities,id'];
         }
         if ($isUser) {
             $rules['username'] = [

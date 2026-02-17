@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -32,10 +33,10 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $wa_number
  * @property string|null $tax_no
  * @property string|null $address
- * @property string|null $city
- * @property string|null $state
+ * @property int|null $country_id
+ * @property int|null $state_id
+ * @property int|null $city_id
  * @property string|null $postal_code
- * @property string|null $country
  * @property float $opening_balance
  * @property float $credit_limit
  * @property float $points
@@ -47,6 +48,9 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Country|null $country
+ * @property-read State|null $state
+ * @property-read City|null $city
  * @property-read CustomerGroup|null $customerGroup
  * @property-read User|null $user
  * @property-read Collection<int, Sale> $sales
@@ -59,7 +63,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  */
 class Customer extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -77,10 +81,10 @@ class Customer extends Model implements AuditableContract
         'wa_number',
         'tax_no',
         'address',
-        'city',
-        'state',
+        'country_id',
+        'state_id',
+        'city_id',
         'postal_code',
-        'country',
         'opening_balance',
         'credit_limit',
         'points',
@@ -91,6 +95,36 @@ class Customer extends Model implements AuditableContract
         'wishlist',
         'is_active',
     ];
+
+    /**
+     * Get the country.
+     *
+     * @return BelongsTo<Country, $this>
+     */
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    /**
+     * Get the state.
+     *
+     * @return BelongsTo<State, $this>
+     */
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    /**
+     * Get the city.
+     *
+     * @return BelongsTo<City, $this>
+     */
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
 
     /**
      * Get the customer group for this customer.
@@ -254,6 +288,9 @@ class Customer extends Model implements AuditableContract
         return [
             'customer_group_id' => 'integer',
             'user_id' => 'integer',
+            'country_id' => 'integer',
+            'state_id' => 'integer',
+            'city_id' => 'integer',
             'opening_balance' => 'float',
             'credit_limit' => 'float',
             'points' => 'float',

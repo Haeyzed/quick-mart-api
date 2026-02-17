@@ -27,6 +27,7 @@ class CustomersExport implements FromQuery, WithHeadings, WithMapping
         'customer_group',
         'address',
         'city',
+        'state',
         'country',
         'opening_balance',
         'deposit',
@@ -50,7 +51,7 @@ class CustomersExport implements FromQuery, WithHeadings, WithMapping
     public function query(): Builder
     {
         return Customer::query()
-            ->with('customerGroup')
+            ->with(['customerGroup', 'country', 'state', 'city'])
             ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->filter($this->filters)
             ->orderBy('name');
@@ -77,6 +78,9 @@ class CustomersExport implements FromQuery, WithHeadings, WithMapping
         return array_map(function (string $col) use ($row) {
             return match ($col) {
                 'customer_group' => $row->customerGroup?->name ?? '',
+                'city' => $row->city?->name ?? '',
+                'state' => $row->state?->name ?? '',
+                'country' => $row->country?->name ?? '',
                 'is_active' => $row->is_active ? 'Yes' : 'No',
                 'created_at' => $row->created_at?->toDateTimeString(),
                 'updated_at' => $row->updated_at?->toDateTimeString(),

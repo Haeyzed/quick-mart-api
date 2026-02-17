@@ -20,6 +20,9 @@ use App\Models\Returns;
 use App\Models\RewardPoint;
 use App\Models\Roles;
 use App\Models\Sale;
+use App\Models\City;
+use App\Models\Country;
+use App\Models\State;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -51,7 +54,13 @@ class CustomerService
     public function getPaginatedCustomers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Customer::query()
-            ->with(['customerGroup:id,name', 'discountPlans:id,name'])
+            ->with([
+                'customerGroup:id,name',
+                'discountPlans:id,name',
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
@@ -80,7 +89,7 @@ class CustomerService
      */
     public function getCustomer(Customer $customer): Customer
     {
-        return $customer->fresh(['customerGroup', 'discountPlans']);
+        return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
     }
 
     /**
@@ -116,7 +125,7 @@ class CustomerService
             $this->createOpeningBalanceSaleIfNeeded($customer, $data);
             $this->syncCustomFieldsForCustomer($customer, $data);
 
-            return $customer->fresh(['customerGroup', 'discountPlans']);
+            return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
         });
     }
 
@@ -173,6 +182,10 @@ class CustomerService
      */
     private function createSupplierFromCustomerData(array $data): void
     {
+        $countryName = isset($data['country_id']) ? Country::find($data['country_id'])?->name : null;
+        $stateName = isset($data['state_id']) ? State::find($data['state_id'])?->name : null;
+        $cityName = isset($data['city_id']) ? City::find($data['city_id'])?->name : null;
+
         Supplier::create([
             'name' => $data['name'] ?? '',
             'company_name' => $data['company_name'] ?? null,
@@ -180,10 +193,10 @@ class CustomerService
             'phone_number' => $data['phone_number'] ?? null,
             'wa_number' => $data['wa_number'] ?? null,
             'address' => $data['address'] ?? null,
-            'city' => $data['city'] ?? null,
-            'state' => $data['state'] ?? null,
+            'city' => $cityName,
+            'state' => $stateName,
             'postal_code' => $data['postal_code'] ?? null,
-            'country' => $data['country'] ?? null,
+            'country' => $countryName,
             'is_active' => true,
         ]);
     }
@@ -330,7 +343,7 @@ class CustomerService
             $customer->update($this->onlyFillableCustomerData($data));
             $this->syncCustomFieldsForCustomer($customer, $data);
 
-            return $customer->fresh(['customerGroup', 'discountPlans']);
+            return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
         });
     }
 

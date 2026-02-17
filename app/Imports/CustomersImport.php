@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Enums\DiscountPlanTypeEnum;
+use App\Models\City;
+use App\Models\Country;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
 use App\Models\Deposit;
 use App\Models\DiscountPlan;
 use App\Models\DiscountPlanCustomer;
+use App\Models\State;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
@@ -42,6 +45,13 @@ class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
         }
 
         $phoneNumber = trim((string)($data['phone_number'] ?? $data['phonenumber'] ?? ''));
+        $countryName = trim((string)($data['country'] ?? ''));
+        $stateName = trim((string)($data['state'] ?? ''));
+        $cityName = trim((string)($data['city'] ?? ''));
+        $countryId = $countryName !== '' ? Country::query()->where('name', $countryName)->value('id') : null;
+        $stateId = $stateName !== '' && $countryId ? State::query()->where('country_id', $countryId)->where('name', $stateName)->value('id') : null;
+        $cityId = $cityName !== '' && $stateId ? City::query()->where('state_id', $stateId)->where('name', $cityName)->value('id') : null;
+
         $attrs = [
             'customer_group_id' => $customerGroupId,
             'name' => $name,
@@ -49,10 +59,10 @@ class CustomersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
             'email' => trim((string)($data['email'] ?? '')) ?: null,
             'phone_number' => $phoneNumber ?: null,
             'address' => trim((string)($data['address'] ?? '')) ?: null,
-            'city' => trim((string)($data['city'] ?? '')) ?: null,
-            'state' => trim((string)($data['state'] ?? '')) ?: null,
+            'country_id' => $countryId,
+            'state_id' => $stateId,
+            'city_id' => $cityId,
             'postal_code' => trim((string)($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
-            'country' => trim((string)($data['country'] ?? '')) ?: null,
             'deposit' => (float)($data['deposit'] ?? 0),
             'is_active' => true,
         ];
