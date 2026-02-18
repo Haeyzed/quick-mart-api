@@ -238,27 +238,43 @@ class TenantDatabaseSeeder extends Seeder
                 'import customer groups',
                 'export customer groups',
             ],
-            'people' => [
+            'supplier' => [
                 'view suppliers',
+                'view suppliers details',
                 'create suppliers',
                 'update suppliers',
                 'delete suppliers',
                 'import suppliers',
                 'export suppliers',
+            ],
+            'biller' => [
                 'view billers',
+                'view billers details',
                 'create billers',
                 'update billers',
                 'delete billers',
                 'import billers',
                 'export billers',
+            ],
+            'user' => [
                 'view users',
+                'view users details',
                 'create users',
                 'update users',
                 'delete users',
+                'import users',
+                'export users',
+            ],
+            'employee' => [
                 'view employees',
+                'view employees details',
                 'create employees',
                 'update employees',
                 'delete employees',
+                'import employees',
+                'export employees',
+            ],
+            'sales agent' => [
                 'view sale agents',
                 'view sale agent details',
                 'create sale agents',
@@ -285,8 +301,26 @@ class TenantDatabaseSeeder extends Seeder
                 'view profit loss',
                 'view cash flow',
             ],
-            'hrm' => [
+            'department' => [
                 'view departments',
+                'view departments details',
+                'create departments',
+                'update departments',
+                'delete departments',
+                'import departments',
+                'export departments',
+            ],
+            'holiday' => [
+                'view holidays',
+                'view holidays details',
+                'create holidays',
+                'update holidays',
+                'delete holidays',
+                'import holidays',
+                'export holidays',
+                'approve holidays',
+            ],
+            'hrm' => [
                 'view attendance',
                 'view payroll',
                 'view designations',
@@ -295,14 +329,6 @@ class TenantDatabaseSeeder extends Seeder
                 'view leaves',
                 'view leave types',
                 'hrm panel',
-                'view holidays',
-                'view holiday details',
-                'create holidays',
-                'update holidays',
-                'delete holidays',
-                'import holidays',
-                'export holidays',
-                'approve holidays',
             ],
             'reports' => [
                 'view product report',
@@ -3216,6 +3242,11 @@ class TenantDatabaseSeeder extends Seeder
             return;
         }
 
+        $countryId = DB::table('countries')->where('iso2', 'US')->value('id')
+            ?? DB::table('countries')->value('id');
+        $stateId = $countryId ? DB::table('states')->where('country_id', $countryId)->value('id') : null;
+        $cityId = $stateId ? DB::table('cities')->where('state_id', $stateId)->value('id') : null;
+
         DB::table('suppliers')->insert([
             [
                 'id' => 1,
@@ -3226,10 +3257,10 @@ class TenantDatabaseSeeder extends Seeder
                 'email' => 'john@gmail.com',
                 'phone_number' => '231312',
                 'address' => 'Test address',
-                'city' => 'Test City',
-                'state' => null,
+                'country_id' => $countryId,
+                'state_id' => $stateId,
+                'city_id' => $cityId,
                 'postal_code' => null,
-                'country' => null,
                 'is_active' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
