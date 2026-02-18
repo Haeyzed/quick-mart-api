@@ -23,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 /**
  * Exports Brand data with spreadsheet styling suitable for PDF generation.
  */
-class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithEvents
+class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithEvents
 {
     use Exportable;
 
@@ -90,7 +90,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
      * Map the data for each row.
      *
      * @param mixed $row
-     * @return array<mixed>
+     * @return array
      */
     public function map($row): array
     {
@@ -110,7 +110,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
      * Apply styles to the worksheet elements.
      *
      * @param Worksheet $sheet
-     * @return array<mixed>
+     * @return array
      */
     public function styles(Worksheet $sheet): array
     {
@@ -132,20 +132,48 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
      *
      * @return array<string, callable>
      */
+    /**
+     * Register events to manipulate the sheet after it is created.
+     *
+     * @return array<string, callable>
+     */
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+                $sheet = $event->sheet;
+                $pageSetup = $sheet->getPageSetup();
 
-                $cellRange = 'A1:' . $event->sheet->getHighestColumn() . $event->sheet->getHighestRow();
+                // 1. PAPER SIZE & ORIENTATION
+                $pageSetup->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+                $pageSetup->setPaperSize(PageSetup::PAPERSIZE_A4);
 
-                $event->sheet->getDelegate()->getStyle($cellRange)->applyFromArray([
+                // 2. FIT TO ONE PAGE WIDTH (Crucial for PDF)
+                // This forces all columns to squeeze onto one page width,
+                // while allowing infinite pages vertically.
+                $pageSetup->setFitToWidth(1);
+                $pageSetup->setFitToHeight(0);
+
+                // 3. TEXT WRAPPING FOR LONG COLUMNS
+                // Assuming 'D' is short_description and 'F' is image_url based on your default columns.
+                // We set specific widths so they don't get too narrow or too wide, then wrap them.
+                $sheet->getColumnDimension('D')->setWidth(40); // Description
+                $sheet->getColumnDimension('F')->setWidth(30); // Image URL
+
+                $sheet->getStyle('D:F')->getAlignment()->setWrapText(true);
+
+                // 4. BORDERS
+                $cellRange = 'A1:' . $sheet->getHighestColumn() . $sheet->getHighestRow();
+                $sheet->getDelegate()->getStyle($cellRange)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
                             'color' => ['argb' => '000000'],
                         ],
+                    ],
+                    // Optional: Vertical centering makes wrapped text look better
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
                     ],
                 ]);
             },
