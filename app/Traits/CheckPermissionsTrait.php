@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use App\Models\User;
-use App\Services\PermissionService;
+use App\Services\UserRolePermissionService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,17 +60,17 @@ trait CheckPermissionsTrait
             return false;
         }
 
-        return $this->getPermissionService()->checkPermission($user, $permission);
+        return $this->getUserRolePermissionService()->checkPermission($user, $permission);
     }
 
     /**
      * Get the permission service instance.
      *
-     * @return PermissionService
+     * @return UserRolePermissionService
      */
-    protected function getPermissionService(): PermissionService
+    protected function getUserRolePermissionService(): UserRolePermissionService
     {
-        return app(PermissionService::class);
+        return app(UserRolePermissionService::class);
     }
 
     /**
@@ -116,7 +116,7 @@ trait CheckPermissionsTrait
             return false;
         }
 
-        return $this->getPermissionService()->hasAnyPermission($user, $permissions);
+        return $this->getUserRolePermissionService()->hasAnyPermission($user, $permissions);
     }
 
     /**
@@ -162,7 +162,7 @@ trait CheckPermissionsTrait
             return false;
         }
 
-        return $this->getPermissionService()->hasAllPermissions($user, $permissions);
+        return $this->getUserRolePermissionService()->hasAllPermissions($user, $permissions);
     }
 
     /**
@@ -208,7 +208,7 @@ trait CheckPermissionsTrait
             return false;
         }
 
-        return $this->getPermissionService()->hasRole($user, $role);
+        return $this->getUserRolePermissionService()->hasRole($user, $role);
     }
 
     /**
@@ -254,6 +254,6 @@ trait CheckPermissionsTrait
             return false;
         }
 
-        return $this->getPermissionService()->hasAnyRole($user, $roles);
+        return $this->getUserRolePermissionService()->hasAnyRole($user, $roles);
     }
 }

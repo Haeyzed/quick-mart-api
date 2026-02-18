@@ -89,14 +89,6 @@ class UserResource extends JsonResource
             'company_name' => $this->company_name,
 
             /**
-             * The user's role ID.
-             *
-             * @var int|null $role_id
-             * @example 1
-             */
-            'role_id' => $this->role_id,
-
-            /**
              * The user's biller ID.
              *
              * @var int|null $biller_id
@@ -167,7 +159,7 @@ class UserResource extends JsonResource
             'warehouse' => $this->whenLoaded('warehouse'),
 
             /**
-             * Roles assigned to the user.
+             * Role assigned to the user.
              * Returns array of role objects with id and name only.
              *
              * @var array<int, array{id: int, name: string}>|null $roles

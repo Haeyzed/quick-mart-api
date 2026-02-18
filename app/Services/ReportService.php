@@ -692,7 +692,7 @@ class ReportService
     /**
      * Retrieve audits with optional filters and pagination.
      *
-     * Role-based: users with role_id > 2 only see their own audits.
+     * Role-based: staff users only see their own audits.
      * Requires audit-logs-index permission.
      *
      * @param array<string, mixed> $filters
@@ -706,7 +706,7 @@ class ReportService
 
         $query = Audit::query()
             ->with('user')
-            ->when($user && $user->role_id > 2, fn($q) => $q->where('audits.user_id', $user->id))
+            ->when($user && $user->isStaff(), fn($q) => $q->where('audits.user_id', $user->id))
             ->when(!empty($filters['search'] ?? null), function ($q) use ($filters) {
                 $term = "%{$filters['search']}%";
                 $q->where(fn($subQ) => $subQ

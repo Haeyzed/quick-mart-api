@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
-use App\Traits\CheckPermissionsTrait;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Spatie\Permission\Models\Permission;
@@ -15,41 +14,87 @@ use Spatie\Permission\Models\Role;
  * UserService
  *
  * Handles all business logic for user operations, including role and permission management.
+ * Follows the same structure as CustomerService: no permission checks in service (controller handles auth).
  */
 class UserService extends BaseService
 {
-    use CheckPermissionsTrait;
+    public function __construct(
+        private readonly UserRolePermissionService $userRolePermissionService
+    ) {}
 
     /**
-     * Permission service instance.
+     * Get list of all active users (id, name, email).
      *
-     * @var PermissionService
-     */
-    protected PermissionService $permissionService;
-
-    /**
-     * UserService constructor.
-     *
-     * @param PermissionService $permissionService
-     */
-    public function __construct(PermissionService $permissionService)
-    {
-        $this->permissionService = $permissionService;
-    }
-
-    /**
-     * Get list of all active users.
-     *
-     * @return Collection<User>
+     * @return Collection<int, User>
      */
     public function getUsers(): Collection
     {
-        // Check permission: user needs 'users-index' permission to view users
-        //$this->requirePermission('users-index');
-
-        return User::where('is_active', true)
+        return User::query()
+            ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
+    }
+
+    /**
+     * Retrieve a single user by instance.
+     */
+    public function getUser(User $user): User
+    {
+        return $user->fresh(['roles', 'permissions']);
+    }
+
+    /**
+     * Create a new user.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createUser(array $data): User
+    {
+        unset($data['role_id']);
+        $user = User::create($data);
+
+        if (! empty($data['roles']) || ! empty($data['permissions'])) {
+            $this->userRolePermissionService->assignRolesAndPermissions(
+                $user,
+                $data['roles'] ?? null,
+                $data['permissions'] ?? null
+            );
+        }
+
+        return $user->fresh(['roles', 'permissions']);
+    }
+
+    /**
+     * Update an existing user.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateUser(User $user, array $data): User
+    {
+        if (array_key_exists('password', $data) && empty($data['password'])) {
+            unset($data['password']);
+        }
+        unset($data['role_id']);
+
+        $user->update($data);
+
+        if (array_key_exists('roles', $data) || array_key_exists('permissions', $data)) {
+            $this->userRolePermissionService->assignRolesAndPermissions(
+                $user,
+                $data['roles'] ?? null,
+                $data['permissions'] ?? null
+            );
+        }
+
+        return $user->fresh(['roles', 'permissions']);
+    }
+
+    /**
+     * Delete a user (soft delete or hard delete depending on User model).
+     */
+    public function deleteUser(User $user): void
+    {
+        $user->delete();
     }
 
     /**
@@ -67,15 +112,11 @@ class UserService extends BaseService
      * @return void
      */
     public function assignRolesAndPermissions(
-        User   $user,
+        User $user,
         ?array $roles = null,
         ?array $directPermissions = null
-    ): void
-    {
-        // Check permission: user needs 'users-edit' permission to assign roles/permissions
-        $this->requirePermission('users-edit');
-
-        $this->permissionService->assignRolesAndPermissions($user, $roles, $directPermissions);
+    ): void {
+        $this->userRolePermissionService->assignRolesAndPermissions($user, $roles, $directPermissions);
     }
 
     /**
@@ -87,7 +128,7 @@ class UserService extends BaseService
      */
     public function syncUserPermissions(User $user, ?array $directPermissions = null): void
     {
-        $this->permissionService->syncUserPermissions($user, $directPermissions);
+        $this->userRolePermissionService->syncUserPermissions($user, $directPermissions);
     }
 
     /**
@@ -98,7 +139,7 @@ class UserService extends BaseService
      */
     public function getUserPermissions(User $user): SupportCollection
     {
-        return $this->permissionService->getUserPermissions($user);
+        return $this->userRolePermissionService->getUserPermissions($user);
     }
 
     /**
@@ -109,7 +150,7 @@ class UserService extends BaseService
      */
     public function getUserRoles(User $user): Collection
     {
-        return $this->permissionService->getUserRoles($user);
+        return $this->userRolePermissionService->getUserRoles($user);
     }
 
     /**
@@ -121,7 +162,7 @@ class UserService extends BaseService
      */
     public function checkPermission(User $user, string $permission): bool
     {
-        return $this->permissionService->checkPermission($user, $permission);
+        return $this->userRolePermissionService->checkPermission($user, $permission);
     }
 }
 

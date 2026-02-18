@@ -5,125 +5,98 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Users\StoreUserRequest;
+use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Requests\Users\UserIndexRequest;
-use App\Http\Requests\Users\UserRequest;
 use App\Models\User;
 use App\Services\UserService;
-use App\Traits\CheckPermissionsTrait;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
  * UserController
  *
- * Handles user-related API requests.
+ * API controller for User CRUD. Follows the same structure as CustomerController:
+ * permission checks in controller, Store/Update requests, delegate logic to UserService.
+ *
+ * @group User Management
  */
 class UserController extends Controller
 {
-    use CheckPermissionsTrait;
-
     public function __construct(
         private readonly UserService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Get list of users.
-     *
-     * @param UserIndexRequest $request
-     * @return JsonResponse
+     * Display a listing of users (active, id, name, email).
      */
     public function index(UserIndexRequest $request): JsonResponse
     {
-        // Permission check is handled in UserService::getUsers()
+        if (auth()->user()->denies('view users')) {
+            return response()->forbidden('Permission denied for viewing users list.');
+        }
+
         $users = $this->service->getUsers();
-        return response()->success($users, 'Users fetched successfully');
+
+        return response()->success($users, 'Users retrieved successfully');
     }
 
     /**
-     * Get a single user by ID.
-     *
-     * @param User $user
-     * @return JsonResponse
+     * Display the specified user.
      */
     public function show(User $user): JsonResponse
     {
-        // Check permission: user needs 'users-index' permission to view users
-        $this->requirePermission('users-index');
+        if (auth()->user()->denies('view users')) {
+            return response()->forbidden('Permission denied for view user.');
+        }
 
-        return response()->success($user->load('roles', 'permissions'), 'User fetched successfully');
+        $user = $this->service->getUser($user);
+
+        return response()->success($user, 'User details retrieved successfully');
     }
 
     /**
-     * Create a new user.
-     *
-     * @param UserRequest $request
-     * @return JsonResponse
+     * Store a newly created user.
      */
-    public function store(UserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        // Check permission: user needs 'users-add' permission to create users
-        $this->requirePermission('users-add');
-
-        $user = User::create($request->validated());
-
-        // Assign roles and permissions if provided
-        if ($request->has('roles') || $request->has('permissions')) {
-            $this->service->assignRolesAndPermissions(
-                $user,
-                $request->input('roles'),
-                $request->input('permissions')
-            );
+        if (auth()->user()->denies('create users')) {
+            return response()->forbidden('Permission denied for create user.');
         }
 
-        return response()->success($user->load('roles', 'permissions'), 'User created successfully', 201);
+        $user = $this->service->createUser($request->validated());
+
+        return response()->success(
+            $user,
+            'User created successfully',
+            ResponseAlias::HTTP_CREATED
+        );
     }
 
     /**
-     * Update an existing user.
-     *
-     * @param UserRequest $request
-     * @param User $user
-     * @return JsonResponse
+     * Update the specified user.
      */
-    public function update(UserRequest $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        // Check permission: user needs 'users-edit' permission to update users
-        $this->requirePermission('users-edit');
-
-        $data = $request->validated();
-
-        // Remove password if not provided
-        if (empty($data['password'])) {
-            unset($data['password']);
+        if (auth()->user()->denies('update users')) {
+            return response()->forbidden('Permission denied for update user.');
         }
 
-        $user->update($data);
+        $user = $this->service->updateUser($user, $request->validated());
 
-        // Assign roles and permissions if provided
-        if ($request->has('roles') || $request->has('permissions')) {
-            $this->service->assignRolesAndPermissions(
-                $user,
-                $request->input('roles'),
-                $request->input('permissions')
-            );
-        }
-
-        return response()->success($user->fresh()->load('roles', 'permissions'), 'User updated successfully');
+        return response()->success($user, 'User updated successfully');
     }
 
     /**
-     * Delete a user.
-     *
-     * @param User $user
-     * @return JsonResponse
+     * Remove the specified user.
      */
     public function destroy(User $user): JsonResponse
     {
-        // Check permission: user needs 'users-delete' permission to delete users
-        $this->requirePermission('users-delete');
+        if (auth()->user()->denies('delete users')) {
+            return response()->forbidden('Permission denied for delete user.');
+        }
 
-        $user->delete();
+        $this->service->deleteUser($user);
 
         return response()->success(null, 'User deleted successfully');
     }

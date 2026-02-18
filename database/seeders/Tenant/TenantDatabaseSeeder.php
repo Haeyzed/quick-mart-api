@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Database\Seeders\Tenant;
 
 use App\Models\User;
-use App\Services\PermissionService;
+use App\Services\UserRolePermissionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Permission;
+use App\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -141,6 +141,24 @@ class TenantDatabaseSeeder extends Seeder
                 'view warehouse report',
                 'view warehouse stock report',
             ],
+            'roles' => [
+                'view roles',
+                'view role details',
+                'create roles',
+                'update roles',
+                'delete roles',
+                'import roles',
+                'export roles',
+            ],
+            'permissions' => [
+                'view permissions',
+                'view permission details',
+                'create permissions',
+                'update permissions',
+                'delete permissions',
+                'import permissions',
+                'export permissions',
+            ],
             'world' => [
                 'view countries',
                 'view states',
@@ -241,15 +259,25 @@ class TenantDatabaseSeeder extends Seeder
                 'create employees',
                 'update employees',
                 'delete employees',
+                'view sale agents',
+                'view sale agent details',
+                'create sale agents',
+                'update sale agents',
+                'delete sale agents',
+                'import sale agents',
+                'export sale agents',
             ],
             'accounting' => [
                 'view accounts',
                 'view balance sheet',
                 'view account statement',
                 'view incomes',
+                'view income details',
                 'create incomes',
                 'update incomes',
                 'delete incomes',
+                'import incomes',
+                'export incomes',
                 'view expenses',
                 'create expenses',
                 'update expenses',
@@ -268,6 +296,13 @@ class TenantDatabaseSeeder extends Seeder
                 'view leave types',
                 'hrm panel',
                 'view holidays',
+                'view holiday details',
+                'create holidays',
+                'update holidays',
+                'delete holidays',
+                'import holidays',
+                'export holidays',
+                'approve holidays',
             ],
             'reports' => [
                 'view product report',
@@ -316,7 +351,7 @@ class TenantDatabaseSeeder extends Seeder
         // Reset cached roles and permissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // 2. Create Roles
+        // 2. Create Role
         $roles = ['Super Admin', 'Admin', 'Owner', 'Staff', 'Customer'];
         foreach ($roles as $name) {
             Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
@@ -347,7 +382,7 @@ class TenantDatabaseSeeder extends Seeder
             }
         }
 
-        // 4. Assign Permissions to Roles
+        // 4. Assign Permissions to Role
 
         // Admin / Super Admin / Owner get ALL
         $adminRoles = ['Super Admin', 'Admin', 'Owner'];
@@ -457,7 +492,6 @@ class TenantDatabaseSeeder extends Seeder
                 'remember_token' => '6mN44MyRiQZfCi0QvFFIYAU9LXIUz9CdNIlrRS5Lg8wBoJmxVu8auzTP42ZW',
                 'phone' => $tenantData['phone'] ?? '12112',
                 'company_name' => $tenantData['company_name'] ?? 'Softmax Technologies',
-                'role_id' => $adminRoleId,
                 'biller_id' => null,
                 'warehouse_id' => null,
                 'is_active' => 1,
@@ -471,7 +505,7 @@ class TenantDatabaseSeeder extends Seeder
         $firstUserId = (int) DB::table('users')->orderBy('id')->value('id');
         $user = User::find($firstUserId);
         if ($user) {
-            $permissionService = app(PermissionService::class);
+            $userRolePermissionService = app(UserRolePermissionService::class);
 
             // Get roles to assign (default: Admin role by name)
             $rolesToAssign = ['Admin'];
@@ -480,7 +514,7 @@ class TenantDatabaseSeeder extends Seeder
             }
 
             // Get all available permissions to assign to admin user
-            $allPermissions = $permissionService->getAllPermissions()->pluck('name')->toArray();
+            $allPermissions = $userRolePermissionService->getAllPermissions()->pluck('name')->toArray();
 
             // Merge with any tenant-specific direct permissions
             $directPermissions = $tenantData['user_permissions'] ?? [];
@@ -489,7 +523,7 @@ class TenantDatabaseSeeder extends Seeder
             }
 
             // Assign roles and all permissions with automatic deduplication
-            $permissionService->assignRolesAndPermissions($user, $rolesToAssign, $allPermissions);
+            $userRolePermissionService->assignRolesAndPermissions($user, $rolesToAssign, $allPermissions);
         }
     }
 

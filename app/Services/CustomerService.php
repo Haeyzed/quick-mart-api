@@ -18,12 +18,8 @@ use App\Models\DiscountPlanCustomer;
 use App\Models\Payment;
 use App\Models\Returns;
 use App\Models\RewardPoint;
-use App\Models\Roles;
+use App\Models\Role;
 use App\Models\Sale;
-use App\Models\City;
-use App\Models\Country;
-use App\Models\State;
-use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -46,10 +42,16 @@ class CustomerService
 {
     private const TEMPLATE_PATH = 'Imports/Templates';
 
+    public function __construct(
+        private readonly SupplierService $supplierService
+    )
+    {
+    }
+
     /**
      * Get paginated customers based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedCustomers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -78,7 +80,7 @@ class CustomerService
             ->select('id', 'name', 'company_name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Customer $customer) => [
+            ->map(fn(Customer $customer) => [
                 'value' => $customer->id,
                 'label' => $customer->company_name ? "{$customer->name} ({$customer->company_name})" : $customer->name,
             ]);
@@ -89,7 +91,13 @@ class CustomerService
      */
     public function getCustomer(Customer $customer): Customer
     {
-        return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
+        return $customer->fresh([
+            'customerGroup:id,name',
+            'discountPlans:id,name',
+            'country:id,name',
+            'state:id,name',
+            'city:id,name',
+        ]);
     }
 
     /**
@@ -97,7 +105,7 @@ class CustomerService
      * Assigns generic discount plans and creates Deposit when deposit > 0.
      * When "user" is true, creates a User and links customer; when "both" is true, creates a Supplier with same details.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createCustomer(array $data): Customer
     {
@@ -114,23 +122,29 @@ class CustomerService
             }
             unset($data['user'], $data['username'], $data['password'], $data['both']);
 
-            $customer = Customer::create($this->onlyFillableCustomerData($data));
+            $customer = Customer::query()->create($this->onlyFillableCustomerData($data));
 
             if ($createSupplier) {
-                $this->createSupplierFromCustomerData(array_merge($customer->getAttributes(), $data));
+                $this->supplierService->createFromCustomerData(array_merge($customer->getAttributes(), $data));
             }
 
             $this->assignGenericDiscountPlans($customer);
-            $this->createInitialDepositIfNeeded($customer);
-            $this->createOpeningBalanceSaleIfNeeded($customer, $data);
+            $this->createInitialDeposit($customer);
+            $this->createOpeningBalance($customer, $data);
             $this->syncCustomFieldsForCustomer($customer, $data);
 
-            return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
+            return $customer->fresh([
+                'customerGroup:id,name',
+                'discountPlans:id,name',
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ]);
         });
     }
 
     /**
-     * Create a User for customer login (phone from phone_number, role = Customer).
+     * Create a User for customer login (phone from phone_number) and assign Customer role via Spatie.
      *
      * @param array<string, mixed> $data
      */
@@ -141,25 +155,27 @@ class CustomerService
             throw new RuntimeException('Authenticated user required to create customer login.');
         }
 
-        $customerRoleId = Roles::query()
+        $customerRole = Role::query()
             ->where('name', 'Customer')
             ->where('is_active', true)
-            ->value('id');
+            ->first();
 
-        if (!$customerRoleId) {
+        if (!$customerRole) {
             throw new RuntimeException('Customer role not found. Please ensure a role named "Customer" exists and is active.');
         }
 
-        return User::create([
+        $user = User::query()->create([
             'name' => $data['name'],
             'username' => $data['username'] ?? $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'phone' => $data['phone_number'] ?? null,
-            'role_id' => $customerRoleId,
             'is_active' => true,
-            'is_deleted' => false,
         ]);
+
+        $user->assignRole($customerRole);
+
+        return $user;
     }
 
     /**
@@ -175,32 +191,6 @@ class CustomerService
         return array_intersect_key($data, array_flip($fillable));
     }
 
-    /**
-     * Create a Supplier with same details as customer (quick-mart-old "both").
-     *
-     * @param array<string, mixed> $data
-     */
-    private function createSupplierFromCustomerData(array $data): void
-    {
-        $countryName = isset($data['country_id']) ? Country::find($data['country_id'])?->name : null;
-        $stateName = isset($data['state_id']) ? State::find($data['state_id'])?->name : null;
-        $cityName = isset($data['city_id']) ? City::find($data['city_id'])?->name : null;
-
-        Supplier::create([
-            'name' => $data['name'] ?? '',
-            'company_name' => $data['company_name'] ?? null,
-            'email' => $data['email'] ?? null,
-            'phone_number' => $data['phone_number'] ?? null,
-            'wa_number' => $data['wa_number'] ?? null,
-            'address' => $data['address'] ?? null,
-            'city' => $cityName,
-            'state' => $stateName,
-            'postal_code' => $data['postal_code'] ?? null,
-            'country' => $countryName,
-            'is_active' => true,
-        ]);
-    }
-
     private function assignGenericDiscountPlans(Customer $customer): void
     {
         $genericPlans = DiscountPlan::query()
@@ -209,7 +199,7 @@ class CustomerService
             ->get();
 
         foreach ($genericPlans as $plan) {
-            DiscountPlanCustomer::firstOrCreate(
+            DiscountPlanCustomer::query()->firstOrCreate(
                 [
                     'discount_plan_id' => $plan->id,
                     'customer_id' => $customer->id,
@@ -218,7 +208,7 @@ class CustomerService
         }
     }
 
-    private function createInitialDepositIfNeeded(Customer $customer): void
+    private function createInitialDeposit(Customer $customer): void
     {
         $amount = (float)($customer->deposit ?? 0);
         if ($amount <= 0) {
@@ -230,7 +220,7 @@ class CustomerService
             return;
         }
 
-        Deposit::create([
+        Deposit::query()->create([
             'customer_id' => $customer->id,
             'user_id' => $userId,
             'amount' => $amount,
@@ -240,7 +230,7 @@ class CustomerService
     /**
      * Create a dummy "Opening balance" sale when customer has opening_balance > 0 (quick-mart-old behaviour).
      */
-    private function createOpeningBalanceSaleIfNeeded(Customer $customer, array $data): void
+    private function createOpeningBalance(Customer $customer, array $data): void
     {
         $openingBalance = (float)($data['opening_balance'] ?? $customer->opening_balance ?? 0);
         if ($openingBalance <= 0) {
@@ -255,7 +245,7 @@ class CustomerService
         $warehouseId = (int)(Warehouse::query()->value('id') ?? 1);
         $billerId = (int)(Biller::query()->where('is_active', true)->value('id') ?? 1);
 
-        Sale::create([
+        Sale::query()->create([
             'reference_no' => 'cob-' . date('Ymd') . '-' . date('his'),
             'customer_id' => $customer->id,
             'user_id' => $userId,
@@ -329,7 +319,7 @@ class CustomerService
     /**
      * Update an existing customer.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function updateCustomer(Customer $customer, array $data): Customer
     {
@@ -343,14 +333,20 @@ class CustomerService
             $customer->update($this->onlyFillableCustomerData($data));
             $this->syncCustomFieldsForCustomer($customer, $data);
 
-            return $customer->fresh(['customerGroup', 'discountPlans', 'country', 'state', 'city']);
+            return $customer->fresh([
+                'customerGroup:id,name',
+                'discountPlans:id,name',
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ]);
         });
     }
 
     /**
      * Bulk delete customers (soft: is_active = false).
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      * @return int Count of deleted items.
      */
     public function bulkDeleteCustomers(array $ids): int
@@ -370,7 +366,7 @@ class CustomerService
     /**
      * Update status for multiple customers.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -388,7 +384,7 @@ class CustomerService
                 ->where('type', DiscountPlanTypeEnum::GENERIC->value)
                 ->pluck('id');
 
-            DiscountPlanCustomer::where('customer_id', $customer->id)
+            DiscountPlanCustomer::query()->where('customer_id', $customer->id)
                 ->whereIn('discount_plan_id', $genericPlanIds)
                 ->delete();
 
@@ -411,9 +407,9 @@ class CustomerService
     {
         $fileName = 'customers-sample.csv';
 
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template customers not found.');
         }
 
@@ -423,16 +419,16 @@ class CustomerService
     /**
      * Export customers to file.
      *
-     * @param  array<int>  $ids
-     * @param  string  $format  'excel' or 'pdf'
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters for created_at
+     * @param array<int> $ids
+     * @param string $format 'excel' or 'pdf'
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters for created_at
      * @return string Relative file path.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'customers_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'customers_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(
@@ -612,7 +608,7 @@ class CustomerService
         $userId = Auth::id();
 
         return DB::transaction(function () use ($customer, $points, $note, $userId) {
-            $point = RewardPoint::create([
+            $point = RewardPoint::query()->create([
                 'customer_id' => $customer->id,
                 'reward_point_type' => RewardPointTypeEnum::MANUAL->value,
                 'points' => $points,

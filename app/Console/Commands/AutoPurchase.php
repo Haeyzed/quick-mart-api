@@ -111,8 +111,9 @@ class AutoPurchase extends Command
     private function preparePurchaseData($products): ?array
     {
         $posSetting = PosSetting::latest()->first();
-        $adminUser = User::where('is_active', true)
-            ->where('role_id', 1)
+        $adminUser = User::query()
+            ->where('is_active', true)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
             ->first();
 
         if (!$posSetting || !$adminUser) {

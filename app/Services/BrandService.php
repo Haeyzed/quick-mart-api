@@ -26,7 +26,7 @@ class BrandService
     /**
      *
      */
-    private const IMAGE_PATH = 'images/brands';
+    private const BRANDS_IMAGE_PATH = 'images/brands';
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
@@ -91,7 +91,7 @@ class BrandService
             if ($brand?->image) {
                 $this->uploadService->delete($brand->image);
             }
-            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+            $path = $this->uploadService->upload($data['image'], self::BRANDS_IMAGE_PATH);
             $data['image'] = $path;
             $data['image_url'] = $this->uploadService->url($path);
         }

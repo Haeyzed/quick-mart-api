@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\CustomerTypeEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -291,6 +292,7 @@ class Customer extends Model implements AuditableContract
             'country_id' => 'integer',
             'state_id' => 'integer',
             'city_id' => 'integer',
+            'type' => CustomerTypeEnum::class,
             'opening_balance' => 'float',
             'credit_limit' => 'float',
             'points' => 'float',

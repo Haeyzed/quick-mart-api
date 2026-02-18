@@ -15,16 +15,28 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('image')->nullable();
+            $table->string('image_url')->nullable();
             $table->string('company_name');
             $table->string('vat_number')->nullable();
             $table->string('email');
             $table->string('phone_number');
             $table->string('wa_number')->nullable();
             $table->string('address');
-            $table->string('city');
-            $table->string('state')->nullable();
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained('countries')
+                ->nullOnDelete();
+    
+            $table->foreignId('state_id')
+                ->nullable()
+                ->constrained('states')
+                ->nullOnDelete();
+    
+            $table->foreignId('city_id')
+                ->nullable()
+                ->constrained('cities')
+                ->nullOnDelete();
             $table->string('postal_code')->nullable();
-            $table->string('country')->nullable();
             $table->double('opening_balance')->default(0);
             $table->integer('pay_term_no')->nullable();
             $table->string('pay_term_period')->nullable();

@@ -1,0 +1,7 @@
+name,guard_name,module,is_active
+view roles,web,roles,1
+create roles,web,roles,1
+update roles,web,roles,1
+delete roles,web,roles,1
+view permissions,web,permissions,1
+create permissions,web,permissions,1

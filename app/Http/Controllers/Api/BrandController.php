@@ -215,7 +215,6 @@ class BrandController extends Controller
 
         $validated = $request->validated();
 
-        // 1. Generate the file via service
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
@@ -226,7 +225,6 @@ class BrandController extends Controller
             ]
         );
 
-        // 2. Handle Download Method
         if (($validated['method'] ?? 'download') === 'download') {
             return response()
                 ->download(Storage::disk('public')->path($path))

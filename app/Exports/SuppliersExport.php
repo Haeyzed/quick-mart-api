@@ -25,7 +25,8 @@ class SuppliersExport implements FromQuery, WithHeadings, WithMapping
     public function query(): Builder
     {
         return Supplier::query()
-            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->with(['country:id,name', 'state:id,name', 'city:id,name'])
+            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('company_name');
     }
 
@@ -77,6 +78,12 @@ class SuppliersExport implements FromQuery, WithHeadings, WithMapping
                 $row[] = $supplier->created_at?->toDateTimeString();
             } elseif ($col === 'updated_at') {
                 $row[] = $supplier->updated_at?->toDateTimeString();
+            } elseif ($col === 'city') {
+                $row[] = $supplier->city?->name ?? '';
+            } elseif ($col === 'state') {
+                $row[] = $supplier->state?->name ?? '';
+            } elseif ($col === 'country') {
+                $row[] = $supplier->country?->name ?? '';
             } else {
                 $row[] = $supplier->{$col} ?? '';
             }

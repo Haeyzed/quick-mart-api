@@ -34,17 +34,13 @@ class BrandsImport implements
     {
         $name = trim((string)($row['name'] ?? ''));
 
-        if ($name === '') {
-            return null;
-        }
-
         return new Brand([
             'name' => $name,
             'slug' => Str::slug($name),
             'page_title' => $row['page_title'] ?? null,
             'short_description' => $row['short_description'] ?? null,
             'image_url' => $row['image_url'] ?? null,
-            'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
+            'is_active' => $this->parseBoolean($row['is_active'] ?? true),
         ]);
     }
 
@@ -57,7 +53,7 @@ class BrandsImport implements
     }
 
     /**
-     * @return array[]
+     * Validation rules for each row.
      */
     public function rules(): array
     {
@@ -66,8 +62,17 @@ class BrandsImport implements
             'image_url' => ['nullable', 'url'],
             'page_title' => ['nullable', 'string', 'max:255'],
             'short_description' => ['nullable', 'string', 'max:1000'],
-            'is_active' => ['nullable', 'boolean'],
+            'is_active' => ['nullable'],
         ];
+    }
+
+    /**
+     * Helper to handle various boolean formats from Excel (1/0, true/false, "yes"/"no")
+     */
+    private function parseBoolean($value): bool
+    {
+        if (is_bool($value)) return $value;
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
     }
 
     /**

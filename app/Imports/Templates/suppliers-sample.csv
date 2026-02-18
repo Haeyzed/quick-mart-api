@@ -1,0 +1,3 @@
+name,company_name,vat_number,email,phone_number,address,city,state,postal_code,country
+John Doe,Acme Inc,,john@example.com,+1234567890,123 Main St,New York,NY,10001,USA
+Jane Smith,Widget Co,VAT123,jane@example.com,+0987654321,456 Oak Ave,Los Angeles,CA,90001,USA

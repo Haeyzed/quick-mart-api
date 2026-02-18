@@ -28,7 +28,7 @@ class StoreCustomerRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'type' => ['nullable', 'string', 'max:50'],
+            'type' => ['nullable', 'string', 'in:'.implode(',', \App\Enums\CustomerTypeEnum::toArray())],
             'phone_number' => [
                 'nullable',
                 'string',

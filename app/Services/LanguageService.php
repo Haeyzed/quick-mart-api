@@ -22,11 +22,7 @@ class LanguageService
     public function getPaginatedLanguages(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Language::query()
-            ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-                    ->orWhere('code', 'like', '%'.$filters['search'].'%')
-            )
+            ->filter($filters)
             ->orderBy('name')
             ->paginate($perPage);
     }

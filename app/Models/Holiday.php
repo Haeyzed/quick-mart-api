@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Holiday Model
+ * Class Holiday
  *
  * Represents a holiday/leave request for a user.
  *
@@ -28,14 +29,16 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $region
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read User $user
  *
  * @method static Builder|Holiday approved()
  * @method static Builder|Holiday pending()
+ * @method static Builder|Holiday filter(array $filters)
  */
 class Holiday extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -76,6 +79,31 @@ class Holiday extends Model implements AuditableContract
     public function scopePending(Builder $query): Builder
     {
         return $query->where('is_approved', false);
+    }
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['user_id']),
+                fn (Builder $q) => $q->where('user_id', (int) $filters['user_id'])
+            )
+            ->when(
+                isset($filters['is_approved']),
+                fn (Builder $q) => $q->where('is_approved', (bool) $filters['is_approved'])
+            )
+            ->when(
+                ! empty($filters['search'] ?? null),
+                fn (Builder $q) => $q->where('note', 'like', '%'.$filters['search'].'%')
+            )
+            ->customRange(
+                $filters['start_date'] ?? null,
+                $filters['end_date'] ?? null,
+                'from_date'
+            );
     }
 
     /**

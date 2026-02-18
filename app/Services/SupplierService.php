@@ -18,7 +18,6 @@ use App\Models\ReturnPurchase;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Traits\CheckPermissionsTrait;
 use App\Traits\MailInfo;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -39,42 +38,65 @@ use RuntimeException;
  */
 class SupplierService extends BaseService
 {
-    use CheckPermissionsTrait, MailInfo;
+    use MailInfo;
 
     private const DEFAULT_SUPPLIER_IMAGES_PATH = 'images/supplier';
 
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
     public function __construct(
         private readonly UploadService $uploadService
-    )
-    {
+    ) {
     }
 
     public function getSupplier(Supplier $supplier): Supplier
     {
-        $this->requirePermission('suppliers-index');
-
-        return $supplier->fresh();
+        return $supplier->fresh(['country', 'state', 'city']);
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * Create a supplier from customer data (e.g. when "also register as supplier" is checked).
+     * Uses country_id, state_id, city_id directly like Supplier model (same pattern as Customer).
+     * Does not check permissions; caller (e.g. CustomerService) is responsible for authorization.
+     *
+     * @param  array<string, mixed>  $data  Customer-style attributes (country_id, state_id, city_id)
+     */
+    public function createFromCustomerData(array $data): Supplier
+    {
+        $payload = [
+            'name' => $data['name'] ?? '',
+            'company_name' => $data['company_name'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone_number' => $data['phone_number'] ?? null,
+            'wa_number' => $data['wa_number'] ?? null,
+            'address' => $data['address'] ?? null,
+            'country_id' => $data['country_id'] ?? null,
+            'state_id' => $data['state_id'] ?? null,
+            'city_id' => $data['city_id'] ?? null,
+            'postal_code' => $data['postal_code'] ?? null,
+            'is_active' => true,
+        ];
+
+        return Supplier::create($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<Supplier>
+     */
+    /**
+     * @param  array<string, mixed>  $filters
      * @return LengthAwarePaginator<Supplier>
      */
     public function getSuppliers(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $this->requirePermission('suppliers-index');
-
         return Supplier::query()
-            ->when(isset($filters['status']), fn($q) => $q->where('is_active', $filters['status'] === 'active'))
-            ->when(!empty($filters['search']), function ($q) use ($filters) {
-                $term = '%' . $filters['search'] . '%';
-                $q->where(fn($subQ) => $subQ
-                    ->where('name', 'like', $term)
-                    ->orWhere('company_name', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('phone_number', 'like', $term)
-                );
-            })
+            ->with([
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
+            ])
+            ->filter($filters)
             ->latest()
             ->paginate($perPage);
     }
@@ -82,10 +104,29 @@ class SupplierService extends BaseService
     /**
      * @param array<string, mixed> $data
      */
+    /**
+     * Get list of supplier options for select/combobox.
+     *
+     * @return \Illuminate\Support\Collection<int, array{value: int, label: string}>
+     */
+    public function getOptions(): \Illuminate\Support\Collection
+    {
+        return Supplier::query()
+            ->where('is_active', true)
+            ->select('id', 'name', 'company_name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Supplier $s) => [
+                'value' => $s->id,
+                'label' => $s->company_name ? "{$s->name} ({$s->company_name})" : $s->name,
+            ]);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createSupplier(array $data): Supplier
     {
-        $this->requirePermission('suppliers-create');
-
         return DB::transaction(function () use ($data) {
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 $data = $this->handleImageUpload($data);
@@ -152,10 +193,11 @@ class SupplierService extends BaseService
     /**
      * @param array<string, mixed> $data
      */
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateSupplier(Supplier $supplier, array $data): Supplier
     {
-        $this->requirePermission('suppliers-update');
-
         return DB::transaction(function () use ($supplier, $data) {
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 if ($supplier->image) {
@@ -173,10 +215,11 @@ class SupplierService extends BaseService
     /**
      * @return Collection<int, Supplier>
      */
+    /**
+     * @return Collection<int, Supplier>
+     */
     public function getAllActive(): Collection
     {
-        $this->requirePermission('suppliers-index');
-
         return Supplier::query()->where('is_active', true)->orderBy('name')->get();
     }
 
@@ -185,8 +228,6 @@ class SupplierService extends BaseService
      */
     public function bulkDeleteSuppliers(array $ids): int
     {
-        $this->requirePermission('suppliers-delete');
-
         $count = 0;
         foreach ($ids as $id) {
             $supplier = Supplier::find($id);
@@ -201,8 +242,6 @@ class SupplierService extends BaseService
 
     public function deleteSupplier(Supplier $supplier): void
     {
-        $this->requirePermission('suppliers-delete');
-
         DB::transaction(function () use ($supplier) {
             if ($supplier->image) {
                 $this->uploadService->delete($supplier->image);
@@ -213,33 +252,69 @@ class SupplierService extends BaseService
 
     public function bulkActivateSuppliers(array $ids): int
     {
-        $this->requirePermission('suppliers-update');
-
         return Supplier::whereIn('id', $ids)->update(['is_active' => true]);
     }
 
     public function bulkDeactivateSuppliers(array $ids): int
     {
-        $this->requirePermission('suppliers-update');
-
         return Supplier::whereIn('id', $ids)->update(['is_active' => false]);
     }
 
     public function importSuppliers(UploadedFile $file): void
     {
-        $this->requirePermission('suppliers-import');
         Excel::import(new SuppliersImport, $file);
+    }
+
+    /**
+     * Download suppliers import template path.
+     */
+    public function download(): string
+    {
+        $fileName = 'suppliers-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+
+        if (! \Illuminate\Support\Facades\File::exists($path)) {
+            throw new RuntimeException('Supplier import template not found.');
+        }
+
+        return $path;
+    }
+
+    /**
+     * Generate export file and return relative path.
+     *
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  array{start_date?: string, end_date?: string}  $filters
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'suppliers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/'.$fileName;
+
+        if ($format === 'pdf') {
+            $suppliers = Supplier::query()
+                ->with(['country:id,name', 'state:id,name', 'city:id,name'])
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->orderBy('company_name')
+                ->get();
+            $pdf = PDF::loadView('exports.suppliers-pdf', compact('suppliers', 'columns'));
+            Storage::disk('public')->put($relativePath, $pdf->output());
+        } else {
+            Excel::store(new SuppliersExport($ids, $columns), $relativePath, 'public');
+        }
+
+        return $relativePath;
     }
 
     /**
      * @param array<int> $ids
      * @param array<string> $columns
+     * @deprecated Use generateExportFile() and handle email in controller
      */
     public function exportSuppliers(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
-        $this->requirePermission('suppliers-export');
-
-        $fileName = 'suppliers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'suppliers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
@@ -269,7 +344,7 @@ class SupplierService extends BaseService
         $generalSetting = GeneralSetting::latest()->first();
         $this->setMailInfo($mailSetting);
         Mail::to($user->email)->send(
-            new ExportMail($user, $path, $fileName, 'Suppliers List', $generalSetting)
+            new ExportMail($user, $path, $fileName, 'Suppliers List', $generalSetting, $mailSetting)
         );
     }
 
@@ -278,10 +353,11 @@ class SupplierService extends BaseService
      *
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getLedger(Supplier $supplier): array
     {
-        $this->requirePermission('suppliers-index');
-
         $purchases = Purchase::query()
             ->where('supplier_id', $supplier->id)
             ->get()
@@ -338,8 +414,6 @@ class SupplierService extends BaseService
      */
     public function getBalanceDue(Supplier $supplier): float
     {
-        $this->requirePermission('suppliers-index');
-
         $openingBalance = (float)($supplier->opening_balance ?? 0);
         $totalPurchases = (float)Purchase::where('supplier_id', $supplier->id)->sum('grand_total');
         $totalPaid = (float)DB::table('payments')
@@ -357,10 +431,11 @@ class SupplierService extends BaseService
      *
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getPayments(Supplier $supplier): array
     {
-        $this->requirePermission('suppliers-index');
-
         return DB::table('payments')
             ->join('purchases', 'payments.purchase_id', '=', 'purchases.id')
             ->where('purchases.supplier_id', $supplier->id)
@@ -394,8 +469,6 @@ class SupplierService extends BaseService
      */
     public function clearDue(int $supplierId, float $amount, ?string $note = null, ?int $cashRegisterId = null): void
     {
-        $this->requirePermission('suppliers-update');
-
         $supplier = Supplier::findOrFail($supplierId);
         $duePurchases = Purchase::query()
             ->where('supplier_id', $supplier->id)

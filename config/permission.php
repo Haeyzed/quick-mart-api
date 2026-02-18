@@ -24,7 +24,7 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => Spatie\Permission\Models\Role::class,
+        'role' => App\Models\Role::class,
 
     ],
 
@@ -199,4 +199,10 @@ return [
 
         'store' => 'default',
     ],
+
+    /*
+     * Role names that have full access (no staff restrictions). Users with any of
+     * these roles are not considered "staff" for audit/income/report filtering.
+     */
+    'full_access_roles' => ['Admin', 'Owner'],
 ];

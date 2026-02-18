@@ -155,7 +155,7 @@ class RegisterRequest extends BaseRequest
             ],
 
             /**
-             * Customer name (required if role_id is 5 - customer).
+             * Customer name (required when Customer role is selected).
              *
              * @var string|null @customer_name
              * @example John Doe
@@ -164,7 +164,10 @@ class RegisterRequest extends BaseRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::requiredIf(fn() => $this->role_id == 5),
+                Rule::requiredIf(function () {
+                    $customerRole = \App\Models\Role::query()->where('name', 'Customer')->where('is_active', true)->first();
+                    return $customerRole && (int) $this->role_id === (int) $customerRole->id;
+                }),
             ],
         ];
     }

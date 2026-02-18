@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Language as WorldLanguage;
 
 /**
@@ -34,4 +35,19 @@ class Language extends WorldLanguage
         'name_native',
         'dir',
     ];
+
+    /**
+     * Scope a query to apply filters.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                !empty($filters['search']),
+                fn($q) => $q->where('name', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('code', 'like', '%' . $filters['search'] . '%')
+            );
+    }
 }

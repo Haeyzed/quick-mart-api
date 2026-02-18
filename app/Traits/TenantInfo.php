@@ -713,6 +713,8 @@ trait TenantInfo
         $permissionIdsArray = json_decode($permissionIds ?? '[]', true) ?? [];
 
         $tenant->run(function () use ($abandonedPermissionIdsArray, $permissionIdsArray, $packageId, $modules, $expiryDate, $subscriptionType) {
+            $adminRoleId = \App\Models\Role::query()->where('name', 'Admin')->value('id') ?? 1;
+
             // Remove abandoned permissions
             if (count($abandonedPermissionIdsArray) > 0) {
                 DB::table('role_has_permissions')
@@ -724,13 +726,13 @@ trait TenantInfo
             if (count($permissionIdsArray) > 0) {
                 foreach ($permissionIdsArray as $permissionId) {
                     $exists = DB::table('role_has_permissions')
-                        ->where('role_id', 1)
+                        ->where('role_id', $adminRoleId)
                         ->where('permission_id', $permissionId)
                         ->exists();
 
                     if (!$exists) {
                         DB::table('role_has_permissions')->insert([
-                            'role_id' => 1,
+                            'role_id' => $adminRoleId,
                             'permission_id' => $permissionId,
                         ]);
                     }

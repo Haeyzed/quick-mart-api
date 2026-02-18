@@ -34,7 +34,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $avatar_url
  * @property string|null $phone
  * @property string|null $company_name
- * @property int $role_id
  * @property int|null $biller_id
  * @property int|null $warehouse_id
  * @property int|null $kitchen_id
@@ -55,6 +54,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @method static Builder|User active()
  * @method static Builder|User notDeleted()
+ * @method static Builder|User filter(array $filters)
  */
 class User extends Authenticatable implements AuditableContract, MustVerifyEmail
 {
@@ -80,7 +80,6 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
         'password',
         'phone',
         'company_name',
-        'role_id',
         'biller_id',
         'warehouse_id',
         'kitchen_id',
@@ -176,6 +175,22 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     }
 
     /**
+     * Check if the user is "staff" (limited access: not having a full-access role).
+     * Used for restricting audits, incomes, etc. to own records.
+     *
+     * @return bool True when user does not have any of the full-access roles
+     */
+    public function isStaff(): bool
+    {
+        $fullAccessRoles = config('permission.full_access_roles', ['Admin', 'Owner']);
+        if (empty($fullAccessRoles)) {
+            return false;
+        }
+
+        return ! $this->hasAnyRole($fullAccessRoles);
+    }
+
+    /**
      * Scope a query to only include active users.
      */
     public function scopeActive(Builder $query): Builder
@@ -189,6 +204,31 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     public function scopeNotDeleted(Builder $query): Builder
     {
         return $query->where('is_deleted', false)->orWhereNull('is_deleted');
+    }
+
+    /**
+     * Scope a query to apply filters (search, is_active). Same pattern as Customer::scopeFilter.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->where('is_active', (bool) $filters['is_active'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = '%'.$filters['search'].'%';
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('username', 'like', $term)
+                    );
+                }
+            );
     }
 
     /**
@@ -260,7 +300,6 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
             'is_active' => 'boolean',
             'is_deleted' => 'boolean',
             'service_staff' => 'boolean',
-            'role_id' => 'integer',
             'biller_id' => 'integer',
             'warehouse_id' => 'integer',
             'kitchen_id' => 'integer',

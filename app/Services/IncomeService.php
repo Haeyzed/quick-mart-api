@@ -4,165 +4,160 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\IncomesExport;
+use App\Imports\IncomesImport;
 use App\Models\CashRegister;
 use App\Models\Income;
-use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 
 /**
- * IncomeService
+ * Class IncomeService
  *
- * Handles all business logic for income operations including CRUD operations,
- * filtering, pagination, and bulk operations.
+ * Handles business logic for Incomes.
  */
-class IncomeService extends BaseService
+class IncomeService
 {
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
     /**
-     * Get paginated list of incomes with optional filters.
+     * Get paginated incomes based on filters.
      *
-     * @param array<string, mixed> $filters Available filters: starting_date, ending_date, warehouse_id, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Income>
+     * @param array<string, mixed> $filters
      */
-    public function getIncomes(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getPaginatedIncomes(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Income::with(['warehouse', 'incomeCategory', 'account', 'user']);
+        $query = Income::query()
+            ->with(['warehouse', 'incomeCategory', 'account', 'user'])
+            ->filter($filters)
+            ->latest('created_at');
 
-        // Date filtering
-        if (!empty($filters['starting_date'])) {
-            $query->whereDate('created_at', '>=', $filters['starting_date']);
-        }
-
-        if (!empty($filters['ending_date'])) {
-            $query->whereDate('created_at', '<=', $filters['ending_date']);
-        }
-
-        // Warehouse filtering
-        if (!empty($filters['warehouse_id'])) {
-            $query->where('warehouse_id', $filters['warehouse_id']);
-        }
-
-        // Search filtering
-        if (!empty($filters['search'] ?? null)) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('reference_no', 'like', '%' . $filters['search'] . '%')
-                    ->orWhereDate('created_at', date('Y-m-d', strtotime(str_replace('/', '-', $filters['search']))));
-            });
-        }
-
-        // Staff access check (if user role_id > 2, only show their own incomes)
         $user = Auth::user();
-        if ($user && $user->role_id > 2) {
+        if ($user && method_exists($user, 'isStaff') && $user->isStaff()) {
             $query->where('user_id', $user->id);
         }
 
-        return $query->latest('created_at')->paginate($perPage);
-    }
-
-    /**
-     * Get a single income by ID.
-     *
-     * @param int $id Income ID
-     * @return Income
-     */
-    public function getIncome(int $id): Income
-    {
-        return Income::with(['warehouse', 'incomeCategory', 'account', 'user', 'cashRegister'])
-            ->findOrFail($id);
+        return $query->paginate($perPage);
     }
 
     /**
      * Create a new income.
      *
-     * @param array<string, mixed> $data Validated income data
-     * @return Income
+     * @param array<string, mixed> $data
      */
     public function createIncome(array $data): Income
     {
-        return $this->transaction(function () use ($data) {
-            // Auto-generate reference_no if not provided
+        return DB::transaction(function () use ($data) {
             if (empty($data['reference_no'])) {
-                $data['reference_no'] = 'ir-' . date('Ymd') . '-' . date('His');
+                $data['reference_no'] = 'ir-'.date('Ymd').'-'.date('His');
             }
-
-            // Set created_at default if not provided
-            if (!isset($data['created_at'])) {
+            if (! isset($data['created_at'])) {
                 $data['created_at'] = now();
             }
-
-            // Set user_id if not provided (business logic - Auth::id())
-            if (!isset($data['user_id'])) {
+            if (! isset($data['user_id'])) {
                 $data['user_id'] = Auth::id();
             }
-
-            // Find cash register if user_id and warehouse_id are set (business logic)
-            if (isset($data['user_id']) && isset($data['warehouse_id'])) {
-                $cashRegister = CashRegister::where([
-                    ['user_id', $data['user_id']],
-                    ['warehouse_id', $data['warehouse_id']],
-                    ['status', true]
-                ])->first();
-
-                if ($cashRegister) {
-                    $data['cash_register_id'] = $cashRegister->id;
+            if (isset($data['user_id'], $data['warehouse_id'])) {
+                $cr = CashRegister::query()
+                    ->where('user_id', $data['user_id'])
+                    ->where('warehouse_id', $data['warehouse_id'])
+                    ->where('status', true)
+                    ->first();
+                if ($cr) {
+                    $data['cash_register_id'] = $cr->id;
                 }
             }
-
-            return Income::create($data);
+            return Income::query()->create($data);
         });
     }
 
     /**
      * Update an existing income.
      *
-     * @param Income $income Income instance to update
-     * @param array<string, mixed> $data Validated income data
-     * @return Income
+     * @param array<string, mixed> $data
      */
     public function updateIncome(Income $income, array $data): Income
     {
-        return $this->transaction(function () use ($income, $data) {
+        return DB::transaction(function () use ($income, $data) {
             $income->update($data);
             return $income->fresh();
         });
     }
 
     /**
-     * Bulk delete multiple incomes.
-     *
-     * @param array<int> $ids Array of income IDs to delete
-     * @return int Number of incomes deleted
+     * Delete an income.
      */
-    public function bulkDeleteIncomes(array $ids): int
+    public function deleteIncome(Income $income): void
     {
-        $deletedCount = 0;
-
-        foreach ($ids as $id) {
-            try {
-                $income = Income::findOrFail($id);
-                $this->deleteIncome($income);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete income {$id}: " . $e->getMessage());
-            }
-        }
-
-        return $deletedCount;
+        DB::transaction(function () use ($income) {
+            $income->delete();
+        });
     }
 
     /**
-     * Delete a single income.
+     * Bulk delete incomes.
      *
-     * @param Income $income Income instance to delete
-     * @return bool
+     * @param array<int> $ids
+     * @return int Count of deleted items.
      */
-    public function deleteIncome(Income $income): bool
+    public function bulkDeleteIncomes(array $ids): int
     {
-        return $this->transaction(function () use ($income) {
-            return $income->delete();
+        return DB::transaction(function () use ($ids) {
+            $incomes = Income::query()->whereIn('id', $ids)->get();
+            $count = 0;
+            foreach ($incomes as $income) {
+                $income->delete();
+                $count++;
+            }
+            return $count;
         });
     }
-}
 
+    /**
+     * Import incomes from file.
+     */
+    public function importIncomes(UploadedFile $file): void
+    {
+        ExcelFacade::import(new IncomesImport, $file);
+    }
+
+    /**
+     * Download incomes CSV template.
+     */
+    public function download(): string
+    {
+        $fileName = 'incomes-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        if (! File::exists($path)) {
+            throw new RuntimeException('Incomes import template not found.');
+        }
+        return $path;
+    }
+
+    /**
+     * Generate incomes export file.
+     *
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array<string, mixed> $filters
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'incomes_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+        ExcelFacade::store(
+            new IncomesExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
+        return $relativePath;
+    }
+}

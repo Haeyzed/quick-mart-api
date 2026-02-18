@@ -51,6 +51,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  *
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
+ * @method static Builder|Employee filter(array $filters)
  */
 class Employee extends Model implements AuditableContract
 {
@@ -185,6 +186,34 @@ class Employee extends Model implements AuditableContract
     public function scopeSaleAgents(Builder $query): Builder
     {
         return $query->where('is_sale_agent', true);
+    }
+
+    /**
+     * Scope a query to apply filters (status, search, department_id).
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->where('is_active', $filters['status'] === 'active')
+            )
+            ->when(
+                ! empty($filters['department_id'] ?? null),
+                fn (Builder $q) => $q->where('department_id', (int) $filters['department_id'])
+            )
+            ->when(
+                ! empty($filters['search'] ?? null),
+                function (Builder $q) use ($filters) {
+                    $term = '%'.$filters['search'].'%';
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
+                        ->orWhere('staff_id', 'like', $term)
+                    );
+                }
+            );
     }
 
     /**

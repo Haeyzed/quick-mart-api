@@ -62,10 +62,10 @@
                                     @case('email') {{ $supplier->email ?? '-' }} @break
                                     @case('phone_number') {{ $supplier->phone_number ?? '-' }} @break
                                     @case('address') {{ Str::limit($supplier->address ?? '-', 30) }} @break
-                                    @case('city') {{ $supplier->city ?? '-' }} @break
-                                    @case('state') {{ $supplier->state ?? '-' }} @break
+                                    @case('city') {{ $supplier->city?->name ?? '-' }} @break
+                                    @case('state') {{ $supplier->state?->name ?? '-' }} @break
                                     @case('postal_code') {{ $supplier->postal_code ?? '-' }} @break
-                                    @case('country') {{ $supplier->country ?? '-' }} @break
+                                    @case('country') {{ $supplier->country?->name ?? '-' }} @break
                                     @case('opening_balance') {{ $supplier->opening_balance ?? 0 }} @break
                                     @case('image') {{ Str::limit($supplier->image ?? '-', 20) }} @break
                                     @case('is_active') <span class="{{ $supplier->is_active ? 'badge-yes' : 'badge-no' }}">{{ $supplier->is_active ? 'Yes' : 'No' }}</span> @break

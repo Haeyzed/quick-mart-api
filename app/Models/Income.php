@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,7 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Income Model
+ * Class Income
  *
  * Represents an income transaction.
  *
@@ -32,10 +34,12 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Account|null $account
  * @property-read User $user
  * @property-read CashRegister|null $cashRegister
+ *
+ * @method static Builder|Income filter(array $filters)
  */
 class Income extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -102,6 +106,31 @@ class Income extends Model implements AuditableContract
     public function cashRegister(): BelongsTo
     {
         return $this->belongsTo(CashRegister::class);
+    }
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['warehouse_id'] ?? null),
+                fn (Builder $q) => $q->where('warehouse_id', (int) $filters['warehouse_id'])
+            )
+            ->when(
+                ! empty($filters['user_id'] ?? null),
+                fn (Builder $q) => $q->where('user_id', (int) $filters['user_id'])
+            )
+            ->when(
+                ! empty($filters['search'] ?? null),
+                fn (Builder $q) => $q->where('reference_no', 'like', '%'.$filters['search'].'%')
+            )
+            ->customRange(
+                $filters['start_date'] ?? $filters['starting_date'] ?? null,
+                $filters['end_date'] ?? $filters['ending_date'] ?? null,
+                'created_at'
+            );
     }
 
     /**

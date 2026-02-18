@@ -22,10 +22,10 @@ trait StaffAccess
      * Apply staff access restrictions to a query builder.
      *
      * This method filters the query based on:
-     * - Staff role (role_id > 2 indicates staff level)
+     * - Staff: user does not have a full-access role (see config permission.full_access_roles)
      * - Access configuration ('own' or 'warehouse')
      *
-     * If the user is staff (role_id > 2):
+     * If the user is staff:
      * - 'own' access: Only show records created by the user
      * - 'warehouse' access: Only show records for the user's warehouse
      *
@@ -36,8 +36,8 @@ trait StaffAccess
     {
         $user = Auth::user();
 
-        if (!$user || $user->role_id <= 2) {
-            // Admin or manager level, no restrictions
+        if (!$user || !$user->isStaff()) {
+            // Full-access role, no restrictions
             return;
         }
 

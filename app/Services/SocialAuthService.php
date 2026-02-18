@@ -20,7 +20,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class SocialAuthService extends BaseService
 {
     public function __construct(
-        private readonly PermissionService $permissionService
+        private readonly UserRolePermissionService $userRolePermissionService
     )
     {
     }
@@ -171,13 +171,13 @@ class SocialAuthService extends BaseService
                 'is_active' => true,
                 'is_deleted' => false,
                 'email_verified_at' => now(), // OAuth emails are considered verified
-                'role_id' => 1, // Default role, adjust as needed
             ]);
 
-            // Assign all permissions for testing (as per registration)
-            $allPermissions = $this->permissionService->getAllPermissions();
+            // Assign default role (Admin) and permissions
+            $defaultRoleName = 'Admin';
+            $allPermissions = $this->userRolePermissionService->getAllPermissions();
             $permissionIds = $allPermissions->pluck('id')->toArray();
-            $this->permissionService->assignRolesAndPermissions($user, null, $permissionIds);
+            $this->userRolePermissionService->assignRolesAndPermissions($user, [$defaultRoleName], $permissionIds);
 
             return $user;
         });

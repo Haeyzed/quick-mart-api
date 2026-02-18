@@ -28,7 +28,9 @@ use App\Http\Controllers\Api\MailSettingController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
 use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\RewardPointSettingController;
 use App\Http\Controllers\Api\SaleAgentController;
 use App\Http\Controllers\Api\SmsSettingController;
@@ -100,6 +102,28 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [WarehouseController::class, 'options'])->name('options');
     });
     Route::apiResource('warehouses', WarehouseController::class);
+
+    Route::prefix('roles')->name('roles.')->group(function () {
+        Route::post('bulk-destroy', [RoleController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [RoleController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [RoleController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [RoleController::class, 'import'])->name('import');
+        Route::post('export', [RoleController::class, 'export'])->name('export');
+        Route::get('download', [RoleController::class, 'download'])->name('download');
+        Route::get('options', [RoleController::class, 'options'])->name('options');
+    });
+    Route::apiResource('roles', RoleController::class);
+
+    Route::prefix('permissions')->name('permissions.')->group(function () {
+        Route::post('bulk-destroy', [PermissionController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [PermissionController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [PermissionController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [PermissionController::class, 'import'])->name('import');
+        Route::post('export', [PermissionController::class, 'export'])->name('export');
+        Route::get('download', [PermissionController::class, 'download'])->name('download');
+        Route::get('options', [PermissionController::class, 'options'])->name('options');
+    });
+    Route::apiResource('permissions', PermissionController::class);
 
     Route::prefix('countries')->name('countries.')->group(function () {
         Route::get('options', [CountryController::class, 'options'])->name('options');
@@ -434,6 +458,10 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('suppliers.import');
     Route::post('suppliers/export', [SupplierController::class, 'export'])
         ->name('suppliers.export');
+    Route::get('suppliers/download', [SupplierController::class, 'download'])
+        ->name('suppliers.download');
+    Route::get('suppliers/options', [SupplierController::class, 'options'])
+        ->name('suppliers.options');
     Route::apiResource('suppliers', SupplierController::class);
 
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
@@ -446,16 +474,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('income-categories/generate-code', [IncomeCategoryController::class, 'generateCode'])
         ->name('income-categories.generate-code');
 
+    Route::prefix('incomes')->name('incomes.')->group(function () {
+        Route::post('bulk-destroy', [IncomeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [IncomeController::class, 'import'])->name('import');
+        Route::post('export', [IncomeController::class, 'export'])->name('export');
+        Route::get('download', [IncomeController::class, 'download'])->name('download');
+    });
     Route::apiResource('incomes', IncomeController::class);
-    Route::delete('incomes/bulk-destroy', [IncomeController::class, 'bulkDestroy'])
-        ->name('incomes.bulkDestroy');
 
     Route::apiResource('departments', DepartmentController::class);
 
-    Route::get('sale-agents/all/active', [SaleAgentController::class, 'getAllActive'])
-        ->name('sale-agents.all-active');
-    Route::delete('sale-agents/bulk-destroy', [SaleAgentController::class, 'bulkDestroy'])
-        ->name('sale-agents.bulkDestroy');
+    Route::prefix('sale-agents')->name('sale-agents.')->group(function () {
+        Route::post('bulk-destroy', [SaleAgentController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [SaleAgentController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [SaleAgentController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [SaleAgentController::class, 'import'])->name('import');
+        Route::post('export', [SaleAgentController::class, 'export'])->name('export');
+        Route::get('download', [SaleAgentController::class, 'download'])->name('download');
+        Route::get('options', [SaleAgentController::class, 'options'])->name('options');
+        Route::get('all/active', [SaleAgentController::class, 'getAllActive'])->name('all-active');
+    });
     Route::apiResource('sale-agents', SaleAgentController::class)->parameters(['sale-agents' => 'sale_agent']);
     Route::delete('departments/bulk-destroy', [DepartmentController::class, 'bulkDestroy'])
         ->name('departments.bulkDestroy');
@@ -464,13 +502,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('designations/bulk-destroy', [DesignationController::class, 'bulkDestroy'])
         ->name('designations.bulkDestroy');
 
+    Route::prefix('holidays')->name('holidays.')->group(function () {
+        Route::post('bulk-destroy', [HolidayController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [HolidayController::class, 'import'])->name('import');
+        Route::post('export', [HolidayController::class, 'export'])->name('export');
+        Route::get('download', [HolidayController::class, 'download'])->name('download');
+    });
     Route::apiResource('holidays', HolidayController::class);
-    Route::delete('holidays/bulk-destroy', [HolidayController::class, 'bulkDestroy'])
-        ->name('holidays.bulkDestroy');
-    Route::post('holidays/{holiday}/approve', [HolidayController::class, 'approve'])
-        ->name('holidays.approve');
-    Route::get('holidays/user/{year}/{month}', [HolidayController::class, 'getUserHolidaysByMonth'])
-        ->name('holidays.user-by-month');
+    Route::post('holidays/{holiday}/approve', [HolidayController::class, 'approve'])->name('holidays.approve');
+    Route::get('holidays/user/{year}/{month}', [HolidayController::class, 'getUserHolidaysByMonth'])->name('holidays.user-by-month');
 
     Route::apiResource('discount-plans', DiscountPlanController::class);
     Route::delete('discount-plans/bulk-destroy', [DiscountPlanController::class, 'bulkDestroy'])

@@ -1,0 +1,4 @@
+name,description,guard_name,module,is_active
+Admin,Administrator role,web,roles,1
+Staff,Staff role,web,roles,1
+Customer,Customer role,web,roles,1

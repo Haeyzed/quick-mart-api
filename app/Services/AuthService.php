@@ -31,7 +31,7 @@ class AuthService extends BaseService
     use MailInfo;
 
     public function __construct(
-        private readonly PermissionService $permissionService,
+        private readonly UserRolePermissionService $userRolePermissionService,
         private readonly UploadService     $uploadService
     )
     {
@@ -166,7 +166,14 @@ class AuthService extends BaseService
                 $avatarUrl = $this->uploadService->url($avatarPath);
             }
 
-            // Create user
+            // Resolve role names from role_id for backward compatibility (optional)
+            $roleNames = $data['roles'] ?? null;
+            if ($roleNames === null && !empty($data['role_id'])) {
+                $roleModel = \App\Models\Role::query()->find($data['role_id']);
+                $roleNames = $roleModel ? [$roleModel->name] : null;
+            }
+
+            // Create user (no role_id; roles assigned via Spatie)
             $user = User::create([
                 'name' => $data['name'],
                 'username' => $data['username'] ?? null,
@@ -175,7 +182,6 @@ class AuthService extends BaseService
                 'avatar_url' => $avatarUrl,
                 'phone' => $data['phone'] ?? null,
                 'company_name' => $data['company_name'] ?? null,
-                'role_id' => $data['role_id'],
                 'biller_id' => $data['biller_id'] ?? null,
                 'warehouse_id' => $data['warehouse_id'] ?? null,
                 'is_active' => false, // New users are inactive by default
@@ -183,8 +189,17 @@ class AuthService extends BaseService
                 'password' => Hash::make($data['password']),
             ]);
 
-            // If role is customer (role_id = 5), create customer record
-            if ($data['role_id'] == 5) {
+            // Assign roles via Spatie
+            if ($roleNames !== null && $roleNames !== []) {
+                $this->userRolePermissionService->assignRolesAndPermissions($user, $roleNames, null);
+            } else {
+                $allPermissions = $this->userRolePermissionService->getAllPermissions();
+                $permissionIds = $allPermissions->pluck('id')->toArray();
+                $this->userRolePermissionService->assignRolesAndPermissions($user, null, $permissionIds);
+            }
+
+            // If user has Customer role, create customer record
+            if ($user->hasRole('Customer')) {
                 Customer::create([
                     'name' => $data['customer_name'] ?? $data['name'],
                     'user_id' => $user->id,
@@ -195,11 +210,6 @@ class AuthService extends BaseService
                     'is_active' => true,
                 ]);
             }
-
-            // Assign all permissions to the newly registered user for testing
-            $allPermissions = $this->permissionService->getAllPermissions();
-            $permissionIds = $allPermissions->pluck('id')->toArray();
-            $this->permissionService->assignRolesAndPermissions($user, null, $permissionIds);
 
             return $user;
         });

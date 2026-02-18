@@ -115,18 +115,6 @@ class UserRequest extends BaseRequest
             ],
 
             /**
-             * The role ID assigned to the user.
-             *
-             * @var int|null $role_id
-             * @example 1
-             */
-            'role_id' => [
-                'nullable',
-                'integer',
-                'exists:roles,id',
-            ],
-
-            /**
              * The biller ID associated with the user.
              *
              * @var int|null $biller_id

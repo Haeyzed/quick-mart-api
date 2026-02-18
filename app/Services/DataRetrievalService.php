@@ -20,7 +20,6 @@ use App\Models\Warehouse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Role;
 
 /**
  * Data Retrieval Service
@@ -41,9 +40,7 @@ class DataRetrievalService
     public function getAllUnits()
     {
         $user = Auth::user();
-        $role = Role::find($user->role_id);
-
-        if (!$role || !$role->hasPermissionTo('unit')) {
+        if (!$user || !$user->hasPermissionTo('unit')) {
             throw new AuthorizationException('Unauthorized access to units.');
         }
 
@@ -119,9 +116,7 @@ class DataRetrievalService
     public function getAllCategories()
     {
         $user = Auth::user();
-        $role = Role::find($user->role_id);
-
-        if (!$role || !$role->hasPermissionTo('category')) {
+        if (!$user || !$user->hasPermissionTo('category')) {
             throw new AuthorizationException('Sorry! You are not allowed to access this module.');
         }
 
