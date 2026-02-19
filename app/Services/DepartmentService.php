@@ -4,147 +4,178 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\DepartmentsExport;
+use App\Imports\DepartmentsImport;
 use App\Models\Department;
-use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * DepartmentService
- *
- * Handles all business logic for department operations including CRUD operations,
- * filtering, pagination, and bulk operations.
+ * Class DepartmentService
+ * Handles business logic for Departments.
  */
-class DepartmentService extends BaseService
+class DepartmentService
 {
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
     /**
-     * Get paginated list of departments with optional filters.
+     * Get paginated departments based on filters.
      *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Department>
+     * @param array<string, mixed> $filters
      */
-    public function getDepartments(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getPaginatedDepartments(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Department::query()
-            ->when(
-                isset($filters['is_active']),
-                fn($query) => $query->where('is_active', (bool)$filters['is_active'])
-            )
-            ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where('name', 'like', '%' . $filters['search'] . '%')
-            )
-            ->orderBy('name')
+            ->filter($filters)
+            ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get a single department by ID.
-     *
-     * @param int $id Department ID
-     * @return Department
+     * Get list of department options (value/label format).
      */
-    public function getDepartment(int $id): Department
+    public function getOptions(): Collection
     {
-        return Department::findOrFail($id);
+        return Department::active()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(Department $department) => [
+                'value' => $department->id,
+                'label' => $department->name,
+            ]);
     }
 
     /**
      * Create a new department.
      *
-     * @param array<string, mixed> $data Validated department data
-     * @return Department
+     * @param array<string, mixed> $data
      */
     public function createDepartment(array $data): Department
     {
-        return $this->transaction(function () use ($data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeDepartmentData($data);
-            return Department::create($data);
+        return DB::transaction(function () use ($data) {
+            $data['is_active'] = filter_var($data['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            return Department::query()->create($data);
         });
-    }
-
-    /**
-     * Normalize department data to match database schema requirements.
-     *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function normalizeDepartmentData(array $data): array
-    {
-        // is_active is stored as boolean (true/false)
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
-            $data['is_active'] = (bool)filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
     }
 
     /**
      * Update an existing department.
      *
-     * @param Department $department Department instance to update
-     * @param array<string, mixed> $data Validated department data
-     * @return Department
+     * @param array<string, mixed> $data
      */
     public function updateDepartment(Department $department, array $data): Department
     {
-        return $this->transaction(function () use ($department, $data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeDepartmentData($data);
+        return DB::transaction(function () use ($department, $data) {
             $department->update($data);
             return $department->fresh();
         });
     }
 
     /**
-     * Bulk delete multiple departments.
+     * Delete a department.
      *
-     * @param array<int> $ids Array of department IDs to delete
-     * @return int Number of departments deleted
+     * @throws ConflictHttpException
      */
-    public function bulkDeleteDepartments(array $ids): int
+    public function deleteDepartment(Department $department): void
     {
-        $deletedCount = 0;
-
-        foreach ($ids as $id) {
-            try {
-                $department = Department::findOrFail($id);
-                $this->deleteDepartment($department);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete department {$id}: " . $e->getMessage());
-            }
+        if ($department->employees()->exists()) {
+            throw new ConflictHttpException("Cannot delete department '{$department->name}' as it has associated employees.");
         }
 
-        return $deletedCount;
+        DB::transaction(function () use ($department) {
+            $department->delete();
+        });
     }
 
     /**
-     * Delete a single department.
+     * Bulk delete departments.
      *
-     * @param Department $department Department instance to delete
-     * @return bool
-     * @throws HttpResponseException
+     * @param array<int> $ids
+     * @return int Count of deleted items.
      */
-    public function deleteDepartment(Department $department): bool
+    public function bulkDeleteDepartments(array $ids): int
     {
-        return $this->transaction(function () use ($department) {
-            if ($department->employees()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete department: department has associated employees');
+        return DB::transaction(function () use ($ids) {
+            $departments = Department::query()->whereIn('id', $ids)->withCount('employees')->get();
+            $count = 0;
+
+            foreach ($departments as $department) {
+                if ($department->employees_count > 0) {
+                    continue;
+                }
+
+                $department->delete();
+                $count++;
             }
 
-            return $department->delete();
+            return $count;
         });
     }
-}
 
+    /**
+     * Update status for multiple departments.
+     *
+     * @param array<int> $ids
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return Department::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+    }
+
+    /**
+     * Import departments from file.
+     */
+    public function importDepartments(UploadedFile $file): void
+    {
+        ExcelFacade::import(new DepartmentsImport, $file);
+    }
+
+    /**
+     * Download a departments CSV template.
+     */
+    public function download(): string
+    {
+        $fileName = "departments-sample.csv";
+
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+
+        if (!File::exists($path)) {
+            throw new RuntimeException("Template departments not found.");
+        }
+
+        return $path;
+    }
+
+    /**
+     * Export departments to file.
+     *
+     * @param array<int> $ids
+     * @param string $format 'excel' or 'pdf'
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters for created_at
+     * @return string Relative file path.
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'departments_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new DepartmentsExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
+
+        return $relativePath;
+    }
+}

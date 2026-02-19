@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Brand CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to BrandService.
  *
- * @group Brand Management
+ * @tags Brand Management
  */
 class BrandController extends Controller
 {
@@ -44,7 +44,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Display a paginated listing of brands.
+     * List Brands
+     *
+     * Display a paginated listing of brands. Supports searching and filtering by active status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -53,8 +55,34 @@ class BrandController extends Controller
         }
 
         $brands = $this->service->getPaginatedBrands(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter brands by name or slug.
+                 * @example "Apple"
+                 */
+                'search'     => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 * @example true
+                 */
+                'is_active'  => ['nullable', 'boolean'],
+                /**
+                 * Filter brands starting from this date.
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter brands up to this date.
+                 * @example "2024-12-31"
+                 */
+                'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             * @example 50
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -64,7 +92,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Get brand options for select components.
+     * Get Brand Options
+     *
+     * Retrieve a simplified list of active brands for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -76,7 +106,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Store a newly created brand.
+     * Create Brand
+     *
+     * Store a newly created brand in the system.
      */
     public function store(StoreBrandRequest $request): JsonResponse
     {
@@ -94,7 +126,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Display the specified brand.
+     * Show Brand
+     *
+     * Retrieve the details of a specific brand by its ID.
      */
     public function show(Brand $brand): JsonResponse
     {
@@ -109,7 +143,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Update the specified brand.
+     * Update Brand
+     *
+     * Update the specified brand's information.
      */
     public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
@@ -126,7 +162,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Remove the specified brand (soft delete).
+     * Delete Brand
+     *
+     * Remove the specified brand from storage.
      */
     public function destroy(Brand $brand): JsonResponse
     {
@@ -140,7 +178,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk delete brands.
+     * Bulk Delete Brands
+     *
+     * Delete multiple brands simultaneously using an array of IDs.
      */
     public function bulkDestroy(BrandBulkActionRequest $request): JsonResponse
     {
@@ -157,7 +197,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk activate brands.
+     * Bulk Activate Brands
+     *
+     * Set the active status of multiple brands to true.
      */
     public function bulkActivate(BrandBulkActionRequest $request): JsonResponse
     {
@@ -174,7 +216,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Bulk deactivate brands.
+     * Bulk Deactivate Brands
+     *
+     * Set the active status of multiple brands to false.
      */
     public function bulkDeactivate(BrandBulkActionRequest $request): JsonResponse
     {
@@ -191,7 +235,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Import brands from Excel/CSV.
+     * Import Brands
+     *
+     * Import multiple brands into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -205,7 +251,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Export brands to Excel or PDF.
+     * Export Brands
+     *
+     * Export a list of brands to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -269,7 +317,9 @@ class BrandController extends Controller
     }
 
     /**
-     * Download brands module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

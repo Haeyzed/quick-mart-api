@@ -119,6 +119,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default Pagination
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the default number of items to show per page
+    | when paginating results throughout the application. It checks the .env
+    | file first, and defaults to 10 if not found.
+    |
+    */
+
+    'per_page' => (int) env('APP_PER_PAGE', 10),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

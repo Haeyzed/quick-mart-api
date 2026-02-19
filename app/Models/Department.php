@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,10 +28,11 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Employee> $employees
  *
  * @method static Builder|Department active()
+ * @method static Builder|Department filter(array $filters)
  */
 class Department extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes, FilterableByDates;
 
     /**
      * The attributes that are mass assignable.
@@ -43,13 +45,38 @@ class Department extends Model implements AuditableContract
     ];
 
     /**
-     * Get the employees in this department.
+     * Get the attributes that should be cast.
      *
-     * @return HasMany<Employee>
+     * @return array<string, string>
      */
-    public function employees(): HasMany
+    protected function casts(): array
     {
-        return $this->hasMany(Employee::class);
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    /**
+     * Scope a query to apply filters.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn(Builder $q) => $q->active()
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('name', 'like', $term);
+                }
+            )
+            ->customRange(
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 
     /**
@@ -61,14 +88,12 @@ class Department extends Model implements AuditableContract
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Get the employees in this department.
      *
-     * @return array<string, string>
+     * @return HasMany<Employee>
      */
-    protected function casts(): array
+    public function employees(): HasMany
     {
-        return [
-            'is_active' => 'boolean',
-        ];
+        return $this->hasMany(Employee::class);
     }
 }
