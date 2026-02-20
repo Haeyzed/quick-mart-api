@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Warehouse CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to WarehouseService.
  *
- * @group Warehouse Management
+ * @tags Warehouse Management
  */
 class WarehouseController extends Controller
 {
@@ -39,12 +39,12 @@ class WarehouseController extends Controller
      */
     public function __construct(
         private readonly WarehouseService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of warehouses.
+     * List Warehouses
+     *
+     * Display a paginated listing of warehouses. Supports searching and filtering by active status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -53,8 +53,40 @@ class WarehouseController extends Controller
         }
 
         $warehouses = $this->service->getPaginatedWarehouses(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter warehouses by name, email, or phone.
+                 *
+                 * @example "Main"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'status' => ['nullable', 'boolean'],
+                /**
+                 * Filter warehouses starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter warehouses up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -64,7 +96,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Get warehouse options for select components.
+     * Get Warehouse Options
+     *
+     * Retrieve a simplified list of active warehouses for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -76,7 +110,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Store a newly created warehouse.
+     * Create Warehouse
+     *
+     * Store a newly created warehouse in the system.
      */
     public function store(StoreWarehouseRequest $request): JsonResponse
     {
@@ -94,7 +130,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Display the specified warehouse.
+     * Show Warehouse
+     *
+     * Retrieve the details of a specific warehouse by its ID.
      */
     public function show(Warehouse $warehouse): JsonResponse
     {
@@ -109,7 +147,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Update the specified warehouse.
+     * Update Warehouse
+     *
+     * Update the specified warehouse's information.
      */
     public function update(UpdateWarehouseRequest $request, Warehouse $warehouse): JsonResponse
     {
@@ -126,7 +166,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Remove the specified warehouse (soft delete).
+     * Delete Warehouse
+     *
+     * Remove the specified warehouse from storage.
      */
     public function destroy(Warehouse $warehouse): JsonResponse
     {
@@ -140,7 +182,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Bulk delete warehouses.
+     * Bulk Delete Warehouses
+     *
+     * Delete multiple warehouses simultaneously using an array of IDs.
      */
     public function bulkDestroy(WarehouseBulkActionRequest $request): JsonResponse
     {
@@ -157,7 +201,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Bulk activate warehouses.
+     * Bulk Activate Warehouses
+     *
+     * Set the active status of multiple warehouses to true.
      */
     public function bulkActivate(WarehouseBulkActionRequest $request): JsonResponse
     {
@@ -174,7 +220,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Bulk deactivate warehouses.
+     * Bulk Deactivate Warehouses
+     *
+     * Set the active status of multiple warehouses to false.
      */
     public function bulkDeactivate(WarehouseBulkActionRequest $request): JsonResponse
     {
@@ -191,7 +239,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Import warehouses from Excel/CSV.
+     * Import Warehouses
+     *
+     * Import multiple warehouses into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -205,7 +255,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Export warehouses to Excel or PDF.
+     * Export Warehouses
+     *
+     * Export a list of warehouses to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -215,7 +267,6 @@ class WarehouseController extends Controller
 
         $validated = $request->validated();
 
-        // 1. Generate the file via service
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
@@ -226,25 +277,23 @@ class WarehouseController extends Controller
             ]
         );
 
-        // 2. Handle Download Method
         if (($validated['method'] ?? 'download') === 'download') {
             return response()
                 ->download(Storage::disk('public')->path($path))
                 ->deleteFileAfterSend();
         }
 
-        // 3. Handle Email Method
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -254,7 +303,7 @@ class WarehouseController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'warehouses_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'warehouses_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Warehouse Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -263,7 +312,7 @@ class WarehouseController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
@@ -271,7 +320,9 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Download warehouses module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

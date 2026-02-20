@@ -18,7 +18,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Warehouse
  *
- * Represents a warehouse/storage location.
+ * Represents a warehouse within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for warehouse entities.
  *
  * @property int $id
  * @property string $name
@@ -38,7 +39,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  */
 class Warehouse extends Model implements AuditableContract
 {
-    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -54,7 +55,7 @@ class Warehouse extends Model implements AuditableContract
     ];
 
     /**
-     * The attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
      * @var array<string, string>
      */
@@ -63,20 +64,26 @@ class Warehouse extends Model implements AuditableContract
     ];
 
     /**
-     * Scope a query to apply filters.
+     * Scope a query to apply dynamic filters.
+     * * Applies filters for active status, search terms (checking name, email, phone),
+     * and date ranges via the FilterableByDates trait.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                isset($filters['status']),
-                fn(Builder $q) => $q->active()
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone', 'like', $term)
@@ -84,16 +91,16 @@ class Warehouse extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active warehouses.
      *
-     * @param Builder $query
-     * @return Builder
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -102,8 +109,7 @@ class Warehouse extends Model implements AuditableContract
 
     /**
      * Get the product-warehouse pivot records.
-     *
-     * @return HasMany
+     * * Defines a one-to-many relationship linking this warehouse to its product stock records.
      */
     public function productWarehouses(): HasMany
     {
@@ -111,9 +117,8 @@ class Warehouse extends Model implements AuditableContract
     }
 
     /**
-     * Get the products associated with this warehouse.
-     *
-     * @return BelongsToMany
+     * Get the products associated with this warehouse (via pivot with qty).
+     * * Defines a many-to-many relationship through the product_warehouse table.
      */
     public function products(): BelongsToMany
     {
@@ -124,8 +129,7 @@ class Warehouse extends Model implements AuditableContract
 
     /**
      * Get the sales for this warehouse.
-     *
-     * @return HasMany
+     * * Defines a one-to-many relationship linking this warehouse to its sales.
      */
     public function sales(): HasMany
     {
@@ -134,8 +138,7 @@ class Warehouse extends Model implements AuditableContract
 
     /**
      * Get the purchases for this warehouse.
-     *
-     * @return HasMany
+     * * Defines a one-to-many relationship linking this warehouse to its purchases.
      */
     public function purchases(): HasMany
     {
@@ -144,8 +147,7 @@ class Warehouse extends Model implements AuditableContract
 
     /**
      * Get the users associated with this warehouse.
-     *
-     * @return HasMany
+     * * Defines a one-to-many relationship linking this warehouse to its users.
      */
     public function users(): HasMany
     {
@@ -154,8 +156,7 @@ class Warehouse extends Model implements AuditableContract
 
     /**
      * Get the printers associated with this warehouse.
-     *
-     * @return HasMany
+     * * Defines a one-to-many relationship linking this warehouse to its printers.
      */
     public function printers(): HasMany
     {
