@@ -16,9 +16,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * CustomerGroup Model
+ * Class CustomerGroup
  *
- * Represents a customer group with discount percentage.
+ * Represents a customer group within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for customer group entities.
  *
  * @property int $id
  * @property string $name
@@ -26,8 +27,12 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read Collection<int, Customer> $customers
  *
+ * @method static Builder|CustomerGroup newModelQuery()
+ * @method static Builder|CustomerGroup newQuery()
+ * @method static Builder|CustomerGroup query()
  * @method static Builder|CustomerGroup active()
  * @method static Builder|CustomerGroup filter(array $filters)
  */
@@ -49,6 +54,8 @@ class CustomerGroup extends Model implements AuditableContract
     /**
      * Get the customers in this group.
      *
+     * Defines a one-to-many relationship linking this customer group to its customers.
+     *
      * @return HasMany<Customer>
      */
     public function customers(): HasMany
@@ -58,6 +65,9 @@ class CustomerGroup extends Model implements AuditableContract
 
     /**
      * Scope a query to only include active customer groups.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -65,7 +75,13 @@ class CustomerGroup extends Model implements AuditableContract
     }
 
     /**
-     * Scope a query to apply filters.
+     * Scope a query to apply dynamic filters.
+     *
+     * Applies filters for active status, search terms (name), and date ranges via the FilterableByDates trait.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
@@ -88,7 +104,7 @@ class CustomerGroup extends Model implements AuditableContract
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Get the attributes that should be cast to native types.
      *
      * @return array<string, string>
      */

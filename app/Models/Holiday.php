@@ -17,7 +17,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Holiday
  *
- * Represents a holiday/leave request for a user.
+ * Represents a holiday/leave request within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for holiday entities.
  *
  * @property int $id
  * @property int $user_id
@@ -32,6 +33,9 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $deleted_at
  * @property-read User $user
  *
+ * @method static Builder|Holiday newModelQuery()
+ * @method static Builder|Holiday newQuery()
+ * @method static Builder|Holiday query()
  * @method static Builder|Holiday approved()
  * @method static Builder|Holiday pending()
  * @method static Builder|Holiday filter(array $filters)
@@ -58,6 +62,8 @@ class Holiday extends Model implements AuditableContract
     /**
      * Get the user for this holiday.
      *
+     * Defines a many-to-one relationship linking this holiday to its user.
+     *
      * @return BelongsTo<User, self>
      */
     public function user(): BelongsTo
@@ -67,6 +73,9 @@ class Holiday extends Model implements AuditableContract
 
     /**
      * Scope a query to only include approved holidays.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeApproved(Builder $query): Builder
     {
@@ -75,6 +84,9 @@ class Holiday extends Model implements AuditableContract
 
     /**
      * Scope a query to only include pending holidays.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopePending(Builder $query): Builder
     {
@@ -82,7 +94,13 @@ class Holiday extends Model implements AuditableContract
     }
 
     /**
-     * Scope a query to apply filters.
+     * Scope a query to apply dynamic filters.
+     *
+     * Applies filters for user_id, approval status, search (note), and date range on from_date.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
@@ -107,7 +125,7 @@ class Holiday extends Model implements AuditableContract
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Get the attributes that should be cast to native types.
      *
      * @return array<string, string>
      */

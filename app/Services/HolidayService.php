@@ -18,26 +18,35 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Class HolidayService
  *
- * Handles business logic for Holidays (leave requests).
+ * Handles all core business logic and database interactions for Holidays (leave requests).
+ * Acts as the intermediary between the controllers and the database layer.
  */
 class HolidayService
 {
     use MailInfo;
 
+    /**
+     * The application path where import template files are stored.
+     */
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * Get paginated holidays based on filters.
+     * Get paginated holidays based on provided filters.
      *
-     * @param array<string, mixed> $filters
+     * Retrieves a paginated list of holidays, applying scopes for user, approval status,
+     * search (note), and date ranges.
+     *
+     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'user_id', 'is_approved', 'start_date', 'end_date').
+     * @param  int  $perPage  The number of records to return per page.
+     * @return LengthAwarePaginator A paginated collection of Holiday models.
      */
     public function getPaginatedHolidays(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -49,9 +58,13 @@ class HolidayService
     }
 
     /**
-     * Create a new holiday.
+     * Create a newly registered holiday (leave request).
      *
-     * @param array<string, mixed> $data
+     * Sets user_id from authenticated user if not provided, and is_approved based on permission.
+     * Stores the new holiday within a database transaction.
+     *
+     * @param  array<string, mixed>  $data  The validated request data for the new holiday.
+     * @return Holiday The newly created Holiday model instance.
      */
     public function createHoliday(array $data): Holiday
     {
@@ -63,25 +76,33 @@ class HolidayService
                 $user = Auth::user();
                 $data['is_approved'] = $user && $user->can('approve holidays');
             }
+
             return Holiday::query()->create($data);
         });
     }
 
     /**
-     * Update an existing holiday.
+     * Update an existing holiday's information.
      *
-     * @param array<string, mixed> $data
+     * Updates the holiday record within a database transaction.
+     *
+     * @param  Holiday  $holiday  The holiday model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return Holiday The freshly updated Holiday model instance.
      */
     public function updateHoliday(Holiday $holiday, array $data): Holiday
     {
         return DB::transaction(function () use ($holiday, $data) {
             $holiday->update($data);
+
             return $holiday->fresh();
         });
     }
 
     /**
-     * Delete a holiday.
+     * Delete a specific holiday.
+     *
+     * @param  Holiday  $holiday  The holiday model instance to delete.
      */
     public function deleteHoliday(Holiday $holiday): void
     {
@@ -91,10 +112,12 @@ class HolidayService
     }
 
     /**
-     * Bulk delete holidays.
+     * Bulk delete multiple holidays.
      *
-     * @param array<int> $ids
-     * @return int Count of deleted items.
+     * Iterates over an array of holiday IDs and deletes each record.
+     *
+     * @param  array<int>  $ids  Array of holiday IDs to be deleted.
+     * @return int The total count of successfully deleted holidays.
      */
     public function bulkDeleteHolidays(array $ids): int
     {
@@ -105,12 +128,18 @@ class HolidayService
                 $holiday->delete();
                 $count++;
             }
+
             return $count;
         });
     }
 
     /**
-     * Approve a holiday and send email.
+     * Approve a holiday request and send approval email to the user.
+     *
+     * @param  Holiday  $holiday  The holiday model instance to approve.
+     * @return Holiday The freshly updated Holiday model instance with user loaded.
+     *
+     * @throws ValidationException If mail settings are not configured.
      */
     public function approveHoliday(Holiday $holiday): Holiday
     {
@@ -132,13 +161,19 @@ class HolidayService
                     report($e);
                 }
             }
+
             return $holiday->fresh();
         });
     }
 
     /**
-     * Get user holidays for a specific month.
+     * Get user holidays for a specific month (calendar view).
      *
+     * Returns an array keyed by day number with holiday details or false, plus metadata for navigation.
+     *
+     * @param  int  $userId  The user ID to fetch holidays for.
+     * @param  int  $year  The year.
+     * @param  int  $month  The month (1–12).
      * @return array{holidays: array<int, mixed>, metadata: array<string, mixed>}
      */
     public function getUserHolidaysByMonth(int $userId, int $year, int $month): array
@@ -193,7 +228,11 @@ class HolidayService
     }
 
     /**
-     * Import holidays from file.
+     * Import multiple holidays from an uploaded Excel or CSV file.
+     *
+     * Uses Maatwebsite Excel to process the file in batches and chunks.
+     *
+     * @param  UploadedFile  $file  The uploaded spreadsheet file containing holiday data.
      */
     public function importHolidays(UploadedFile $file): void
     {
@@ -201,7 +240,11 @@ class HolidayService
     }
 
     /**
-     * Download holidays CSV template.
+     * Retrieve the path to the sample holidays import template.
+     *
+     * @return string The absolute file path to the sample CSV.
+     *
+     * @throws RuntimeException If the template file does not exist on the server.
      */
     public function download(): string
     {
@@ -210,15 +253,21 @@ class HolidayService
         if (! File::exists($path)) {
             throw new RuntimeException('Holidays import template not found.');
         }
+
         return $path;
     }
 
     /**
-     * Generate holidays export file.
+     * Generate an export file (Excel or PDF) containing holiday data.
      *
-     * @param array<int> $ids
-     * @param array<string> $columns
-     * @param array<string, mixed> $filters
+     * Compiles the requested holiday data into a file stored on the public disk.
+     * Supports column selection, ID filtering, and date range filtering.
+     *
+     * @param  array<int>  $ids  Specific holiday IDs to export (leave empty to export all based on filters).
+     * @param  string  $format  The file format requested ('excel' or 'pdf').
+     * @param  array<string>  $columns  Specific column names to include in the export.
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
@@ -231,6 +280,7 @@ class HolidayService
             'public',
             $writerType
         );
+
         return $relativePath;
     }
 }

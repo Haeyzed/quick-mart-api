@@ -15,20 +15,30 @@ use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Class CustomerGroupService
- * Handles business logic for Customer Groups.
+ *
+ * Handles all core business logic and database interactions for Customer Groups.
+ * Acts as the intermediary between the controllers and the database layer.
  */
 class CustomerGroupService
 {
+    /**
+     * The application path where import template files are stored.
+     */
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * Get paginated customer groups based on filters.
+     * Get paginated customer groups based on provided filters.
      *
-     * @param  array<string, mixed>  $filters
+     * Retrieves a paginated list of customer groups, applying scopes for searching,
+     * status filtering, and date ranges.
+     *
+     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
+     * @param  int  $perPage  The number of records to return per page.
+     * @return LengthAwarePaginator A paginated collection of CustomerGroup models.
      */
     public function getPaginatedCustomerGroups(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -39,9 +49,11 @@ class CustomerGroupService
     }
 
     /**
-     * Get list of customer group options (value/label format).
+     * Get a lightweight list of active customer group options.
      *
-     * @return Collection<int, array{value: int, label: string}>
+     * Useful for populating frontend select dropdowns. Only fetches the `id` and `name` of active groups.
+     *
+     * @return Collection A collection of arrays containing 'value' (id) and 'label' (name).
      */
     public function getOptions(): Collection
     {
@@ -56,33 +68,34 @@ class CustomerGroupService
     }
 
     /**
-     * Create a new customer group.
+     * Create a newly registered customer group.
      *
-     * @param  array<string, mixed>  $data
+     * Stores the new customer group record within a database transaction.
+     * Normalizes is_active to boolean when provided.
+     *
+     * @param  array<string, mixed>  $data  The validated request data for the new customer group.
+     * @return CustomerGroup The newly created CustomerGroup model instance.
      */
     public function createCustomerGroup(array $data): CustomerGroup
     {
         return DB::transaction(function () use ($data) {
-            $data['is_active'] = $data['is_active'] ?? false;
-            if (isset($data['is_active']) && ! is_bool($data['is_active'])) {
-                $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
-            }
-
             return CustomerGroup::query()->create($data);
         });
     }
 
     /**
-     * Update an existing customer group.
+     * Update an existing customer group's information.
      *
-     * @param  array<string, mixed>  $data
+     * Updates the customer group record within a database transaction.
+     * Normalizes is_active to boolean when provided.
+     *
+     * @param  CustomerGroup  $customerGroup  The customer group model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return CustomerGroup The freshly updated CustomerGroup model instance.
      */
     public function updateCustomerGroup(CustomerGroup $customerGroup, array $data): CustomerGroup
     {
         return DB::transaction(function () use ($customerGroup, $data) {
-            if (isset($data['is_active']) && ! is_bool($data['is_active'])) {
-                $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
-            }
             $customerGroup->update($data);
 
             return $customerGroup->fresh();
@@ -90,26 +103,31 @@ class CustomerGroupService
     }
 
     /**
-     * Delete a customer group.
+     * Delete a specific customer group.
      *
-     * @throws UnprocessableEntityHttpException
+     * Will abort if the customer group has any associated customers.
+     *
+     * @param  CustomerGroup  $customerGroup  The customer group model instance to delete.
+     *
+     * @throws UnprocessableEntityHttpException If the customer group has associated customers.
      */
     public function deleteCustomerGroup(CustomerGroup $customerGroup): void
     {
         if ($customerGroup->customers()->exists()) {
-            throw new UnprocessableEntityHttpException(
-                'Cannot delete customer group: group has associated customers.'
-            );
+            throw new ConflictHttpException("Cannot delete customer group '{$customerGroup->name}' as it has associated customers.");
         }
 
         DB::transaction(fn () => $customerGroup->delete());
     }
 
     /**
-     * Bulk delete customer groups.
+     * Bulk delete multiple customer groups.
      *
-     * @param  array<int>  $ids
-     * @return int Count of deleted items.
+     * Iterates over an array of customer group IDs and attempts to delete them.
+     * Skips any groups that have associated customers.
+     *
+     * @param  array<int>  $ids  Array of customer group IDs to be deleted.
+     * @return int The total count of successfully deleted customer groups.
      */
     public function bulkDeleteCustomerGroups(array $ids): int
     {
@@ -129,9 +147,11 @@ class CustomerGroupService
     }
 
     /**
-     * Update status for multiple customer groups.
+     * Update the active status for multiple customer groups.
      *
-     * @param  array<int>  $ids
+     * @param  array<int>  $ids  Array of customer group IDs to update.
+     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -139,7 +159,11 @@ class CustomerGroupService
     }
 
     /**
-     * Import customer groups from file.
+     * Import multiple customer groups from an uploaded Excel or CSV file.
+     *
+     * Uses Maatwebsite Excel to process the file in batches and chunks.
+     *
+     * @param  UploadedFile  $file  The uploaded spreadsheet file containing customer group data.
      */
     public function importCustomerGroups(UploadedFile $file): void
     {
@@ -147,7 +171,11 @@ class CustomerGroupService
     }
 
     /**
-     * Download a customer groups CSV template.
+     * Retrieve the path to the sample customer groups import template.
+     *
+     * @return string The absolute file path to the sample CSV.
+     *
+     * @throws RuntimeException If the template file does not exist on the server.
      */
     public function download(): string
     {
@@ -162,13 +190,16 @@ class CustomerGroupService
     }
 
     /**
-     * Export customer groups to file.
+     * Generate an export file (Excel or PDF) containing customer group data.
      *
-     * @param  array<int>  $ids
-     * @param  string  $format  'excel' or 'pdf'
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters
-     * @return string Relative file path.
+     * Compiles the requested customer group data into a file stored on the public disk.
+     * Supports column selection, ID filtering, and date range filtering.
+     *
+     * @param  array<int>  $ids  Specific customer group IDs to export (leave empty to export all based on filters).
+     * @param  string  $format  The file format requested ('excel' or 'pdf').
+     * @param  array<string>  $columns  Specific column names to include in the export.
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {

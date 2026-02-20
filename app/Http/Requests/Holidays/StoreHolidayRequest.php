@@ -7,27 +7,88 @@ namespace App\Http\Requests\Holidays;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Class StoreHolidayRequest
+ *
+ * Handles validation and authorization for creating a new holiday (leave request).
+ */
 class StoreHolidayRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool True if authorized, false otherwise.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /** @return array<string, array<int, mixed>> */
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
+            /**
+             * The user ID the holiday belongs to. If omitted, defaults to authenticated user.
+             *
+             * @example 1
+             */
             'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+
+            /**
+             * Start date of the holiday period.
+             *
+             * @example 2024-12-25
+             */
             'from_date' => ['required', 'date'],
+
+            /**
+             * End date of the holiday period. Must be on or after from_date.
+             *
+             * @example 2024-12-31
+             */
             'to_date' => ['required', 'date', 'after_or_equal:from_date'],
+
+            /**
+             * Optional note or reason for the holiday.
+             *
+             * @example Annual leave
+             */
             'note' => ['nullable', 'string', 'max:500'],
+
+            /**
+             * Whether the holiday is pre-approved (e.g. when created by an approver).
+             *
+             * @example true
+             */
             'is_approved' => ['nullable', 'boolean'],
+
+            /**
+             * Whether the holiday recurs (e.g. yearly).
+             *
+             * @example false
+             */
             'recurring' => ['nullable', 'boolean'],
+
+            /**
+             * Optional region or location for the holiday.
+             *
+             * @example HQ
+             */
             'region' => ['nullable', 'string', 'max:255'],
         ];
     }
 
+    /**
+     * Prepare the data for validation.
+     *
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., casting booleans, normalizing dates).
+     */
     protected function prepareForValidation(): void
     {
         if ($this->has('is_approved')) {

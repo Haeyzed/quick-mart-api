@@ -28,18 +28,25 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * Class CustomerGroupController
  *
  * API Controller for Customer Group CRUD and bulk operations.
- * Handles authorization via permissions and delegates logic to CustomerGroupService.
+ * Handles authorization via Policy and delegates logic to CustomerGroupService.
  *
- * @group Customer Group Management
+ * @tags Customer Group Management
  */
 class CustomerGroupController extends Controller
 {
+    /**
+     * CustomerGroupController constructor.
+     *
+     * @param  CustomerGroupService  $service  Service handling customer group business logic.
+     */
     public function __construct(
         private readonly CustomerGroupService $service
     ) {}
 
     /**
-     * Display a paginated listing of customer groups.
+     * List Customer Groups
+     *
+     * Display a paginated listing of customer groups. Supports searching and filtering by status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -48,8 +55,33 @@ class CustomerGroupController extends Controller
         }
 
         $customerGroups = $this->service->getPaginatedCustomerGroups(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter customer groups by name.
+                 *
+                 * @example "Wholesale"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'status' => ['nullable', 'boolean'],
+                /**
+                 * Filter customer groups starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter customer groups up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -59,7 +91,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Get customer group options for select components.
+     * Get Customer Group Options
+     *
+     * Retrieve a simplified list of active customer groups for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -71,7 +105,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Store a newly created customer group.
+     * Create Customer Group
+     *
+     * Store a newly created customer group in the system.
      */
     public function store(StoreCustomerGroupRequest $request): JsonResponse
     {
@@ -89,7 +125,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Display the specified customer group.
+     * Show Customer Group
+     *
+     * Retrieve the details of a specific customer group by its ID.
      */
     public function show(CustomerGroup $customer_group): JsonResponse
     {
@@ -104,7 +142,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Update the specified customer group.
+     * Update Customer Group
+     *
+     * Update the specified customer group's information.
      */
     public function update(UpdateCustomerGroupRequest $request, CustomerGroup $customer_group): JsonResponse
     {
@@ -121,7 +161,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Remove the specified customer group (soft delete).
+     * Delete Customer Group
+     *
+     * Remove the specified customer group from storage (soft delete).
      */
     public function destroy(CustomerGroup $customer_group): JsonResponse
     {
@@ -135,7 +177,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Bulk delete customer groups.
+     * Bulk Delete Customer Groups
+     *
+     * Delete multiple customer groups simultaneously using an array of IDs.
      */
     public function bulkDestroy(CustomerGroupBulkActionRequest $request): JsonResponse
     {
@@ -152,7 +196,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Bulk activate customer groups.
+     * Bulk Activate Customer Groups
+     *
+     * Set the active status of multiple customer groups to true.
      */
     public function bulkActivate(CustomerGroupBulkActionRequest $request): JsonResponse
     {
@@ -169,7 +215,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Bulk deactivate customer groups.
+     * Bulk Deactivate Customer Groups
+     *
+     * Set the active status of multiple customer groups to false.
      */
     public function bulkDeactivate(CustomerGroupBulkActionRequest $request): JsonResponse
     {
@@ -186,7 +234,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Import customer groups from Excel/CSV.
+     * Import Customer Groups
+     *
+     * Import multiple customer groups into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -200,7 +250,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Export customer groups to Excel or PDF.
+     * Export Customer Groups
+     *
+     * Export a list of customer groups to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -266,7 +318,9 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Download customer groups module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

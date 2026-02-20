@@ -29,18 +29,25 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * Class HolidayController
  *
  * API Controller for Holiday CRUD, bulk operations, import/export and approval.
+ * Handles authorization via Policy and delegates logic to HolidayService.
  *
- * @group Holiday Management
+ * @tags Holiday Management
  */
 class HolidayController extends Controller
 {
+    /**
+     * HolidayController constructor.
+     *
+     * @param  HolidayService  $service  Service handling holiday business logic.
+     */
     public function __construct(
         private readonly HolidayService $service
-    ) {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of holidays.
+     * List Holidays
+     *
+     * Display a paginated listing of holidays. Supports searching, filtering by user, approval status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -48,10 +55,40 @@ class HolidayController extends Controller
             return response()->forbidden('Permission denied for viewing holidays list.');
         }
 
-        $filters = $request->all();
         $holidays = $this->service->getPaginatedHolidays(
-            $filters,
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter holidays by note.
+                 *
+                 * @example "Annual leave"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by user ID.
+                 *
+                 * @example 1
+                 */
+                'user_id' => ['nullable', 'integer', 'exists:users,id'],
+                /**
+                 * Filter by approval status.
+                 *
+                 * @example true
+                 */
+                'is_approved' => ['nullable', 'boolean'],
+                /**
+                 * Filter holidays starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter holidays up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -61,7 +98,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Store a newly created holiday.
+     * Create Holiday
+     *
+     * Store a newly created holiday (leave request) in the system.
      */
     public function store(StoreHolidayRequest $request): JsonResponse
     {
@@ -79,7 +118,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Display the specified holiday.
+     * Show Holiday
+     *
+     * Retrieve the details of a specific holiday by its ID.
      */
     public function show(Holiday $holiday): JsonResponse
     {
@@ -94,7 +135,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Update the specified holiday.
+     * Update Holiday
+     *
+     * Update the specified holiday's information.
      */
     public function update(UpdateHolidayRequest $request, Holiday $holiday): JsonResponse
     {
@@ -111,7 +154,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Remove the specified holiday.
+     * Delete Holiday
+     *
+     * Remove the specified holiday from storage.
      */
     public function destroy(Holiday $holiday): JsonResponse
     {
@@ -125,7 +170,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Bulk delete holidays.
+     * Bulk Delete Holidays
+     *
+     * Delete multiple holidays simultaneously using an array of IDs.
      */
     public function bulkDestroy(HolidayBulkActionRequest $request): JsonResponse
     {
@@ -142,7 +189,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Approve a holiday request.
+     * Approve Holiday
+     *
+     * Approve a holiday request and send approval email to the user.
      */
     public function approve(Holiday $holiday): JsonResponse
     {
@@ -159,7 +208,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Get user holidays for a specific month.
+     * Get User Holidays by Month
+     *
+     * Retrieve the authenticated user's holidays for a specific month (calendar view).
      */
     public function getUserHolidaysByMonth(int $year, int $month): JsonResponse
     {
@@ -170,7 +221,9 @@ class HolidayController extends Controller
     }
 
     /**
-     * Import holidays from Excel/CSV.
+     * Import Holidays
+     *
+     * Import multiple holidays into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -178,11 +231,14 @@ class HolidayController extends Controller
             return response()->forbidden('Permission denied for import holidays.');
         }
         $this->service->importHolidays($request->file('file'));
+
         return response()->success(null, 'Holidays imported successfully');
     }
 
     /**
-     * Export holidays to Excel or PDF.
+     * Export Holidays
+     *
+     * Export a list of holidays to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -225,16 +281,20 @@ class HolidayController extends Controller
                     $mailSetting
                 )
             );
+
             return response()->success(
                 null,
                 'Export is being processed and will be sent to email: '.$user->email
             );
         }
+
         return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Download holidays import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
@@ -242,6 +302,7 @@ class HolidayController extends Controller
             return response()->forbidden('Permission denied for downloading holidays import template.');
         }
         $path = $this->service->download();
+
         return response()->download(
             $path,
             basename($path),
