@@ -24,10 +24,10 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 /**
  * Class AuthController
  *
- * API controller for handling authentication operations.
- * Delegates logic to AuthService.
+ * API Controller for authentication operations.
+ * Handles authorization and delegates logic to AuthService.
  *
- * @group Authentication
+ * @tags Authentication
  */
 class AuthController extends Controller
 {
@@ -36,11 +36,12 @@ class AuthController extends Controller
      */
     public function __construct(
         private readonly AuthService $service
-    ) {
-    }
+    ) {}
 
     /**
-     * Authenticate a user and return a token.
+     * Login
+     *
+     * Authenticate a user and return a Sanctum token with user resource.
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -53,7 +54,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new user.
+     * Register
+     *
+     * Register a new user. Account is inactive until email is verified and approved.
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -67,6 +70,8 @@ class AuthController extends Controller
     }
 
     /**
+     * Logout
+     *
      * Logout the authenticated user (revoke current token).
      */
     public function logout(): JsonResponse
@@ -77,7 +82,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Get the authenticated user.
+     * Get Authenticated User
+     *
+     * Return the currently authenticated user with relationships.
      */
     public function user(): JsonResponse
     {
@@ -90,7 +97,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout from all devices (revoke all tokens).
+     * Logout All Devices
+     *
+     * Logout from all devices (revoke all tokens for the user).
      */
     public function logoutAll(): JsonResponse
     {
@@ -100,7 +109,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Send password reset link to user's email.
+     * Forgot Password
+     *
+     * Send a password reset link to the user's email.
      */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
@@ -110,7 +121,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Reset user password using token.
+     * Reset Password
+     *
+     * Reset user password using the token from the reset link.
      */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
@@ -120,7 +133,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Verify user's email address.
+     * Verify Email
+     *
+     * Verify the user's email address via the signed link.
      */
     public function verifyEmail(Request $request, int $id, string $hash): JsonResponse
     {
@@ -135,7 +150,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Resend email verification notification.
+     * Resend Verification Email
+     *
+     * Resend the email verification notification to the authenticated user.
      */
     public function resendVerificationEmail(): JsonResponse
     {
@@ -151,7 +168,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Refresh the authentication token.
+     * Refresh Token
+     *
+     * Refresh the authentication token. Optionally revoke the previous token.
      */
     public function refreshToken(RefreshTokenRequest $request): JsonResponse
     {
@@ -167,7 +186,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Update the authenticated user's profile.
+     * Update Profile
+     *
+     * Update the authenticated user's profile information.
      */
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
@@ -181,7 +202,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Change the authenticated user's password.
+     * Change Password
+     *
+     * Change the authenticated user's password (requires current password).
      */
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
@@ -191,6 +214,8 @@ class AuthController extends Controller
     }
 
     /**
+     * Unlock
+     *
      * Unlock the screen by verifying the user's password.
      */
     public function unlock(UnlockRequest $request): JsonResponse

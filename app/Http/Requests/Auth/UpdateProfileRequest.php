@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
 /**
- * UpdateProfileRequest
+ * Class UpdateProfileRequest
  *
- * Validates incoming profile update data.
+ * Handles validation and authorization for updating the authenticated user's profile.
  */
 class UpdateProfileRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -28,7 +27,7 @@ class UpdateProfileRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -38,7 +37,6 @@ class UpdateProfileRequest extends BaseRequest
             /**
              * User's name.
              *
-             * @var string
              * @example John Doe
              */
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -46,7 +44,6 @@ class UpdateProfileRequest extends BaseRequest
             /**
              * User's email address. Must be unique if provided.
              *
-             * @var string|null
              * @example john.doe@example.com
              */
             'email' => [
@@ -60,7 +57,6 @@ class UpdateProfileRequest extends BaseRequest
             /**
              * User's phone number.
              *
-             * @var string|null
              * @example +1234567890
              */
             'phone' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -68,7 +64,6 @@ class UpdateProfileRequest extends BaseRequest
             /**
              * User's company name.
              *
-             * @var string|null
              * @example Acme Corporation
              */
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -78,7 +73,8 @@ class UpdateProfileRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., trimming string fields).
      */
     protected function prepareForValidation(): void
     {
@@ -90,4 +86,3 @@ class UpdateProfileRequest extends BaseRequest
         ]);
     }
 }
-

@@ -26,12 +26,12 @@ use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\MailSettingController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\RewardPointSettingController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleAgentController;
 use App\Http\Controllers\Api\SmsSettingController;
 use App\Http\Controllers\Api\SocialAuthController;
@@ -76,10 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/resend-verification-email', [AuthController::class, 'resendVerificationEmail'])
         ->name('verification.resend');
 
-    // Users
     Route::apiResource('users', UserController::class);
-
-    // All other API routes require authentication
 
     Route::prefix('brands')->name('brands.')->group(function () {
         Route::post('bulk-destroy', [BrandController::class, 'bulkDestroy'])->name('bulk-destroy');
@@ -102,6 +99,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [WarehouseController::class, 'options'])->name('options');
     });
     Route::apiResource('warehouses', WarehouseController::class);
+
+    Route::prefix('departments')->name('departments.')->group(function () {
+        Route::post('bulk-destroy', [DepartmentController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [DepartmentController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [DepartmentController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [DepartmentController::class, 'import'])->name('import');
+        Route::post('export', [DepartmentController::class, 'export'])->name('export');
+        Route::get('download', [DepartmentController::class, 'download'])->name('download');
+        Route::get('options', [DepartmentController::class, 'options'])->name('options');
+    });
+    Route::apiResource('departments', DepartmentController::class);
 
     Route::prefix('roles')->name('roles.')->group(function () {
         Route::post('bulk-destroy', [RoleController::class, 'bulkDestroy'])->name('bulk-destroy');
@@ -482,8 +490,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('incomes', IncomeController::class);
 
-    Route::apiResource('departments', DepartmentController::class);
-
     Route::prefix('sale-agents')->name('sale-agents.')->group(function () {
         Route::post('bulk-destroy', [SaleAgentController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [SaleAgentController::class, 'bulkActivate'])->name('bulk-activate');
@@ -495,8 +501,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('all/active', [SaleAgentController::class, 'getAllActive'])->name('all-active');
     });
     Route::apiResource('sale-agents', SaleAgentController::class)->parameters(['sale-agents' => 'sale_agent']);
-    Route::delete('departments/bulk-destroy', [DepartmentController::class, 'bulkDestroy'])
-        ->name('departments.bulkDestroy');
 
     Route::apiResource('designations', DesignationController::class);
     Route::delete('designations/bulk-destroy', [DesignationController::class, 'bulkDestroy'])

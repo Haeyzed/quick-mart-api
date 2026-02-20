@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Http\UploadedFile;
+use App\Models\Role;
 use Illuminate\Validation\Rule;
 
 /**
- * RegisterRequest
+ * Class RegisterRequest
  *
- * Validates incoming registration data for new user creation.
+ * Handles validation and authorization for new user registration.
  */
 class RegisterRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -29,7 +28,7 @@ class RegisterRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -37,7 +36,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's name. Must be unique across all users.
              *
-             * @var string @name
              * @example John Doe
              */
             'name' => [
@@ -52,7 +50,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's username. Must be unique if provided.
              *
-             * @var string|null @username
              * @example john_doe
              */
             'username' => [
@@ -68,7 +65,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's email address. Must be unique if provided.
              *
-             * @var string|null @email
              * @example john.doe@example.com
              */
             'email' => [
@@ -83,7 +79,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's avatar image file.
              *
-             * @var UploadedFile|null @avatar
              * @example avatar.jpg
              */
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
@@ -91,7 +86,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's phone number.
              *
-             * @var string|null @phone
              * @example +1234567890
              */
             'phone' => ['nullable', 'string', 'max:255'],
@@ -99,7 +93,6 @@ class RegisterRequest extends BaseRequest
             /**
              * Company name.
              *
-             * @var string|null @company_name
              * @example Acme Corporation
              */
             'company_name' => ['nullable', 'string', 'max:255'],
@@ -107,7 +100,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's password. Must be confirmed.
              *
-             * @var string @password
              * @example password123
              */
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -115,7 +107,6 @@ class RegisterRequest extends BaseRequest
             /**
              * User's role ID.
              *
-             * @var int @role_id
              * @example 1
              */
             'role_id' => [
@@ -129,7 +120,6 @@ class RegisterRequest extends BaseRequest
             /**
              * Biller ID (optional).
              *
-             * @var int|null @biller_id
              * @example 1
              */
             'biller_id' => ['nullable', 'integer', Rule::exists('billers', 'id')],
@@ -137,7 +127,6 @@ class RegisterRequest extends BaseRequest
             /**
              * Warehouse ID (optional).
              *
-             * @var int|null @warehouse_id
              * @example 1
              */
             'warehouse_id' => ['nullable', 'integer', Rule::exists('warehouses', 'id')],
@@ -145,7 +134,6 @@ class RegisterRequest extends BaseRequest
             /**
              * Customer group ID (required if role_id is 5 - customer).
              *
-             * @var int|null @customer_group_id
              * @example 1
              */
             'customer_group_id' => [
@@ -157,7 +145,6 @@ class RegisterRequest extends BaseRequest
             /**
              * Customer name (required when Customer role is selected).
              *
-             * @var string|null @customer_name
              * @example John Doe
              */
             'customer_name' => [
@@ -165,7 +152,8 @@ class RegisterRequest extends BaseRequest
                 'string',
                 'max:255',
                 Rule::requiredIf(function () {
-                    $customerRole = \App\Models\Role::query()->where('name', 'Customer')->where('is_active', true)->first();
+                    $customerRole = Role::query()->where('name', 'Customer')->where('is_active', true)->first();
+
                     return $customerRole && (int) $this->role_id === (int) $customerRole->id;
                 }),
             ],
@@ -175,7 +163,8 @@ class RegisterRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., trimming string fields).
      */
     protected function prepareForValidation(): void
     {
@@ -189,4 +178,3 @@ class RegisterRequest extends BaseRequest
         ]);
     }
 }
-

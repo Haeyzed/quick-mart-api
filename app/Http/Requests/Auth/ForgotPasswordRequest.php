@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * ForgotPasswordRequest
+ * Class ForgotPasswordRequest
  *
- * Validates incoming data for password reset link requests.
+ * Handles validation and authorization for requesting a password reset link.
  */
 class ForgotPasswordRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -27,15 +26,14 @@ class ForgotPasswordRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
             /**
-             * User's email address to send password reset link.
+             * User's email address to send the password reset link.
              *
-             * @var string @email
              * @example john.doe@example.com
              */
             'email' => ['required', 'email', 'max:255'],
@@ -45,7 +43,8 @@ class ForgotPasswordRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., trimming the email).
      */
     protected function prepareForValidation(): void
     {
@@ -54,4 +53,3 @@ class ForgotPasswordRequest extends BaseRequest
         ]);
     }
 }
-

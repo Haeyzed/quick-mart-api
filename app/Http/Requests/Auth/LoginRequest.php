@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * LoginRequest
+ * Class LoginRequest
  *
- * Validates incoming login data for user authentication.
+ * Handles validation and authorization for user login.
  */
 class LoginRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -27,7 +26,7 @@ class LoginRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -35,7 +34,6 @@ class LoginRequest extends BaseRequest
             /**
              * User's username or email address for login.
              *
-             * @var string @identifier
              * @example john.doe@example.com or john_doe
              */
             'identifier' => ['required', 'string', 'max:255'],
@@ -43,7 +41,6 @@ class LoginRequest extends BaseRequest
             /**
              * User's password.
              *
-             * @var string @password
              * @example password123
              */
             'password' => ['required', 'string'],
@@ -53,7 +50,8 @@ class LoginRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., trimming the identifier).
      */
     protected function prepareForValidation(): void
     {
@@ -62,4 +60,3 @@ class LoginRequest extends BaseRequest
         ]);
     }
 }
-

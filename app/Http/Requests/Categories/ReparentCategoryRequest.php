@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Categories;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class ReparentCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var \App\Models\Category|null $category */
+        /** @var Category|null $category */
         $category = $this->route('category');
 
         return [

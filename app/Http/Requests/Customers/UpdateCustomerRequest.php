@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Customers;
 
+use App\Enums\CustomerTypeEnum;
 use App\Models\Customer;
 use App\Models\Supplier;
 use Illuminate\Foundation\Http\FormRequest;
@@ -43,7 +44,7 @@ class UpdateCustomerRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'type' => ['nullable', 'string', 'in:'.implode(',', \App\Enums\CustomerTypeEnum::toArray())],
+            'type' => ['nullable', 'string', 'in:'.implode(',', CustomerTypeEnum::toArray())],
             'phone_number' => [
                 'nullable',
                 'string',

@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * ResetPasswordRequest
+ * Class ResetPasswordRequest
  *
- * Validates incoming data for password reset.
+ * Handles validation and authorization for resetting a user's password.
  */
 class ResetPasswordRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -27,7 +26,7 @@ class ResetPasswordRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -35,15 +34,13 @@ class ResetPasswordRequest extends BaseRequest
             /**
              * User's email address.
              *
-             * @var string @email
              * @example john.doe@example.com
              */
             'email' => ['required', 'email', 'max:255'],
 
             /**
-             * Password reset token.
+             * Password reset token from the reset link.
              *
-             * @var string @token
              * @example abc123def456...
              */
             'token' => ['required', 'string'],
@@ -51,7 +48,6 @@ class ResetPasswordRequest extends BaseRequest
             /**
              * New password. Must be confirmed.
              *
-             * @var string @password
              * @example newpassword123
              */
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -59,7 +55,6 @@ class ResetPasswordRequest extends BaseRequest
             /**
              * Password confirmation. Must match password.
              *
-             * @var string @password_confirmation
              * @example newpassword123
              */
             'password_confirmation' => ['required', 'string', 'min:8'],
@@ -69,7 +64,8 @@ class ResetPasswordRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      *
-     * @return void
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., trimming the email).
      */
     protected function prepareForValidation(): void
     {
@@ -78,4 +74,3 @@ class ResetPasswordRequest extends BaseRequest
         ]);
     }
 }
-

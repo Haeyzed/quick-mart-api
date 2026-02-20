@@ -33,12 +33,14 @@ class BrandBulkActionRequest extends FormRequest
         return [
             /**
              * An array of valid brand IDs to perform the bulk action on.
+             *
              * @example [1, 2, 3]
              */
-            'ids'   => ['required', 'array', 'min:1'],
+            'ids' => ['required', 'array', 'min:1'],
 
             /**
              * A single brand ID ensuring it exists in the database.
+             *
              * @example 1
              */
             'ids.*' => ['required', 'integer', 'exists:brands,id'],

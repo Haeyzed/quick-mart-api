@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Requests\Auth;
 
 use App\Http\Requests\BaseRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * UnlockRequest
+ * Class UnlockRequest
  *
- * Validates incoming unlock (lock screen) data.
- * Requires the current user's password to unlock.
+ * Handles validation and authorization for unlocking the screen (requires current password).
  */
 class UnlockRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -28,7 +26,7 @@ class UnlockRequest extends BaseRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string|ValidationRule>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
@@ -36,7 +34,6 @@ class UnlockRequest extends BaseRequest
             /**
              * User's current password to verify and unlock.
              *
-             * @var string
              * @example myPassword123
              */
             'password' => ['required', 'string'],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Roles;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RoleBulkActionRequest extends FormRequest
 {
@@ -23,7 +24,7 @@ class RoleBulkActionRequest extends FormRequest
             'ids.*' => [
                 'required',
                 'integer',
-                \Illuminate\Validation\Rule::exists('roles', 'id'),
+                Rule::exists('roles', 'id'),
             ],
         ];
     }
