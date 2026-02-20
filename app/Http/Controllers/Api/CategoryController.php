@@ -20,7 +20,6 @@ use App\Models\User;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -29,18 +28,24 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 /**
  * Class CategoryController
  *
- * @group Category Management
+ * API Controller for Category CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to CategoryService.
+ *
+ * @tags Category Management
  */
 class CategoryController extends Controller
 {
+    /**
+     * CategoryController constructor.
+     */
     public function __construct(
         private readonly CategoryService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of categories.
+     * List Categories
+     *
+     * Display a paginated listing of categories. Supports searching and filtering by status, featured, parent, and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -49,8 +54,52 @@ class CategoryController extends Controller
         }
 
         $categories = $this->service->getPaginatedCategories(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter categories by name or slug.
+                 *
+                 * @example "Electronics"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'status' => ['nullable', 'boolean'],
+                /**
+                 * Filter by featured status.
+                 *
+                 * @example true
+                 */
+                'featured' => ['nullable', 'boolean'],
+                /**
+                 * Filter by parent category ID.
+                 *
+                 * @example 1
+                 */
+                'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
+                /**
+                 * Filter categories starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter categories up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -60,25 +109,23 @@ class CategoryController extends Controller
     }
 
     /**
-     * Get list of category options.
-     * Returns value/label format for select/combobox components.
+     * Get Category Options
      *
-     * @return Collection<int, array{value: int, label: string}>
+     * Retrieve a simplified list of active categories for use in dropdowns or select components.
      */
-    public function getOptions(): Collection
+    public function options(): JsonResponse
     {
-        return Category::active()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn(Category $category) => [
-                'value' => $category->id,
-                'label' => $category->name,
-            ]);
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing categories options.');
+        }
+
+        return response()->success($this->service->getOptions(), 'Category options retrieved successfully');
     }
 
     /**
-     * Display a tree-view listing of categories.
+     * Category Tree
+     *
+     * Display a tree-view listing of root categories with nested children (active only).
      */
     public function tree(): JsonResponse
     {
@@ -95,19 +142,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Get category options for select components.
-     */
-    public function options(): JsonResponse
-    {
-        if (auth()->user()->denies('view categories')) {
-            return response()->forbidden('Permission denied for viewing categories options.');
-        }
-
-        return response()->success($this->service->getOptions(), 'Category options retrieved successfully');
-    }
-
-    /**
-     * Store a newly created category.
+     * Create Category
+     *
+     * Store a newly created category in the system.
      */
     public function store(StoreCategoryRequest $request): JsonResponse
     {
@@ -125,7 +162,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Display the specified category.
+     * Show Category
+     *
+     * Retrieve the details of a specific category by its ID.
      */
     public function show(Category $category): JsonResponse
     {
@@ -140,7 +179,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update the specified category.
+     * Update Category
+     *
+     * Update the specified category's information.
      */
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
@@ -157,7 +198,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Reparent a category (update parent_id via drag-and-drop).
+     * Reparent Category
+     *
+     * Update the category's parent (e.g. for drag-and-drop tree reordering).
      */
     public function reparent(ReparentCategoryRequest $request, Category $category): JsonResponse
     {
@@ -177,7 +220,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Remove the specified category.
+     * Delete Category
+     *
+     * Remove the specified category from storage.
      */
     public function destroy(Category $category): JsonResponse
     {
@@ -191,7 +236,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk delete categories.
+     * Bulk Delete Categories
+     *
+     * Delete multiple categories simultaneously using an array of IDs.
      */
     public function bulkDestroy(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -208,7 +255,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk activate categories.
+     * Bulk Activate Categories
+     *
+     * Set the active status of multiple categories to true.
      */
     public function bulkActivate(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -225,7 +274,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk deactivate categories.
+     * Bulk Deactivate Categories
+     *
+     * Set the active status of multiple categories to false.
      */
     public function bulkDeactivate(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -242,7 +293,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk enable featured status.
+     * Bulk Enable Featured
+     *
+     * Set the featured status of multiple categories to true.
      */
     public function bulkEnableFeatured(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -259,7 +312,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk disable featured status.
+     * Bulk Disable Featured
+     *
+     * Set the featured status of multiple categories to false.
      */
     public function bulkDisableFeatured(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -276,7 +331,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk enable sync.
+     * Bulk Enable Sync
+     *
+     * Set the sync-disabled status of multiple categories to false (sync enabled).
      */
     public function bulkEnableSync(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -293,7 +350,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Bulk disable sync.
+     * Bulk Disable Sync
+     *
+     * Set the sync-disabled status of multiple categories to true (sync disabled).
      */
     public function bulkDisableSync(CategoryBulkActionRequest $request): JsonResponse
     {
@@ -310,7 +369,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Import categories.
+     * Import Categories
+     *
+     * Import multiple categories into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -324,7 +385,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Export categories to Excel or PDF.
+     * Export Categories
+     *
+     * Export a list of categories to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -334,7 +397,6 @@ class CategoryController extends Controller
 
         $validated = $request->validated();
 
-        // 1. Generate the file via service
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
@@ -345,7 +407,6 @@ class CategoryController extends Controller
             ]
         );
 
-        // 2. Handle Download Method
         if (($validated['method'] ?? 'download') === 'download') {
             return response()
                 ->download(Storage::disk('public')->path($path))
@@ -357,13 +418,13 @@ class CategoryController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -373,7 +434,7 @@ class CategoryController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'categories_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'categories_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Categories Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -382,7 +443,7 @@ class CategoryController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
@@ -390,7 +451,9 @@ class CategoryController extends Controller
     }
 
     /**
-     * Download categories import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

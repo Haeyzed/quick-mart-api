@@ -18,7 +18,9 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Unit
  *
- * Represents a measurement unit with support for base unit conversion.
+ * Represents a measurement unit within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for unit entities.
+ * Supports base-unit conversion (e.g. kg as base, g as derived).
  *
  * @property int $id
  * @property string $code
@@ -39,7 +41,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  */
 class Unit extends Model implements AuditableContract
 {
-    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -56,7 +58,7 @@ class Unit extends Model implements AuditableContract
     ];
 
     /**
-     * The attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
      * @var array<string, string>
      */
@@ -67,33 +69,42 @@ class Unit extends Model implements AuditableContract
     ];
 
     /**
-     * Scope a query to apply filters.
+     * Scope a query to apply dynamic filters.
+     * * Applies filters for active status, search terms (checking name and code),
+     * and date ranges via the FilterableByDates trait.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
                 isset($filters['status']),
-                fn(Builder $q) => $q->active()
+                fn (Builder $q) => $q->active()
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('code', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active units.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -102,6 +113,7 @@ class Unit extends Model implements AuditableContract
 
     /**
      * Get the base unit for this unit.
+     * * Defines a many-to-one relationship linking this unit to its base unit.
      */
     public function baseUnitRelation(): BelongsTo
     {
@@ -110,6 +122,7 @@ class Unit extends Model implements AuditableContract
 
     /**
      * Get the sub-units that use this unit as base.
+     * * Defines a one-to-many relationship linking this unit to its derived units.
      */
     public function subUnits(): HasMany
     {
@@ -117,7 +130,8 @@ class Unit extends Model implements AuditableContract
     }
 
     /**
-     * Get the products using this unit.
+     * Get the products associated with this unit.
+     * * Defines a one-to-many relationship linking this unit to its respective products.
      */
     public function products(): HasMany
     {

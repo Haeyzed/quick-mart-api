@@ -17,7 +17,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Tax
  *
- * Represents a tax rate configuration.
+ * Represents a tax rate within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for tax entities.
  *
  * @property int $id
  * @property string $name
@@ -36,7 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  */
 class Tax extends Model implements AuditableContract
 {
-    use HasFactory, Auditable, SoftDeletes, FilterableByDates;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -51,7 +52,7 @@ class Tax extends Model implements AuditableContract
     ];
 
     /**
-     * The attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
      * @var array<string, string>
      */
@@ -62,32 +63,43 @@ class Tax extends Model implements AuditableContract
     ];
 
     /**
-     * Scope a query to apply filters.
+     * Scope a query to apply dynamic filters.
+     * * Applies filters for active status, search terms (checking name),
+     * and date ranges via the FilterableByDates trait.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
                 isset($filters['status']),
-                fn(Builder $q) => $q->active()
+                fn (Builder $q) => $q->active()
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Calculate tax amount for a given value.
+     *
+     * Applies the tax rate as a percentage of the given value.
+     *
+     * @param  float  $value  The amount to calculate tax on.
+     * @return float The tax amount.
      */
     public function calculateTax(float $value): float
     {
@@ -97,8 +109,8 @@ class Tax extends Model implements AuditableContract
     /**
      * Scope a query to only include active taxes.
      *
-     * @param Builder $query
-     * @return Builder
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -106,9 +118,8 @@ class Tax extends Model implements AuditableContract
     }
 
     /**
-     * Get the products using this tax.
-     *
-     * @return HasMany
+     * Get the products associated with this tax.
+     * * Defines a one-to-many relationship linking this tax to its respective products.
      */
     public function products(): HasMany
     {

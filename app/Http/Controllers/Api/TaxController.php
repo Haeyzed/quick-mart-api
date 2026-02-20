@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Tax CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to TaxService.
  *
- * @group Tax Management
+ * @tags Tax Management
  */
 class TaxController extends Controller
 {
@@ -39,12 +39,12 @@ class TaxController extends Controller
      */
     public function __construct(
         private readonly TaxService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of taxes.
+     * List Taxes
+     *
+     * Display a paginated listing of taxes. Supports searching and filtering by active status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -53,8 +53,40 @@ class TaxController extends Controller
         }
 
         $taxes = $this->service->getPaginatedTaxes(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter taxes by name.
+                 *
+                 * @example "VAT"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'status' => ['nullable', 'boolean'],
+                /**
+                 * Filter taxes starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter taxes up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -64,7 +96,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Get tax options for select components.
+     * Get Tax Options
+     *
+     * Retrieve a simplified list of active taxes for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -76,7 +110,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Store a newly created tax.
+     * Create Tax
+     *
+     * Store a newly created tax in the system.
      */
     public function store(StoreTaxRequest $request): JsonResponse
     {
@@ -94,7 +130,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Display the specified tax.
+     * Show Tax
+     *
+     * Retrieve the details of a specific tax by its ID.
      */
     public function show(Tax $tax): JsonResponse
     {
@@ -109,7 +147,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Update the specified tax.
+     * Update Tax
+     *
+     * Update the specified tax's information.
      */
     public function update(UpdateTaxRequest $request, Tax $tax): JsonResponse
     {
@@ -126,7 +166,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Remove the specified tax (soft delete).
+     * Delete Tax
+     *
+     * Remove the specified tax from storage.
      */
     public function destroy(Tax $tax): JsonResponse
     {
@@ -140,7 +182,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Bulk delete taxes.
+     * Bulk Delete Taxes
+     *
+     * Delete multiple taxes simultaneously using an array of IDs.
      */
     public function bulkDestroy(TaxBulkActionRequest $request): JsonResponse
     {
@@ -157,7 +201,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Bulk activate taxes.
+     * Bulk Activate Taxes
+     *
+     * Set the active status of multiple taxes to true.
      */
     public function bulkActivate(TaxBulkActionRequest $request): JsonResponse
     {
@@ -174,7 +220,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Bulk deactivate taxes.
+     * Bulk Deactivate Taxes
+     *
+     * Set the active status of multiple taxes to false.
      */
     public function bulkDeactivate(TaxBulkActionRequest $request): JsonResponse
     {
@@ -191,7 +239,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Import taxes from Excel/CSV.
+     * Import Taxes
+     *
+     * Import multiple taxes into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -205,7 +255,9 @@ class TaxController extends Controller
     }
 
     /**
-     * Export taxes to Excel or PDF.
+     * Export Taxes
+     *
+     * Export a list of taxes to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -231,16 +283,18 @@ class TaxController extends Controller
                 ->deleteFileAfterSend();
         }
 
+        // 3. Handle Email Method
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
-            if (!$mailSetting) {
+
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -250,21 +304,26 @@ class TaxController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'taxes_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'taxes_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Tax Export Is Ready',
                     $generalSetting,
                     $mailSetting
                 )
             );
 
-            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
+            return response()->success(
+                null,
+                'Export is being processed and will be sent to email: '.$user->email
+            );
         }
 
         return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Download taxes module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

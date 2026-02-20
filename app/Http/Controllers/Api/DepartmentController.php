@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DepartmentBulkActionRequest;
+use App\Http\Requests\Departments\DepartmentBulkActionRequest;
 use App\Http\Requests\Departments\StoreDepartmentRequest;
 use App\Http\Requests\Departments\UpdateDepartmentRequest;
 use App\Http\Requests\ExportRequest;
@@ -27,10 +27,10 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 /**
  * Class DepartmentController
  *
- * API Controller for Department CRUD, bulk operations, and imports/exports.
+ * API Controller for Department CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to DepartmentService.
  *
- * @group Department Management
+ * @tags Department Management
  */
 class DepartmentController extends Controller
 {
@@ -39,11 +39,12 @@ class DepartmentController extends Controller
      */
     public function __construct(
         private readonly DepartmentService $service
-    ) {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of departments.
+     * List Departments
+     *
+     * Display a paginated listing of departments. Supports searching and filtering by active status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -52,8 +53,40 @@ class DepartmentController extends Controller
         }
 
         $departments = $this->service->getPaginatedDepartments(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter departments by name.
+                 *
+                 * @example "HR"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'status' => ['nullable', 'boolean'],
+                /**
+                 * Filter departments starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter departments up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -63,7 +96,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Get department options for select components.
+     * Get Department Options
+     *
+     * Retrieve a simplified list of active departments for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -75,7 +110,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Store a newly created department.
+     * Create Department
+     *
+     * Store a newly created department in the system.
      */
     public function store(StoreDepartmentRequest $request): JsonResponse
     {
@@ -93,7 +130,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Display the specified department.
+     * Show Department
+     *
+     * Retrieve the details of a specific department by its ID.
      */
     public function show(Department $department): JsonResponse
     {
@@ -108,7 +147,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Update the specified department.
+     * Update Department
+     *
+     * Update the specified department's information.
      */
     public function update(UpdateDepartmentRequest $request, Department $department): JsonResponse
     {
@@ -125,7 +166,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Remove the specified department (soft delete).
+     * Delete Department
+     *
+     * Remove the specified department from storage.
      */
     public function destroy(Department $department): JsonResponse
     {
@@ -139,7 +182,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Bulk delete departments.
+     * Bulk Delete Departments
+     *
+     * Delete multiple departments simultaneously using an array of IDs.
      */
     public function bulkDestroy(DepartmentBulkActionRequest $request): JsonResponse
     {
@@ -156,7 +201,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Bulk activate departments.
+     * Bulk Activate Departments
+     *
+     * Set the active status of multiple departments to true.
      */
     public function bulkActivate(DepartmentBulkActionRequest $request): JsonResponse
     {
@@ -173,7 +220,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Bulk deactivate departments.
+     * Bulk Deactivate Departments
+     *
+     * Set the active status of multiple departments to false.
      */
     public function bulkDeactivate(DepartmentBulkActionRequest $request): JsonResponse
     {
@@ -190,7 +239,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Import departments from Excel/CSV.
+     * Import Departments
+     *
+     * Import multiple departments into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -204,7 +255,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Export departments to Excel or PDF.
+     * Export Departments
+     *
+     * Export a list of departments to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -230,17 +283,18 @@ class DepartmentController extends Controller
                 ->deleteFileAfterSend();
         }
 
+        // 3. Handle Email Method
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -250,7 +304,7 @@ class DepartmentController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'departments_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'departments_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Department Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -259,7 +313,7 @@ class DepartmentController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
@@ -267,7 +321,9 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Download departments module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
