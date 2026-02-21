@@ -17,19 +17,23 @@ use Illuminate\Http\Request;
  * API Controller for Country listing and options (World reference data).
  * Handles authorization via Policy and delegates logic to CountryService.
  *
- * @group Country Management
+ * @tags Country Management
  */
 class CountryController extends Controller
 {
     /**
      * CountryController constructor.
+     *
+     * @param  CountryService  $service  Service handling country business logic.
      */
     public function __construct(
         private readonly CountryService $service
     ) {}
 
     /**
-     * Display a paginated listing of countries.
+     * List Countries
+     *
+     * Display a paginated listing of countries. Supports searching by name, iso2 or iso3.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +42,15 @@ class CountryController extends Controller
         }
 
         $countries = $this->service->getPaginatedCountries(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter countries by name, iso2 or iso3.
+                 *
+                 * @example "United"
+                 */
+                'search' => ['nullable', 'string'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -49,7 +60,7 @@ class CountryController extends Controller
     }
 
     /**
-     * Get country options for select components.
+     * Get country options for select components (value/label format).
      */
     public function options(): JsonResponse
     {
@@ -61,6 +72,8 @@ class CountryController extends Controller
     }
 
     /**
+     * Show Country
+     *
      * Display the specified country.
      */
     public function show(Country $country): JsonResponse
@@ -77,6 +90,8 @@ class CountryController extends Controller
 
     /**
      * Get state options (value/label) for the specified country.
+     *
+     * @param  Country  $country  Country model (route binding).
      */
     public function states(Country $country): JsonResponse
     {

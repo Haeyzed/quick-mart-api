@@ -17,19 +17,23 @@ use Illuminate\Http\Request;
  * API Controller for City listing and options (World reference data).
  * Handles authorization via Policy and delegates logic to CityService.
  *
- * @group City Management
+ * @tags City Management
  */
 class CityController extends Controller
 {
     /**
      * CityController constructor.
+     *
+     * @param  CityService  $service  Service handling city business logic.
      */
     public function __construct(
         private readonly CityService $service
     ) {}
 
     /**
-     * Display a paginated listing of cities.
+     * List Cities
+     *
+     * Display a paginated listing of cities. Supports searching and filtering by country or state.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +42,27 @@ class CityController extends Controller
         }
 
         $cities = $this->service->getPaginatedCities(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter cities by name.
+                 *
+                 * @example "New York"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by country ID.
+                 *
+                 * @example 1
+                 */
+                'country_id' => ['nullable', 'integer', 'exists:countries,id'],
+                /**
+                 * Filter by state ID.
+                 *
+                 * @example 1
+                 */
+                'state_id' => ['nullable', 'integer', 'exists:states,id'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -49,7 +72,7 @@ class CityController extends Controller
     }
 
     /**
-     * Get city options for select components.
+     * Get city options for select components (value/label format).
      */
     public function options(): JsonResponse
     {
@@ -61,6 +84,8 @@ class CityController extends Controller
     }
 
     /**
+     * Show City
+     *
      * Display the specified city.
      */
     public function show(City $city): JsonResponse

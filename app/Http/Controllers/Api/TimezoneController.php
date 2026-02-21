@@ -17,19 +17,23 @@ use Illuminate\Http\Request;
  * API Controller for Timezone listing and options (World reference data).
  * Handles authorization via Policy and delegates logic to TimezoneService.
  *
- * @group Timezone Management
+ * @tags Timezone Management
  */
 class TimezoneController extends Controller
 {
     /**
      * TimezoneController constructor.
+     *
+     * @param  TimezoneService  $service  Service handling timezone business logic.
      */
     public function __construct(
         private readonly TimezoneService $service
     ) {}
 
     /**
-     * Display a paginated listing of timezones.
+     * List Timezones
+     *
+     * Display a paginated listing of timezones. Supports searching and filtering by country.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +42,21 @@ class TimezoneController extends Controller
         }
 
         $timezones = $this->service->getPaginatedTimezones(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter timezones by name.
+                 *
+                 * @example "America"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by country ID.
+                 *
+                 * @example 1
+                 */
+                'country_id' => ['nullable', 'integer', 'exists:countries,id'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -49,7 +66,7 @@ class TimezoneController extends Controller
     }
 
     /**
-     * Get timezone options for select components.
+     * Get timezone options for select components (grouped by region).
      */
     public function options(): JsonResponse
     {
@@ -61,6 +78,8 @@ class TimezoneController extends Controller
     }
 
     /**
+     * Show Timezone
+     *
      * Display the specified timezone.
      */
     public function show(Timezone $timezone): JsonResponse

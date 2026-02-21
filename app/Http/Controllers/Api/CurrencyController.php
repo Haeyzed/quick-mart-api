@@ -17,19 +17,23 @@ use Illuminate\Http\Request;
  * API Controller for Currency listing and options (World reference data).
  * Handles authorization via Policy and delegates logic to CurrencyService.
  *
- * @group Currency Management
+ * @tags Currency Management
  */
 class CurrencyController extends Controller
 {
     /**
      * CurrencyController constructor.
+     *
+     * @param  CurrencyService  $service  Service handling currency business logic.
      */
     public function __construct(
         private readonly CurrencyService $service
     ) {}
 
     /**
-     * Display a paginated listing of currencies.
+     * List Currencies
+     *
+     * Display a paginated listing of currencies. Supports searching and filtering by country.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +42,21 @@ class CurrencyController extends Controller
         }
 
         $currencies = $this->service->getPaginatedCurrencies(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter currencies by name, code or symbol.
+                 *
+                 * @example "USD"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by country ID.
+                 *
+                 * @example 1
+                 */
+                'country_id' => ['nullable', 'integer', 'exists:countries,id'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -49,7 +66,7 @@ class CurrencyController extends Controller
     }
 
     /**
-     * Get currency options for select components.
+     * Get currency options for select components (value/label format).
      */
     public function options(): JsonResponse
     {
@@ -61,6 +78,8 @@ class CurrencyController extends Controller
     }
 
     /**
+     * Show Currency
+     *
      * Display the specified currency.
      */
     public function show(Currency $currency): JsonResponse
