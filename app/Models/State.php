@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\State as WorldState;
 
@@ -29,6 +30,8 @@ use Nnjeim\World\Models\State as WorldState;
  */
 class State extends WorldState
 {
+    use FilterableByDates;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -61,6 +64,10 @@ class State extends WorldState
             ->when(
                 ! empty($filters['country_id']),
                 fn ($q) => $q->where('country_id', $filters['country_id'])
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

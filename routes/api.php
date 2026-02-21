@@ -134,36 +134,62 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('permissions', PermissionController::class);
 
     Route::prefix('countries')->name('countries.')->group(function () {
+        Route::post('bulk-destroy', [CountryController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [CountryController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [CountryController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [CountryController::class, 'import'])->name('import');
+        Route::post('export', [CountryController::class, 'export'])->name('export');
+        Route::get('download', [CountryController::class, 'download'])->name('download');
         Route::get('options', [CountryController::class, 'options'])->name('options');
         Route::get('{country}/states', [CountryController::class, 'states'])->name('states');
     });
-    Route::apiResource('countries', CountryController::class)->only(['index', 'show']);
+    Route::apiResource('countries', CountryController::class);
 
     Route::prefix('states')->name('states.')->group(function () {
+        Route::post('bulk-destroy', [StateController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [StateController::class, 'import'])->name('import');
+        Route::post('export', [StateController::class, 'export'])->name('export');
+        Route::get('download', [StateController::class, 'download'])->name('download');
         Route::get('options', [StateController::class, 'options'])->name('options');
         Route::get('{state}/cities', [StateController::class, 'cities'])->name('cities');
     });
-    Route::apiResource('states', StateController::class)->only(['index', 'show']);
+    Route::apiResource('states', StateController::class);
 
     Route::prefix('cities')->name('cities.')->group(function () {
+        Route::post('bulk-destroy', [CityController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [CityController::class, 'import'])->name('import');
+        Route::post('export', [CityController::class, 'export'])->name('export');
+        Route::get('download', [CityController::class, 'download'])->name('download');
         Route::get('options', [CityController::class, 'options'])->name('options');
     });
-    Route::apiResource('cities', CityController::class)->only(['index', 'show']);
+    Route::apiResource('cities', CityController::class);
 
     Route::prefix('timezones')->name('timezones.')->group(function () {
+        Route::post('bulk-destroy', [TimezoneController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [TimezoneController::class, 'import'])->name('import');
+        Route::post('export', [TimezoneController::class, 'export'])->name('export');
+        Route::get('download', [TimezoneController::class, 'download'])->name('download');
         Route::get('options', [TimezoneController::class, 'options'])->name('options');
     });
-    Route::apiResource('timezones', TimezoneController::class)->only(['index', 'show']);
+    Route::apiResource('timezones', TimezoneController::class);
 
     Route::prefix('currencies')->name('currencies.')->group(function () {
+        Route::post('bulk-destroy', [CurrencyController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [CurrencyController::class, 'import'])->name('import');
+        Route::post('export', [CurrencyController::class, 'export'])->name('export');
+        Route::get('download', [CurrencyController::class, 'download'])->name('download');
         Route::get('options', [CurrencyController::class, 'options'])->name('options');
     });
-    Route::apiResource('currencies', CurrencyController::class)->only(['index', 'show']);
+    Route::apiResource('currencies', CurrencyController::class);
 
     Route::prefix('languages')->name('languages.')->group(function () {
+        Route::post('bulk-destroy', [LanguageController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('import', [LanguageController::class, 'import'])->name('import');
+        Route::post('export', [LanguageController::class, 'export'])->name('export');
+        Route::get('download', [LanguageController::class, 'download'])->name('download');
         Route::get('options', [LanguageController::class, 'options'])->name('options');
     });
-    Route::apiResource('languages', LanguageController::class)->only(['index', 'show']);
+    Route::apiResource('languages', LanguageController::class);
 
     Route::prefix('taxes')->name('taxes.')->group(function () {
         Route::post('bulk-destroy', [TaxController::class, 'bulkDestroy'])->name('bulk-destroy');

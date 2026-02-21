@@ -4,10 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\StatesExport;
+use App\Imports\StatesImport;
 use App\Models\City;
 use App\Models\State;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 
 /**
  * Class StateService
@@ -15,6 +23,8 @@ use Illuminate\Support\Collection;
  */
 class StateService
 {
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
     /**
      * Get paginated states.
      *
@@ -61,5 +71,68 @@ class StateService
                 'value' => $city->id,
                 'label' => $city->name,
             ]);
+    }
+
+    public function createState(array $data): State
+    {
+        return DB::transaction(function () use ($data) {
+            return State::query()->create($data);
+        });
+    }
+
+    public function updateState(State $state, array $data): State
+    {
+        return DB::transaction(function () use ($state, $data) {
+            $state->update($data);
+
+            return $state->fresh();
+        });
+    }
+
+    public function deleteState(State $state): void
+    {
+        DB::transaction(function () use ($state) {
+            $state->delete();
+        });
+    }
+
+    public function bulkDeleteStates(array $ids): int
+    {
+        return DB::transaction(function () use ($ids) {
+            return State::query()->whereIn('id', $ids)->delete();
+        });
+    }
+
+    public function importStates(UploadedFile $file): void
+    {
+        ExcelFacade::import(new StatesImport, $file);
+    }
+
+    public function download(): string
+    {
+        $fileName = 'states-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+
+        if (! File::exists($path)) {
+            throw new RuntimeException('Template states not found.');
+        }
+
+        return $path;
+    }
+
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'states_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new StatesExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
+
+        return $relativePath;
     }
 }

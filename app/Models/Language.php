@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Language as WorldLanguage;
 
@@ -24,6 +25,8 @@ use Nnjeim\World\Models\Language as WorldLanguage;
  */
 class Language extends WorldLanguage
 {
+    use FilterableByDates;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -48,6 +51,10 @@ class Language extends WorldLanguage
                 !empty($filters['search']),
                 fn($q) => $q->where('name', 'like', '%' . $filters['search'] . '%')
                     ->orWhere('code', 'like', '%' . $filters['search'] . '%')
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

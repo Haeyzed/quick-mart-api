@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Timezone as WorldTimezone;
 
@@ -23,6 +24,8 @@ use Nnjeim\World\Models\Timezone as WorldTimezone;
  */
 class Timezone extends WorldTimezone
 {
+    use FilterableByDates;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -48,6 +51,10 @@ class Timezone extends WorldTimezone
             ->when(
                 ! empty($filters['country_id']),
                 fn ($q) => $q->where('country_id', $filters['country_id'])
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

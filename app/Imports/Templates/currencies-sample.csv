@@ -1,0 +1,6 @@
+name,code,country_code,symbol,precision,symbol_native,symbol_first,decimal_mark,thousands_separator
+US Dollar,USD,US,$,2,$,1,.,,
+Euro,EUR,DE,€,2,€,0,,,
+British Pound,GBP,GB,£,2,£,1,.,,
+Nigerian Naira,NGN,NG,₦,2,₦,1,.,,
+Canadian Dollar,CAD,CA,$,2,$,1,.,,

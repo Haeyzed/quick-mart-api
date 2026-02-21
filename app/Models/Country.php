@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Country as WorldCountry;
 
@@ -33,6 +34,8 @@ use Nnjeim\World\Models\Country as WorldCountry;
  */
 class Country extends WorldCountry
 {
+    use FilterableByDates;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -66,6 +69,10 @@ class Country extends WorldCountry
                 fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
                     ->orWhere('iso2', 'like', '%'.$filters['search'].'%')
                     ->orWhere('iso3', 'like', '%'.$filters['search'].'%')
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

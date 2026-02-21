@@ -1,0 +1,7 @@
+name,country_code,state_code,type,latitude,longitude
+California,US,CA,State,36.77826100,-119.41793240
+New York,US,NY,State,40.71277530,-74.00597280
+Lagos,NG,LA,State,6.52437930,3.37920570
+Abuja Federal Capital Territory,NG,FC,Capital Territory,9.07647850,7.39857400
+Ontario,CA,ON,Province,51.25377500,-85.32321400
+London,GB,LND,Region,51.50735090,-0.12775830

@@ -1,0 +1,5 @@
+iso2,name,status,phone_code,iso3,region,subregion,native,latitude,longitude,emoji,emoji_u
+US,United States,1,1,USA,Americas,Northern America,English,38.00000000,-97.00000000,🇺🇸,U+1F1FA U+1F1F8
+CA,Canada,1,1,CAN,Americas,Northern America,English,60.00000000,-95.00000000,🇨🇦,U+1F1E8 U+1F1E6
+GB,United Kingdom,1,44,GBR,Europe,Northern Europe,English,54.00000000,-2.00000000,🇬🇧,U+1F1EC U+1F1E7
+NG,Nigeria,1,234,NGA,Africa,Western Africa,English,10.00000000,8.00000000,🇳🇬,U+1F1F3 U+1F1EC
