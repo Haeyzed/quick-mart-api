@@ -17,19 +17,23 @@ use Illuminate\Http\Request;
  * API Controller for Language listing and options (World reference data).
  * Handles authorization via Policy and delegates logic to LanguageService.
  *
- * @group Language Management
+ * @tags Language Management
  */
 class LanguageController extends Controller
 {
     /**
      * LanguageController constructor.
+     *
+     * @param  LanguageService  $service  Service handling language business logic.
      */
     public function __construct(
         private readonly LanguageService $service
     ) {}
 
     /**
-     * Display a paginated listing of languages.
+     * List Languages
+     *
+     * Display a paginated listing of languages. Supports searching by name or code.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,8 +42,15 @@ class LanguageController extends Controller
         }
 
         $languages = $this->service->getPaginatedLanguages(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter languages by name or code.
+                 *
+                 * @example "English"
+                 */
+                'search' => ['nullable', 'string'],
+            ]),
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -49,7 +60,7 @@ class LanguageController extends Controller
     }
 
     /**
-     * Get language options for select components.
+     * Get language options for select components (value/label format).
      */
     public function options(): JsonResponse
     {
@@ -61,6 +72,10 @@ class LanguageController extends Controller
     }
 
     /**
+     * Show Language
+     *
+     * Show Language
+     *
      * Display the specified language.
      */
     public function show(Language $language): JsonResponse
