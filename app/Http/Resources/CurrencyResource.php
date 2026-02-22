@@ -31,7 +31,7 @@ class CurrencyResource extends JsonResource
             'decimal_mark' => $this->decimal_mark,
             'thousands_separator' => $this->thousands_separator,
             'country_id' => $this->country_id,
-            'country' => $this->whenLoaded('country', fn () => new CountryResource($this->country)),
+            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
         ];
     }
 }
