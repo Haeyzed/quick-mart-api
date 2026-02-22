@@ -30,7 +30,7 @@ class StateResource extends JsonResource
             'type' => $this->type,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'country' => $this->whenLoaded('country', fn () => new CountryResource($this->country)),
+            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
         ];
     }
 }
