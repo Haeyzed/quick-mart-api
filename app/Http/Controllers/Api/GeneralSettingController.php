@@ -11,11 +11,12 @@ use App\Services\GeneralSettingService;
 use Illuminate\Http\JsonResponse;
 
 /**
+ * Class GeneralSettingController
+ *
  * API Controller for General Setting.
+ * Handles authorization via Policy and delegates logic to GeneralSettingService.
  *
- * Handles show and update of general application settings.
- *
- * @group General Setting
+ * @tags General Setting
  */
 class GeneralSettingController extends Controller
 {
@@ -24,21 +25,21 @@ class GeneralSettingController extends Controller
      */
     public function __construct(
         private readonly GeneralSettingService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display the general setting.
      *
-     * @return JsonResponse The general setting.
+     * Retrieve the global application settings.
      */
     public function show(): JsonResponse
     {
-        $setting = $this->service->getGeneralSetting();
+        if (auth()->user()->denies('manage general settings')) {
+            return response()->forbidden('Permission denied for viewing general settings.');
+        }
 
         return response()->success(
-            new GeneralSettingResource($setting),
+            new GeneralSettingResource($this->service->getGeneralSetting()),
             'General setting retrieved successfully'
         );
     }
@@ -46,11 +47,14 @@ class GeneralSettingController extends Controller
     /**
      * Update the general setting.
      *
-     * @param GeneralSettingRequest $request Validated general setting data.
-     * @return JsonResponse The updated general setting.
+     * Update the specified general settings including logo and favicon uploads.
      */
     public function update(GeneralSettingRequest $request): JsonResponse
     {
+        if (auth()->user()->denies('manage general settings')) {
+            return response()->forbidden('Permission denied for updating general settings.');
+        }
+
         $setting = $this->service->updateGeneralSetting(
             $request->validated(),
             $request->file('site_logo'),

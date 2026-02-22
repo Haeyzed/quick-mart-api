@@ -11,75 +11,74 @@ use App\Services\MailSettingService;
 use Illuminate\Http\JsonResponse;
 
 /**
+ * Class MailSettingController
+ *
  * API Controller for Mail Setting.
+ * Handles authorization via Policy and delegates logic to MailSettingService.
  *
- * Handles SMTP configuration and test email.
- *
- * @group Mail Setting
+ * @tags Mail Setting
  */
 class MailSettingController extends Controller
 {
     /**
      * MailSettingController constructor.
-     *
-     * @param MailSettingService $service
      */
     public function __construct(
         private readonly MailSettingService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * Display the mail setting.
      *
-     * @return JsonResponse The mail setting or empty response if not configured.
+     * Retrieve the current SMTP configuration.
      */
     public function show(): JsonResponse
     {
-        $setting = $this->service->getMailSetting();
-
-        if (!$setting) {
-            return response()->success(null, 'No mail setting configured');
+        if (auth()->user()->denies('manage mail settings')) {
+            return response()->forbidden('Permission denied for viewing mail settings.');
         }
 
+        $setting = $this->service->getMailSetting();
+
         return response()->success(
-            new MailSettingResource($setting),
-            'Mail setting retrieved successfully'
+            $setting ? new MailSettingResource($setting) : null,
+            $setting ? 'Mail setting retrieved successfully' : 'No mail setting configured'
         );
     }
 
     /**
      * Update the mail setting.
      *
-     * Optionally sends test email when send_test is true.
-     *
-     * @param MailSettingRequest $request Validated SMTP configuration.
-     * @return JsonResponse The updated mail setting.
+     * Update SMTP configuration and optionally send a test email.
      */
     public function update(MailSettingRequest $request): JsonResponse
     {
-        $sendTest = $request->boolean('send_test');
+        if (auth()->user()->denies('manage mail settings')) {
+            return response()->forbidden('Permission denied for updating mail settings.');
+        }
 
-        $setting = $this->service->updateMailSetting($request->validated(), $sendTest);
-
-        $message = $sendTest
-            ? 'Mail setting updated and test email sent to ' . $setting->from_address
-            : 'Mail setting updated successfully';
+        $setting = $this->service->updateMailSetting(
+            $request->validated(),
+            $request->boolean('send_test')
+        );
 
         return response()->success(
             new MailSettingResource($setting),
-            $message
+            'Mail setting updated successfully'
         );
     }
 
     /**
-     * Send a test email using current mail settings.
+     * Send Test Email
      *
-     * @return JsonResponse Success message.
+     * Send a test email using current mail settings to the configured from_address.
      */
     public function test(): JsonResponse
     {
+        if (auth()->user()->denies('manage mail settings')) {
+            return response()->forbidden('Permission denied for testing mail settings.');
+        }
+
         $this->service->sendTestEmail();
 
         return response()->success(null, 'Test email sent successfully');
