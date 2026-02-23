@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Role Model
- *
+ * 
  * Extends Spatie Permission Role with description, module, and is_active.
  *
  * @property int $id
@@ -24,8 +24,28 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $module
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|Role active()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Permission> $permissions
+ * @property-read int|null $permissions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read int|null $users_count
+ * @method static Builder<static>|Role filter(array $filters)
+ * @method static Builder<static>|Role newModelQuery()
+ * @method static Builder<static>|Role newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Role permission($permissions, $without = false)
+ * @method static Builder<static>|Role query()
+ * @method static Builder<static>|Role whereCreatedAt($value)
+ * @method static Builder<static>|Role whereDescription($value)
+ * @method static Builder<static>|Role whereGuardName($value)
+ * @method static Builder<static>|Role whereId($value)
+ * @method static Builder<static>|Role whereIsActive($value)
+ * @method static Builder<static>|Role whereModule($value)
+ * @method static Builder<static>|Role whereName($value)
+ * @method static Builder<static>|Role whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Role withoutPermission($permissions)
+ * @mixin \Eloquent
  */
 class Role extends \Spatie\Permission\Models\Role implements AuditableContract
 {

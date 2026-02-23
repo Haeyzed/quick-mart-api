@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * DiscountPlanDiscount Model (Pivot)
- *
+ * 
  * Represents the relationship between discount plans and discounts.
  *
  * @property int $id
@@ -23,6 +23,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read DiscountPlan $discountPlan
  * @property-read Discount $discount
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount whereDiscountId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount whereDiscountPlanId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanDiscount whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class DiscountPlanDiscount extends Model implements AuditableContract
 {

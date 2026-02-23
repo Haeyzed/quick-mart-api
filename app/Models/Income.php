@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Income
- *
+ * 
  * Represents an income transaction.
  *
  * @property int $id
@@ -34,8 +34,36 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Account|null $account
  * @property-read User $user
  * @property-read CashRegister|null $cashRegister
- *
  * @method static Builder|Income filter(array $filters)
+ * @property int|null $boutique_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Income customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Income last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Income last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Income lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Income lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Income monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Income newModelQuery()
+ * @method static Builder<static>|Income newQuery()
+ * @method static Builder<static>|Income quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Income query()
+ * @method static Builder<static>|Income today(string $column = 'created_at')
+ * @method static Builder<static>|Income whereAccountId($value)
+ * @method static Builder<static>|Income whereAmount($value)
+ * @method static Builder<static>|Income whereBoutiqueId($value)
+ * @method static Builder<static>|Income whereCashRegisterId($value)
+ * @method static Builder<static>|Income whereCreatedAt($value)
+ * @method static Builder<static>|Income whereId($value)
+ * @method static Builder<static>|Income whereIncomeCategoryId($value)
+ * @method static Builder<static>|Income whereNote($value)
+ * @method static Builder<static>|Income whereReferenceNo($value)
+ * @method static Builder<static>|Income whereUpdatedAt($value)
+ * @method static Builder<static>|Income whereUserId($value)
+ * @method static Builder<static>|Income whereWarehouseId($value)
+ * @method static Builder<static>|Income yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Income yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Income extends Model implements AuditableContract
 {

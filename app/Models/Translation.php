@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Translation Model
- *
+ * 
  * Represents a translation entry for a language.
  *
  * @property int $id
@@ -25,6 +25,19 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Language $language
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereGroup($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereLocale($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereValue($value)
+ * @mixin \Eloquent
  */
 class Translation extends Model implements AuditableContract
 {

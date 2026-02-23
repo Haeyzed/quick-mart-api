@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * WhatsappSetting Model
- *
+ * 
  * Represents WhatsApp Business API configuration settings.
  *
  * @property int $id
@@ -23,6 +23,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string $permanent_access_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereBusinessAccountId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting wherePermanentAccessToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting wherePhoneNumberId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class WhatsappSetting extends Model implements AuditableContract
 {

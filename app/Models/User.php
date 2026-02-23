@@ -23,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * User Model
- *
+ * 
  * Represents a user in the system with authentication, roles, and permissions.
  *
  * @property int $id
@@ -51,10 +51,51 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Sale> $sales
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, Payment> $payments
- *
  * @method static Builder|User active()
  * @method static Builder|User notDeleted()
  * @method static Builder|User filter(array $filters)
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $holidays_count
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read int|null $notifications_count
+ * @property-read int|null $payments_count
+ * @property-read Collection<int, \App\Models\Permission> $permissions
+ * @property-read int|null $permissions_count
+ * @property-read int|null $purchases_count
+ * @property-read Collection<int, \App\Models\Role> $roles
+ * @property-read int|null $roles_count
+ * @property-read int|null $sales_count
+ * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
+ * @property-read int|null $tokens_count
+ * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static Builder<static>|User newModelQuery()
+ * @method static Builder<static>|User newQuery()
+ * @method static Builder<static>|User permission($permissions, $without = false)
+ * @method static Builder<static>|User query()
+ * @method static Builder<static>|User role($roles, $guard = null, $without = false)
+ * @method static Builder<static>|User whereAvatar($value)
+ * @method static Builder<static>|User whereAvatarUrl($value)
+ * @method static Builder<static>|User whereBillerId($value)
+ * @method static Builder<static>|User whereCompanyName($value)
+ * @method static Builder<static>|User whereCreatedAt($value)
+ * @method static Builder<static>|User whereEmail($value)
+ * @method static Builder<static>|User whereEmailVerifiedAt($value)
+ * @method static Builder<static>|User whereId($value)
+ * @method static Builder<static>|User whereIsActive($value)
+ * @method static Builder<static>|User whereIsDeleted($value)
+ * @method static Builder<static>|User whereKitchenId($value)
+ * @method static Builder<static>|User whereName($value)
+ * @method static Builder<static>|User wherePassword($value)
+ * @method static Builder<static>|User wherePhone($value)
+ * @method static Builder<static>|User whereRememberToken($value)
+ * @method static Builder<static>|User whereServiceStaff($value)
+ * @method static Builder<static>|User whereUpdatedAt($value)
+ * @method static Builder<static>|User whereUsername($value)
+ * @method static Builder<static>|User whereWarehouseId($value)
+ * @method static Builder<static>|User withoutPermission($permissions)
+ * @method static Builder<static>|User withoutRole($roles, $guard = null)
+ * @mixin \Eloquent
  */
 class User extends Authenticatable implements AuditableContract, MustVerifyEmail
 {

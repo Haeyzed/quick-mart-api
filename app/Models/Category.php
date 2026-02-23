@@ -18,7 +18,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Category
- *
+ * 
  * Represents a product category within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for category entities.
  *
@@ -39,7 +39,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Category newModelQuery()
  * @method static Builder|Category newQuery()
  * @method static Builder|Category query()
@@ -47,6 +46,46 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Category featured()
  * @method static Builder|Category syncDisabled()
  * @method static Builder|Category filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $children
+ * @property-read int|null $children_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $childrenRecursive
+ * @property-read int|null $children_recursive_count
+ * @property-read Category|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read int|null $products_count
+ * @method static Builder<static>|Category customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Category last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Category last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Category lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Category lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Category monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Category onlyTrashed()
+ * @method static Builder<static>|Category quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Category today(string $column = 'created_at')
+ * @method static Builder<static>|Category whereCreatedAt($value)
+ * @method static Builder<static>|Category whereDeletedAt($value)
+ * @method static Builder<static>|Category whereFeatured($value)
+ * @method static Builder<static>|Category whereIcon($value)
+ * @method static Builder<static>|Category whereIconUrl($value)
+ * @method static Builder<static>|Category whereId($value)
+ * @method static Builder<static>|Category whereImage($value)
+ * @method static Builder<static>|Category whereImageUrl($value)
+ * @method static Builder<static>|Category whereIsActive($value)
+ * @method static Builder<static>|Category whereIsSyncDisable($value)
+ * @method static Builder<static>|Category whereName($value)
+ * @method static Builder<static>|Category wherePageTitle($value)
+ * @method static Builder<static>|Category whereParentId($value)
+ * @method static Builder<static>|Category whereShortDescription($value)
+ * @method static Builder<static>|Category whereSlug($value)
+ * @method static Builder<static>|Category whereUpdatedAt($value)
+ * @method static Builder<static>|Category whereWoocommerceCategoryId($value)
+ * @method static Builder<static>|Category withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Category withoutTrashed()
+ * @method static Builder<static>|Category yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Category yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Category extends Model implements AuditableContract
 {

@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Designation Model
- *
+ * 
  * Represents a job designation/position in the organization.
  *
  * @property int $id
@@ -25,8 +25,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Employee> $employees
- *
  * @method static Builder|Designation active()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $employees_count
+ * @method static Builder<static>|Designation newModelQuery()
+ * @method static Builder<static>|Designation newQuery()
+ * @method static Builder<static>|Designation onlyTrashed()
+ * @method static Builder<static>|Designation query()
+ * @method static Builder<static>|Designation whereCreatedAt($value)
+ * @method static Builder<static>|Designation whereDeletedAt($value)
+ * @method static Builder<static>|Designation whereId($value)
+ * @method static Builder<static>|Designation whereIsActive($value)
+ * @method static Builder<static>|Designation whereName($value)
+ * @method static Builder<static>|Designation whereUpdatedAt($value)
+ * @method static Builder<static>|Designation withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Designation withoutTrashed()
+ * @mixin \Eloquent
  */
 class Designation extends Model implements AuditableContract
 {

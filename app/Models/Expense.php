@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Expense Model
- *
+ * 
  * Represents an expense transaction.
  *
  * @property int $id
@@ -36,6 +36,28 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read User $user
  * @property-read CashRegister|null $cashRegister
  * @property-read Employee|null $employee
+ * @property int|null $boutique_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereAccountId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereBoutiqueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereCashRegisterId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereDocument($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereEmployeeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereExpenseCategoryId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereReferenceNo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Expense whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class Expense extends Model implements AuditableContract
 {

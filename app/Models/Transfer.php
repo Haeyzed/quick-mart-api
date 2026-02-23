@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Transfer Model
- *
+ * 
  * Represents a stock transfer between warehouses.
  *
  * @property int $id
@@ -40,10 +40,33 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Warehouse $fromWarehouse
  * @property-read Warehouse $toWarehouse
  * @property-read Collection<int, ProductTransfer> $productTransfers
- *
  * @method static Builder|Transfer pending()
  * @method static Builder|Transfer completed()
  * @method static Builder|Transfer sent()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $product_transfers_count
+ * @method static Builder<static>|Transfer newModelQuery()
+ * @method static Builder<static>|Transfer newQuery()
+ * @method static Builder<static>|Transfer query()
+ * @method static Builder<static>|Transfer whereCreatedAt($value)
+ * @method static Builder<static>|Transfer whereDocument($value)
+ * @method static Builder<static>|Transfer whereFromWarehouseId($value)
+ * @method static Builder<static>|Transfer whereGrandTotal($value)
+ * @method static Builder<static>|Transfer whereId($value)
+ * @method static Builder<static>|Transfer whereIsSent($value)
+ * @method static Builder<static>|Transfer whereItem($value)
+ * @method static Builder<static>|Transfer whereNote($value)
+ * @method static Builder<static>|Transfer whereReferenceNo($value)
+ * @method static Builder<static>|Transfer whereShippingCost($value)
+ * @method static Builder<static>|Transfer whereStatus($value)
+ * @method static Builder<static>|Transfer whereToWarehouseId($value)
+ * @method static Builder<static>|Transfer whereTotalCost($value)
+ * @method static Builder<static>|Transfer whereTotalQty($value)
+ * @method static Builder<static>|Transfer whereTotalTax($value)
+ * @method static Builder<static>|Transfer whereUpdatedAt($value)
+ * @method static Builder<static>|Transfer whereUserId($value)
+ * @mixin \Eloquent
  */
 class Transfer extends Model implements AuditableContract
 {

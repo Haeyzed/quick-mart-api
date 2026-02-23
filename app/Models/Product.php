@@ -18,7 +18,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Product Model
- *
+ * 
  * Represents a product in the inventory system with support for variants, batches, and multiple pricing.
  *
  * @property int $id
@@ -103,12 +103,91 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, ProductBatch> $batches
  * @property-read Collection<int, ProductVariant> $productVariants
  * @property-read Collection<int, ProductWarehouse> $productWarehouses
- *
  * @method static Builder|Product active()
  * @method static Builder|Product activeStandard()
  * @method static Builder|Product activeFeatured()
  * @method static Builder|Product featured()
  * @method static Builder|Product online()
+ * @property string|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $batches_count
+ * @property-read int|null $product_variants_count
+ * @property-read int|null $product_warehouses_count
+ * @property-read int|null $purchases_count
+ * @property-read int|null $sales_count
+ * @property-read int|null $variants_count
+ * @property-read int|null $warehouses_count
+ * @method static Builder<static>|Product newModelQuery()
+ * @method static Builder<static>|Product newQuery()
+ * @method static Builder<static>|Product query()
+ * @method static Builder<static>|Product whereAlertQuantity($value)
+ * @method static Builder<static>|Product whereBarcodeSymbology($value)
+ * @method static Builder<static>|Product whereBrandId($value)
+ * @method static Builder<static>|Product whereCategoryId($value)
+ * @method static Builder<static>|Product whereCode($value)
+ * @method static Builder<static>|Product whereComboUnitId($value)
+ * @method static Builder<static>|Product whereCost($value)
+ * @method static Builder<static>|Product whereCreatedAt($value)
+ * @method static Builder<static>|Product whereDailySaleObjective($value)
+ * @method static Builder<static>|Product whereDeletedAt($value)
+ * @method static Builder<static>|Product whereFeatured($value)
+ * @method static Builder<static>|Product whereFile($value)
+ * @method static Builder<static>|Product whereFileUrl($value)
+ * @method static Builder<static>|Product whereGuarantee($value)
+ * @method static Builder<static>|Product whereGuaranteeType($value)
+ * @method static Builder<static>|Product whereId($value)
+ * @method static Builder<static>|Product whereImage($value)
+ * @method static Builder<static>|Product whereImageUrl($value)
+ * @method static Builder<static>|Product whereInStock($value)
+ * @method static Builder<static>|Product whereIsActive($value)
+ * @method static Builder<static>|Product whereIsBatch($value)
+ * @method static Builder<static>|Product whereIsDiffPrice($value)
+ * @method static Builder<static>|Product whereIsEmbeded($value)
+ * @method static Builder<static>|Product whereIsImei($value)
+ * @method static Builder<static>|Product whereIsOnline($value)
+ * @method static Builder<static>|Product whereIsRecipe($value)
+ * @method static Builder<static>|Product whereIsSyncDisable($value)
+ * @method static Builder<static>|Product whereIsVariant($value)
+ * @method static Builder<static>|Product whereLastDate($value)
+ * @method static Builder<static>|Product whereMetaDescription($value)
+ * @method static Builder<static>|Product whereMetaTitle($value)
+ * @method static Builder<static>|Product whereName($value)
+ * @method static Builder<static>|Product wherePrice($value)
+ * @method static Builder<static>|Product wherePriceList($value)
+ * @method static Builder<static>|Product whereProductDetails($value)
+ * @method static Builder<static>|Product whereProductList($value)
+ * @method static Builder<static>|Product whereProductionCost($value)
+ * @method static Builder<static>|Product whereProfitMargin($value)
+ * @method static Builder<static>|Product whereProfitMarginType($value)
+ * @method static Builder<static>|Product wherePromotion($value)
+ * @method static Builder<static>|Product wherePromotionPrice($value)
+ * @method static Builder<static>|Product wherePurchaseUnitId($value)
+ * @method static Builder<static>|Product whereQty($value)
+ * @method static Builder<static>|Product whereQtyList($value)
+ * @method static Builder<static>|Product whereRelatedProducts($value)
+ * @method static Builder<static>|Product whereSaleUnitId($value)
+ * @method static Builder<static>|Product whereShortDescription($value)
+ * @method static Builder<static>|Product whereSlug($value)
+ * @method static Builder<static>|Product whereSpecification($value)
+ * @method static Builder<static>|Product whereStartingDate($value)
+ * @method static Builder<static>|Product whereTags($value)
+ * @method static Builder<static>|Product whereTaxId($value)
+ * @method static Builder<static>|Product whereTaxMethod($value)
+ * @method static Builder<static>|Product whereTrackInventory($value)
+ * @method static Builder<static>|Product whereType($value)
+ * @method static Builder<static>|Product whereUnitId($value)
+ * @method static Builder<static>|Product whereUpdatedAt($value)
+ * @method static Builder<static>|Product whereVariantList($value)
+ * @method static Builder<static>|Product whereVariantOption($value)
+ * @method static Builder<static>|Product whereVariantValue($value)
+ * @method static Builder<static>|Product whereWarranty($value)
+ * @method static Builder<static>|Product whereWarrantyType($value)
+ * @method static Builder<static>|Product whereWastagePercent($value)
+ * @method static Builder<static>|Product whereWholesalePrice($value)
+ * @method static Builder<static>|Product whereWoocommerceMediaId($value)
+ * @method static Builder<static>|Product whereWoocommerceProductId($value)
+ * @mixin \Eloquent
  */
 class Product extends Model implements AuditableContract
 {

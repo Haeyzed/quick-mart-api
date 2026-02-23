@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * GiftCard Model
- *
+ * 
  * Represents a gift card that can be used for payments.
  *
  * @property int $id
@@ -35,10 +35,32 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read User|null $user
  * @property-read User|null $creator
  * @property-read Collection<int, PaymentWithGiftCard> $payments
- *
  * @method static Builder|GiftCard active()
  * @method static Builder|GiftCard expired()
  * @method static Builder|GiftCard notExpired()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $payments_count
+ * @method static Builder<static>|GiftCard newModelQuery()
+ * @method static Builder<static>|GiftCard newQuery()
+ * @method static Builder<static>|GiftCard onlyTrashed()
+ * @method static Builder<static>|GiftCard query()
+ * @method static Builder<static>|GiftCard whereAmount($value)
+ * @method static Builder<static>|GiftCard whereCardNo($value)
+ * @method static Builder<static>|GiftCard whereCreatedAt($value)
+ * @method static Builder<static>|GiftCard whereCreatedBy($value)
+ * @method static Builder<static>|GiftCard whereCustomerId($value)
+ * @method static Builder<static>|GiftCard whereDeletedAt($value)
+ * @method static Builder<static>|GiftCard whereExpense($value)
+ * @method static Builder<static>|GiftCard whereExpiredDate($value)
+ * @method static Builder<static>|GiftCard whereId($value)
+ * @method static Builder<static>|GiftCard whereIsActive($value)
+ * @method static Builder<static>|GiftCard whereUpdatedAt($value)
+ * @method static Builder<static>|GiftCard whereUserId($value)
+ * @method static Builder<static>|GiftCard withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|GiftCard withoutTrashed()
+ * @mixin \Eloquent
  */
 class GiftCard extends Model implements AuditableContract
 {

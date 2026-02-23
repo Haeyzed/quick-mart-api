@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Warehouse
- *
+ * 
  * Represents a warehouse within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for warehouse entities.
  *
@@ -30,12 +30,48 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Warehouse newModelQuery()
  * @method static Builder|Warehouse newQuery()
  * @method static Builder|Warehouse query()
  * @method static Builder|Warehouse active()
  * @method static Builder|Warehouse filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Printer> $printers
+ * @property-read int|null $printers_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ProductWarehouse> $productWarehouses
+ * @property-read int|null $product_warehouses_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read int|null $products_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Purchase> $purchases
+ * @property-read int|null $purchases_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sale> $sales
+ * @property-read int|null $sales_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read int|null $users_count
+ * @method static Builder<static>|Warehouse customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Warehouse last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse onlyTrashed()
+ * @method static Builder<static>|Warehouse quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse today(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse whereAddress($value)
+ * @method static Builder<static>|Warehouse whereCreatedAt($value)
+ * @method static Builder<static>|Warehouse whereDeletedAt($value)
+ * @method static Builder<static>|Warehouse whereEmail($value)
+ * @method static Builder<static>|Warehouse whereId($value)
+ * @method static Builder<static>|Warehouse whereIsActive($value)
+ * @method static Builder<static>|Warehouse whereName($value)
+ * @method static Builder<static>|Warehouse wherePhone($value)
+ * @method static Builder<static>|Warehouse whereUpdatedAt($value)
+ * @method static Builder<static>|Warehouse withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Warehouse withoutTrashed()
+ * @method static Builder<static>|Warehouse yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Warehouse yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Warehouse extends Model implements AuditableContract
 {

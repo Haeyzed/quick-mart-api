@@ -12,7 +12,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * MailSetting Model
- *
+ * 
  * Represents email/mail server configuration settings.
  * Supports multiple mail configurations with one marked as default.
  *
@@ -28,6 +28,25 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_default
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting default()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereDriver($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereEncryption($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereFromAddress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereFromName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereHost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereIsDefault($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting wherePassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting wherePort($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MailSetting whereUsername($value)
+ * @mixin \Eloquent
  */
 class MailSetting extends Model implements AuditableContract
 {

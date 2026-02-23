@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Delivery Model
- *
+ * 
  * Represents a delivery record for a sale.
  *
  * @property int $id
@@ -34,10 +34,29 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Sale $sale
  * @property-read User $user
  * @property-read Courier|null $courier
- *
  * @method static Builder|Delivery pending()
  * @method static Builder|Delivery delivered()
  * @method static Builder|Delivery cancelled()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Delivery newModelQuery()
+ * @method static Builder<static>|Delivery newQuery()
+ * @method static Builder<static>|Delivery query()
+ * @method static Builder<static>|Delivery whereAddress($value)
+ * @method static Builder<static>|Delivery whereCourierId($value)
+ * @method static Builder<static>|Delivery whereCreatedAt($value)
+ * @method static Builder<static>|Delivery whereDeliveredBy($value)
+ * @method static Builder<static>|Delivery whereFile($value)
+ * @method static Builder<static>|Delivery whereId($value)
+ * @method static Builder<static>|Delivery whereNote($value)
+ * @method static Builder<static>|Delivery wherePackingSlipIds($value)
+ * @method static Builder<static>|Delivery whereRecievedBy($value)
+ * @method static Builder<static>|Delivery whereReferenceNo($value)
+ * @method static Builder<static>|Delivery whereSaleId($value)
+ * @method static Builder<static>|Delivery whereStatus($value)
+ * @method static Builder<static>|Delivery whereUpdatedAt($value)
+ * @method static Builder<static>|Delivery whereUserId($value)
+ * @mixin \Eloquent
  */
 class Delivery extends Model implements AuditableContract
 {

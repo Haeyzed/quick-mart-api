@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Printer Model
- *
+ * 
  * Represents a printer configuration for a warehouse.
  *
  * @property int $id
@@ -30,8 +30,28 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Warehouse $warehouse
- *
  * @method static Builder|Printer active()
+ * @property int $created_by
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read string $capability_profile_str
+ * @property-read string $connection_type_str
+ * @method static Builder<static>|Printer newModelQuery()
+ * @method static Builder<static>|Printer newQuery()
+ * @method static Builder<static>|Printer query()
+ * @method static Builder<static>|Printer whereCapabilityProfile($value)
+ * @method static Builder<static>|Printer whereCharPerLine($value)
+ * @method static Builder<static>|Printer whereConnectionType($value)
+ * @method static Builder<static>|Printer whereCreatedAt($value)
+ * @method static Builder<static>|Printer whereCreatedBy($value)
+ * @method static Builder<static>|Printer whereId($value)
+ * @method static Builder<static>|Printer whereIpAddress($value)
+ * @method static Builder<static>|Printer whereName($value)
+ * @method static Builder<static>|Printer wherePath($value)
+ * @method static Builder<static>|Printer wherePort($value)
+ * @method static Builder<static>|Printer whereUpdatedAt($value)
+ * @method static Builder<static>|Printer whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class Printer extends Model implements AuditableContract
 {

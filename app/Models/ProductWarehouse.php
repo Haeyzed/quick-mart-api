@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductWarehouse Model (Pivot)
- *
+ * 
  * Represents the relationship between products and warehouses with stock quantity information.
  *
  * @property int $id
@@ -31,9 +31,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Warehouse $warehouse
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
- *
  * @method static Builder|ProductWarehouse findProductWithVariant(int $productId, int $variantId, int $warehouseId)
  * @method static Builder|ProductWarehouse findProductWithoutVariant(int $productId, int $warehouseId)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ProductWarehouse newModelQuery()
+ * @method static Builder<static>|ProductWarehouse newQuery()
+ * @method static Builder<static>|ProductWarehouse query()
+ * @method static Builder<static>|ProductWarehouse whereCreatedAt($value)
+ * @method static Builder<static>|ProductWarehouse whereId($value)
+ * @method static Builder<static>|ProductWarehouse whereImeiNumber($value)
+ * @method static Builder<static>|ProductWarehouse wherePrice($value)
+ * @method static Builder<static>|ProductWarehouse whereProductBatchId($value)
+ * @method static Builder<static>|ProductWarehouse whereProductId($value)
+ * @method static Builder<static>|ProductWarehouse whereQty($value)
+ * @method static Builder<static>|ProductWarehouse whereUpdatedAt($value)
+ * @method static Builder<static>|ProductWarehouse whereVariantId($value)
+ * @method static Builder<static>|ProductWarehouse whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class ProductWarehouse extends Model implements AuditableContract
 {

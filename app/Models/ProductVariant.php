@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductVariant Model (Pivot)
- *
+ * 
  * Represents the relationship between products and variants with variant-specific pricing and stock.
  *
  * @property int $id
@@ -29,9 +29,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Product $product
  * @property-read Variant $variant
- *
  * @method static Builder|ProductVariant findExactProduct(int $productId, int $variantId)
  * @method static Builder|ProductVariant findExactProductWithCode(int $productId, string $itemCode)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ProductVariant newModelQuery()
+ * @method static Builder<static>|ProductVariant newQuery()
+ * @method static Builder<static>|ProductVariant query()
+ * @method static Builder<static>|ProductVariant whereAdditionalCost($value)
+ * @method static Builder<static>|ProductVariant whereAdditionalPrice($value)
+ * @method static Builder<static>|ProductVariant whereCreatedAt($value)
+ * @method static Builder<static>|ProductVariant whereId($value)
+ * @method static Builder<static>|ProductVariant whereItemCode($value)
+ * @method static Builder<static>|ProductVariant wherePosition($value)
+ * @method static Builder<static>|ProductVariant whereProductId($value)
+ * @method static Builder<static>|ProductVariant whereQty($value)
+ * @method static Builder<static>|ProductVariant whereUpdatedAt($value)
+ * @method static Builder<static>|ProductVariant whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductVariant extends Model implements AuditableContract
 {

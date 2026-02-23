@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Table Model
- *
+ * 
  * Represents a restaurant table for POS system.
  *
  * @property int $id
@@ -27,8 +27,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Sale> $sales
- *
  * @method static Builder|Table active()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $sales_count
+ * @method static Builder<static>|Table newModelQuery()
+ * @method static Builder<static>|Table newQuery()
+ * @method static Builder<static>|Table query()
+ * @method static Builder<static>|Table whereCreatedAt($value)
+ * @method static Builder<static>|Table whereDescription($value)
+ * @method static Builder<static>|Table whereFloorId($value)
+ * @method static Builder<static>|Table whereId($value)
+ * @method static Builder<static>|Table whereIsActive($value)
+ * @method static Builder<static>|Table whereName($value)
+ * @method static Builder<static>|Table whereNumberOfPerson($value)
+ * @method static Builder<static>|Table whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Table extends Model implements AuditableContract
 {

@@ -12,7 +12,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * GeneralSetting Model
- *
+ * 
  * Represents the general application settings (singleton pattern).
  *
  * @property int $id
@@ -92,6 +92,121 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $github_login_enabled
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string|null $token
+ * @property numeric $default_margin_value
+ * @property string|null $cloudinary_cloud_name Cloudinary Cloud Name
+ * @property string|null $cloudinary_api_key Cloudinary API Key
+ * @property string|null $cloudinary_api_secret Cloudinary API Secret
+ * @property string|null $cloudinary_secure_url Cloudinary Secure URL (optional)
+ * @property string|null $aws_access_key_id AWS Access Key ID
+ * @property string|null $aws_secret_access_key AWS Secret Access Key
+ * @property string|null $aws_default_region AWS Default Region
+ * @property string|null $aws_bucket AWS S3 Bucket Name
+ * @property string|null $aws_url AWS S3 URL (optional)
+ * @property string|null $aws_endpoint AWS S3 Endpoint (optional, for custom S3-compatible services)
+ * @property bool $aws_use_path_style_endpoint Use path-style endpoint for S3
+ * @property string|null $sftp_host SFTP Host
+ * @property string|null $sftp_username SFTP Username
+ * @property string|null $sftp_password SFTP Password
+ * @property string|null $sftp_private_key SFTP Private Key (optional, for key-based authentication)
+ * @property string|null $sftp_passphrase SFTP Passphrase (optional, for encrypted private keys)
+ * @property int $sftp_port SFTP Port
+ * @property string $sftp_root SFTP Root Directory
+ * @property string|null $ftp_host FTP Host
+ * @property string|null $ftp_username FTP Username
+ * @property string|null $ftp_password FTP Password
+ * @property int $ftp_port FTP Port
+ * @property string $ftp_root FTP Root Directory
+ * @property bool $ftp_passive FTP Passive Mode
+ * @property bool $ftp_ssl FTP SSL/TLS
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAppKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAuthCss($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsAccessKeyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsBucket($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsDefaultRegion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsEndpoint($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsSecretAccessKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereAwsUsePathStyleEndpoint($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCloudinaryApiKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCloudinaryApiSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCloudinaryCloudName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCloudinarySecureUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCompanyName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCurrency($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCurrencyPosition($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereCustomCss($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDateFormat($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDecimal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDefaultMarginValue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDevelopedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDisableForgotPassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereDisableSignup($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereExpiryAlertDays($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereExpiryDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereExpiryType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereExpiryValue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFacebookClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFacebookClientSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFacebookLoginEnabled($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFacebookRedirectUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFavicon($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFaviconUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFontCss($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpHost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpPassive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpPassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpPort($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpRoot($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpSsl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereFtpUsername($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGithubClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGithubClientSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGithubLoginEnabled($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGithubRedirectUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGoogleClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGoogleClientSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGoogleLoginEnabled($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereGoogleRedirectUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereInvoiceFormat($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereIsPackingSlip($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereIsRtl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereIsZatca($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereMaintenanceAllowedIps($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereMarginType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereModules($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting wherePackageId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting wherePosCss($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpHost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpPassphrase($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpPassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpPort($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpPrivateKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpRoot($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSftpUsername($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereShowProductsDetailsInPurchaseTable($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereShowProductsDetailsInSalesTable($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSiteLogo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSiteLogoUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSiteTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereStaffAccess($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereState($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereStorageProvider($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereSubscriptionType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereTheme($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereTimezone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereVatRegistrationNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GeneralSetting whereWithoutStock($value)
+ * @mixin \Eloquent
  */
 class GeneralSetting extends Model implements AuditableContract
 {

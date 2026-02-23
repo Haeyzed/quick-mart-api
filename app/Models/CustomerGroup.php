@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class CustomerGroup
- *
+ * 
  * Represents a customer group within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for customer group entities.
  *
@@ -29,12 +29,35 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, Customer> $customers
- *
  * @method static Builder|CustomerGroup newModelQuery()
  * @method static Builder|CustomerGroup newQuery()
  * @method static Builder|CustomerGroup query()
  * @method static Builder|CustomerGroup active()
  * @method static Builder|CustomerGroup filter(array $filters)
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $customers_count
+ * @method static Builder<static>|CustomerGroup customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup last30Days(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup last7Days(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup lastYear(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup onlyTrashed()
+ * @method static Builder<static>|CustomerGroup quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup today(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup whereCreatedAt($value)
+ * @method static Builder<static>|CustomerGroup whereDeletedAt($value)
+ * @method static Builder<static>|CustomerGroup whereId($value)
+ * @method static Builder<static>|CustomerGroup whereIsActive($value)
+ * @method static Builder<static>|CustomerGroup whereName($value)
+ * @method static Builder<static>|CustomerGroup wherePercentage($value)
+ * @method static Builder<static>|CustomerGroup whereUpdatedAt($value)
+ * @method static Builder<static>|CustomerGroup withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|CustomerGroup withoutTrashed()
+ * @method static Builder<static>|CustomerGroup yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomerGroup yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class CustomerGroup extends Model implements AuditableContract
 {

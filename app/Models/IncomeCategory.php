@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * IncomeCategory Model
- *
+ * 
  * Represents a category for income.
  *
  * @property int $id
@@ -26,8 +26,25 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Income> $incomes
- *
  * @method static Builder|IncomeCategory active()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $incomes_count
+ * @method static Builder<static>|IncomeCategory newModelQuery()
+ * @method static Builder<static>|IncomeCategory newQuery()
+ * @method static Builder<static>|IncomeCategory onlyTrashed()
+ * @method static Builder<static>|IncomeCategory query()
+ * @method static Builder<static>|IncomeCategory whereCode($value)
+ * @method static Builder<static>|IncomeCategory whereCreatedAt($value)
+ * @method static Builder<static>|IncomeCategory whereDeletedAt($value)
+ * @method static Builder<static>|IncomeCategory whereId($value)
+ * @method static Builder<static>|IncomeCategory whereIsActive($value)
+ * @method static Builder<static>|IncomeCategory whereName($value)
+ * @method static Builder<static>|IncomeCategory whereUpdatedAt($value)
+ * @method static Builder<static>|IncomeCategory withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|IncomeCategory withoutTrashed()
+ * @mixin \Eloquent
  */
 class IncomeCategory extends Model implements AuditableContract
 {

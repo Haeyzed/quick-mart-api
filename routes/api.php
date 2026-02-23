@@ -24,6 +24,8 @@ use App\Http\Controllers\Api\HrmSettingController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\LeaveTypeController;
+use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\MailSettingController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
 use App\Http\Controllers\Api\PermissionController;
@@ -242,6 +244,29 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [BillerController::class, 'options'])->name('options');
     });
     Route::apiResource('billers', BillerController::class);
+
+    // Leave Types
+    Route::prefix('leave-types')->name('leave-types.')->group(function () {
+        Route::post('bulk-destroy', [LeaveTypeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [LeaveTypeController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [LeaveTypeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [LeaveTypeController::class, 'import'])->name('import');
+        Route::post('export', [LeaveTypeController::class, 'export'])->name('export');
+        Route::get('download', [LeaveTypeController::class, 'download'])->name('download');
+        Route::get('options', [LeaveTypeController::class, 'options'])->name('options');
+    });
+    Route::apiResource('leave-types', LeaveTypeController::class);
+
+    // Leaves
+    Route::prefix('leaves')->name('leaves.')->group(function () {
+        Route::post('bulk-destroy', [LeaveController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-approve', [LeaveController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('bulk-reject', [LeaveController::class, 'bulkReject'])->name('bulk-reject');
+        Route::post('import', [LeaveController::class, 'import'])->name('import');
+        Route::post('export', [LeaveController::class, 'export'])->name('export');
+        Route::get('download', [LeaveController::class, 'download'])->name('download');
+    });
+    Route::apiResource('leaves', LeaveController::class);
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');

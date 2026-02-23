@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Brand
- *
+ * 
  * Represents a product brand within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for brand entities.
  *
@@ -34,12 +34,40 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Brand newModelQuery()
  * @method static Builder|Brand newQuery()
  * @method static Builder|Brand query()
  * @method static Builder|Brand active()
  * @method static Builder|Brand filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read int|null $products_count
+ * @method static Builder<static>|Brand customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Brand last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Brand last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Brand lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Brand lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Brand monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Brand onlyTrashed()
+ * @method static Builder<static>|Brand quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Brand today(string $column = 'created_at')
+ * @method static Builder<static>|Brand whereCreatedAt($value)
+ * @method static Builder<static>|Brand whereDeletedAt($value)
+ * @method static Builder<static>|Brand whereId($value)
+ * @method static Builder<static>|Brand whereImage($value)
+ * @method static Builder<static>|Brand whereImageUrl($value)
+ * @method static Builder<static>|Brand whereIsActive($value)
+ * @method static Builder<static>|Brand whereName($value)
+ * @method static Builder<static>|Brand wherePageTitle($value)
+ * @method static Builder<static>|Brand whereShortDescription($value)
+ * @method static Builder<static>|Brand whereSlug($value)
+ * @method static Builder<static>|Brand whereUpdatedAt($value)
+ * @method static Builder<static>|Brand withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Brand withoutTrashed()
+ * @method static Builder<static>|Brand yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Brand yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Brand extends Model implements AuditableContract
 {

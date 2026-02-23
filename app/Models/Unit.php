@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Unit
- *
+ * 
  * Represents a measurement unit within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for unit entities.
  * Supports base-unit conversion (e.g. kg as base, g as derived).
@@ -32,12 +32,42 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Unit newModelQuery()
  * @method static Builder|Unit newQuery()
  * @method static Builder|Unit query()
  * @method static Builder|Unit active()
  * @method static Builder|Unit filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read Unit|null $baseUnitRelation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read int|null $products_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Unit> $subUnits
+ * @property-read int|null $sub_units_count
+ * @method static Builder<static>|Unit customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Unit last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Unit last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Unit lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Unit lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Unit monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Unit onlyTrashed()
+ * @method static Builder<static>|Unit quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Unit today(string $column = 'created_at')
+ * @method static Builder<static>|Unit whereBaseUnit($value)
+ * @method static Builder<static>|Unit whereCode($value)
+ * @method static Builder<static>|Unit whereCreatedAt($value)
+ * @method static Builder<static>|Unit whereDeletedAt($value)
+ * @method static Builder<static>|Unit whereId($value)
+ * @method static Builder<static>|Unit whereIsActive($value)
+ * @method static Builder<static>|Unit whereName($value)
+ * @method static Builder<static>|Unit whereOperationValue($value)
+ * @method static Builder<static>|Unit whereOperator($value)
+ * @method static Builder<static>|Unit whereUpdatedAt($value)
+ * @method static Builder<static>|Unit withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Unit withoutTrashed()
+ * @method static Builder<static>|Unit yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Unit yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Unit extends Model implements AuditableContract
 {

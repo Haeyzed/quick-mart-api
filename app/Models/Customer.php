@@ -20,7 +20,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Customer Model
- *
+ * 
  * Represents a customer in the system.
  *
  * @property int $id
@@ -58,9 +58,69 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, DiscountPlan> $discountPlans
  * @property-read Collection<int, RewardPoint> $rewardPoints
  * @property-read Collection<int, Deposit> $deposits
- *
  * @method static Builder|Customer active()
  * @method static Builder|Customer filter(array $filters)
+ * @property string|null $ecom
+ * @property string $dsf
+ * @property string|null $arabic_name
+ * @property string|null $admin
+ * @property string|null $franchise_location
+ * @property string $customer_type
+ * @property string $customer_assigned_to
+ * @property string $assigned
+ * @property string $aaaaaaaa
+ * @property string|null $district
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $deposits_count
+ * @property-read int|null $discount_plans_count
+ * @property-read int|null $reward_points_count
+ * @property-read int|null $sales_count
+ * @method static Builder<static>|Customer newModelQuery()
+ * @method static Builder<static>|Customer newQuery()
+ * @method static Builder<static>|Customer onlyTrashed()
+ * @method static Builder<static>|Customer query()
+ * @method static Builder<static>|Customer whereAaaaaaaa($value)
+ * @method static Builder<static>|Customer whereAddress($value)
+ * @method static Builder<static>|Customer whereAdmin($value)
+ * @method static Builder<static>|Customer whereArabicName($value)
+ * @method static Builder<static>|Customer whereAssigned($value)
+ * @method static Builder<static>|Customer whereCityId($value)
+ * @method static Builder<static>|Customer whereCompanyName($value)
+ * @method static Builder<static>|Customer whereCountryId($value)
+ * @method static Builder<static>|Customer whereCreatedAt($value)
+ * @method static Builder<static>|Customer whereCreditLimit($value)
+ * @method static Builder<static>|Customer whereCustomerAssignedTo($value)
+ * @method static Builder<static>|Customer whereCustomerGroupId($value)
+ * @method static Builder<static>|Customer whereCustomerType($value)
+ * @method static Builder<static>|Customer whereDeletedAt($value)
+ * @method static Builder<static>|Customer whereDeposit($value)
+ * @method static Builder<static>|Customer whereDistrict($value)
+ * @method static Builder<static>|Customer whereDsf($value)
+ * @method static Builder<static>|Customer whereEcom($value)
+ * @method static Builder<static>|Customer whereEmail($value)
+ * @method static Builder<static>|Customer whereExpense($value)
+ * @method static Builder<static>|Customer whereFranchiseLocation($value)
+ * @method static Builder<static>|Customer whereId($value)
+ * @method static Builder<static>|Customer whereIsActive($value)
+ * @method static Builder<static>|Customer whereName($value)
+ * @method static Builder<static>|Customer whereOpeningBalance($value)
+ * @method static Builder<static>|Customer wherePayTermNo($value)
+ * @method static Builder<static>|Customer wherePayTermPeriod($value)
+ * @method static Builder<static>|Customer wherePhoneNumber($value)
+ * @method static Builder<static>|Customer wherePoints($value)
+ * @method static Builder<static>|Customer wherePostalCode($value)
+ * @method static Builder<static>|Customer whereStateId($value)
+ * @method static Builder<static>|Customer whereTaxNo($value)
+ * @method static Builder<static>|Customer whereType($value)
+ * @method static Builder<static>|Customer whereUpdatedAt($value)
+ * @method static Builder<static>|Customer whereUserId($value)
+ * @method static Builder<static>|Customer whereWaNumber($value)
+ * @method static Builder<static>|Customer whereWishlist($value)
+ * @method static Builder<static>|Customer withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Customer withoutTrashed()
+ * @mixin \Eloquent
  */
 class Customer extends Model implements AuditableContract
 {

@@ -19,7 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Purchase Model
- *
+ * 
  * Represents a purchase transaction in the system.
  *
  * @property int $id
@@ -59,11 +59,50 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Payment> $payments
  * @property-read InstallmentPlan|null $installmentPlan
  * @property-read User|null $deleter
- *
  * @method static Builder|Purchase completed()
  * @method static Builder|Purchase pending()
  * @method static Builder|Purchase paid()
  * @method static Builder|Purchase unpaid()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $payments_count
+ * @property-read int|null $product_purchases_count
+ * @property-read int|null $products_count
+ * @property-read int|null $returns_count
+ * @method static Builder<static>|Purchase newModelQuery()
+ * @method static Builder<static>|Purchase newQuery()
+ * @method static Builder<static>|Purchase onlyTrashed()
+ * @method static Builder<static>|Purchase query()
+ * @method static Builder<static>|Purchase whereCreatedAt($value)
+ * @method static Builder<static>|Purchase whereCurrencyId($value)
+ * @method static Builder<static>|Purchase whereDeletedAt($value)
+ * @method static Builder<static>|Purchase whereDeletedBy($value)
+ * @method static Builder<static>|Purchase whereDocument($value)
+ * @method static Builder<static>|Purchase whereExchangeRate($value)
+ * @method static Builder<static>|Purchase whereGrandTotal($value)
+ * @method static Builder<static>|Purchase whereId($value)
+ * @method static Builder<static>|Purchase whereItem($value)
+ * @method static Builder<static>|Purchase whereNote($value)
+ * @method static Builder<static>|Purchase whereOrderDiscount($value)
+ * @method static Builder<static>|Purchase whereOrderTax($value)
+ * @method static Builder<static>|Purchase whereOrderTaxRate($value)
+ * @method static Builder<static>|Purchase wherePaidAmount($value)
+ * @method static Builder<static>|Purchase wherePaymentStatus($value)
+ * @method static Builder<static>|Purchase wherePurchaseType($value)
+ * @method static Builder<static>|Purchase whereReferenceNo($value)
+ * @method static Builder<static>|Purchase whereShippingCost($value)
+ * @method static Builder<static>|Purchase whereStatus($value)
+ * @method static Builder<static>|Purchase whereSupplierId($value)
+ * @method static Builder<static>|Purchase whereTotalCost($value)
+ * @method static Builder<static>|Purchase whereTotalDiscount($value)
+ * @method static Builder<static>|Purchase whereTotalQty($value)
+ * @method static Builder<static>|Purchase whereTotalTax($value)
+ * @method static Builder<static>|Purchase whereUpdatedAt($value)
+ * @method static Builder<static>|Purchase whereUserId($value)
+ * @method static Builder<static>|Purchase whereWarehouseId($value)
+ * @method static Builder<static>|Purchase withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Purchase withoutTrashed()
+ * @mixin \Eloquent
  */
 class Purchase extends Model implements AuditableContract
 {

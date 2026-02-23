@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Tax
- *
+ * 
  * Represents a tax rate within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for tax entities.
  *
@@ -28,12 +28,37 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Tax newModelQuery()
  * @method static Builder|Tax newQuery()
  * @method static Builder|Tax query()
  * @method static Builder|Tax active()
  * @method static Builder|Tax filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read int|null $products_count
+ * @method static Builder<static>|Tax customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Tax last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Tax last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Tax lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Tax lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Tax monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Tax onlyTrashed()
+ * @method static Builder<static>|Tax quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Tax today(string $column = 'created_at')
+ * @method static Builder<static>|Tax whereCreatedAt($value)
+ * @method static Builder<static>|Tax whereDeletedAt($value)
+ * @method static Builder<static>|Tax whereId($value)
+ * @method static Builder<static>|Tax whereIsActive($value)
+ * @method static Builder<static>|Tax whereName($value)
+ * @method static Builder<static>|Tax whereRate($value)
+ * @method static Builder<static>|Tax whereUpdatedAt($value)
+ * @method static Builder<static>|Tax whereWoocommerceTaxId($value)
+ * @method static Builder<static>|Tax withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Tax withoutTrashed()
+ * @method static Builder<static>|Tax yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Tax yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Tax extends Model implements AuditableContract
 {

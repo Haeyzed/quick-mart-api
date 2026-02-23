@@ -12,7 +12,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * InvoiceSchema Model
- *
+ * 
  * Represents invoice numbering schema configuration.
  *
  * @property int $id
@@ -22,6 +22,19 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $last_invoice_number
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereLastInvoiceNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereNumberOfDigit($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema wherePrefix($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereStartNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceSchema whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class InvoiceSchema extends Model implements AuditableContract
 {

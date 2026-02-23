@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PaymentWithPaypal Model
- *
+ * 
  * Represents PayPal payment details for a payment.
  *
  * @property int $id
@@ -22,6 +22,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Payment $payment
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal wherePaymentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal whereTransactionId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithPaypal whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class PaymentWithPaypal extends Model implements AuditableContract
 {

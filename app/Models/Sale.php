@@ -20,7 +20,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Sale Model
- *
+ * 
  * Represents a sale transaction in the system.
  *
  * @property int $id
@@ -93,11 +93,79 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Returns|null $return
  * @property-read InstallmentPlan|null $installmentPlan
  * @property-read User|null $deleter
- *
  * @method static Builder|Sale completed()
  * @method static Builder|Sale pending()
  * @method static Builder|Sale paid()
  * @method static Builder|Sale unpaid()
+ * @property int $steadfast
+ * @property string|null $payment_mode
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $payments_count
+ * @property-read int|null $product_sales_count
+ * @property-read int|null $products_count
+ * @method static Builder<static>|Sale newModelQuery()
+ * @method static Builder<static>|Sale newQuery()
+ * @method static Builder<static>|Sale onlyTrashed()
+ * @method static Builder<static>|Sale query()
+ * @method static Builder<static>|Sale whereBillerId($value)
+ * @method static Builder<static>|Sale whereBillingAddress($value)
+ * @method static Builder<static>|Sale whereBillingCity($value)
+ * @method static Builder<static>|Sale whereBillingCountry($value)
+ * @method static Builder<static>|Sale whereBillingEmail($value)
+ * @method static Builder<static>|Sale whereBillingName($value)
+ * @method static Builder<static>|Sale whereBillingPhone($value)
+ * @method static Builder<static>|Sale whereBillingState($value)
+ * @method static Builder<static>|Sale whereBillingZip($value)
+ * @method static Builder<static>|Sale whereCashRegisterId($value)
+ * @method static Builder<static>|Sale whereCouponDiscount($value)
+ * @method static Builder<static>|Sale whereCouponId($value)
+ * @method static Builder<static>|Sale whereCreatedAt($value)
+ * @method static Builder<static>|Sale whereCurrencyId($value)
+ * @method static Builder<static>|Sale whereCustomerId($value)
+ * @method static Builder<static>|Sale whereDeletedAt($value)
+ * @method static Builder<static>|Sale whereDeletedBy($value)
+ * @method static Builder<static>|Sale whereDocument($value)
+ * @method static Builder<static>|Sale whereExchangeRate($value)
+ * @method static Builder<static>|Sale whereGrandTotal($value)
+ * @method static Builder<static>|Sale whereId($value)
+ * @method static Builder<static>|Sale whereItem($value)
+ * @method static Builder<static>|Sale whereOrderDiscount($value)
+ * @method static Builder<static>|Sale whereOrderDiscountType($value)
+ * @method static Builder<static>|Sale whereOrderDiscountValue($value)
+ * @method static Builder<static>|Sale whereOrderTax($value)
+ * @method static Builder<static>|Sale whereOrderTaxRate($value)
+ * @method static Builder<static>|Sale wherePaidAmount($value)
+ * @method static Builder<static>|Sale wherePaymentMode($value)
+ * @method static Builder<static>|Sale wherePaymentStatus($value)
+ * @method static Builder<static>|Sale whereQueue($value)
+ * @method static Builder<static>|Sale whereReferenceNo($value)
+ * @method static Builder<static>|Sale whereSaleNote($value)
+ * @method static Builder<static>|Sale whereSaleStatus($value)
+ * @method static Builder<static>|Sale whereSaleType($value)
+ * @method static Builder<static>|Sale whereShippingAddress($value)
+ * @method static Builder<static>|Sale whereShippingCity($value)
+ * @method static Builder<static>|Sale whereShippingCost($value)
+ * @method static Builder<static>|Sale whereShippingCountry($value)
+ * @method static Builder<static>|Sale whereShippingEmail($value)
+ * @method static Builder<static>|Sale whereShippingName($value)
+ * @method static Builder<static>|Sale whereShippingPhone($value)
+ * @method static Builder<static>|Sale whereShippingState($value)
+ * @method static Builder<static>|Sale whereShippingZip($value)
+ * @method static Builder<static>|Sale whereStaffNote($value)
+ * @method static Builder<static>|Sale whereSteadfast($value)
+ * @method static Builder<static>|Sale whereTableId($value)
+ * @method static Builder<static>|Sale whereTotalDiscount($value)
+ * @method static Builder<static>|Sale whereTotalPrice($value)
+ * @method static Builder<static>|Sale whereTotalQty($value)
+ * @method static Builder<static>|Sale whereTotalTax($value)
+ * @method static Builder<static>|Sale whereUpdatedAt($value)
+ * @method static Builder<static>|Sale whereUserId($value)
+ * @method static Builder<static>|Sale whereWarehouseId($value)
+ * @method static Builder<static>|Sale whereWoocommerceOrderId($value)
+ * @method static Builder<static>|Sale withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Sale withoutTrashed()
+ * @mixin \Eloquent
  */
 class Sale extends Model implements AuditableContract
 {

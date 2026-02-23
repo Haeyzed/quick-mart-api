@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PaymentWithCheque Model
- *
+ * 
  * Represents cheque payment details for a payment.
  *
  * @property int $id
@@ -22,6 +22,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Payment $payment
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque whereChequeNo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque wherePaymentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCheque whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class PaymentWithCheque extends Model implements AuditableContract
 {

@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Shift Model
- *
+ * 
  * Represents a work shift with time schedules.
  *
  * @property int $id
@@ -29,8 +29,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Employee> $employees
- *
  * @method static Builder|Shift active()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $employees_count
+ * @method static Builder<static>|Shift newModelQuery()
+ * @method static Builder<static>|Shift newQuery()
+ * @method static Builder<static>|Shift query()
+ * @method static Builder<static>|Shift whereCreatedAt($value)
+ * @method static Builder<static>|Shift whereEndTime($value)
+ * @method static Builder<static>|Shift whereGraceIn($value)
+ * @method static Builder<static>|Shift whereGraceOut($value)
+ * @method static Builder<static>|Shift whereId($value)
+ * @method static Builder<static>|Shift whereIsActive($value)
+ * @method static Builder<static>|Shift whereName($value)
+ * @method static Builder<static>|Shift whereStartTime($value)
+ * @method static Builder<static>|Shift whereTotalHours($value)
+ * @method static Builder<static>|Shift whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Shift extends Model implements AuditableContract
 {

@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * RewardPoint Model
- *
+ * 
  * Represents a reward point transaction for a customer.
  *
  * @property int $id
@@ -32,9 +32,26 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Customer $customer
  * @property-read User|null $creator
  * @property-read Sale|null $sale
- *
  * @method static Builder|RewardPoint expired()
  * @method static Builder|RewardPoint notExpired()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|RewardPoint newModelQuery()
+ * @method static Builder<static>|RewardPoint newQuery()
+ * @method static Builder<static>|RewardPoint query()
+ * @method static Builder<static>|RewardPoint whereCreatedAt($value)
+ * @method static Builder<static>|RewardPoint whereCreatedBy($value)
+ * @method static Builder<static>|RewardPoint whereCustomerId($value)
+ * @method static Builder<static>|RewardPoint whereDeductedPoints($value)
+ * @method static Builder<static>|RewardPoint whereExpiredAt($value)
+ * @method static Builder<static>|RewardPoint whereId($value)
+ * @method static Builder<static>|RewardPoint whereNote($value)
+ * @method static Builder<static>|RewardPoint wherePoints($value)
+ * @method static Builder<static>|RewardPoint whereRewardPointType($value)
+ * @method static Builder<static>|RewardPoint whereSaleId($value)
+ * @method static Builder<static>|RewardPoint whereUpdatedAt($value)
+ * @method static Builder<static>|RewardPoint whereUpdatedBy($value)
+ * @mixin \Eloquent
  */
 class RewardPoint extends Model implements AuditableContract
 {

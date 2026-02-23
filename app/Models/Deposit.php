@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Deposit Model
- *
+ * 
  * Represents a customer deposit transaction.
  *
  * @property int $id
@@ -25,6 +25,19 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Customer $customer
  * @property-read User $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Deposit whereUserId($value)
+ * @mixin \Eloquent
  */
 class Deposit extends Model implements AuditableContract
 {

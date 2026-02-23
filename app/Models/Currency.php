@@ -10,7 +10,7 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
 
 /**
  * Class Currency
- *
+ * 
  * Represents a currency from World reference data. Extends Nnjeim\World Currency.
  *
  * @property int $id
@@ -23,11 +23,32 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @property bool $symbol_first
  * @property string $decimal_mark
  * @property string $thousands_separator
- *
  * @method static Builder|Currency newModelQuery()
  * @method static Builder|Currency newQuery()
  * @method static Builder|Currency query()
  * @method static Builder|Currency filter(array $filters)
+ * @property-read \App\Models\Country|null $country
+ * @method static Builder<static>|Currency customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Currency last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Currency last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Currency lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Currency lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Currency monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Currency quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Currency today(string $column = 'created_at')
+ * @method static Builder<static>|Currency whereCode($value)
+ * @method static Builder<static>|Currency whereCountryId($value)
+ * @method static Builder<static>|Currency whereDecimalMark($value)
+ * @method static Builder<static>|Currency whereId($value)
+ * @method static Builder<static>|Currency whereName($value)
+ * @method static Builder<static>|Currency wherePrecision($value)
+ * @method static Builder<static>|Currency whereSymbol($value)
+ * @method static Builder<static>|Currency whereSymbolFirst($value)
+ * @method static Builder<static>|Currency whereSymbolNative($value)
+ * @method static Builder<static>|Currency whereThousandsSeparator($value)
+ * @method static Builder<static>|Currency yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Currency yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Currency extends WorldCurrencyBase
 {

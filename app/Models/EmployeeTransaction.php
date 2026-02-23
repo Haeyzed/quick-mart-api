@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * EmployeeTransaction Model
- *
+ * 
  * Represents a financial transaction for an employee (advance, loan, etc.).
  *
  * @property int $id
@@ -28,9 +28,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
  * @property-read User $creator
- *
  * @method static Builder|EmployeeTransaction advance()
  * @method static Builder|EmployeeTransaction loan()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|EmployeeTransaction newModelQuery()
+ * @method static Builder<static>|EmployeeTransaction newQuery()
+ * @method static Builder<static>|EmployeeTransaction query()
+ * @mixin \Eloquent
  */
 class EmployeeTransaction extends Model implements AuditableContract
 {

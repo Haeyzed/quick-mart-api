@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductReturn Model (Pivot)
- *
+ * 
  * Represents the relationship between returns and products with return-specific data.
  *
  * @property int $id
@@ -35,6 +35,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read Variant|null $variant
  * @property-read ProductBatch|null $batch
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereDiscount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereImeiNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereNetUnitPrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereProductBatchId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereProductId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereReturnId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereSaleUnitId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductReturn extends Model implements AuditableContract
 {

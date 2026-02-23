@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductQuotation Model (Pivot)
- *
+ * 
  * Represents the relationship between quotations and products.
  *
  * @property int $id
@@ -35,6 +35,26 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
  * @property-read Unit $unit
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereDiscount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereNetUnitPrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereProductBatchId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereProductId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereQuotationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereSaleUnitId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereTax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductQuotation whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductQuotation extends Model implements AuditableContract
 {

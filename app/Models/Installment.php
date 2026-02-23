@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Installment Model
- *
+ * 
  * Represents an installment payment in an installment plan.
  *
  * @property int $id
@@ -25,10 +25,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read InstallmentPlan $plan
- *
  * @method static Builder|Installment paid()
  * @method static Builder|Installment pending()
  * @method static Builder|Installment overdue()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Installment newModelQuery()
+ * @method static Builder<static>|Installment newQuery()
+ * @method static Builder<static>|Installment query()
+ * @method static Builder<static>|Installment whereAmount($value)
+ * @method static Builder<static>|Installment whereCreatedAt($value)
+ * @method static Builder<static>|Installment whereId($value)
+ * @method static Builder<static>|Installment whereInstallmentPlanId($value)
+ * @method static Builder<static>|Installment wherePaymentDate($value)
+ * @method static Builder<static>|Installment whereStatus($value)
+ * @method static Builder<static>|Installment whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Installment extends Model implements AuditableContract
 {

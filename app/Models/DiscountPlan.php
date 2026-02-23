@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * DiscountPlan Model
- *
+ * 
  * Represents a discount plan that groups multiple discounts and can be assigned to customers.
  *
  * @property int $id
@@ -27,8 +27,26 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Customer> $customers
  * @property-read Collection<int, Discount> $discounts
- *
  * @method static Builder|DiscountPlan active()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $customers_count
+ * @property-read int|null $discounts_count
+ * @method static Builder<static>|DiscountPlan newModelQuery()
+ * @method static Builder<static>|DiscountPlan newQuery()
+ * @method static Builder<static>|DiscountPlan onlyTrashed()
+ * @method static Builder<static>|DiscountPlan query()
+ * @method static Builder<static>|DiscountPlan whereCreatedAt($value)
+ * @method static Builder<static>|DiscountPlan whereDeletedAt($value)
+ * @method static Builder<static>|DiscountPlan whereId($value)
+ * @method static Builder<static>|DiscountPlan whereIsActive($value)
+ * @method static Builder<static>|DiscountPlan whereName($value)
+ * @method static Builder<static>|DiscountPlan whereType($value)
+ * @method static Builder<static>|DiscountPlan whereUpdatedAt($value)
+ * @method static Builder<static>|DiscountPlan withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|DiscountPlan withoutTrashed()
+ * @mixin \Eloquent
  */
 class DiscountPlan extends Model implements AuditableContract
 {

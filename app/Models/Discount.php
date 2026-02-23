@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Discount Model
- *
+ * 
  * Represents a discount rule that can be applied to products.
  *
  * @property int $id
@@ -34,9 +34,34 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, DiscountPlan> $discountPlans
- *
  * @method static Builder|Discount active()
  * @method static Builder|Discount valid()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $discount_plans_count
+ * @method static Builder<static>|Discount newModelQuery()
+ * @method static Builder<static>|Discount newQuery()
+ * @method static Builder<static>|Discount onlyTrashed()
+ * @method static Builder<static>|Discount query()
+ * @method static Builder<static>|Discount whereApplicableFor($value)
+ * @method static Builder<static>|Discount whereCreatedAt($value)
+ * @method static Builder<static>|Discount whereDays($value)
+ * @method static Builder<static>|Discount whereDeletedAt($value)
+ * @method static Builder<static>|Discount whereId($value)
+ * @method static Builder<static>|Discount whereIsActive($value)
+ * @method static Builder<static>|Discount whereMaximumQty($value)
+ * @method static Builder<static>|Discount whereMinimumQty($value)
+ * @method static Builder<static>|Discount whereName($value)
+ * @method static Builder<static>|Discount whereProductList($value)
+ * @method static Builder<static>|Discount whereType($value)
+ * @method static Builder<static>|Discount whereUpdatedAt($value)
+ * @method static Builder<static>|Discount whereValidFrom($value)
+ * @method static Builder<static>|Discount whereValidTill($value)
+ * @method static Builder<static>|Discount whereValue($value)
+ * @method static Builder<static>|Discount withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Discount withoutTrashed()
+ * @mixin \Eloquent
  */
 class Discount extends Model implements AuditableContract
 {

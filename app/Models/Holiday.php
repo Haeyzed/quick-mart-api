@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Holiday
- *
+ * 
  * Represents a holiday/leave request within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for holiday entities.
  *
@@ -32,13 +32,39 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read User $user
- *
  * @method static Builder|Holiday newModelQuery()
  * @method static Builder|Holiday newQuery()
  * @method static Builder|Holiday query()
  * @method static Builder|Holiday approved()
  * @method static Builder|Holiday pending()
  * @method static Builder|Holiday filter(array $filters)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Holiday customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Holiday last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Holiday last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Holiday lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Holiday lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Holiday monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Holiday onlyTrashed()
+ * @method static Builder<static>|Holiday quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Holiday today(string $column = 'created_at')
+ * @method static Builder<static>|Holiday whereCreatedAt($value)
+ * @method static Builder<static>|Holiday whereDeletedAt($value)
+ * @method static Builder<static>|Holiday whereFromDate($value)
+ * @method static Builder<static>|Holiday whereId($value)
+ * @method static Builder<static>|Holiday whereIsApproved($value)
+ * @method static Builder<static>|Holiday whereNote($value)
+ * @method static Builder<static>|Holiday whereRecurring($value)
+ * @method static Builder<static>|Holiday whereRegion($value)
+ * @method static Builder<static>|Holiday whereToDate($value)
+ * @method static Builder<static>|Holiday whereUpdatedAt($value)
+ * @method static Builder<static>|Holiday whereUserId($value)
+ * @method static Builder<static>|Holiday withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Holiday withoutTrashed()
+ * @method static Builder<static>|Holiday yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Holiday yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Holiday extends Model implements AuditableContract
 {

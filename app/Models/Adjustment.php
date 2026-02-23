@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Adjustment Model
- *
+ * 
  * Represents a stock quantity adjustment for a warehouse.
  *
  * @property int $id
@@ -29,6 +29,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Warehouse $warehouse
  * @property-read Collection<int, ProductAdjustment> $productAdjustments
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $product_adjustments_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereDocument($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereItem($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereReferenceNo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereTotalQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Adjustment whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class Adjustment extends Model implements AuditableContract
 {

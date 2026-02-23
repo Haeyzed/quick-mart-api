@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductSupplier Model (Pivot)
- *
+ * 
  * Represents the relationship between products and suppliers with supplier-specific pricing.
  *
  * @property int $id
@@ -24,6 +24,19 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Supplier $supplier
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier wherePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereProductCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereSupplierId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductSupplier whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class ProductSupplier extends Model implements AuditableContract
 {

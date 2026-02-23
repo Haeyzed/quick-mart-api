@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ExpenseCategory Model
- *
+ * 
  * Represents a category for expenses.
  *
  * @property int $id
@@ -26,8 +26,25 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Expense> $expenses
- *
  * @method static Builder|ExpenseCategory active()
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $expenses_count
+ * @method static Builder<static>|ExpenseCategory newModelQuery()
+ * @method static Builder<static>|ExpenseCategory newQuery()
+ * @method static Builder<static>|ExpenseCategory onlyTrashed()
+ * @method static Builder<static>|ExpenseCategory query()
+ * @method static Builder<static>|ExpenseCategory whereCode($value)
+ * @method static Builder<static>|ExpenseCategory whereCreatedAt($value)
+ * @method static Builder<static>|ExpenseCategory whereDeletedAt($value)
+ * @method static Builder<static>|ExpenseCategory whereId($value)
+ * @method static Builder<static>|ExpenseCategory whereIsActive($value)
+ * @method static Builder<static>|ExpenseCategory whereName($value)
+ * @method static Builder<static>|ExpenseCategory whereUpdatedAt($value)
+ * @method static Builder<static>|ExpenseCategory withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|ExpenseCategory withoutTrashed()
+ * @mixin \Eloquent
  */
 class ExpenseCategory extends Model implements AuditableContract
 {

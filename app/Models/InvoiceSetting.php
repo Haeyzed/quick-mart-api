@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * InvoiceSetting Model
- *
+ * 
  * Represents invoice template and formatting settings.
  *
  * @property int $id
@@ -58,9 +58,47 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read User|null $creator
  * @property-read User|null $updater
- *
  * @method static Builder|InvoiceSetting active()
  * @method static Builder|InvoiceSetting default()
+ * @property int|null $last_invoice_number
+ * @property string|null $extra
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|InvoiceSetting newModelQuery()
+ * @method static Builder<static>|InvoiceSetting newQuery()
+ * @method static Builder<static>|InvoiceSetting query()
+ * @method static Builder<static>|InvoiceSetting whereCompanyLogo($value)
+ * @method static Builder<static>|InvoiceSetting whereCreatedAt($value)
+ * @method static Builder<static>|InvoiceSetting whereCreatedBy($value)
+ * @method static Builder<static>|InvoiceSetting whereExtra($value)
+ * @method static Builder<static>|InvoiceSetting whereFileType($value)
+ * @method static Builder<static>|InvoiceSetting whereFooterText($value)
+ * @method static Builder<static>|InvoiceSetting whereFooterTitle($value)
+ * @method static Builder<static>|InvoiceSetting whereHeaderText($value)
+ * @method static Builder<static>|InvoiceSetting whereHeaderTitle($value)
+ * @method static Builder<static>|InvoiceSetting whereId($value)
+ * @method static Builder<static>|InvoiceSetting whereInvoiceDateFormat($value)
+ * @method static Builder<static>|InvoiceSetting whereInvoiceLogo($value)
+ * @method static Builder<static>|InvoiceSetting whereInvoiceName($value)
+ * @method static Builder<static>|InvoiceSetting whereIsDefault($value)
+ * @method static Builder<static>|InvoiceSetting whereLastInvoiceNumber($value)
+ * @method static Builder<static>|InvoiceSetting whereLogoHeight($value)
+ * @method static Builder<static>|InvoiceSetting whereLogoWidth($value)
+ * @method static Builder<static>|InvoiceSetting whereNumberOfDigit($value)
+ * @method static Builder<static>|InvoiceSetting whereNumberingType($value)
+ * @method static Builder<static>|InvoiceSetting wherePrefix($value)
+ * @method static Builder<static>|InvoiceSetting wherePreviewInvoice($value)
+ * @method static Builder<static>|InvoiceSetting wherePrimaryColor($value)
+ * @method static Builder<static>|InvoiceSetting whereSecondaryColor($value)
+ * @method static Builder<static>|InvoiceSetting whereShowColumn($value)
+ * @method static Builder<static>|InvoiceSetting whereSize($value)
+ * @method static Builder<static>|InvoiceSetting whereStartNumber($value)
+ * @method static Builder<static>|InvoiceSetting whereStatus($value)
+ * @method static Builder<static>|InvoiceSetting whereTemplateName($value)
+ * @method static Builder<static>|InvoiceSetting whereTextColor($value)
+ * @method static Builder<static>|InvoiceSetting whereUpdatedAt($value)
+ * @method static Builder<static>|InvoiceSetting whereUpdatedBy($value)
+ * @mixin \Eloquent
  */
 class InvoiceSetting extends Model implements AuditableContract
 {

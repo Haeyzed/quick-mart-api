@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Biller
- *
+ * 
  * Represents a biller entity.
  *
  * @property int $id
@@ -37,16 +37,51 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Biller newModelQuery()
  * @method static Builder|Biller newQuery()
  * @method static Builder|Biller query()
  * @method static Builder|Biller active()
  * @method static Builder|Biller filter(array $filters)
- *
  * @property-read Country|null $country
  * @property-read State|null $state
  * @property-read City|null $city
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sale> $sales
+ * @property-read int|null $sales_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read int|null $users_count
+ * @method static Builder<static>|Biller customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Biller last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Biller last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Biller lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Biller lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Biller monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Biller onlyTrashed()
+ * @method static Builder<static>|Biller quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Biller today(string $column = 'created_at')
+ * @method static Builder<static>|Biller whereAddress($value)
+ * @method static Builder<static>|Biller whereCityId($value)
+ * @method static Builder<static>|Biller whereCompanyName($value)
+ * @method static Builder<static>|Biller whereCountryId($value)
+ * @method static Builder<static>|Biller whereCreatedAt($value)
+ * @method static Builder<static>|Biller whereDeletedAt($value)
+ * @method static Builder<static>|Biller whereEmail($value)
+ * @method static Builder<static>|Biller whereId($value)
+ * @method static Builder<static>|Biller whereImage($value)
+ * @method static Builder<static>|Biller whereImageUrl($value)
+ * @method static Builder<static>|Biller whereIsActive($value)
+ * @method static Builder<static>|Biller whereName($value)
+ * @method static Builder<static>|Biller wherePhoneNumber($value)
+ * @method static Builder<static>|Biller wherePostalCode($value)
+ * @method static Builder<static>|Biller whereStateId($value)
+ * @method static Builder<static>|Biller whereUpdatedAt($value)
+ * @method static Builder<static>|Biller whereVatNumber($value)
+ * @method static Builder<static>|Biller withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Biller withoutTrashed()
+ * @method static Builder<static>|Biller yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Biller yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class Biller extends Model implements AuditableContract
 {

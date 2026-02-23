@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ExternalService Model
- *
+ * 
  * Represents an external service integration configuration.
  *
  * @property int $id
@@ -23,8 +23,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|ExternalService active()
+ * @property string|null $module_status
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ExternalService newModelQuery()
+ * @method static Builder<static>|ExternalService newQuery()
+ * @method static Builder<static>|ExternalService query()
+ * @method static Builder<static>|ExternalService whereActive($value)
+ * @method static Builder<static>|ExternalService whereCreatedAt($value)
+ * @method static Builder<static>|ExternalService whereDetails($value)
+ * @method static Builder<static>|ExternalService whereId($value)
+ * @method static Builder<static>|ExternalService whereModuleStatus($value)
+ * @method static Builder<static>|ExternalService whereName($value)
+ * @method static Builder<static>|ExternalService whereType($value)
+ * @method static Builder<static>|ExternalService whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class ExternalService extends Model implements AuditableContract
 {

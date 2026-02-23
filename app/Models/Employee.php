@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Employee Model
- *
+ * 
  * Represents an employee in the organization.
  *
  * @property int $id
@@ -48,10 +48,42 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Leave> $leaves
  * @property-read Collection<int, Overtime> $overtimes
  * @property-read Collection<int, EmployeeTransaction> $transactions
- *
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
  * @method static Builder|Employee filter(array $filters)
+ * @property string|null $deleted_at
+ * @property-read int|null $attendances_count
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $leaves_count
+ * @property-read int|null $overtimes_count
+ * @property-read int|null $payrolls_count
+ * @property-read int|null $transactions_count
+ * @method static Builder<static>|Employee newModelQuery()
+ * @method static Builder<static>|Employee newQuery()
+ * @method static Builder<static>|Employee query()
+ * @method static Builder<static>|Employee whereAddress($value)
+ * @method static Builder<static>|Employee whereBasicSalary($value)
+ * @method static Builder<static>|Employee whereCity($value)
+ * @method static Builder<static>|Employee whereCountry($value)
+ * @method static Builder<static>|Employee whereCreatedAt($value)
+ * @method static Builder<static>|Employee whereDeletedAt($value)
+ * @method static Builder<static>|Employee whereDepartmentId($value)
+ * @method static Builder<static>|Employee whereDesignationId($value)
+ * @method static Builder<static>|Employee whereEmail($value)
+ * @method static Builder<static>|Employee whereId($value)
+ * @method static Builder<static>|Employee whereImage($value)
+ * @method static Builder<static>|Employee whereIsActive($value)
+ * @method static Builder<static>|Employee whereIsSaleAgent($value)
+ * @method static Builder<static>|Employee whereName($value)
+ * @method static Builder<static>|Employee wherePhoneNumber($value)
+ * @method static Builder<static>|Employee whereSaleCommissionPercent($value)
+ * @method static Builder<static>|Employee whereSalesTarget($value)
+ * @method static Builder<static>|Employee whereShiftId($value)
+ * @method static Builder<static>|Employee whereStaffId($value)
+ * @method static Builder<static>|Employee whereUpdatedAt($value)
+ * @method static Builder<static>|Employee whereUserId($value)
+ * @mixin \Eloquent
  */
 class Employee extends Model implements AuditableContract
 {

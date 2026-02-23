@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PackingSlipProduct Model (Pivot)
- *
+ * 
  * Represents the relationship between packing slips and products.
  *
  * @property int $id
@@ -25,6 +25,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read PackingSlip $packingSlip
  * @property-read Product $product
  * @property-read Variant|null $variant
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct wherePackingSlipId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereProductId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereVariantId($value)
+ * @mixin \Eloquent
  */
 class PackingSlipProduct extends Model implements AuditableContract
 {

@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PaymentWithCreditCard Model
- *
+ * 
  * Represents credit card payment details for a payment.
  *
  * @property int $id
@@ -26,6 +26,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Payment $payment
  * @property-read Customer|null $customer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereChargeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereCustomerStripeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereData($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard wherePaymentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithCreditCard whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class PaymentWithCreditCard extends Model implements AuditableContract
 {

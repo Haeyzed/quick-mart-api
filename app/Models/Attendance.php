@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Attendance Model
- *
+ * 
  * Represents an attendance record for an employee.
  *
  * @property int $id
@@ -29,10 +29,25 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
  * @property-read User $user
- *
  * @method static Builder|Attendance present()
  * @method static Builder|Attendance absent()
  * @method static Builder|Attendance late()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Attendance newModelQuery()
+ * @method static Builder<static>|Attendance newQuery()
+ * @method static Builder<static>|Attendance query()
+ * @method static Builder<static>|Attendance whereCheckin($value)
+ * @method static Builder<static>|Attendance whereCheckout($value)
+ * @method static Builder<static>|Attendance whereCreatedAt($value)
+ * @method static Builder<static>|Attendance whereDate($value)
+ * @method static Builder<static>|Attendance whereEmployeeId($value)
+ * @method static Builder<static>|Attendance whereId($value)
+ * @method static Builder<static>|Attendance whereNote($value)
+ * @method static Builder<static>|Attendance whereStatus($value)
+ * @method static Builder<static>|Attendance whereUpdatedAt($value)
+ * @method static Builder<static>|Attendance whereUserId($value)
+ * @mixin \Eloquent
  */
 class Attendance extends Model implements AuditableContract
 {

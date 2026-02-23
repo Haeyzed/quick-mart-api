@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductBatch Model
- *
+ * 
  * Represents a product batch with expiry date for batch tracking.
  *
  * @property int $id
@@ -29,9 +29,23 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read Collection<int, ProductSale> $productSales
  * @property-read Collection<int, ProductPurchase> $productPurchases
- *
  * @method static Builder|ProductBatch expired()
  * @method static Builder|ProductBatch expiringSoon(int $days = 30)
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $product_purchases_count
+ * @property-read int|null $product_sales_count
+ * @method static Builder<static>|ProductBatch newModelQuery()
+ * @method static Builder<static>|ProductBatch newQuery()
+ * @method static Builder<static>|ProductBatch query()
+ * @method static Builder<static>|ProductBatch whereBatchNo($value)
+ * @method static Builder<static>|ProductBatch whereCreatedAt($value)
+ * @method static Builder<static>|ProductBatch whereExpiredDate($value)
+ * @method static Builder<static>|ProductBatch whereId($value)
+ * @method static Builder<static>|ProductBatch whereProductId($value)
+ * @method static Builder<static>|ProductBatch whereQty($value)
+ * @method static Builder<static>|ProductBatch whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class ProductBatch extends Model implements AuditableContract
 {

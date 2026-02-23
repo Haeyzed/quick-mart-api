@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductAdjustment Model (Pivot)
- *
+ * 
  * Represents the relationship between adjustments and products with adjustment details.
  *
  * @property int $id
@@ -29,9 +29,23 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Adjustment $adjustment
  * @property-read Product $product
  * @property-read Variant|null $variant
- *
  * @method static Builder|ProductAdjustment add()
  * @method static Builder|ProductAdjustment subtract()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ProductAdjustment newModelQuery()
+ * @method static Builder<static>|ProductAdjustment newQuery()
+ * @method static Builder<static>|ProductAdjustment query()
+ * @method static Builder<static>|ProductAdjustment whereAction($value)
+ * @method static Builder<static>|ProductAdjustment whereAdjustmentId($value)
+ * @method static Builder<static>|ProductAdjustment whereCreatedAt($value)
+ * @method static Builder<static>|ProductAdjustment whereId($value)
+ * @method static Builder<static>|ProductAdjustment whereProductId($value)
+ * @method static Builder<static>|ProductAdjustment whereQty($value)
+ * @method static Builder<static>|ProductAdjustment whereUnitCost($value)
+ * @method static Builder<static>|ProductAdjustment whereUpdatedAt($value)
+ * @method static Builder<static>|ProductAdjustment whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductAdjustment extends Model implements AuditableContract
 {

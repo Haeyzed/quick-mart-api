@@ -1,0 +1,4 @@
+employee_id,leave_type_id,start_date,end_date,status
+1,1,2024-12-01,2024-12-05,Approved
+2,2,2024-12-10,2024-12-11,Pending
+3,1,2024-12-20,2024-12-25,Rejected

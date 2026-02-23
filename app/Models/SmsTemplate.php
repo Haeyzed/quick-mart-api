@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * SmsTemplate Model
- *
+ * 
  * Represents an SMS message template.
  *
  * @property int $id
@@ -23,9 +23,21 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_default_ecommerce
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|SmsTemplate default()
  * @method static Builder|SmsTemplate defaultEcommerce()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|SmsTemplate newModelQuery()
+ * @method static Builder<static>|SmsTemplate newQuery()
+ * @method static Builder<static>|SmsTemplate query()
+ * @method static Builder<static>|SmsTemplate whereContent($value)
+ * @method static Builder<static>|SmsTemplate whereCreatedAt($value)
+ * @method static Builder<static>|SmsTemplate whereId($value)
+ * @method static Builder<static>|SmsTemplate whereIsDefault($value)
+ * @method static Builder<static>|SmsTemplate whereIsDefaultEcommerce($value)
+ * @method static Builder<static>|SmsTemplate whereName($value)
+ * @method static Builder<static>|SmsTemplate whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class SmsTemplate extends Model implements AuditableContract
 {

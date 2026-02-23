@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Payment Model
- *
+ * 
  * Represents a payment transaction for a sale or purchase.
  *
  * @property int $id
@@ -50,8 +50,33 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read PaymentWithCreditCard|null $creditCard
  * @property-read PaymentWithGiftCard|null $giftCard
  * @property-read PaymentWithPaypal|null $paypal
- *
  * @method static Builder|Payment byMethod(string $method)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Payment newModelQuery()
+ * @method static Builder<static>|Payment newQuery()
+ * @method static Builder<static>|Payment query()
+ * @method static Builder<static>|Payment whereAccountId($value)
+ * @method static Builder<static>|Payment whereAmount($value)
+ * @method static Builder<static>|Payment whereCashRegisterId($value)
+ * @method static Builder<static>|Payment whereChange($value)
+ * @method static Builder<static>|Payment whereCreatedAt($value)
+ * @method static Builder<static>|Payment whereCurrencyId($value)
+ * @method static Builder<static>|Payment whereDocument($value)
+ * @method static Builder<static>|Payment whereExchangeRate($value)
+ * @method static Builder<static>|Payment whereId($value)
+ * @method static Builder<static>|Payment whereInstallmentId($value)
+ * @method static Builder<static>|Payment wherePayingMethod($value)
+ * @method static Builder<static>|Payment wherePaymentAt($value)
+ * @method static Builder<static>|Payment wherePaymentNote($value)
+ * @method static Builder<static>|Payment wherePaymentReceiver($value)
+ * @method static Builder<static>|Payment wherePaymentReference($value)
+ * @method static Builder<static>|Payment wherePurchaseId($value)
+ * @method static Builder<static>|Payment whereSaleId($value)
+ * @method static Builder<static>|Payment whereUpdatedAt($value)
+ * @method static Builder<static>|Payment whereUsedPoints($value)
+ * @method static Builder<static>|Payment whereUserId($value)
+ * @mixin \Eloquent
  */
 class Payment extends Model implements AuditableContract
 {

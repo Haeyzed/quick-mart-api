@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Overtime Model
- *
+ * 
  * Represents an overtime record for an employee.
  *
  * @property int $id
@@ -27,9 +27,23 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
- *
  * @method static Builder|Overtime paid()
  * @method static Builder|Overtime pending()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Overtime newModelQuery()
+ * @method static Builder<static>|Overtime newQuery()
+ * @method static Builder<static>|Overtime query()
+ * @method static Builder<static>|Overtime whereAmount($value)
+ * @method static Builder<static>|Overtime whereCreatedAt($value)
+ * @method static Builder<static>|Overtime whereDate($value)
+ * @method static Builder<static>|Overtime whereEmployeeId($value)
+ * @method static Builder<static>|Overtime whereHours($value)
+ * @method static Builder<static>|Overtime whereId($value)
+ * @method static Builder<static>|Overtime whereRate($value)
+ * @method static Builder<static>|Overtime whereStatus($value)
+ * @method static Builder<static>|Overtime whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Overtime extends Model implements AuditableContract
 {

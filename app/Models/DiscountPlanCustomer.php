@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * DiscountPlanCustomer Model (Pivot)
- *
+ * 
  * Represents the relationship between discount plans and customers.
  *
  * @property int $id
@@ -23,6 +23,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read DiscountPlan $discountPlan
  * @property-read Customer $customer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer whereDiscountPlanId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DiscountPlanCustomer whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class DiscountPlanCustomer extends Model implements AuditableContract
 {

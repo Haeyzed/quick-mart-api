@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PaymentWithGiftCard Model
- *
+ * 
  * Represents gift card payment details for a payment.
  *
  * @property int $id
@@ -23,6 +23,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Payment $payment
  * @property-read GiftCard $giftCard
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereGiftCardId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard wherePaymentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class PaymentWithGiftCard extends Model implements AuditableContract
 {

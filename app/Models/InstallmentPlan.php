@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * InstallmentPlan Model
- *
+ * 
  * Represents an installment payment plan for a sale or purchase.
  *
  * @property int $id
@@ -31,6 +31,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Model $reference
  * @property-read Collection<int, Installment> $installments
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $installments_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereAdditionalAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereDownPayment($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereMonths($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan wherePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereReferenceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereReferenceType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereTotalAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InstallmentPlan whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class InstallmentPlan extends Model implements AuditableContract
 {

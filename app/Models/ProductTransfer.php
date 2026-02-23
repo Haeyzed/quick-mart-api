@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductTransfer Model (Pivot)
- *
+ * 
  * Represents the relationship between transfers and products.
  *
  * @property int $id
@@ -35,6 +35,26 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
  * @property-read Unit $unit
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereImeiNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereNetUnitCost($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereProductBatchId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereProductId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer wherePurchaseUnitId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTransferId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductTransfer extends Model implements AuditableContract
 {

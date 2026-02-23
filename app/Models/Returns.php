@@ -15,7 +15,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Returns Model (Sale Return)
- *
+ * 
  * Represents a return transaction for a sale.
  *
  * @property int $id
@@ -50,6 +50,37 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Account|null $account
  * @property-read Currency|null $currency
  * @property-read Collection<int, ProductReturn> $productReturns
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $product_returns_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereAccountId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereBillerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCashRegisterId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCurrencyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereDocument($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereExchangeRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereGrandTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereItem($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereOrderTax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereOrderTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereReferenceNo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereReturnNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereSaleId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereStaffNote($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalDiscount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalPrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalQty($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalTax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class Returns extends Model implements AuditableContract
 {

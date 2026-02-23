@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PackingSlip Model
- *
+ * 
  * Represents a packing slip for a sale delivery.
  *
  * @property int $id
@@ -32,9 +32,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Delivery|null $delivery
  * @property-read Collection<int, Product> $products
  * @property-read Collection<int, PackingSlipProduct> $packingSlipProducts
- *
  * @method static Builder|PackingSlip pending()
  * @method static Builder|PackingSlip completed()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $packing_slip_products_count
+ * @property-read int|null $products_count
+ * @method static Builder<static>|PackingSlip newModelQuery()
+ * @method static Builder<static>|PackingSlip newQuery()
+ * @method static Builder<static>|PackingSlip query()
+ * @method static Builder<static>|PackingSlip whereAmount($value)
+ * @method static Builder<static>|PackingSlip whereCreatedAt($value)
+ * @method static Builder<static>|PackingSlip whereDeliveryId($value)
+ * @method static Builder<static>|PackingSlip whereId($value)
+ * @method static Builder<static>|PackingSlip whereReferenceNo($value)
+ * @method static Builder<static>|PackingSlip whereSaleId($value)
+ * @method static Builder<static>|PackingSlip whereStatus($value)
+ * @method static Builder<static>|PackingSlip whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class PackingSlip extends Model implements AuditableContract
 {

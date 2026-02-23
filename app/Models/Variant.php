@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Variant Model
- *
+ * 
  * Represents a product variant option (e.g., Size, Color).
  *
  * @property int $id
@@ -24,8 +24,23 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Product> $products
- *
  * @method static Builder|Variant byName(string $name)
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $products_count
+ * @method static Builder<static>|Variant newModelQuery()
+ * @method static Builder<static>|Variant newQuery()
+ * @method static Builder<static>|Variant onlyTrashed()
+ * @method static Builder<static>|Variant query()
+ * @method static Builder<static>|Variant whereCreatedAt($value)
+ * @method static Builder<static>|Variant whereDeletedAt($value)
+ * @method static Builder<static>|Variant whereId($value)
+ * @method static Builder<static>|Variant whereName($value)
+ * @method static Builder<static>|Variant whereUpdatedAt($value)
+ * @method static Builder<static>|Variant withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Variant withoutTrashed()
+ * @mixin \Eloquent
  */
 class Variant extends Model implements AuditableContract
 {

@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * PosSetting Model
- *
+ * 
  * Represents POS (Point of Sale) system settings.
  *
  * @property int $id
@@ -37,6 +37,34 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Customer|null $customer
  * @property-read Warehouse|null $warehouse
  * @property-read Biller|null $biller
+ * @property int $send_sms
+ * @property int $cash_register
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereBillerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereCashRegister($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereCustomerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereInvoiceOption($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereIsTable($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereKeybordActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting wherePaymentOptions($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting wherePaypalLiveApiPassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting wherePaypalLiveApiSecret($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting wherePaypalLiveApiUsername($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereProductNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereSendSms($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereShowPrintInvoice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereStripePublicKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereStripeSecretKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereThermalInvoiceSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PosSetting whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class PosSetting extends Model implements AuditableContract
 {

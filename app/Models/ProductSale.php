@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductSale Model (Pivot)
- *
+ * 
  * Represents the relationship between products and sales with additional sale-specific data.
  *
  * @property int $id
@@ -40,9 +40,32 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
- *
  * @method static Builder|ProductSale delivered()
  * @method static Builder|ProductSale notDelivered()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ProductSale newModelQuery()
+ * @method static Builder<static>|ProductSale newQuery()
+ * @method static Builder<static>|ProductSale query()
+ * @method static Builder<static>|ProductSale whereCreatedAt($value)
+ * @method static Builder<static>|ProductSale whereDiscount($value)
+ * @method static Builder<static>|ProductSale whereId($value)
+ * @method static Builder<static>|ProductSale whereImeiNumber($value)
+ * @method static Builder<static>|ProductSale whereIsDelivered($value)
+ * @method static Builder<static>|ProductSale whereIsPacking($value)
+ * @method static Builder<static>|ProductSale whereNetUnitPrice($value)
+ * @method static Builder<static>|ProductSale whereProductBatchId($value)
+ * @method static Builder<static>|ProductSale whereProductId($value)
+ * @method static Builder<static>|ProductSale whereQty($value)
+ * @method static Builder<static>|ProductSale whereReturnQty($value)
+ * @method static Builder<static>|ProductSale whereSaleId($value)
+ * @method static Builder<static>|ProductSale whereSaleUnitId($value)
+ * @method static Builder<static>|ProductSale whereTax($value)
+ * @method static Builder<static>|ProductSale whereTaxRate($value)
+ * @method static Builder<static>|ProductSale whereTotal($value)
+ * @method static Builder<static>|ProductSale whereUpdatedAt($value)
+ * @method static Builder<static>|ProductSale whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductSale extends Model implements AuditableContract
 {

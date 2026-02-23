@@ -13,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * GiftCardRecharge Model
- *
+ * 
  * Represents a recharge transaction for a gift card.
  *
  * @property int $id
@@ -24,6 +24,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read GiftCard $giftCard
  * @property-read User $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereGiftCardId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GiftCardRecharge whereUserId($value)
+ * @mixin \Eloquent
  */
 class GiftCardRecharge extends Model implements AuditableContract
 {

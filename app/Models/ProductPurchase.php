@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * ProductPurchase Model (Pivot)
- *
+ * 
  * Represents the relationship between products and purchases with additional purchase-specific data.
  *
  * @property int $id
@@ -41,8 +41,33 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
- *
  * @method static Builder|ProductPurchase received()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|ProductPurchase newModelQuery()
+ * @method static Builder<static>|ProductPurchase newQuery()
+ * @method static Builder<static>|ProductPurchase query()
+ * @method static Builder<static>|ProductPurchase whereCreatedAt($value)
+ * @method static Builder<static>|ProductPurchase whereDiscount($value)
+ * @method static Builder<static>|ProductPurchase whereId($value)
+ * @method static Builder<static>|ProductPurchase whereImeiNumber($value)
+ * @method static Builder<static>|ProductPurchase whereNetUnitCost($value)
+ * @method static Builder<static>|ProductPurchase whereNetUnitMargin($value)
+ * @method static Builder<static>|ProductPurchase whereNetUnitMarginType($value)
+ * @method static Builder<static>|ProductPurchase whereNetUnitPrice($value)
+ * @method static Builder<static>|ProductPurchase whereProductBatchId($value)
+ * @method static Builder<static>|ProductPurchase whereProductId($value)
+ * @method static Builder<static>|ProductPurchase wherePurchaseId($value)
+ * @method static Builder<static>|ProductPurchase wherePurchaseUnitId($value)
+ * @method static Builder<static>|ProductPurchase whereQty($value)
+ * @method static Builder<static>|ProductPurchase whereRecieved($value)
+ * @method static Builder<static>|ProductPurchase whereReturnQty($value)
+ * @method static Builder<static>|ProductPurchase whereTax($value)
+ * @method static Builder<static>|ProductPurchase whereTaxRate($value)
+ * @method static Builder<static>|ProductPurchase whereTotal($value)
+ * @method static Builder<static>|ProductPurchase whereUpdatedAt($value)
+ * @method static Builder<static>|ProductPurchase whereVariantId($value)
+ * @mixin \Eloquent
  */
 class ProductPurchase extends Model implements AuditableContract
 {

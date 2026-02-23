@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Challan Model
- *
+ * 
  * Represents a challan (delivery receipt) for courier services.
  *
  * @property int $id
@@ -36,9 +36,30 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Courier|null $courier
  * @property-read User|null $createdBy
  * @property-read User|null $closedBy
- *
  * @method static Builder|Challan open()
  * @method static Builder|Challan closed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Challan newModelQuery()
+ * @method static Builder<static>|Challan newQuery()
+ * @method static Builder<static>|Challan query()
+ * @method static Builder<static>|Challan whereAmountList($value)
+ * @method static Builder<static>|Challan whereCashList($value)
+ * @method static Builder<static>|Challan whereChequeList($value)
+ * @method static Builder<static>|Challan whereClosedById($value)
+ * @method static Builder<static>|Challan whereClosingDate($value)
+ * @method static Builder<static>|Challan whereCourierId($value)
+ * @method static Builder<static>|Challan whereCreatedAt($value)
+ * @method static Builder<static>|Challan whereCreatedById($value)
+ * @method static Builder<static>|Challan whereDeliveryChargeList($value)
+ * @method static Builder<static>|Challan whereId($value)
+ * @method static Builder<static>|Challan whereOnlinePaymentList($value)
+ * @method static Builder<static>|Challan wherePackingSlipList($value)
+ * @method static Builder<static>|Challan whereReferenceNo($value)
+ * @method static Builder<static>|Challan whereStatus($value)
+ * @method static Builder<static>|Challan whereStatusList($value)
+ * @method static Builder<static>|Challan whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Challan extends Model implements AuditableContract
 {

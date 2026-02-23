@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * CashRegister Model
- *
+ * 
  * Represents a cash register session for a user in a warehouse.
  *
  * @property int $id
@@ -30,9 +30,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Warehouse $warehouse
  * @property-read Collection<int, Sale> $sales
  * @property-read Collection<int, Payment> $payments
- *
  * @method static Builder|CashRegister open()
  * @method static Builder|CashRegister closed()
+ * @property float|null $closing_balance
+ * @property float|null $actual_cash
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $payments_count
+ * @property-read int|null $sales_count
+ * @method static Builder<static>|CashRegister newModelQuery()
+ * @method static Builder<static>|CashRegister newQuery()
+ * @method static Builder<static>|CashRegister query()
+ * @method static Builder<static>|CashRegister whereActualCash($value)
+ * @method static Builder<static>|CashRegister whereCashInHand($value)
+ * @method static Builder<static>|CashRegister whereClosingBalance($value)
+ * @method static Builder<static>|CashRegister whereCreatedAt($value)
+ * @method static Builder<static>|CashRegister whereId($value)
+ * @method static Builder<static>|CashRegister whereStatus($value)
+ * @method static Builder<static>|CashRegister whereUpdatedAt($value)
+ * @method static Builder<static>|CashRegister whereUserId($value)
+ * @method static Builder<static>|CashRegister whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class CashRegister extends Model implements AuditableContract
 {

@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Account Model
- *
+ * 
  * Represents a financial account in the accounting system.
  *
  * @property int $id
@@ -38,9 +38,34 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Payment> $payments
  * @property-read Collection<int, MoneyTransfer> $fromTransfers
  * @property-read Collection<int, MoneyTransfer> $toTransfers
- *
  * @method static Builder|Account active()
  * @method static Builder|Account default()
+ * @property string|null $deleted_at
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $children_count
+ * @property-read int|null $from_transfers_count
+ * @property-read int|null $payments_count
+ * @property-read int|null $to_transfers_count
+ * @method static Builder<static>|Account newModelQuery()
+ * @method static Builder<static>|Account newQuery()
+ * @method static Builder<static>|Account query()
+ * @method static Builder<static>|Account whereAccountNo($value)
+ * @method static Builder<static>|Account whereCode($value)
+ * @method static Builder<static>|Account whereCreatedAt($value)
+ * @method static Builder<static>|Account whereDeletedAt($value)
+ * @method static Builder<static>|Account whereId($value)
+ * @method static Builder<static>|Account whereInitialBalance($value)
+ * @method static Builder<static>|Account whereIsActive($value)
+ * @method static Builder<static>|Account whereIsDefault($value)
+ * @method static Builder<static>|Account whereIsPayment($value)
+ * @method static Builder<static>|Account whereName($value)
+ * @method static Builder<static>|Account whereNote($value)
+ * @method static Builder<static>|Account whereParentAccountId($value)
+ * @method static Builder<static>|Account whereTotalBalance($value)
+ * @method static Builder<static>|Account whereType($value)
+ * @method static Builder<static>|Account whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class Account extends Model implements AuditableContract
 {

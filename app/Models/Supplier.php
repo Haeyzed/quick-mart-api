@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Supplier Model
- *
+ * 
  * Represents a supplier/vendor in the system.
  * Follows the same structure as Customer: country_id, state_id, city_id, scopeFilter, active scope.
  *
@@ -48,9 +48,41 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, ReturnPurchase> $returnPurchases
  * @property-read Collection<int, Product> $products
- *
  * @method static Builder|Supplier active()
  * @method static Builder|Supplier filter(array $filters)
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $products_count
+ * @property-read int|null $purchases_count
+ * @property-read int|null $return_purchases_count
+ * @method static Builder<static>|Supplier newModelQuery()
+ * @method static Builder<static>|Supplier newQuery()
+ * @method static Builder<static>|Supplier onlyTrashed()
+ * @method static Builder<static>|Supplier query()
+ * @method static Builder<static>|Supplier whereAddress($value)
+ * @method static Builder<static>|Supplier whereCityId($value)
+ * @method static Builder<static>|Supplier whereCompanyName($value)
+ * @method static Builder<static>|Supplier whereCountryId($value)
+ * @method static Builder<static>|Supplier whereCreatedAt($value)
+ * @method static Builder<static>|Supplier whereDeletedAt($value)
+ * @method static Builder<static>|Supplier whereEmail($value)
+ * @method static Builder<static>|Supplier whereId($value)
+ * @method static Builder<static>|Supplier whereImage($value)
+ * @method static Builder<static>|Supplier whereImageUrl($value)
+ * @method static Builder<static>|Supplier whereIsActive($value)
+ * @method static Builder<static>|Supplier whereName($value)
+ * @method static Builder<static>|Supplier whereOpeningBalance($value)
+ * @method static Builder<static>|Supplier wherePayTermNo($value)
+ * @method static Builder<static>|Supplier wherePayTermPeriod($value)
+ * @method static Builder<static>|Supplier wherePhoneNumber($value)
+ * @method static Builder<static>|Supplier wherePostalCode($value)
+ * @method static Builder<static>|Supplier whereStateId($value)
+ * @method static Builder<static>|Supplier whereUpdatedAt($value)
+ * @method static Builder<static>|Supplier whereVatNumber($value)
+ * @method static Builder<static>|Supplier whereWaNumber($value)
+ * @method static Builder<static>|Supplier withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Supplier withoutTrashed()
+ * @mixin \Eloquent
  */
 class Supplier extends Model implements AuditableContract
 {

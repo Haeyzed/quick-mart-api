@@ -10,7 +10,7 @@ use Nnjeim\World\Models\City as WorldCity;
 
 /**
  * Class City
- *
+ * 
  * Represents a city from World reference data. Extends Nnjeim\World City.
  *
  * @property int $id
@@ -21,11 +21,31 @@ use Nnjeim\World\Models\City as WorldCity;
  * @property string|null $state_code
  * @property string|null $latitude
  * @property string|null $longitude
- *
  * @method static Builder|City newModelQuery()
  * @method static Builder|City newQuery()
  * @method static Builder|City query()
  * @method static Builder|City filter(array $filters)
+ * @property-read \App\Models\Country|null $country
+ * @property-read \App\Models\State|null $state
+ * @method static Builder<static>|City customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|City last30Days(string $column = 'created_at')
+ * @method static Builder<static>|City last7Days(string $column = 'created_at')
+ * @method static Builder<static>|City lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|City lastYear(string $column = 'created_at')
+ * @method static Builder<static>|City monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|City quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|City today(string $column = 'created_at')
+ * @method static Builder<static>|City whereCountryCode($value)
+ * @method static Builder<static>|City whereCountryId($value)
+ * @method static Builder<static>|City whereId($value)
+ * @method static Builder<static>|City whereLatitude($value)
+ * @method static Builder<static>|City whereLongitude($value)
+ * @method static Builder<static>|City whereName($value)
+ * @method static Builder<static>|City whereStateCode($value)
+ * @method static Builder<static>|City whereStateId($value)
+ * @method static Builder<static>|City yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|City yesterday(string $column = 'current_at')
+ * @mixin \Eloquent
  */
 class City extends WorldCity
 {

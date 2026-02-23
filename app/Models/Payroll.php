@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Payroll Model
- *
+ * 
  * Represents a payroll payment for an employee.
  *
  * @property int $id
@@ -33,9 +33,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Employee $employee
  * @property-read Account|null $account
  * @property-read User $user
- *
  * @method static Builder|Payroll paid()
  * @method static Builder|Payroll pending()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|Payroll newModelQuery()
+ * @method static Builder<static>|Payroll newQuery()
+ * @method static Builder<static>|Payroll query()
+ * @method static Builder<static>|Payroll whereAccountId($value)
+ * @method static Builder<static>|Payroll whereAmount($value)
+ * @method static Builder<static>|Payroll whereAmountArray($value)
+ * @method static Builder<static>|Payroll whereCreatedAt($value)
+ * @method static Builder<static>|Payroll whereEmployeeId($value)
+ * @method static Builder<static>|Payroll whereId($value)
+ * @method static Builder<static>|Payroll whereMonth($value)
+ * @method static Builder<static>|Payroll whereNote($value)
+ * @method static Builder<static>|Payroll wherePayingMethod($value)
+ * @method static Builder<static>|Payroll whereReferenceNo($value)
+ * @method static Builder<static>|Payroll whereStatus($value)
+ * @method static Builder<static>|Payroll whereUpdatedAt($value)
+ * @method static Builder<static>|Payroll whereUserId($value)
+ * @mixin \Eloquent
  */
 class Payroll extends Model implements AuditableContract
 {

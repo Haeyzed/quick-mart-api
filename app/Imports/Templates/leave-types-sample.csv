@@ -1,0 +1,4 @@
+name,annual_quota,encashable,carry_forward_limit,is_active
+Annual Leave,21,true,5,true
+Sick Leave,14,false,0,true
+Maternity Leave,90,false,0,true

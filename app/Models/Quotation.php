@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Quotation Model
- *
+ * 
  * Represents a quotation/quote for a customer or supplier.
  *
  * @property int $id
@@ -47,10 +47,38 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Customer|null $customer
  * @property-read Warehouse $warehouse
  * @property-read Collection<int, ProductQuotation> $productQuotations
- *
  * @method static Builder|Quotation pending()
  * @method static Builder|Quotation accepted()
  * @method static Builder|Quotation rejected()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $product_quotations_count
+ * @method static Builder<static>|Quotation newModelQuery()
+ * @method static Builder<static>|Quotation newQuery()
+ * @method static Builder<static>|Quotation query()
+ * @method static Builder<static>|Quotation whereBillerId($value)
+ * @method static Builder<static>|Quotation whereCreatedAt($value)
+ * @method static Builder<static>|Quotation whereCustomerId($value)
+ * @method static Builder<static>|Quotation whereDocument($value)
+ * @method static Builder<static>|Quotation whereGrandTotal($value)
+ * @method static Builder<static>|Quotation whereId($value)
+ * @method static Builder<static>|Quotation whereItem($value)
+ * @method static Builder<static>|Quotation whereNote($value)
+ * @method static Builder<static>|Quotation whereOrderDiscount($value)
+ * @method static Builder<static>|Quotation whereOrderTax($value)
+ * @method static Builder<static>|Quotation whereOrderTaxRate($value)
+ * @method static Builder<static>|Quotation whereQuotationStatus($value)
+ * @method static Builder<static>|Quotation whereReferenceNo($value)
+ * @method static Builder<static>|Quotation whereShippingCost($value)
+ * @method static Builder<static>|Quotation whereSupplierId($value)
+ * @method static Builder<static>|Quotation whereTotalDiscount($value)
+ * @method static Builder<static>|Quotation whereTotalPrice($value)
+ * @method static Builder<static>|Quotation whereTotalQty($value)
+ * @method static Builder<static>|Quotation whereTotalTax($value)
+ * @method static Builder<static>|Quotation whereUpdatedAt($value)
+ * @method static Builder<static>|Quotation whereUserId($value)
+ * @method static Builder<static>|Quotation whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class Quotation extends Model implements AuditableContract
 {

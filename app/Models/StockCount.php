@@ -14,7 +14,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * StockCount Model
- *
+ * 
  * Represents a stock count/inventory audit for a warehouse.
  *
  * @property int $id
@@ -34,9 +34,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Brand|null $brand
  * @property-read Category|null $category
  * @property-read User $user
- *
  * @method static Builder|StockCount adjusted()
  * @method static Builder|StockCount notAdjusted()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @method static Builder<static>|StockCount newModelQuery()
+ * @method static Builder<static>|StockCount newQuery()
+ * @method static Builder<static>|StockCount query()
+ * @method static Builder<static>|StockCount whereBrandId($value)
+ * @method static Builder<static>|StockCount whereCategoryId($value)
+ * @method static Builder<static>|StockCount whereCreatedAt($value)
+ * @method static Builder<static>|StockCount whereFinalFile($value)
+ * @method static Builder<static>|StockCount whereId($value)
+ * @method static Builder<static>|StockCount whereInitialFile($value)
+ * @method static Builder<static>|StockCount whereIsAdjusted($value)
+ * @method static Builder<static>|StockCount whereNote($value)
+ * @method static Builder<static>|StockCount whereReferenceNo($value)
+ * @method static Builder<static>|StockCount whereType($value)
+ * @method static Builder<static>|StockCount whereUpdatedAt($value)
+ * @method static Builder<static>|StockCount whereUserId($value)
+ * @method static Builder<static>|StockCount whereWarehouseId($value)
+ * @mixin \Eloquent
  */
 class StockCount extends Model implements AuditableContract
 {

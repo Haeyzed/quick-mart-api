@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Coupon Model
- *
+ * 
  * Represents a discount coupon code.
  *
  * @property int $id
@@ -34,10 +34,28 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read User|null $user
  * @property-read Collection<int, Sale> $sales
- *
  * @method static Builder|Coupon active()
  * @method static Builder|Coupon valid()
  * @method static Builder|Coupon expired()
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read int|null $sales_count
+ * @method static Builder<static>|Coupon newModelQuery()
+ * @method static Builder<static>|Coupon newQuery()
+ * @method static Builder<static>|Coupon query()
+ * @method static Builder<static>|Coupon whereAmount($value)
+ * @method static Builder<static>|Coupon whereCode($value)
+ * @method static Builder<static>|Coupon whereCreatedAt($value)
+ * @method static Builder<static>|Coupon whereExpiredDate($value)
+ * @method static Builder<static>|Coupon whereId($value)
+ * @method static Builder<static>|Coupon whereIsActive($value)
+ * @method static Builder<static>|Coupon whereMinimumAmount($value)
+ * @method static Builder<static>|Coupon whereQuantity($value)
+ * @method static Builder<static>|Coupon whereType($value)
+ * @method static Builder<static>|Coupon whereUpdatedAt($value)
+ * @method static Builder<static>|Coupon whereUsed($value)
+ * @method static Builder<static>|Coupon whereUserId($value)
+ * @mixin \Eloquent
  */
 class Coupon extends Model implements AuditableContract
 {
