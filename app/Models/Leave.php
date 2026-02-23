@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Leave
- * 
+ *
  * Represents a leave request within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for leave entities.
  *
@@ -68,13 +68,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 class Leave extends Model implements AuditableContract
 {
     use Auditable, FilterableByDates, HasFactory, SoftDeletes;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'leaves';
 
     /**
      * The attributes that are mass assignable.
