@@ -355,6 +355,7 @@ class TenantDatabaseSeeder extends Seeder
                 'delete attendances',
                 'import attendances',
                 'export attendances',
+                'web punch attendance',
             ],
             'designation' => [
                 'view designations',

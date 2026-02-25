@@ -419,7 +419,6 @@ class AttendanceController extends Controller
      */
     public function webClock(Request $request): JsonResponse
     {
-        // Optional: Ensure the user actually has permission to punch from the web
          if (auth()->user()->denies('web punch attendance')) {
              return response()->forbidden('Permission denied for web clock-in.');
          }
