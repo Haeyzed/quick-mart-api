@@ -19,7 +19,6 @@ use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
 use App\Models\Payroll;
-use App\Models\Employee;
 use App\Services\PayrollService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -137,11 +136,15 @@ class PayrollController extends Controller
             return response()->forbidden('Permission denied for processing payrolls.');
         }
 
+        // Safely extract enum without throwing fatal errors on invalid input
+        $statusValue = $request->input('payroll_group_status');
+        $payrollStatus = $statusValue ? PayrollStatusEnum::tryFrom($statusValue) : PayrollStatusEnum::DRAFT;
+
         $this->service->processBulkPayrolls(
             $request->input('month'),
             $request->input('payrolls'),
             $request->input('account_id'),
-            PayrollStatusEnum::from($request->input('payroll_group_status', PayrollStatusEnum::DRAFT))
+            $payrollStatus ?? PayrollStatusEnum::DRAFT
         );
 
         return response()->success(null, 'All payrolls processed successfully!');

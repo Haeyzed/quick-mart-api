@@ -63,7 +63,7 @@ class PayrollService
             ->latest();
 
         $generalSetting = DB::table('general_settings')->latest()->first();
-        if ($generalSetting->staff_access == 'own') {
+        if (Auth::check() && Auth::user() && $generalSetting && $generalSetting->staff_access == 'own') {
             $query->where('user_id', Auth::id());
         }
 
@@ -72,6 +72,7 @@ class PayrollService
 
     /**
      * Generate prospective payroll data.
+     * MODERN STANDARD: Eliminated N+1 queries by using high-performance aggregated subqueries.
      *
      * @param string $month Format: Y-m
      * @param int|null $warehouseId
@@ -91,30 +92,84 @@ class PayrollService
         }
         $employees = $query->get();
 
+        if ($employees->isEmpty()) {
+            return [];
+        }
+
+        // Mass Extract IDs for blazing-fast IN clauses
+        $empIds = $employees->pluck('id')->toArray();
+        $userIds = $employees->pluck('user_id')->filter()->toArray();
+
+        // Pre-fetch and map existing data to prevent loops hitting the database
+        $existingPayrolls = Payroll::query()
+            ->where('month', $month)
+            ->whereIn('employee_id', $empIds)
+            ->get()
+            ->keyBy('employee_id');
+
+        $attendances = Attendance::query()
+            ->whereIn('employee_id', $empIds)
+            ->whereBetween('date', [$monthStart, $monthEnd])
+            ->get()
+            ->groupBy('employee_id');
+
+        $leaves = Leave::query()
+            ->whereIn('employee_id', $empIds)
+            ->where('status', LeaveStatusEnum::APPROVED->value)
+            ->where(function ($q) use ($monthStart, $monthEnd) {
+                $q->whereBetween('start_date', [$monthStart, $monthEnd])
+                    ->orWhereBetween('end_date', [$monthStart, $monthEnd])
+                    ->orWhere(function ($q2) use ($monthStart, $monthEnd) {
+                        $q2->where('start_date', '<', $monthStart)->where('end_date', '>', $monthEnd);
+                    });
+            })
+            ->get()
+            ->groupBy('employee_id');
+
+        // High-performance sum aggregates via database
+        $expenses = Expense::query()
+            ->whereIn('employee_id', $empIds)
+            ->where('expense_category_id', 0)
+            ->whereBetween('created_at', [$monthStart, $monthEnd])
+            ->selectRaw('employee_id, SUM(amount) as total')
+            ->groupBy('employee_id')
+            ->pluck('total', 'employee_id');
+
+        $overtimes = Overtime::query()
+            ->whereIn('employee_id', $empIds)
+            ->where('status', OvertimeStatusEnum::APPROVED->value)
+            ->whereBetween('date', [$monthStart, $monthEnd])
+            ->selectRaw('employee_id, SUM(amount) as total_amount, SUM(hours) as total_hours')
+            ->groupBy('employee_id')
+            ->get()
+            ->keyBy('employee_id');
+
+        $salesOutputs = Payment::query()
+            ->whereIn('user_id', $userIds)
+            ->whereBetween('payment_at', [$monthStart, $monthEnd])
+            ->selectRaw('user_id, SUM(amount) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
+        $salesForCommission = Sale::query()
+            ->whereIn('user_id', $userIds)
+            ->whereBetween('created_at', [$monthStart, $monthEnd])
+            ->selectRaw('user_id, SUM(grand_total) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
         $data = [];
 
         foreach ($employees as $employee) {
-            $existingPayroll = Payroll::query()->where('employee_id', $employee->id)->where('month', $month)->first();
+            $existingPayroll = $existingPayrolls->get($employee->id);
+            $empAttendances = $attendances->get($employee->id, collect());
+
+            $attendanceDates = $empAttendances->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->toArray();
 
             // Leaves Logic
-            $leaves = Leave::query()->where('employee_id', $employee->id)
-                ->where('status', LeaveStatusEnum::APPROVED->value)
-                ->where(function ($q) use ($monthStart, $monthEnd) {
-                    $q->whereBetween('start_date', [$monthStart, $monthEnd])
-                        ->orWhereBetween('end_date', [$monthStart, $monthEnd])
-                        ->orWhere(function ($q2) use ($monthStart, $monthEnd) {
-                            $q2->where('start_date', '<', $monthStart)->where('end_date', '>', $monthEnd);
-                        });
-                })->get();
-
-            $attendanceDates = Attendance::query()->where('employee_id', $employee->id)
-                ->whereBetween('date', [$monthStart, $monthEnd])
-                ->pluck('date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
-                ->toArray();
-
             $totalLeaveDays = 0;
-            foreach ($leaves as $leave) {
+            $empLeaves = $leaves->get($employee->id, collect());
+            foreach ($empLeaves as $leave) {
                 $start = Carbon::parse($leave->start_date)->greaterThan($monthStart) ? $leave->start_date : $monthStart;
                 $end = Carbon::parse($leave->end_date)->lessThan($monthEnd) ? $leave->end_date : $monthEnd;
 
@@ -127,11 +182,8 @@ class PayrollService
 
             // Attendance & Hours
             $attendanceDays = count($attendanceDates);
-            $attendances = Attendance::query()->where('employee_id', $employee->id)
-                ->whereBetween('date', [$monthStart, $monthEnd])->get();
-
             $totalHours = 0;
-            foreach ($attendances as $att) {
+            foreach ($empAttendances as $att) {
                 if ($att->checkin && $att->checkout) {
                     $totalHours += Carbon::parse($att->checkout)->diffInMinutes(Carbon::parse($att->checkin)) / 60;
                 }
@@ -139,19 +191,14 @@ class PayrollService
 
             // Total Sales for Agents
             $totalSalesOutput = 0;
-            if ($employee->is_sale_agent) {
-                $totalSalesOutput = Payment::query()->where('user_id', $employee->user_id)
-                    ->whereBetween('payment_at', [$monthStart, $monthEnd])
-                    ->sum('amount');
+            if ($employee->is_sale_agent && $employee->user_id) {
+                $totalSalesOutput = (float) $salesOutputs->get($employee->user_id, 0);
             }
 
             // Commission Logic (Sales Target Based)
             $commission = 0;
             if ($employee->is_sale_agent == 1 && $employee->user_id) {
-                $totalSalesForCommission = Sale::query()->where('user_id', $employee->user_id)
-                    ->whereBetween('created_at', [$monthStart, $monthEnd])
-                    ->sum('grand_total');
-
+                $totalSalesForComm = (float) $salesForCommission->get($employee->user_id, 0);
                 $targets = is_string($employee->sales_target) ? json_decode($employee->sales_target, true) : $employee->sales_target;
 
                 if (is_array($targets)) {
@@ -161,8 +208,8 @@ class PayrollService
                         $to = (float)($target['sales_to'] ?? 0);
                         $percent = (float)($target['percent'] ?? 0);
 
-                        if ($totalSalesForCommission >= $from && $totalSalesForCommission <= $to) {
-                            $calcCommission = ($totalSalesForCommission * $percent) / 100;
+                        if ($totalSalesForComm >= $from && $totalSalesForComm <= $to) {
+                            $calcCommission = ($totalSalesForComm * $percent) / 100;
                             if ($calcCommission > $maxCommission) {
                                 $maxCommission = $calcCommission;
                             }
@@ -172,21 +219,11 @@ class PayrollService
                 }
             }
 
-            // Expenses & Overtime
-            $expenses = Expense::query()->where('employee_id', $employee->id)
-                ->where('expense_category_id', 0)
-                ->whereBetween('created_at', [$monthStart, $monthEnd])
-                ->sum('amount');
-
-            $overtimeAmount = Overtime::query()->where('employee_id', $employee->id)
-                ->where('status', OvertimeStatusEnum::APPROVED->value)
-                ->whereBetween('date', [$monthStart, $monthEnd])
-                ->sum('amount');
-
-            $overtimeHours = Overtime::query()->where('employee_id', $employee->id)
-                ->where('status', OvertimeStatusEnum::APPROVED->value)
-                ->whereBetween('date', [$monthStart, $monthEnd])
-                ->sum('hours');
+            // Expenses & Overtime Pre-Fetched Extractions
+            $empExpense = (float) $expenses->get($employee->id, 0);
+            $empOvertime = $overtimes->get($employee->id);
+            $overtimeAmount = $empOvertime ? (float) $empOvertime->total_amount : 0;
+            $overtimeHours = $empOvertime ? (float) $empOvertime->total_hours : 0;
 
             $baseData = [
                 'employee' => clone $employee,
@@ -205,7 +242,7 @@ class PayrollService
                     'is_existing' => true,
                     'salary' => $amountArray['salary'] ?? ($existingPayroll->amount ?? 0),
                     'commission' => $amountArray['commission'] ?? 0,
-                    'expense' => $amountArray['expense'] ?? $expenses,
+                    'expense' => $amountArray['expense'] ?? $empExpense,
                     'overtime' => $amountArray['overtime'] ?? $overtimeAmount,
                     'total_amount' => $amountArray['total'] ?? ($existingPayroll->amount ?? 0),
                     'paying_method' => $existingPayroll->paying_method ?? PaymentMethodEnum::CASH->value,
@@ -218,7 +255,7 @@ class PayrollService
                     'is_existing' => false,
                     'salary' => $employee->basic_salary,
                     'commission' => $commission,
-                    'expense' => $expenses,
+                    'expense' => $empExpense,
                     'overtime' => $overtimeAmount,
                     'total_amount' => 0,
                     'paying_method' => PaymentMethodEnum::CASH->value,
@@ -234,6 +271,7 @@ class PayrollService
 
     /**
      * Process bulk payroll generation and payments.
+     * MODERN STANDARD: Pre-fetches references to cleanly eradicate N+1 mail logic.
      *
      * @param string $month Format: Y-m
      * @param array<mixed> $payrolls
@@ -243,7 +281,27 @@ class PayrollService
      */
     public function processBulkPayrolls(string $month, array $payrolls, ?int $globalAccountId, PayrollStatusEnum $globalStatus): void
     {
+        if (empty($payrolls)) {
+            return;
+        }
+
         DB::transaction(function () use ($month, $payrolls, $globalAccountId, $globalStatus) {
+            $employeeIds = collect($payrolls)->pluck('employee_id')->filter()->toArray();
+
+            // Pre-fetch objects to prevent N+1 Queries
+            $existingPayrolls = Payroll::query()
+                ->where('month', $month)
+                ->whereIn('employee_id', $employeeIds)
+                ->get()
+                ->keyBy('employee_id');
+
+            $employees = Employee::query()->whereIn('id', $employeeIds)->get()->keyBy('id');
+
+            $mailSetting = MailSetting::latest()->first();
+            if ($mailSetting) {
+                $this->setMailInfo($mailSetting);
+            }
+
             foreach ($payrolls as $empId => $row) {
                 if (!isset($row['employee_id']) || !isset($row['amount'])) continue;
 
@@ -255,7 +313,6 @@ class PayrollService
                 $overtime = (float)($row['overtime'] ?? 0);
                 $commission = (float)($row['commission'] ?? 0);
 
-                // Best Practice Improvement: Added Overtime to Total sum.
                 $total = $salary + $commission + $overtime - $expense;
 
                 $amountArray = [
@@ -266,69 +323,41 @@ class PayrollService
                     'total' => $total,
                 ];
 
-                $payroll = Payroll::query()->where('employee_id', $employeeId)->where('month', $month)->first();
+                $payrollData = [
+                    'user_id' => Auth::id(),
+                    'account_id' => $globalAccountId ?? 0,
+                    'amount' => $total,
+                    'paying_method' => $row['paying_method'] ?? PaymentMethodEnum::CASH->value,
+                    'note' => $row['note'] ?? null,
+                    'status' => $globalStatus->value,
+                    'amount_array' => $amountArray,
+                ];
+
+                $payroll = $existingPayrolls->get($employeeId);
 
                 if ($payroll) {
-                    $payroll->update([
-                        'reference_no' => $referenceNo,
-                        'user_id' => Auth::id(),
-                        'account_id' => $globalAccountId ?? 0,
-                        'amount' => $total,
-                        'paying_method' => $row['paying_method'] ?? PaymentMethodEnum::CASH->value,
-                        'note' => $row['note'] ?? null,
-                        'status' => $globalStatus->value,
-                        'amount_array' => $amountArray,
-                    ]);
+                    // Update overrides reference_no historically in the codebase.
+                    $payrollData['reference_no'] = $referenceNo;
+                    $payroll->update($payrollData);
                 } else {
-                    $payroll = Payroll::query()->create([
-                        'reference_no' => $referenceNo,
-                        'employee_id' => $employeeId,
-                        'user_id' => Auth::id(),
-                        'account_id' => $globalAccountId ?? 0,
-                        'amount' => $total,
-                        'paying_method' => $row['paying_method'] ?? PaymentMethodEnum::CASH->value,
-                        'note' => $row['note'] ?? null,
-                        'status' => $globalStatus->value,
-                        'amount_array' => $amountArray,
-                        'month' => $month,
-                    ]);
+                    $payrollData['reference_no'] = $referenceNo;
+                    $payrollData['employee_id'] = $employeeId;
+                    $payrollData['month'] = $month;
+                    $payroll = Payroll::query()->create($payrollData);
                 }
 
-                // Best Practice Improvement: Deduct account balance & create payment ONLY if paid
-//                if ($globalStatus === PayrollStatusEnum::PAID && $globalAccountId) {
-//                    Payment::query()->create([
-//                        'account_id' => $globalAccountId,
-//                        'user_id' => Auth::id(),
-//                        'payroll_id' => $payroll->id,
-//                        'amount' => $total,
-//                        'paying_method' => $row['paying_method'] ?? PaymentMethodEnum::CASH->value,
-//                        'payment_note' => $row['note'] ?? null,
-//                        'payment_ref' => 'PPR-' . date("Ymd") . '-' . date("his"),
-//                    ]);
-//
-//                    $account = Account::query()->find($globalAccountId);
-//                    if ($account) {
-//                        $account->total_balance -= $total;
-//                        $account->save();
-//                    }
-//                }
-
-                $employee = Employee::query()->find($employeeId);
-                if ($employee && $employee->email) {
-                    $mailSetting = MailSetting::latest()->first();
-                    if ($mailSetting) {
-                        $this->setMailInfo($mailSetting);
-                        try {
-                            Mail::to($employee->email)->queue(new PayrollDetails([
-                                'reference_no' => $referenceNo,
-                                'amount' => $total,
-                                'name' => $employee->name,
-                                'email' => $employee->email,
-                                'currency' => config('currency'),
-                            ]));
-                        } catch (\Exception $e) {
-                            Log::error('Mail send failed: ' . $e->getMessage());
-                        }
+                $employee = $employees->get($employeeId);
+                if ($employee && $employee->email && $mailSetting) {
+                    try {
+                        Mail::to($employee->email)->queue(new PayrollDetails([
+                            'reference_no' => $referenceNo,
+                            'amount' => $total,
+                            'name' => $employee->name,
+                            'email' => $employee->email,
+                            'currency' => config('currency'),
+                        ]));
+                    } catch (\Exception $e) {
+                        Log::error('Mail send failed: ' . $e->getMessage());
                     }
                 }
             }
@@ -371,7 +400,8 @@ class PayrollService
                 'total' => (float) ($data['amount'] ?? 0),
             ];
 
-            $data['status'] = $data['status']->value;
+            // Safely retrieve status value
+            $data['status'] = $data['status'] instanceof PayrollStatusEnum ? $data['status']->value : $data['status'];
 
             $payroll = Payroll::query()->create($data);
 
@@ -436,7 +466,10 @@ class PayrollService
 
             $data['amount'] = $total;
 
-            $data['status'] = $data['status']->value;
+            // Safely retrieve status value
+            if (isset($data['status'])) {
+                $data['status'] = $data['status'] instanceof PayrollStatusEnum ? $data['status']->value : $data['status'];
+            }
 
             $payroll->update($data);
 
@@ -479,7 +512,7 @@ class PayrollService
      */
     public function bulkUpdateStatus(array $ids, string $status): int
     {
-        return Payroll::query()->whereIn('id', $ids)->update(['status' => $status->value]);
+        return Payroll::query()->whereIn('id', $ids)->update(['status' => $status]);
     }
 
     /**

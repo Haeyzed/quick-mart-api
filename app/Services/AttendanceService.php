@@ -47,7 +47,7 @@ class AttendanceService
     {
         $generalSetting = DB::table('general_settings')->latest()->first();
 
-        if (Auth::check() && Auth::user() && $generalSetting?->staff_access === 'own') {
+        if (Auth::check() && Auth::user() && $generalSetting && $generalSetting?->staff_access === 'own') {
             $filters['user_id'] = Auth::id();
         }
 

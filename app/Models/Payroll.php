@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Payroll
- * 
+ *
  * Represents an employee's payroll record within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for payroll entities.
  *
@@ -122,6 +122,14 @@ class Payroll extends Model implements AuditableContract
             ->when(
                 ! empty($filters['employee_id']),
                 fn (Builder $q) => $q->where('employee_id', $filters['employee_id'])
+            )
+            ->when(
+                ! empty($filters['account_id']),
+                fn (Builder $q) => $q->where('account_id', $filters['account_id'])
+            )
+            ->when(
+                ! empty($filters['user_id']),
+                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
             )
             ->when(
                 ! empty($filters['month']),
