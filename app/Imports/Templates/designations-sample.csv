@@ -1,6 +1,51 @@
 name,is_active
 Software Engineer,true
+Senior Software Engineer,true
+Lead Developer,true
+Engineering Manager,false
 Product Manager,true
+Senior Product Manager,true
+Director of Product,true
+Chief Technology Officer,false
 Human Resources Coordinator,true
-Financial Analyst,false
+HR Manager,false
+HR Director,true
+Financial Analyst,true
+Senior Financial Analyst,false
+Chief Financial Officer,true
 Marketing Specialist,true
+Marketing Manager,true
+Chief Marketing Officer,true
+Sales Representative,true
+Sales Manager,true
+VP of Sales,false
+Operations Analyst,true
+Operations Manager,true
+Chief Operating Officer,true
+Legal Counsel,true
+General Counsel,false
+Customer Support Specialist,true
+Customer Success Manager,true
+Research Scientist,true
+R&D Director,true
+QA Tester,true
+QA Lead,true
+Administrative Assistant,true
+Office Manager,true
+Procurement Specialist,true
+Logistics Coordinator,false
+UX Designer,true
+UI Designer,true
+Art Director,true
+PR Specialist,true
+Strategy Consultant,true
+Business Development Executive,true
+Compliance Officer,false
+Risk Analyst,true
+Internal Auditor,true
+Accountant,true
+Payroll Specialist,false
+Training Coordinator,true
+Technical Recruiter,true
+Facilities Manager,true
+Data Scientist,true

@@ -1,6 +1,51 @@
 name,is_active
 Human Resources,true
-Information Technology,true
-Finance and Accounting,true
+Information Technology,false
+Finance,true
+Accounting,true
 Marketing,true
 Sales,true
+Operations,true
+Legal,false
+Customer Support,true
+Research and Development,true
+Product Management,true
+Quality Assurance,true
+Administration,true
+Procurement,true
+Logistics,false
+Engineering,true
+Design,true
+Public Relations,true
+Corporate Strategy,true
+Business Development,false
+Compliance,true
+Risk Management,true
+Internal Audit,true
+Payroll,true
+Training and Development,true
+Talent Acquisition,true
+Facilities Management,false
+Health and Safety,true
+Security,true
+Data Science,true
+Analytics,true
+Business Intelligence,true
+Corporate Communications,true
+Investor Relations,true
+Supply Chain,false
+Manufacturing,true
+Maintenance,false
+Fleet Management,true
+Merchandising,true
+E-commerce,true
+Digital Marketing,true
+Content Creation,true
+Social Media,true
+Event Management,false
+Partnerships,true
+Grants and Funding,true
+Innovation,true
+Sustainability,true
+Diversity and Inclusion,true
+Real Estate,false
