@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Designation;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
@@ -16,25 +18,54 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  *
  * Handles the logic for importing designation records from an uploaded Excel or CSV file.
  * Processes rows in batches and chunks to optimize memory usage.
+ * Utilizes upserts to create, update, or restore soft-deleted records automatically.
  */
-class DesignationsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading
+class DesignationsImport implements
+    ToModel,
+    WithHeadingRow,
+    WithValidation,
+    WithBatchInserts,
+    WithChunkReading,
+    WithUpserts,
+    SkipsEmptyRows
 {
     /**
      * Map a row from the spreadsheet to a Designation model.
+     * Setting 'deleted_at' to null ensures that if the record was previously soft-deleted,
+     * it will be automatically restored during the upsert.
      *
      * @param array<string, mixed> $row
-     * @return Designation
+     * @return Designation|null
      */
-    public function model(array $row): Designation
+    public function model(array $row): ?Designation
     {
+        $name = trim((string)($row['name'] ?? ''));
+
+        if ($name === '') {
+            return null;
+        }
+
         return new Designation([
-            'name' => $row['name'],
+            'name' => $name,
             'is_active' => filter_var($row['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'deleted_at' => null,
         ]);
     }
 
     /**
+     * Specify the unique column to be used for the upsert operation.
+     *
+     * @return string
+     */
+    public function uniqueBy(): string
+    {
+        return 'name';
+    }
+
+    /**
      * Define the validation rules for the imported rows.
+     * Note: The 'unique' rule has been removed so that existing or soft-deleted
+     * records can pass validation and proceed to the upsert/restore logic.
      *
      * @return array<string, mixed>
      */
@@ -42,9 +73,9 @@ class DesignationsImport implements ToModel, WithHeadingRow, WithValidation, Wit
     {
         return [
             /**
-             * Validate that the designation name is unique.
+             * Validate that the designation name is present.
              */
-            'name' => ['required', 'string', 'max:255', 'unique:designations,name'],
+            'name' => ['required', 'string', 'max:255'],
 
             /**
              * Validate the active status if provided.
@@ -55,6 +86,8 @@ class DesignationsImport implements ToModel, WithHeadingRow, WithValidation, Wit
 
     /**
      * Determine the batch size for database inserts.
+     *
+     * @return int
      */
     public function batchSize(): int
     {
@@ -63,6 +96,8 @@ class DesignationsImport implements ToModel, WithHeadingRow, WithValidation, Wit
 
     /**
      * Determine the chunk size for reading the spreadsheet.
+     *
+     * @return int
      */
     public function chunkSize(): int
     {
