@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LeaveStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,36 +14,29 @@ return new class extends Migration
     {
         Schema::create('leaves', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id');
-            $table->unsignedBigInteger('leave_type_id');
+            $table->foreignId('employee_id')
+                ->constrained()
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
+            $table->foreignId('leave_type_id')
+                ->constrained()
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
             $table->date('start_date');
             $table->date('end_date');
             $table->integer('days');
-            $table->string('status')->default('Pending');
-            $table->unsignedBigInteger('approver_id')->nullable();
-            $table->softDeletes();
+            $table->string('status')->default(LeaveStatusEnum::PENDING->value);
+            $table->foreignId('approver_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete()
+                ->cascadeOnUpdate();
             $table->timestamps();
-
-            $table->foreign('employee_id')
-                ->references('id')
-                ->on('employees')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-
-            $table->foreign('leave_type_id')
-                ->references('id')
-                ->on('leave_types')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-
-            $table->foreign('approver_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('set null')
-                ->onUpdate('cascade');
+            $table->softDeletes();
 
             $table->index('employee_id');
-            $table->index('leave_types');
+            $table->index('leave_type_id');
+            $table->index('approver_id');
             $table->index('status');
             $table->index('start_date');
             $table->index('end_date');

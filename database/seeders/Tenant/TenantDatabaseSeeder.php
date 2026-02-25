@@ -250,22 +250,23 @@ class TenantDatabaseSeeder extends Seeder
                 'update returns',
                 'delete returns',
             ],
-            'customer' => [
+            'customers' => [
                 'view customers',
                 'create customers',
                 'update customers',
                 'delete customers',
                 'import customers',
                 'export customers',
+            ],
+            'customer groups' => [
                 'view customer groups',
-                'view customer group details',
                 'create customer groups',
                 'update customer groups',
                 'delete customer groups',
                 'import customer groups',
                 'export customer groups',
             ],
-            'supplier' => [
+            'suppliers' => [
                 'view suppliers',
                 'create suppliers',
                 'update suppliers',
@@ -273,7 +274,7 @@ class TenantDatabaseSeeder extends Seeder
                 'import suppliers',
                 'export suppliers',
             ],
-            'biller' => [
+            'billers' => [
                 'view billers',
                 'create billers',
                 'update billers',
@@ -283,21 +284,21 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'user' => [
                 'view users',
-                'create users',
-                'update users',
-                'delete users',
+                'create user',
+                'update user',
+                'delete user',
                 'import users',
                 'export users',
             ],
-            'employee' => [
+            'employees' => [
                 'view employees',
-                'create employees',
-                'update employees',
-                'delete employees',
+                'create employee',
+                'update employee',
+                'delete employee',
                 'import employees',
                 'export employees',
             ],
-            'sales agent' => [
+            'sales agents' => [
                 'view sale agents',
                 'create sale agents',
                 'update sale agents',
@@ -322,7 +323,7 @@ class TenantDatabaseSeeder extends Seeder
                 'view profit loss',
                 'view cash flow',
             ],
-            'department' => [
+            'departments' => [
                 'view departments',
                 'create departments',
                 'update departments',
@@ -330,20 +331,20 @@ class TenantDatabaseSeeder extends Seeder
                 'import departments',
                 'export departments',
             ],
-            'holiday' => [
+            'holidays' => [
                 'view holidays',
-                'create holidays',
-                'update holidays',
-                'delete holidays',
+                'create holiday',
+                'update holiday',
+                'delete holiday',
                 'import holidays',
                 'export holidays',
-                'approve holidays',
+                'approve holiday',
             ],
-            'payroll' => [
+            'payrolls' => [
                 'view payrolls',
                 'create payrolls',
                 'update payrolls',
-                'delete payrolls',
+                'delete payroll',
                 'import payrolls',
                 'export payrolls',
                 'generate payrolls',
@@ -388,7 +389,8 @@ class TenantDatabaseSeeder extends Seeder
                 'delete leaves',
                 'import leaves',
                 'export leaves',
-
+            ],
+            'leave type' => [
                 'view leave typess',
                 'create leave typess',
                 'update leave typess',

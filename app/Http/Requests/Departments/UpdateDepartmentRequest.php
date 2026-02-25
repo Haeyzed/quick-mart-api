@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Departments;
 
+use App\Http\Requests\BaseRequest;
 use App\Models\Department;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for updating an existing department.
  */
-class UpdateDepartmentRequest extends FormRequest
+class UpdateDepartmentRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

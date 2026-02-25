@@ -136,7 +136,7 @@ class DepartmentController extends Controller
      */
     public function show(Department $department): JsonResponse
     {
-        if (auth()->user()->denies('view department details')) {
+        if (auth()->user()->denies('view departments')) {
             return response()->forbidden('Permission denied for view department.');
         }
 
