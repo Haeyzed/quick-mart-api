@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('checkin', 255);
             $table->string('checkout', 255)->nullable();
-            $table->integer('status');
+            $table->string('status')->nullable();
             $table->text('note')->nullable();
             $table->timestamps();
 

@@ -10,14 +10,12 @@ use Illuminate\Validation\Rule;
 /**
  * Class DepartmentBulkActionRequest
  *
- * Handles validation and authorization for performing bulk actions (like deletion or status updates) on multiple departments.
+ * Handles validation and authorization for performing bulk actions on departments.
  */
 class DepartmentBulkActionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -33,14 +31,14 @@ class DepartmentBulkActionRequest extends FormRequest
     {
         return [
             /**
-             * An array of valid department IDs to perform the bulk action on.
+             * An array of valid department IDs.
              *
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1'],
 
             /**
-             * A single department ID ensuring it exists in the database (excluding trashed).
+             * A single department ID ensuring it exists in the database.
              *
              * @example 1
              */

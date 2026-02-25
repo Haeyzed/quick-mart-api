@@ -12,60 +12,82 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Export holidays to Excel/PDF.
+ * Class HolidaysExport
+ *
+ * Handles the logic for exporting holiday records to Excel or PDF.
+ * Supports filtering by specific IDs, date ranges, and custom column selection.
  */
 class HolidaysExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
-    private const DEFAULT_COLUMNS = [
-        'id',
-        'user_id',
-        'from_date',
-        'to_date',
-        'note',
-        'is_approved',
-        'recurring',
-        'region',
-        'created_at',
-        'updated_at',
-    ];
-
-    /** @param array<int> $ids @param array<string> $columns @param array<string, mixed> $filters */
+    /**
+     * HolidaysExport constructor.
+     *
+     * @param array<int> $ids Array of specific holiday IDs to export.
+     * @param array<string> $columns Array of specific columns to include in the export.
+     * @param array<string, mixed> $filters Optional filters (e.g., start_date, end_date, is_approved).
+     */
     public function __construct(
-        private readonly array $ids = [],
-        private readonly array $columns = [],
-        private readonly array $filters = [],
-    ) {
-    }
+        public array $ids = [],
+        public array $columns = [],
+        public array $filters = []
+    ) {}
 
+    /**
+     * Prepare the query for the export.
+     * * @return Builder
+     */
     public function query(): Builder
     {
         return Holiday::query()
-            ->with('user')
+            ->with(['user'])
             ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
-            ->when(! empty($this->filters), fn (Builder $q) => $q->filter($this->filters))
-            ->latest('from_date');
+            ->filter($this->filters)
+            ->latest();
     }
 
+    /**
+     * Define the headings for the exported file.
+     *
+     * @return array<string>
+     */
     public function headings(): array
     {
-        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
-        return array_map(fn (string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
+        return ! empty($this->columns) ? $this->columns : [
+            'ID',
+            'Requested By',
+            'From Date',
+            'To Date',
+            'Note',
+            'Recurring',
+            'Region',
+            'Approved',
+            'Created At',
+        ];
     }
 
-    /** @param Holiday $row @return array<int, mixed> */
+    /**
+     * Map each holiday record to a row in the exported file.
+     *
+     * @param Holiday $row
+     * @return array<mixed>
+     */
     public function map($row): array
     {
-        $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
-        return array_map(function ($col) use ($row) {
-            return match ($col) {
-                'from_date', 'to_date' => $row->{$col}?->format('Y-m-d'),
-                'is_approved' => $row->is_approved ? 'Yes' : 'No',
-                'recurring' => $row->recurring ? 'Yes' : 'No',
-                'created_at', 'updated_at' => $row->{$col}?->toDateTimeString(),
-                default => $row->{$col} ?? '',
-            };
-        }, $columns);
+        $mapped = [];
+        $columns = $this->headings();
+
+        if (in_array('ID', $columns)) $mapped[] = $row->id;
+        if (in_array('Requested By', $columns)) $mapped[] = $row->user?->name;
+        if (in_array('From Date', $columns)) $mapped[] = $row->from_date?->format('Y-m-d');
+        if (in_array('To Date', $columns)) $mapped[] = $row->to_date?->format('Y-m-d');
+        if (in_array('Note', $columns)) $mapped[] = $row->note;
+        if (in_array('Recurring', $columns)) $mapped[] = $row->recurring ? 'Yes' : 'No';
+        if (in_array('Region', $columns)) $mapped[] = $row->region ?? 'N/A';
+        if (in_array('Approved', $columns)) $mapped[] = $row->is_approved ? 'Yes' : 'No';
+        if (in_array('Created At', $columns)) $mapped[] = $row->created_at?->format('Y-m-d H:i:s');
+
+        return $mapped;
     }
 }

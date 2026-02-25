@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AppSettingController;
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillerController;
 use App\Http\Controllers\Api\BrandController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\DiscountController;
 use App\Http\Controllers\Api\DiscountPlanController;
+use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\ExpenseCategoryController;
 use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
@@ -27,7 +29,9 @@ use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\MailSettingController;
+use App\Http\Controllers\Api\OvertimeController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
+use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
@@ -35,6 +39,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RewardPointSettingController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleAgentController;
+use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\SmsSettingController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\StateController;
@@ -56,6 +61,15 @@ Route::post('auth/reset-password', [AuthController::class, 'resetPassword'])->na
 Route::get('auth/verify-email/{id}/{hash}', [AuthController::class, 'verifyEmail'])
     ->middleware(['signed'])
     ->name('verification.verify');
+
+/*
+|--------------------------------------------------------------------------
+| Public / ADMS Webhook Routes (No Sanctum Auth)
+|--------------------------------------------------------------------------
+*/
+
+// ZKTeco machines automatically try to POST to this exact URI for attendance data.
+Route::post('iclock/cdata', [AttendanceController::class, 'deviceClock']);
 
 // Social OAuth routes (public)
 Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('auth.google');
@@ -267,6 +281,41 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('download', [LeaveController::class, 'download'])->name('download');
     });
     Route::apiResource('leaves', LeaveController::class);
+
+    // Overtimes
+    Route::prefix('overtimes')->name('overtimes.')->group(function () {
+        Route::post('bulk-destroy', [OvertimeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-approve', [OvertimeController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('bulk-reject', [OvertimeController::class, 'bulkReject'])->name('bulk-reject');
+        Route::post('import', [OvertimeController::class, 'import'])->name('import');
+        Route::post('export', [OvertimeController::class, 'export'])->name('export');
+        Route::get('download', [OvertimeController::class, 'download'])->name('download');
+    });
+    Route::apiResource('overtimes', OvertimeController::class);
+
+    // Shifts
+    Route::prefix('shifts')->name('shifts.')->group(function () {
+        Route::post('bulk-destroy', [ShiftController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [ShiftController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [ShiftController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [ShiftController::class, 'import'])->name('import');
+        Route::post('export', [ShiftController::class, 'export'])->name('export');
+        Route::get('download', [ShiftController::class, 'download'])->name('download');
+        Route::get('options', [ShiftController::class, 'options'])->name('options');
+    });
+    Route::apiResource('shifts', ShiftController::class);
+
+    // Attendances
+    Route::prefix('attendances')->name('attendances.')->group(function () {
+        Route::post('bulk-destroy', [AttendanceController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-mark-present', [AttendanceController::class, 'bulkMarkPresent'])->name('bulk-mark-present');
+        Route::post('bulk-mark-late', [AttendanceController::class, 'bulkMarkLate'])->name('bulk-mark-late');
+        Route::post('bulk-mark-absent', [AttendanceController::class, 'bulkMarkAbsent'])->name('bulk-mark-absent');
+        Route::post('import', [AttendanceController::class, 'import'])->name('import');
+        Route::post('export', [AttendanceController::class, 'export'])->name('export');
+        Route::get('download', [AttendanceController::class, 'download'])->name('download');
+    });
+    Route::apiResource('attendances', AttendanceController::class);
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');
@@ -553,19 +602,56 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('sale-agents', SaleAgentController::class)->parameters(['sale-agents' => 'sale_agent']);
 
+    // Designations
+    Route::prefix('designations')->name('designations.')->group(function () {
+        Route::post('bulk-destroy', [DesignationController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [DesignationController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [DesignationController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [DesignationController::class, 'import'])->name('import');
+        Route::post('export', [DesignationController::class, 'export'])->name('export');
+        Route::get('download', [DesignationController::class, 'download'])->name('download');
+        Route::get('options', [DesignationController::class, 'options'])->name('options');
+    });
     Route::apiResource('designations', DesignationController::class);
-    Route::delete('designations/bulk-destroy', [DesignationController::class, 'bulkDestroy'])
-        ->name('designations.bulkDestroy');
 
+    // Holidays
     Route::prefix('holidays')->name('holidays.')->group(function () {
         Route::post('bulk-destroy', [HolidayController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-approve', [HolidayController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('bulk-unapprove', [HolidayController::class, 'bulkUnapprove'])->name('bulk-unapprove');
         Route::post('import', [HolidayController::class, 'import'])->name('import');
         Route::post('export', [HolidayController::class, 'export'])->name('export');
         Route::get('download', [HolidayController::class, 'download'])->name('download');
     });
     Route::apiResource('holidays', HolidayController::class);
-    Route::post('holidays/{holiday}/approve', [HolidayController::class, 'approve'])->name('holidays.approve');
-    Route::get('holidays/user/{year}/{month}', [HolidayController::class, 'getUserHolidaysByMonth'])->name('holidays.user-by-month');
+
+    // Payrolls
+    Route::prefix('payrolls')->name('payrolls.')->group(function () {
+        Route::post('bulk-destroy', [PayrollController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-mark-paid', [PayrollController::class, 'bulkMarkPaid'])->name('bulk-mark-paid');
+
+        // Advanced Calculation Endpoints
+        Route::post('generate-data', [PayrollController::class, 'generateData'])->name('generate-data');
+        Route::post('bulk-process', [PayrollController::class, 'bulkProcess'])->name('bulk-process');
+
+        // Imports/Exports
+        Route::post('import', [PayrollController::class, 'import'])->name('import');
+        Route::post('export', [PayrollController::class, 'export'])->name('export');
+        Route::get('download', [PayrollController::class, 'download'])->name('download');
+    });
+    Route::apiResource('payrolls', PayrollController::class);
+
+    // Employees
+    Route::prefix('employees')->name('employees.')->group(function () {
+        Route::get('options', [EmployeeController::class, 'options'])->name('options');
+        Route::post('bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [EmployeeController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [EmployeeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [EmployeeController::class, 'import'])->name('import');
+        Route::post('export', [EmployeeController::class, 'export'])->name('export');
+        Route::get('download', [EmployeeController::class, 'download'])->name('download');
+    });
+    Route::apiResource('employees', EmployeeController::class);
 
     Route::apiResource('discount-plans', DiscountPlanController::class);
     Route::delete('discount-plans/bulk-destroy', [DiscountPlanController::class, 'bulkDestroy'])

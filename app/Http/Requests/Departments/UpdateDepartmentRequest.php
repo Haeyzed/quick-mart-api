@@ -17,8 +17,6 @@ class UpdateDepartmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -27,9 +25,6 @@ class UpdateDepartmentRequest extends FormRequest
 
     /**
      * Prepare the data for validation.
-     *
-     * This method is called before the validation rules are evaluated.
-     * Useful for casting types or manipulating the request payload before validation.
      */
     protected function prepareForValidation(): void
     {
@@ -52,9 +47,9 @@ class UpdateDepartmentRequest extends FormRequest
 
         return [
             /**
-             * The name of the department. Must be unique excluding the currently updating department.
+             * The unique name of the department.
              *
-             * @example Human Resources
+             * @example Information Technology
              */
             'name' => [
                 'sometimes',

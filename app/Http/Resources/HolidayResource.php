@@ -16,6 +16,7 @@ class HolidayResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -29,53 +30,60 @@ class HolidayResource extends JsonResource
             'id' => $this->id,
 
             /**
-             * The user ID the holiday belongs to.
+             * The ID of the user who requested the holiday.
              *
-             * @example 1
+             * @example 5
              */
             'user_id' => $this->user_id,
 
             /**
-             * Start date of the holiday period (Y-m-d).
+             * The name of the user (if relation is loaded).
+             *
+             * @example John Doe
+             */
+            'user_name' => $this->whenLoaded('user', fn() => $this->user->name),
+
+            /**
+             * The start date of the holiday.
              *
              * @example 2024-12-25
              */
             'from_date' => $this->from_date?->format('Y-m-d'),
 
             /**
-             * End date of the holiday period (Y-m-d).
+             * The end date of the holiday.
              *
-             * @example 2024-12-31
+             * @example 2024-12-26
              */
             'to_date' => $this->to_date?->format('Y-m-d'),
 
             /**
-             * Optional note or reason for the holiday.
+             * The note or reason for the holiday.
              *
-             * @example Annual leave
+             * @example Christmas Holiday
              */
             'note' => $this->note,
 
             /**
-             * Whether the holiday is approved.
+             * Indicates if the holiday repeats annually.
              *
              * @example true
-             */
-            'is_approved' => $this->is_approved,
-
-            /**
-             * Whether the holiday recurs.
-             *
-             * @example false
              */
             'recurring' => $this->recurring,
 
             /**
-             * Optional region or location for the holiday.
+             * The region this holiday applies to.
              *
-             * @example HQ
+             * @example Global
              */
             'region' => $this->region,
+
+            /**
+             * Indicates if the holiday request is approved.
+             *
+             * @example true
+             */
+            'is_approved' => $this->is_approved,
 
             /**
              * The date and time when the holiday was created.
@@ -90,17 +98,6 @@ class HolidayResource extends JsonResource
              * @example 2024-01-02T12:00:00Z
              */
             'updated_at' => $this->updated_at?->toIso8601String(),
-
-            /**
-             * The user relation when loaded (id, name, email).
-             *
-             * @example {"id":1,"name":"John Doe","email":"john@example.com"}
-             */
-            'user' => $this->whenLoaded('user', fn () => $this->user ? [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ] : null),
         ];
     }
 }

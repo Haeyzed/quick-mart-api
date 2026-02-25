@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('leaves', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
-            $table->unsignedBigInteger('leave_types');
+            $table->unsignedBigInteger('leave_type_id');
             $table->date('start_date');
             $table->date('end_date');
             $table->integer('days');
             $table->string('status')->default('Pending');
             $table->unsignedBigInteger('approver_id')->nullable();
+            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('employee_id')
@@ -28,7 +29,7 @@ return new class extends Migration
                 ->onDelete('restrict')
                 ->onUpdate('cascade');
 
-            $table->foreign('leave_types')
+            $table->foreign('leave_type_id')
                 ->references('id')
                 ->on('leave_types')
                 ->onDelete('restrict')

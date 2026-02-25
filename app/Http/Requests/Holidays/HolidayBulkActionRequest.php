@@ -10,14 +10,12 @@ use Illuminate\Validation\Rule;
 /**
  * Class HolidayBulkActionRequest
  *
- * Handles validation and authorization for performing bulk actions (e.g. bulk destroy) on multiple holidays.
+ * Handles validation and authorization for performing bulk actions on holidays.
  */
 class HolidayBulkActionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -33,7 +31,7 @@ class HolidayBulkActionRequest extends FormRequest
     {
         return [
             /**
-             * An array of valid holiday IDs to perform the bulk action on.
+             * An array of valid holiday IDs.
              *
              * @example [1, 2, 3]
              */
@@ -44,11 +42,7 @@ class HolidayBulkActionRequest extends FormRequest
              *
              * @example 1
              */
-            'ids.*' => [
-                'required',
-                'integer',
-                Rule::exists('holidays', 'id'),
-            ],
+            'ids.*' => ['required', 'integer', Rule::exists('holidays', 'id')->withoutTrashed()],
         ];
     }
 }

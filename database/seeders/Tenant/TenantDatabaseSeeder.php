@@ -87,7 +87,6 @@ class TenantDatabaseSeeder extends Seeder
                 'delete products',
                 'import products',
                 'export products',
-                'view product details',
                 'view product history',
                 'print barcode',
                 'stock count',
@@ -96,7 +95,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'brands' => [
                 'view brands',
-                'view brand details',
                 'create brands',
                 'update brands',
                 'delete brands',
@@ -105,7 +103,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'categories' => [
                 'view categories',
-                'view category details',
                 'create categories',
                 'update categories',
                 'delete categories',
@@ -114,7 +111,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'units' => [
                 'view units',
-                'view unit details',
                 'create units',
                 'update units',
                 'delete units',
@@ -123,7 +119,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'taxes' => [
                 'view taxes',
-                'view tax details',
                 'create taxes',
                 'update taxes',
                 'delete taxes',
@@ -132,7 +127,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'warehouses' => [
                 'view warehouses',
-                'view warehouse details',
                 'create warehouses',
                 'update warehouses',
                 'delete warehouses',
@@ -143,7 +137,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'roles' => [
                 'view roles',
-                'view role details',
                 'create roles',
                 'update roles',
                 'delete roles',
@@ -152,7 +145,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'permissions' => [
                 'view permissions',
-                'view permission details',
                 'create permissions',
                 'update permissions',
                 'delete permissions',
@@ -260,7 +252,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'customer' => [
                 'view customers',
-                'view customer details',
                 'create customers',
                 'update customers',
                 'delete customers',
@@ -276,7 +267,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'supplier' => [
                 'view suppliers',
-                'view suppliers details',
                 'create suppliers',
                 'update suppliers',
                 'delete suppliers',
@@ -285,7 +275,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'biller' => [
                 'view billers',
-                'view billers details',
                 'create billers',
                 'update billers',
                 'delete billers',
@@ -294,7 +283,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'user' => [
                 'view users',
-                'view users details',
                 'create users',
                 'update users',
                 'delete users',
@@ -303,7 +291,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'employee' => [
                 'view employees',
-                'view employees details',
                 'create employees',
                 'update employees',
                 'delete employees',
@@ -312,7 +299,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'sales agent' => [
                 'view sale agents',
-                'view sale agent details',
                 'create sale agents',
                 'update sale agents',
                 'delete sale agents',
@@ -324,7 +310,6 @@ class TenantDatabaseSeeder extends Seeder
                 'view balance sheet',
                 'view account statement',
                 'view incomes',
-                'view income details',
                 'create incomes',
                 'update incomes',
                 'delete incomes',
@@ -339,7 +324,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'department' => [
                 'view departments',
-                'view departments details',
                 'create departments',
                 'update departments',
                 'delete departments',
@@ -348,7 +332,6 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'holiday' => [
                 'view holidays',
-                'view holidays details',
                 'create holidays',
                 'update holidays',
                 'delete holidays',
@@ -356,15 +339,61 @@ class TenantDatabaseSeeder extends Seeder
                 'export holidays',
                 'approve holidays',
             ],
-            'hrm' => [
-                'view attendance',
-                'view payroll',
+            'payroll' => [
+                'view payrolls',
+                'create payrolls',
+                'update payrolls',
+                'delete payrolls',
+                'import payrolls',
+                'export payrolls',
+                'generate payrolls',
+            ],
+            'attendance' => [
+                'view attendances',
+                'create attendances',
+                'update attendances',
+                'delete attendances',
+                'import attendances',
+                'export attendances',
+            ],
+            'designation' => [
                 'view designations',
+                'create designations',
+                'update designations',
+                'delete designations',
+                'import designations',
+                'export designations',
+            ],
+            'shift' => [
                 'view shifts',
-                'view overtime',
+                'create shifts',
+                'update shifts',
+                'delete shifts',
+                'import shifts',
+                'export shifts',
+            ],
+            'overtime' => [
+                'view overtimes',
+                'create overtimes',
+                'update overtimes',
+                'delete overtimes',
+                'import overtimes',
+                'export overtimes',
+            ],
+            'leave' => [
                 'view leaves',
-                'view leave types',
-                'hrm panel',
+                'create leaves',
+                'update leaves',
+                'delete leaves',
+                'import leaves',
+                'export leaves',
+
+                'view leave typess',
+                'create leave typess',
+                'update leave typess',
+                'delete leave typess',
+                'import leave typess',
+                'export leave typess',
             ],
             'reports' => [
                 'view product report',

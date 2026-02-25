@@ -16,8 +16,6 @@ class StoreDepartmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -26,9 +24,6 @@ class StoreDepartmentRequest extends FormRequest
 
     /**
      * Prepare the data for validation.
-     *
-     * This method is called before the validation rules are evaluated.
-     * You can use it to sanitize or format inputs (e.g., casting string booleans to actual booleans).
      */
     protected function prepareForValidation(): void
     {
@@ -60,7 +55,7 @@ class StoreDepartmentRequest extends FormRequest
             ],
 
             /**
-             * Indicates whether the department should be active upon creation.
+             * Indicates whether the department is active.
              *
              * @example true
              */

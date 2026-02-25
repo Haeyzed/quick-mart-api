@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Designation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * DesignationResource
- *
- * API resource for transforming Designation model data.
+ * @mixin Designation
  */
 class DesignationResource extends JsonResource
 {
@@ -20,49 +19,50 @@ class DesignationResource extends JsonResource
      * @param Request $request
      * @return array<string, mixed>
      */
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             /**
-             * Designation ID.
+             * The unique identifier for the designation.
              *
-             * @var int $id
              * @example 1
              */
             'id' => $this->id,
 
             /**
-             * Designation name.
+             * The name of the designation.
              *
-             * @var string $name
-             * @example Manager
+             * @example Software Engineer
              */
             'name' => $this->name,
 
             /**
-             * Whether the designation is active.
+             * Indicates if the designation is active.
              *
-             * @var bool $is_active
              * @example true
              */
             'is_active' => $this->is_active,
 
             /**
-             * Timestamp when the designation was created.
+             * The active status as a readable string.
              *
-             * @var string|null $created_at
-             * @example 2024-01-01T00:00:00.000000Z
+             * @example active
              */
-            'created_at' => $this->created_at?->toISOString(),
+            'active_status' => $this->is_active ? 'active' : 'inactive',
 
             /**
-             * Timestamp when the designation was last updated.
+             * The date and time when the designation was created.
              *
-             * @var string|null $updated_at
-             * @example 2024-01-01T00:00:00.000000Z
+             * @example 2024-01-01T12:00:00Z
              */
-            'updated_at' => $this->updated_at?->toISOString(),
+            'created_at' => $this->created_at?->toIso8601String(),
+
+            /**
+             * The date and time when the designation was last updated.
+             *
+             * @example 2024-01-02T12:00:00Z
+             */
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }
-

@@ -19,14 +19,27 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Class BillerService
- * Handles business logic for Billers.
+ *
+ * Handles all core business logic and database interactions for Billers.
+ * Acts as the intermediary between the controllers and the database layer.
  */
 class BillerService
 {
+    /**
+     * The application path where biller images are stored.
+     */
     private const IMAGE_PATH = 'images/billers';
 
+    /**
+     * The application path where import template files are stored.
+     */
     private const TEMPLATE_PATH = 'Imports/Templates';
 
+    /**
+     * BillerService constructor.
+     *
+     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     */
     public function __construct(
         private readonly UploadService $uploadService
     ) {}
@@ -35,6 +48,8 @@ class BillerService
      * Get paginated billers based on filters.
      *
      * @param  array<string, mixed>  $filters
+     * @param  int  $perPage
+     * @return LengthAwarePaginator
      */
     public function getPaginatedBillers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -68,9 +83,10 @@ class BillerService
     }
 
     /**
-     * Create a new biller.
+     * Create a newly registered biller.
      *
      * @param  array<string, mixed>  $data
+     * @return Biller The newly created Biller model instance.
      */
     public function createBiller(array $data): Biller
     {
@@ -85,6 +101,7 @@ class BillerService
      * Handle Image Upload via UploadService.
      *
      * @param  array<string, mixed>  $data
+     * @param  Biller|null  $biller
      * @return array<string, mixed>
      */
     private function handleUploads(array $data, ?Biller $biller = null): array
@@ -104,7 +121,9 @@ class BillerService
     /**
      * Update an existing biller.
      *
+     * @param  Biller  $biller  The biller model instance to update.
      * @param  array<string, mixed>  $data
+     * @return Biller The freshly updated Biller model instance.
      */
     public function updateBiller(Biller $biller, array $data): Biller
     {
@@ -119,7 +138,9 @@ class BillerService
     /**
      * Delete a biller.
      *
-     * @throws ConflictHttpException
+     * @param  Biller  $biller
+     * @return void
+     * @throws ConflictHttpException If the biller is linked to existing sales.
      */
     public function deleteBiller(Biller $biller): void
     {
@@ -135,6 +156,9 @@ class BillerService
 
     /**
      * Remove associated files.
+     *
+     * @param  Biller  $biller
+     * @return void
      */
     private function cleanupFiles(Biller $biller): void
     {
@@ -144,10 +168,10 @@ class BillerService
     }
 
     /**
-     * Bulk delete billers.
+     * Bulk delete multiple biller records.
      *
-     * @param  array<int>  $ids
-     * @return int Count of deleted items.
+     * @param  array<int>  $ids  Array of biller IDs to be deleted.
+     * @return int The total count of successfully deleted biller records.
      */
     public function bulkDeleteBillers(array $ids): int
     {
@@ -170,9 +194,11 @@ class BillerService
     }
 
     /**
-     * Update status for multiple billers.
+     * Update the status for multiple biller records.
      *
-     * @param  array<int>  $ids
+     * @param  array<int>  $ids  Array of biller IDs to update.
+     * @param  bool  $isActive  The new status value.
+     * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -180,7 +206,10 @@ class BillerService
     }
 
     /**
-     * Import billers from file.
+     * Import multiple biller records from an uploaded file.
+     *
+     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @return void
      */
     public function importBillers(UploadedFile $file): void
     {
@@ -189,11 +218,13 @@ class BillerService
 
     /**
      * Download a billers CSV template.
+     *
+     * @return string The absolute path to the downloaded file.
+     * @throws RuntimeException If the template file is missing.
      */
     public function download(): string
     {
         $fileName = 'billers-sample.csv';
-
         $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
 
         if (! File::exists($path)) {
@@ -204,13 +235,13 @@ class BillerService
     }
 
     /**
-     * Export billers to file.
+     * Generate an export file containing biller data.
      *
-     * @param  array<int>  $ids
-     * @param  string  $format  'excel' or 'pdf'
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters for created_at
-     * @return string Relative file path.
+     * @param  array<int>  $ids  Specific biller IDs to export.
+     * @param  string  $format  The file format requested (excel/pdf).
+     * @param  array<string>  $columns  Specific column names to include.
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {

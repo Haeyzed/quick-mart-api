@@ -15,6 +15,7 @@
         "dedoc/scramble": "^0.13.10",
         "intervention/image": "^3.11",
         "laravel/framework": "^12.0",
+        "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
@@ -25,6 +26,7 @@
         "nnjeim/world": "^1.1",
         "nwidart/laravel-modules": "^12.0",
         "owen-it/laravel-auditing": "^14.0",
+        "rats/zkteco": "^002.0",
         "spatie/laravel-permission": "^6.24",
         "stancl/tenancy": "^3.9"
     },

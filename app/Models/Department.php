@@ -75,17 +75,12 @@ class Department extends Model implements AuditableContract
      *
      * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     /**
      * Scope a query to apply dynamic filters.
-     * * Applies filters for active status, search terms (checking name),
-     * and date ranges via the FilterableByDates trait.
      *
      * @param  Builder  $query  The Eloquent query builder instance.
      * @param  array<string, mixed>  $filters  An associative array of requested filters.
@@ -95,7 +90,7 @@ class Department extends Model implements AuditableContract
     {
         return $query
             ->when(
-                isset($filters['status']),
+                isset($filters['is_active']),
                 fn (Builder $q) => $q->active()
             )
             ->when(
@@ -124,7 +119,8 @@ class Department extends Model implements AuditableContract
 
     /**
      * Get the employees associated with this department.
-     * * Defines a one-to-many relationship linking this department to its respective employees.
+     *
+     * Defines a one-to-many relationship linking this department to its employees.
      */
     public function employees(): HasMany
     {

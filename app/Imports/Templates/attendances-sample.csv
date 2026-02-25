@@ -1,0 +1,4 @@
+date,employee_id,checkin,checkout,status,note
+2024-12-01,1,08:00:00,16:00:00,1,Arrived on time
+2024-12-01,2,08:15:00,16:00:00,0,Late due to traffic
+2024-12-01,3,08:00:00,,1,Checked in

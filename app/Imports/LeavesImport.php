@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Leave;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
@@ -16,13 +17,13 @@ class LeavesImport implements ToModel, WithHeadingRow, WithValidation, WithBatch
 {
     public function model(array $row): Leave
     {
-        $start = \Carbon\Carbon::parse($row['start_date']);
-        $end = \Carbon\Carbon::parse($row['end_date']);
+        $start = Carbon::parse($row['start_date']);
+        $end = Carbon::parse($row['end_date']);
         $days = $start->diffInDays($end) + 1;
 
         return new Leave([
             'employee_id' => $row['employee_id'],
-            'leave_types' => $row['leave_type_id'],
+            'leave_type_id' => $row['leave_type_id'],
             'start_date' => $start->format('Y-m-d'),
             'end_date' => $end->format('Y-m-d'),
             'days' => $days,

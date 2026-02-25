@@ -5,82 +5,67 @@ declare(strict_types=1);
 namespace App\Imports;
 
 use App\Models\Department;
-use Illuminate\Support\Str;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
 /**
- * Excel/CSV import for Department entities with batching and upsert support.
+ * Class DepartmentsImport
+ *
+ * Handles the logic for importing department records from an uploaded Excel or CSV file.
+ * Processes rows in batches and chunks to optimize memory usage.
  */
-class DepartmentsImport implements
-    ToModel,
-    WithHeadingRow,
-    WithValidation,
-    WithUpserts,
-    WithBatchInserts,
-    WithChunkReading,
-    SkipsEmptyRows
+class DepartmentsImport implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading
 {
     /**
+     * Map a row from the spreadsheet to a Department model.
+     *
      * @param array<string, mixed> $row
-     * @return Department|null
+     * @return Department
      */
-    public function model(array $row): ?Department
+    public function model(array $row): Department
     {
-        $name = trim((string)($row['name'] ?? ''));
-
         return new Department([
-            'name' => $name,
-            'is_active' => $this->parseBoolean($row['is_active'] ?? true),
+            'name' => $row['name'],
+            'is_active' => filter_var($row['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
         ]);
     }
 
     /**
-     * @return string
-     */
-    public function uniqueBy(): string
-    {
-        return 'name';
-    }
-
-    /**
-     * Validation rules for each row.
+     * Define the validation rules for the imported rows.
+     *
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'is_active' => ['nullable'],
+            /**
+             * Validate that the department name is unique.
+             */
+            'name' => ['required', 'string', 'max:255', 'unique:departments,name'],
+
+            /**
+             * Validate the active status if provided.
+             */
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 
     /**
-     * Helper to handle various boolean formats from Excel (1/0, true/false, "yes"/"no")
-     */
-    private function parseBoolean($value): bool
-    {
-        if (is_bool($value)) return $value;
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
-    }
-
-    /**
-     * @return int
+     * Determine the batch size for database inserts.
      */
     public function batchSize(): int
     {
-        return 1000;
+        return 100;
     }
 
     /**
-     * @return int
+     * Determine the chunk size for reading the spreadsheet.
      */
     public function chunkSize(): int
     {
-        return 1000;
+        return 100;
     }
 }

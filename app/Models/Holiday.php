@@ -17,7 +17,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 /**
  * Class Holiday
  * 
- * Represents a holiday/leave request within the system. Handles the underlying data
+ * Represents a holiday request or record within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for holiday entities.
  *
  * @property int $id
@@ -26,20 +26,19 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon $to_date
  * @property string|null $note
  * @property bool $is_approved
- * @property bool|null $recurring
+ * @property bool $recurring
  * @property string|null $region
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- * @property-read User $user
  * @method static Builder|Holiday newModelQuery()
  * @method static Builder|Holiday newQuery()
  * @method static Builder|Holiday query()
  * @method static Builder|Holiday approved()
- * @method static Builder|Holiday pending()
  * @method static Builder|Holiday filter(array $filters)
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
+ * @property-read \App\Models\User $user
  * @method static Builder<static>|Holiday customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Holiday last30Days(string $column = 'created_at')
  * @method static Builder<static>|Holiday last7Days(string $column = 'created_at')
@@ -71,6 +70,13 @@ class Holiday extends Model implements AuditableContract
     use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'holidays';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -82,19 +88,53 @@ class Holiday extends Model implements AuditableContract
         'note',
         'is_approved',
         'recurring',
-        'region',
+        'region'
     ];
 
     /**
-     * Get the user for this holiday.
+     * The attributes that should be cast to native types.
      *
-     * Defines a many-to-one relationship linking this holiday to its user.
-     *
-     * @return BelongsTo<User, self>
+     * @var array<string, string>
      */
-    public function user(): BelongsTo
+    protected $casts = [
+        'from_date' => 'date:Y-m-d',
+        'to_date' => 'date:Y-m-d',
+        'is_approved' => 'boolean',
+        'recurring' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->belongsTo(User::class);
+        return $query
+            ->when(
+                isset($filters['is_approved']),
+                fn (Builder $q) => $q->where('is_approved', filter_var($filters['is_approved'], FILTER_VALIDATE_BOOLEAN))
+            )
+            ->when(
+                ! empty($filters['user_id']),
+                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('note', 'like', $term)
+                        ->orWhereHas('user', function (Builder $subQ) use ($term) {
+                            $subQ->where('name', 'like', $term);
+                        });
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 
     /**
@@ -109,60 +149,12 @@ class Holiday extends Model implements AuditableContract
     }
 
     /**
-     * Scope a query to only include pending holidays.
+     * Get the user that created or requested the holiday.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @return Builder The modified query builder instance.
+     * Defines a one-to-many relationship linking this holiday to its requesting user.
      */
-    public function scopePending(Builder $query): Builder
+    public function user(): BelongsTo
     {
-        return $query->where('is_approved', false);
-    }
-
-    /**
-     * Scope a query to apply dynamic filters.
-     *
-     * Applies filters for user_id, approval status, search (note), and date range on from_date.
-     *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
-     * @return Builder The modified query builder instance.
-     */
-    public function scopeFilter(Builder $query, array $filters): Builder
-    {
-        return $query
-            ->when(
-                isset($filters['user_id']),
-                fn (Builder $q) => $q->where('user_id', (int) $filters['user_id'])
-            )
-            ->when(
-                isset($filters['is_approved']),
-                fn (Builder $q) => $q->where('is_approved', (bool) $filters['is_approved'])
-            )
-            ->when(
-                ! empty($filters['search'] ?? null),
-                fn (Builder $q) => $q->where('note', 'like', '%'.$filters['search'].'%')
-            )
-            ->customRange(
-                $filters['start_date'] ?? null,
-                $filters['end_date'] ?? null,
-                'from_date'
-            );
-    }
-
-    /**
-     * Get the attributes that should be cast to native types.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'user_id' => 'integer',
-            'from_date' => 'date',
-            'to_date' => 'date',
-            'is_approved' => 'boolean',
-            'recurring' => 'boolean',
-        ];
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

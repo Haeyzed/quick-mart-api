@@ -14,32 +14,32 @@ enum PaymentMethodEnum: string
     /**
      * Cash payment method.
      */
-    case CASH = 'Cash';
+    case CASH = 'cash';
 
     /**
      * Credit card payment method.
      */
-    case CREDIT_CARD = 'Credit Card';
+    case CREDIT_CARD = 'credit card';
 
     /**
      * Cheque payment method.
      */
-    case CHEQUE = 'Cheque';
+    case CHEQUE = 'cheque';
 
     /**
      * Bank transfer payment method.
      */
-    case BANK_TRANSFER = 'Bank Transfer';
+    case BANK_TRANSFER = 'bank transfer';
 
     /**
      * Gift card payment method.
      */
-    case GIFT_CARD = 'Gift Card';
+    case GIFT_CARD = 'gift card';
 
     /**
      * PayPal payment method.
      */
-    case PAYPAL = 'PayPal';
+    case PAYPAL = 'paypal';
 
     /**
      * Get all enum values as an array.

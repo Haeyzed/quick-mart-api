@@ -4,147 +4,190 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\DesignationsExport;
+use App\Imports\DesignationsImport;
 use App\Models\Designation;
-use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 
 /**
- * DesignationService
+ * Class DesignationService
  *
- * Handles all business logic for designation operations including CRUD operations,
- * filtering, pagination, and bulk operations.
+ * Handles all core business logic and database interactions for Designations.
+ * Acts as the intermediary between the controllers and the database layer.
  */
-class DesignationService extends BaseService
+class DesignationService
 {
     /**
-     * Get paginated list of designations with optional filters.
-     *
-     * @param array<string, mixed> $filters Available filters: is_active, search
-     * @param int $perPage Number of items per page (default: 10)
-     * @return LengthAwarePaginator<Designation>
+     * The application path where import template files are stored.
      */
-    public function getDesignations(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
+    /**
+     * DesignationService constructor.
+     *
+     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     */
+    public function __construct(
+        private readonly UploadService $uploadService
+    ) {}
+
+    /**
+     * Get paginated designations based on filters.
+     *
+     * @param  array<string, mixed>  $filters
+     * @param  int  $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getPaginatedDesignations(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Designation::query()
-            ->when(
-                isset($filters['is_active']),
-                fn($query) => $query->where('is_active', (bool)$filters['is_active'])
-            )
-            ->when(
-                !empty($filters['search'] ?? null),
-                fn($query) => $query->where('name', 'like', '%' . $filters['search'] . '%')
-            )
-            ->orderBy('name')
+            ->filter($filters)
+            ->latest()
             ->paginate($perPage);
     }
 
     /**
-     * Get a single designation by ID.
+     * Get a lightweight list of active designation options.
      *
-     * @param int $id Designation ID
-     * @return Designation
+     * @return Collection A collection of arrays containing 'value' (id) and 'label' (name).
      */
-    public function getDesignation(int $id): Designation
+    public function getOptions(): Collection
     {
-        return Designation::findOrFail($id);
+        return Designation::active()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Designation $designation) => [
+                'value' => $designation->id,
+                'label' => $designation->name,
+            ]);
     }
 
     /**
-     * Create a new designation.
+     * Create a newly registered designation.
      *
-     * @param array<string, mixed> $data Validated designation data
-     * @return Designation
+     * @param  array<string, mixed>  $data  The validated request data.
+     * @return Designation The newly created Designation model instance.
      */
     public function createDesignation(array $data): Designation
     {
-        return $this->transaction(function () use ($data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeDesignationData($data);
-            return Designation::create($data);
+        return DB::transaction(function () use ($data) {
+            return Designation::query()->create($data);
         });
     }
 
     /**
-     * Normalize designation data to match database schema requirements.
+     * Update an existing designation's information.
      *
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function normalizeDesignationData(array $data): array
-    {
-        // is_active is stored as boolean (true/false)
-        if (!isset($data['is_active'])) {
-            $data['is_active'] = false;
-        } else {
-            $data['is_active'] = (bool)filter_var(
-                $data['is_active'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-        }
-
-        return $data;
-    }
-
-    /**
-     * Update an existing designation.
-     *
-     * @param Designation $designation Designation instance to update
-     * @param array<string, mixed> $data Validated designation data
-     * @return Designation
+     * @param  Designation  $designation  The designation model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return Designation The freshly updated Designation model instance.
      */
     public function updateDesignation(Designation $designation, array $data): Designation
     {
-        return $this->transaction(function () use ($designation, $data) {
-            // Normalize data to match database schema
-            $data = $this->normalizeDesignationData($data);
+        return DB::transaction(function () use ($designation, $data) {
             $designation->update($data);
+
             return $designation->fresh();
+        });
+    }
+
+    /**
+     * Delete a designation.
+     *
+     * @param  Designation  $designation
+     * @return void
+     */
+    public function deleteDesignation(Designation $designation): void
+    {
+        DB::transaction(function () use ($designation) {
+            $designation->delete();
         });
     }
 
     /**
      * Bulk delete multiple designations.
      *
-     * @param array<int> $ids Array of designation IDs to delete
-     * @return int Number of designations deleted
+     * @param  array<int>  $ids  Array of designation IDs to be deleted.
+     * @return int The total count of successfully deleted designations.
      */
     public function bulkDeleteDesignations(array $ids): int
     {
-        $deletedCount = 0;
-
-        foreach ($ids as $id) {
-            try {
-                $designation = Designation::findOrFail($id);
-                $this->deleteDesignation($designation);
-                $deletedCount++;
-            } catch (Exception $e) {
-                // Log error but continue with other deletions
-                $this->logError("Failed to delete designation {$id}: " . $e->getMessage());
-            }
-        }
-
-        return $deletedCount;
+        return DB::transaction(function () use ($ids) {
+            return Designation::query()->whereIn('id', $ids)->delete();
+        });
     }
 
     /**
-     * Delete a single designation.
+     * Update the active status for multiple designations.
      *
-     * @param Designation $designation Designation instance to delete
-     * @return bool
-     * @throws HttpResponseException
+     * @param  array<int>  $ids  Array of designation IDs to update.
+     * @param  bool  $isActive  The new active status.
+     * @return int The number of records updated.
      */
-    public function deleteDesignation(Designation $designation): bool
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        return $this->transaction(function () use ($designation) {
-            if ($designation->employees()->exists()) {
-                abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'Cannot delete designation: designation has associated employees');
-            }
+        return Designation::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+    }
 
-            return $designation->delete();
-        });
+    /**
+     * Import multiple designations from an uploaded file.
+     *
+     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @return void
+     */
+    public function importDesignations(UploadedFile $file): void
+    {
+        ExcelFacade::import(new DesignationsImport, $file);
+    }
+
+    /**
+     * Download a designations CSV template.
+     *
+     * @return string The absolute path to the downloaded file.
+     * @throws RuntimeException If the template file is missing.
+     */
+    public function download(): string
+    {
+        $fileName = 'designations-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+
+        if (! File::exists($path)) {
+            throw new RuntimeException('Template designations not found.');
+        }
+
+        return $path;
+    }
+
+    /**
+     * Generate an export file containing designation data.
+     *
+     * @param  array<int>  $ids  Specific designation IDs to export.
+     * @param  string  $format  The file format requested (excel/pdf).
+     * @param  array<string>  $columns  Specific column names to include.
+     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @return string The relative file path to the generated export file.
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'designations_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new DesignationsExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
+
+        return $relativePath;
     }
 }
-

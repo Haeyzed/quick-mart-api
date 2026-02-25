@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PayrollStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,8 +21,8 @@ return new class extends Migration
             $table->double('amount');
             $table->string('paying_method');
             $table->text('note')->nullable();
-            $table->string('status', 50)->default('draft');
-            $table->longText('amount_array')->nullable();
+            $table->string('status')->default(PayrollStatusEnum::DRAFT->value);
+            $table->json('amount_array')->nullable();
             $table->string('month')->nullable();
             $table->timestamps();
 

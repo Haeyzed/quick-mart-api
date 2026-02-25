@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\LeaveStatusEnum;
 use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -76,7 +77,7 @@ class Leave extends Model implements AuditableContract
      */
     protected $fillable = [
         'employee_id',
-        'leave_types',
+        'leave_type_id',
         'start_date',
         'end_date',
         'days',
@@ -93,6 +94,7 @@ class Leave extends Model implements AuditableContract
         'start_date' => 'date:Y-m-d',
         'end_date' => 'date:Y-m-d',
         'days' => 'float',
+        'status' => LeaveStatusEnum::class,
     ];
 
     /**
@@ -137,7 +139,7 @@ class Leave extends Model implements AuditableContract
      */
     public function leaveType(): BelongsTo
     {
-        return $this->belongsTo(LeaveType::class, 'leave_types');
+        return $this->belongsTo(LeaveType::class);
     }
 
     /**

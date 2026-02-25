@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Leave CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to LeaveService.
  *
- * @tags Leave Management
+ * @tags HRM Management
  */
 class LeaveController extends Controller
 {
@@ -65,7 +65,7 @@ class LeaveController extends Controller
                  *
                  * @example "Pending"
                  */
-                'status' => ['nullable', 'in:Pending,Approved,Rejected'],
+                'status' => ['nullable', 'in:pending,approved,rejected'],
                 /**
                  * Filter leaves starting from this date.
                  *

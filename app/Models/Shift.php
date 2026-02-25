@@ -4,38 +4,50 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Shift Model
+ * Class Shift
  * 
- * Represents a work shift with time schedules.
+ * Represents an employee work shift within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for shift entities.
  *
  * @property int $id
  * @property string $name
  * @property string $start_time
  * @property string $end_time
- * @property int|null $grace_in
- * @property int|null $grace_out
- * @property float|null $total_hours
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Collection<int, Employee> $employees
+ * @property Carbon|null $deleted_at
+ * @method static Builder|Shift newModelQuery()
+ * @method static Builder|Shift newQuery()
+ * @method static Builder|Shift query()
  * @method static Builder|Shift active()
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @method static Builder|Shift filter(array $filters)
+ * @property int $grace_in Grace period (minutes) before marking late
+ * @property int $grace_out Grace period (minutes) before marking early leave
+ * @property numeric|null $total_hours Total working hours for the shift
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @property-read int|null $employees_count
- * @method static Builder<static>|Shift newModelQuery()
- * @method static Builder<static>|Shift newQuery()
- * @method static Builder<static>|Shift query()
+ * @property-read \App\Models\Employee|null $employee
+ * @method static Builder<static>|Shift customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Shift last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Shift last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Shift lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Shift lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Shift monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Shift onlyTrashed()
+ * @method static Builder<static>|Shift quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Shift today(string $column = 'created_at')
  * @method static Builder<static>|Shift whereCreatedAt($value)
  * @method static Builder<static>|Shift whereEndTime($value)
  * @method static Builder<static>|Shift whereGraceIn($value)
@@ -46,18 +58,15 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Shift whereStartTime($value)
  * @method static Builder<static>|Shift whereTotalHours($value)
  * @method static Builder<static>|Shift whereUpdatedAt($value)
+ * @method static Builder<static>|Shift withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Shift withoutTrashed()
+ * @method static Builder<static>|Shift yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Shift yesterday(string $column = 'current_at')
  * @mixin \Eloquent
  */
 class Shift extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'shifts';
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -75,35 +84,57 @@ class Shift extends Model implements AuditableContract
     ];
 
     /**
-     * Get the employees assigned to this shift.
+     * The attributes that should be cast to native types.
      *
-     * @return HasMany<Employee>
+     * @var array<string, string>
      */
-    public function employees(): HasMany
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return $this->hasMany(Employee::class);
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('name', 'like', $term);
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
+    /**
+     * Get the employee associated with this shift record.
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     /**
      * Scope a query to only include active shifts.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'grace_in' => 'integer',
-            'grace_out' => 'integer',
-            'total_hours' => 'float',
-            'is_active' => 'boolean',
-        ];
     }
 }

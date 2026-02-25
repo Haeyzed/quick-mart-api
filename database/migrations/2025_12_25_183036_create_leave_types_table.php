@@ -17,7 +17,9 @@ return new class extends Migration
             $table->integer('annual_quota')->default(0);
             $table->boolean('encashable')->default(false);
             $table->integer('carry_forward_limit')->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index('name');
         });

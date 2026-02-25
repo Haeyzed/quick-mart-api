@@ -20,9 +20,20 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('staff_id')->nullable();
             $table->string('image')->nullable();
+            $table->string('image_url')->nullable();
             $table->string('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('country')->nullable();
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained('countries')
+                ->nullOnDelete();
+            $table->foreignId('state_id')
+                ->nullable()
+                ->constrained('states')
+                ->nullOnDelete();
+            $table->foreignId('city_id')
+                ->nullable()
+                ->constrained('cities')
+                ->nullOnDelete();
             $table->boolean('is_active');
             $table->boolean('is_sale_agent')->default(false);
             $table->decimal('sale_commission_percent', 8, 2)->nullable();

@@ -16,6 +16,7 @@ class DepartmentResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -31,7 +32,7 @@ class DepartmentResource extends JsonResource
             /**
              * The name of the department.
              *
-             * @example Human Resources
+             * @example IT Department
              */
             'name' => $this->name,
 

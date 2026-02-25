@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Departments\DepartmentBulkActionRequest;
-use App\Http\Requests\Departments\StoreDepartmentRequest;
-use App\Http\Requests\Departments\UpdateDepartmentRequest;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Departments\StoreDepartmentRequest;
+use App\Http\Requests\Departments\UpdateDepartmentRequest;
+use App\Http\Requests\Departments\DepartmentBulkActionRequest;
 use App\Http\Resources\DepartmentResource;
 use App\Mail\ExportMail;
-use App\Models\Department;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
+use App\Models\Department;
 use App\Services\DepartmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Department CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to DepartmentService.
  *
- * @tags Department Management
+ * @tags HRM Management
  */
 class DepartmentController extends Controller
 {
@@ -57,7 +57,7 @@ class DepartmentController extends Controller
                 /**
                  * Search term to filter departments by name.
                  *
-                 * @example "HR"
+                 * @example "Marketing"
                  */
                 'search' => ['nullable', 'string'],
                 /**
@@ -65,7 +65,7 @@ class DepartmentController extends Controller
                  *
                  * @example true
                  */
-                'status' => ['nullable', 'boolean'],
+                'is_active' => ['nullable', 'boolean'],
                 /**
                  * Filter departments starting from this date.
                  *
@@ -103,7 +103,7 @@ class DepartmentController extends Controller
     public function options(): JsonResponse
     {
         if (auth()->user()->denies('view departments')) {
-            return response()->forbidden('Permission denied for viewing departments options.');
+            return response()->forbidden('Permission denied for viewing department options.');
         }
 
         return response()->success($this->service->getOptions(), 'Department options retrieved successfully');
@@ -283,7 +283,6 @@ class DepartmentController extends Controller
                 ->deleteFileAfterSend();
         }
 
-        // 3. Handle Email Method
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);

@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Biller CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to BillerService.
  *
- * @group Biller Management
+ * @tags Biller Management
  */
 class BillerController extends Controller
 {
@@ -42,7 +42,9 @@ class BillerController extends Controller
     ) {}
 
     /**
-     * Display a paginated listing of billers.
+     * List Billers
+     *
+     * Display a paginated listing of billers. Supports searching and filtering by active status and date ranges.
      */
     public function index(Request $request): JsonResponse
     {
@@ -51,8 +53,40 @@ class BillerController extends Controller
         }
 
         $billers = $this->service->getPaginatedBillers(
-            $request->all(),
-            (int) $request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter billers by name, email, phone, or company.
+                 *
+                 * @example "John Doe"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'is_active' => ['nullable', 'boolean'],
+                /**
+                 * Filter billers starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter billers up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -62,7 +96,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Get biller options for select components.
+     * Get Biller Options
+     *
+     * Retrieve a simplified list of active billers for use in dropdowns or select components.
      */
     public function options(): JsonResponse
     {
@@ -74,7 +110,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Store a newly created biller.
+     * Create Biller
+     *
+     * Store a newly created biller in the system.
      */
     public function store(StoreBillerRequest $request): JsonResponse
     {
@@ -92,7 +130,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Display the specified biller.
+     * Show Biller
+     *
+     * Retrieve the details of a specific biller by its ID.
      */
     public function show(Biller $biller): JsonResponse
     {
@@ -101,17 +141,15 @@ class BillerController extends Controller
         }
 
         return response()->success(
-            new BillerResource($biller->load([
-                'country:id,name',
-                'state:id,name',
-                'city:id,name',
-            ])),
+            new BillerResource($biller->load(['country', 'state', 'city'])),
             'Biller details retrieved successfully'
         );
     }
 
     /**
-     * Update the specified biller.
+     * Update Biller
+     *
+     * Update the specified biller's information.
      */
     public function update(UpdateBillerRequest $request, Biller $biller): JsonResponse
     {
@@ -122,13 +160,15 @@ class BillerController extends Controller
         $updatedBiller = $this->service->updateBiller($biller, $request->validated());
 
         return response()->success(
-            new BillerResource($updatedBiller),
+            new BillerResource($updatedBiller->load(['country', 'state', 'city'])),
             'Biller updated successfully'
         );
     }
 
     /**
-     * Remove the specified biller (soft delete).
+     * Delete Biller
+     *
+     * Remove the specified biller from storage.
      */
     public function destroy(Biller $biller): JsonResponse
     {
@@ -142,7 +182,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Bulk delete billers.
+     * Bulk Delete Billers
+     *
+     * Delete multiple billers simultaneously using an array of IDs.
      */
     public function bulkDestroy(BillerBulkActionRequest $request): JsonResponse
     {
@@ -159,7 +201,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Bulk activate billers.
+     * Bulk Activate Billers
+     *
+     * Set the active status of multiple billers to true.
      */
     public function bulkActivate(BillerBulkActionRequest $request): JsonResponse
     {
@@ -176,7 +220,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Bulk deactivate billers.
+     * Bulk Deactivate Billers
+     *
+     * Set the active status of multiple billers to false.
      */
     public function bulkDeactivate(BillerBulkActionRequest $request): JsonResponse
     {
@@ -193,7 +239,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Import billers from Excel/CSV.
+     * Import Billers
+     *
+     * Import multiple billers into the system from an uploaded Excel or CSV file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
@@ -207,7 +255,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Export billers to Excel or PDF.
+     * Export Billers
+     *
+     * Export a list of billers to an Excel or PDF file. Supports filtering by IDs, date ranges, and selecting specific columns. Delivery methods include direct download or email.
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
@@ -237,13 +287,13 @@ class BillerController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -253,7 +303,7 @@ class BillerController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'billers_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'billers_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Biller Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -262,7 +312,7 @@ class BillerController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
@@ -270,7 +320,9 @@ class BillerController extends Controller
     }
 
     /**
-     * Download billers module import sample template.
+     * Download Import Template
+     *
+     * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */
     public function download(): JsonResponse|BinaryFileResponse
     {

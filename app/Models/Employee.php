@@ -4,24 +4,27 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Employee Model
- * 
- * Represents an employee in the organization.
+ * Class Employee
+ *
+ * Represents an employee entity within the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for employee entities.
  *
  * @property int $id
  * @property string $name
  * @property string|null $image
+ * @property string|null $image_url
  * @property int $department_id
  * @property int $designation_id
  * @property int $shift_id
@@ -31,63 +34,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $user_id
  * @property string $staff_id
  * @property string|null $address
- * @property string|null $city
- * @property string|null $country
+ * @property int|null $country_id
+ * @property int|null $state_id
+ * @property int|null $city_id
  * @property bool $is_active
  * @property bool $is_sale_agent
  * @property float|null $sale_commission_percent
  * @property array|null $sales_target
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Department $department
- * @property-read Designation $designation
- * @property-read Shift $shift
- * @property-read User|null $user
- * @property-read Collection<int, Payroll> $payrolls
- * @property-read Collection<int, Attendance> $attendances
- * @property-read Collection<int, Leave> $leaves
- * @property-read Collection<int, Overtime> $overtimes
- * @property-read Collection<int, EmployeeTransaction> $transactions
+ * @property Carbon|null $deleted_at
+ *
+ * @method static Builder|Employee newModelQuery()
+ * @method static Builder|Employee newQuery()
+ * @method static Builder|Employee query()
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
  * @method static Builder|Employee filter(array $filters)
- * @property string|null $deleted_at
- * @property-read int|null $attendances_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
- * @property-read int|null $audits_count
- * @property-read int|null $leaves_count
- * @property-read int|null $overtimes_count
- * @property-read int|null $payrolls_count
- * @property-read int|null $transactions_count
- * @method static Builder<static>|Employee newModelQuery()
- * @method static Builder<static>|Employee newQuery()
- * @method static Builder<static>|Employee query()
- * @method static Builder<static>|Employee whereAddress($value)
- * @method static Builder<static>|Employee whereBasicSalary($value)
- * @method static Builder<static>|Employee whereCity($value)
- * @method static Builder<static>|Employee whereCountry($value)
- * @method static Builder<static>|Employee whereCreatedAt($value)
- * @method static Builder<static>|Employee whereDeletedAt($value)
- * @method static Builder<static>|Employee whereDepartmentId($value)
- * @method static Builder<static>|Employee whereDesignationId($value)
- * @method static Builder<static>|Employee whereEmail($value)
- * @method static Builder<static>|Employee whereId($value)
- * @method static Builder<static>|Employee whereImage($value)
- * @method static Builder<static>|Employee whereIsActive($value)
- * @method static Builder<static>|Employee whereIsSaleAgent($value)
- * @method static Builder<static>|Employee whereName($value)
- * @method static Builder<static>|Employee wherePhoneNumber($value)
- * @method static Builder<static>|Employee whereSaleCommissionPercent($value)
- * @method static Builder<static>|Employee whereSalesTarget($value)
- * @method static Builder<static>|Employee whereShiftId($value)
- * @method static Builder<static>|Employee whereStaffId($value)
- * @method static Builder<static>|Employee whereUpdatedAt($value)
- * @method static Builder<static>|Employee whereUserId($value)
- * @mixin \Eloquent
  */
 class Employee extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -97,6 +64,7 @@ class Employee extends Model implements AuditableContract
     protected $fillable = [
         'name',
         'image',
+        'image_url',
         'department_id',
         'designation_id',
         'shift_id',
@@ -105,14 +73,111 @@ class Employee extends Model implements AuditableContract
         'phone_number',
         'user_id',
         'staff_id',
+        'country_id',
+        'state_id',
+        'city_id',
         'address',
-        'city',
-        'country',
         'is_active',
         'is_sale_agent',
         'sale_commission_percent',
         'sales_target',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'department_id' => 'integer',
+        'designation_id' => 'integer',
+        'shift_id' => 'integer',
+        'basic_salary' => 'float',
+        'user_id' => 'integer',
+        'country_id' => 'integer',
+        'state_id' => 'integer',
+        'city_id' => 'integer',
+        'is_active' => 'boolean',
+        'is_sale_agent' => 'boolean',
+        'sale_commission_percent' => 'float',
+        'sales_target' => 'array',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query
+     * @param  array<string, mixed>  $filters
+     * @return Builder
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['department_id']),
+                fn (Builder $q) => $q->where('department_id', (int) $filters['department_id'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
+                        ->orWhere('staff_id', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
+    /**
+     * Scope a query to only include active employees.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to only include sale agents.
+     */
+    public function scopeSaleAgents(Builder $query): Builder
+    {
+        return $query->where('is_sale_agent', true);
+    }
+
+    /**
+     * Get the country associated with this biller.
+     */
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    /**
+     * Get the state associated with this biller.
+     */
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    /**
+     * Get the city associated with this biller.
+     */
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
 
     /**
      * Get the department for this employee.
@@ -202,69 +267,5 @@ class Employee extends Model implements AuditableContract
     public function transactions(): HasMany
     {
         return $this->hasMany(EmployeeTransaction::class);
-    }
-
-    /**
-     * Scope a query to only include active employees.
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope a query to only include sale agents.
-     */
-    public function scopeSaleAgents(Builder $query): Builder
-    {
-        return $query->where('is_sale_agent', true);
-    }
-
-    /**
-     * Scope a query to apply filters (status, search, department_id).
-     */
-    public function scopeFilter(Builder $query, array $filters): Builder
-    {
-        return $query
-            ->when(
-                isset($filters['status']),
-                fn (Builder $q) => $q->where('is_active', $filters['status'] === 'active')
-            )
-            ->when(
-                ! empty($filters['department_id'] ?? null),
-                fn (Builder $q) => $q->where('department_id', (int) $filters['department_id'])
-            )
-            ->when(
-                ! empty($filters['search'] ?? null),
-                function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
-                    $q->where(fn (Builder $subQ) => $subQ
-                        ->where('name', 'like', $term)
-                        ->orWhere('email', 'like', $term)
-                        ->orWhere('phone_number', 'like', $term)
-                        ->orWhere('staff_id', 'like', $term)
-                    );
-                }
-            );
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'department_id' => 'integer',
-            'designation_id' => 'integer',
-            'shift_id' => 'integer',
-            'basic_salary' => 'float',
-            'user_id' => 'integer',
-            'is_active' => 'boolean',
-            'is_sale_agent' => 'boolean',
-            'sale_commission_percent' => 'float',
-            'sales_target' => 'array',
-        ];
     }
 }
