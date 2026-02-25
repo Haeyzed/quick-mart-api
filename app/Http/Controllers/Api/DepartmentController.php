@@ -320,7 +320,7 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Download Import Template
+     * Download Department Import Template
      *
      * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */

@@ -2,5 +2,5 @@ name,is_active
 Human Resources,true
 Information Technology,true
 Finance and Accounting,true
-Marketing,false
+Marketing,true
 Sales,true

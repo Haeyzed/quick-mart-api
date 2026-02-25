@@ -30,15 +30,6 @@ class DepartmentService
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * DepartmentService constructor.
-     *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
-     */
-    public function __construct(
-        private readonly UploadService $uploadService
-    ) {}
-
-    /**
      * Get paginated departments based on filters.
      *
      * @param  array<string, mixed>  $filters
