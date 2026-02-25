@@ -116,17 +116,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('warehouses', WarehouseController::class);
 
-    Route::prefix('departments')->name('departments.')->group(function () {
-        Route::post('bulk-destroy', [DepartmentController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-activate', [DepartmentController::class, 'bulkActivate'])->name('bulk-activate');
-        Route::post('bulk-deactivate', [DepartmentController::class, 'bulkDeactivate'])->name('bulk-deactivate');
-        Route::post('import', [DepartmentController::class, 'import'])->name('import');
-        Route::post('export', [DepartmentController::class, 'export'])->name('export');
-        Route::get('download', [DepartmentController::class, 'download'])->name('download');
-        Route::get('options', [DepartmentController::class, 'options'])->name('options');
-    });
-    Route::apiResource('departments', DepartmentController::class);
-
     Route::prefix('roles')->name('roles.')->group(function () {
         Route::post('bulk-destroy', [RoleController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [RoleController::class, 'bulkActivate'])->name('bulk-activate');
@@ -225,7 +214,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('import', [UnitController::class, 'import'])->name('import');
         Route::post('export', [UnitController::class, 'export'])->name('export');
         Route::get('download', [UnitController::class, 'download'])->name('download');
-        Route::get('download', [UnitController::class, 'download'])->name('download');
         Route::get('options', [UnitController::class, 'options'])->name('options');
         Route::get('base-units', [UnitController::class, 'getBaseUnits'])->name('base-units');
     });
@@ -258,6 +246,72 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [BillerController::class, 'options'])->name('options');
     });
     Route::apiResource('billers', BillerController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | HRM Module
+    |--------------------------------------------------------------------------
+    */
+
+    // Attendances
+    Route::prefix('attendances')->name('attendances.')->group(function () {
+        Route::post('bulk-destroy', [AttendanceController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-mark-present', [AttendanceController::class, 'bulkMarkPresent'])->name('bulk-mark-present');
+        Route::post('bulk-mark-late', [AttendanceController::class, 'bulkMarkLate'])->name('bulk-mark-late');
+        Route::post('bulk-mark-absent', [AttendanceController::class, 'bulkMarkAbsent'])->name('bulk-mark-absent');
+        Route::post('import', [AttendanceController::class, 'import'])->name('import');
+        Route::post('export', [AttendanceController::class, 'export'])->name('export');
+        Route::get('download', [AttendanceController::class, 'download'])->name('download');
+        Route::post('web-punch', [AttendanceController::class, 'webClock'])->name('web-punch');
+    });
+    Route::apiResource('attendances', AttendanceController::class);
+
+    // Departments
+    Route::prefix('departments')->name('departments.')->group(function () {
+        Route::post('bulk-destroy', [DepartmentController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [DepartmentController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [DepartmentController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [DepartmentController::class, 'import'])->name('import');
+        Route::post('export', [DepartmentController::class, 'export'])->name('export');
+        Route::get('download', [DepartmentController::class, 'download'])->name('download');
+        Route::get('options', [DepartmentController::class, 'options'])->name('options');
+    });
+    Route::apiResource('departments', DepartmentController::class);
+
+    // Designations
+    Route::prefix('designations')->name('designations.')->group(function () {
+        Route::post('bulk-destroy', [DesignationController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [DesignationController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [DesignationController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [DesignationController::class, 'import'])->name('import');
+        Route::post('export', [DesignationController::class, 'export'])->name('export');
+        Route::get('download', [DesignationController::class, 'download'])->name('download');
+        Route::get('options', [DesignationController::class, 'options'])->name('options');
+    });
+    Route::apiResource('designations', DesignationController::class);
+
+    // Employees
+    Route::prefix('employees')->name('employees.')->group(function () {
+        Route::get('options', [EmployeeController::class, 'options'])->name('options');
+        Route::post('bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [EmployeeController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [EmployeeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [EmployeeController::class, 'import'])->name('import');
+        Route::post('export', [EmployeeController::class, 'export'])->name('export');
+        Route::get('download', [EmployeeController::class, 'download'])->name('download');
+    });
+    Route::apiResource('employees', EmployeeController::class);
+
+    // Holidays
+    Route::prefix('holidays')->name('holidays.')->group(function () {
+        Route::post('bulk-destroy', [HolidayController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-approve', [HolidayController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::post('bulk-unapprove', [HolidayController::class, 'bulkUnapprove'])->name('bulk-unapprove');
+        Route::post('import', [HolidayController::class, 'import'])->name('import');
+        Route::post('export', [HolidayController::class, 'export'])->name('export');
+        Route::get('download', [HolidayController::class, 'download'])->name('download');
+    });
+    Route::apiResource('holidays', HolidayController::class);
 
     // Leave Types
     Route::prefix('leave-types')->name('leave-types.')->group(function () {
@@ -293,6 +347,22 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('overtimes', OvertimeController::class);
 
+    // Payrolls
+    Route::prefix('payrolls')->name('payrolls.')->group(function () {
+        Route::post('bulk-destroy', [PayrollController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-mark-paid', [PayrollController::class, 'bulkMarkPaid'])->name('bulk-mark-paid');
+
+        // Advanced Calculation Endpoints
+        Route::post('generate-data', [PayrollController::class, 'generateData'])->name('generate-data');
+        Route::post('bulk-process', [PayrollController::class, 'bulkProcess'])->name('bulk-process');
+
+        // Imports/Exports
+        Route::post('import', [PayrollController::class, 'import'])->name('import');
+        Route::post('export', [PayrollController::class, 'export'])->name('export');
+        Route::get('download', [PayrollController::class, 'download'])->name('download');
+    });
+    Route::apiResource('payrolls', PayrollController::class);
+
     // Shifts
     Route::prefix('shifts')->name('shifts.')->group(function () {
         Route::post('bulk-destroy', [ShiftController::class, 'bulkDestroy'])->name('bulk-destroy');
@@ -305,18 +375,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('shifts', ShiftController::class);
 
-    // Attendances
-    Route::prefix('attendances')->name('attendances.')->group(function () {
-        Route::post('bulk-destroy', [AttendanceController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-mark-present', [AttendanceController::class, 'bulkMarkPresent'])->name('bulk-mark-present');
-        Route::post('bulk-mark-late', [AttendanceController::class, 'bulkMarkLate'])->name('bulk-mark-late');
-        Route::post('bulk-mark-absent', [AttendanceController::class, 'bulkMarkAbsent'])->name('bulk-mark-absent');
-        Route::post('import', [AttendanceController::class, 'import'])->name('import');
-        Route::post('export', [AttendanceController::class, 'export'])->name('export');
-        Route::get('download', [AttendanceController::class, 'download'])->name('download');
-        Route::post('web-punch', [AttendanceController::class, 'webClock'])->name('web-punch');
-    });
-    Route::apiResource('attendances', AttendanceController::class);
+    /*
+    |--------------------------------------------------------------------------
+    | End HRM Module
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');
@@ -602,57 +665,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('all/active', [SaleAgentController::class, 'getAllActive'])->name('all-active');
     });
     Route::apiResource('sale-agents', SaleAgentController::class)->parameters(['sale-agents' => 'sale_agent']);
-
-    // Designations
-    Route::prefix('designations')->name('designations.')->group(function () {
-        Route::post('bulk-destroy', [DesignationController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-activate', [DesignationController::class, 'bulkActivate'])->name('bulk-activate');
-        Route::post('bulk-deactivate', [DesignationController::class, 'bulkDeactivate'])->name('bulk-deactivate');
-        Route::post('import', [DesignationController::class, 'import'])->name('import');
-        Route::post('export', [DesignationController::class, 'export'])->name('export');
-        Route::get('download', [DesignationController::class, 'download'])->name('download');
-        Route::get('options', [DesignationController::class, 'options'])->name('options');
-    });
-    Route::apiResource('designations', DesignationController::class);
-
-    // Holidays
-    Route::prefix('holidays')->name('holidays.')->group(function () {
-        Route::post('bulk-destroy', [HolidayController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-approve', [HolidayController::class, 'bulkApprove'])->name('bulk-approve');
-        Route::post('bulk-unapprove', [HolidayController::class, 'bulkUnapprove'])->name('bulk-unapprove');
-        Route::post('import', [HolidayController::class, 'import'])->name('import');
-        Route::post('export', [HolidayController::class, 'export'])->name('export');
-        Route::get('download', [HolidayController::class, 'download'])->name('download');
-    });
-    Route::apiResource('holidays', HolidayController::class);
-
-    // Payrolls
-    Route::prefix('payrolls')->name('payrolls.')->group(function () {
-        Route::post('bulk-destroy', [PayrollController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-mark-paid', [PayrollController::class, 'bulkMarkPaid'])->name('bulk-mark-paid');
-
-        // Advanced Calculation Endpoints
-        Route::post('generate-data', [PayrollController::class, 'generateData'])->name('generate-data');
-        Route::post('bulk-process', [PayrollController::class, 'bulkProcess'])->name('bulk-process');
-
-        // Imports/Exports
-        Route::post('import', [PayrollController::class, 'import'])->name('import');
-        Route::post('export', [PayrollController::class, 'export'])->name('export');
-        Route::get('download', [PayrollController::class, 'download'])->name('download');
-    });
-    Route::apiResource('payrolls', PayrollController::class);
-
-    // Employees
-    Route::prefix('employees')->name('employees.')->group(function () {
-        Route::get('options', [EmployeeController::class, 'options'])->name('options');
-        Route::post('bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->name('bulk-destroy');
-        Route::post('bulk-activate', [EmployeeController::class, 'bulkActivate'])->name('bulk-activate');
-        Route::post('bulk-deactivate', [EmployeeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
-        Route::post('import', [EmployeeController::class, 'import'])->name('import');
-        Route::post('export', [EmployeeController::class, 'export'])->name('export');
-        Route::get('download', [EmployeeController::class, 'download'])->name('download');
-    });
-    Route::apiResource('employees', EmployeeController::class);
 
     Route::apiResource('discount-plans', DiscountPlanController::class);
     Route::delete('discount-plans/bulk-destroy', [DiscountPlanController::class, 'bulkDestroy'])
