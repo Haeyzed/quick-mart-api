@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exports\ShiftsExport;
 use App\Imports\ShiftsImport;
 use App\Models\Shift;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -79,6 +80,8 @@ class ShiftService
     public function createShift(array $data): Shift
     {
         return DB::transaction(function () use ($data) {
+            $data['start_time'] = Carbon::parse($data['start_time'])->format('H:i:s');
+            $data['end_time']   = Carbon::parse($data['end_time'])->format('H:i:s');
             return Shift::query()->create($data);
         });
     }
@@ -93,6 +96,8 @@ class ShiftService
     public function updateShift(Shift $shift, array $data): Shift
     {
         return DB::transaction(function () use ($shift, $data) {
+            $data['start_time'] = Carbon::parse($data['start_time'])->format('H:i:s');
+            $data['end_time']   = Carbon::parse($data['end_time'])->format('H:i:s');
             $shift->update($data);
 
             return $shift->fresh();
