@@ -314,6 +314,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('import', [AttendanceController::class, 'import'])->name('import');
         Route::post('export', [AttendanceController::class, 'export'])->name('export');
         Route::get('download', [AttendanceController::class, 'download'])->name('download');
+        Route::post('web-punch', [AttendanceController::class, 'webClock'])->name('web-punch');
     });
     Route::apiResource('attendances', AttendanceController::class);
 

@@ -407,4 +407,43 @@ class AttendanceController extends Controller
         // ZKTeco STRICTLY requires the exact text "OK" to clear the log from its memory.
         return response('OK', 200)->header('Content-Type', 'text/plain');
     }
+
+    /**
+     * Web Clock-In/Out
+     *
+     * Allows authenticated employees to punch in/out directly from their web dashboard.
+     * Uses strict server time to prevent manipulation.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function webClock(Request $request): JsonResponse
+    {
+        // Optional: Ensure the user actually has permission to punch from the web
+         if (auth()->user()->denies('web punch attendance')) {
+             return response()->forbidden('Permission denied for web clock-in.');
+         }
+
+        try {
+            // Calls the new web punch logic, passing the auth ID and IP Address
+            $result = $this->service->handleWebPunch(auth()->id(), $request->ip());
+
+            if (!$result) {
+                return response()->error(
+                    'Punch ignored. You either recently punched in, or attempted an early checkout before the official closing time.'
+                );
+            }
+
+            // Optional: Broadcast event via Reverb so HR dashboard updates live!
+            event(new AttendancePunched($result['attendance'], $result['type']));
+
+            return response()->success(
+                new AttendanceResource($result['attendance']),
+                "Successfully recorded {$result['type']} via Web Portal."
+            );
+
+        } catch (Exception $e) {
+            return response()->error($e->getMessage(), ResponseAlias::HTTP_BAD_REQUEST);
+        }
+    }
 }

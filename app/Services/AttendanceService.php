@@ -8,6 +8,7 @@ use App\Enums\AttendanceStatusEnum;
 use App\Exports\AttendancesExport;
 use App\Imports\AttendancesImport;
 use App\Models\Attendance;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -234,8 +235,6 @@ class AttendanceService
 
     /**
      * Handle a real-time punch from a physical clock-in device (ADMS).
-     * Automatically pairs check-ins and check-outs, calculates late status,
-     * and strictly enforces that check-outs only register ON or AFTER the official HRM setting time.
      *
      * @param array<string, mixed> $data Contains staff_id, timestamp, and device_id.
      * @return array{attendance: Attendance, type: string}|null Returns the Attendance record and punch type, or null if ignored.
@@ -250,72 +249,116 @@ class AttendanceService
                 return null;
             }
 
-            $punchTimestamp = Carbon::parse($data['timestamp']);
-            $date = $punchTimestamp->format('Y-m-d');
-            $time = $punchTimestamp->format('H:i:s');
-
-            // Fetch Global HRM Settings for strict calculations
-            $hrmSetting = DB::table('hrm_settings')->latest()->first();
-            $defaultCheckin = $hrmSetting ? $hrmSetting->checkin : '08:00:00';
-            $defaultCheckout = $hrmSetting ? $hrmSetting->checkout : '17:00:00';
-
-            $attendance = Attendance::query()
-                ->where('date', $date)
-                ->where('employee_id', $employee->id)
-                ->first();
-
-            // ==========================================
-            // SCENARIO 1: First punch of the day (Check-in)
-            // ==========================================
-            if (!$attendance) {
-                $status = $punchTimestamp->format('H:i:s') <= Carbon::parse($defaultCheckin)->format('H:i:s')
-                    ? AttendanceStatusEnum::PRESENT->value
-                    : AttendanceStatusEnum::LATE->value;
-
-                $attendance = Attendance::query()->create([
-                    'date' => $date,
-                    'employee_id' => $employee->id,
-                    'user_id' => $employee->user_id ?? 1,
-                    'checkin' => $time,
-                    'checkout' => null,
-                    'status' => $status,
-                    'note' => 'Device Check-in: ' . ($data['device_id'] ?? 'Unknown'),
-                ]);
-
-                return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-in'];
-            }
-
-            // ==========================================
-            // SCENARIO 2: Subsequent punch (Check-out)
-            // ==========================================
-            $newPunchTime = Carbon::parse($time);
-            $officialCheckoutTime = Carbon::parse($defaultCheckout);
-
-            // STRICT RULE: Only consider as Check-out if time is ON or AFTER the official checkout time
-            if ($newPunchTime->greaterThanOrEqualTo($officialCheckoutTime)) {
-
-                $attendance->update([
-                    'checkout' => $time,
-                    'note' => ltrim($attendance->note . ' | Device Check-out: ' . ($data['device_id'] ?? 'Unknown'), ' | '),
-                ]);
-
-                return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-out'];
-
-            } else {
-                // BONUS: The punch was BEFORE the official checkout time.
-                // We do NOT set the checkout time, but we silently log their early attempt in the notes
-                // so HR can catch employees trying to sneak out early!
-                $checkinTime = Carbon::parse($attendance->checkin);
-
-                if ($newPunchTime->diffInMinutes($checkinTime) >= 15) {
-                    $attendance->update([
-                        'note' => ltrim($attendance->note . ' | Early punch attempt at ' . $time, ' | '),
-                    ]);
-                }
-            }
-
-            // Ignored punch (either too early to leave, or a double-punch)
-            return null;
+            return $this->processPunch(
+                $employee,
+                Carbon::parse($data['timestamp']),
+                'Device: ' . ($data['device_id'] ?? 'Unknown')
+            );
         });
+    }
+
+    /**
+     * Handle a manual clock-in/out punch from the Web Dashboard.
+     *
+     * @param int $userId The ID of the authenticated user pushing the button.
+     * @param string|null $ipAddress The IP address of the user for auditing.
+     * @return array{attendance: Attendance, type: string}|null
+     * @throws Exception If the user does not have an attached employee profile.
+     */
+    public function handleWebPunch(int $userId, ?string $ipAddress = null): ?array
+    {
+        return DB::transaction(function () use ($userId, $ipAddress) {
+            $employee = Employee::query()->where('user_id', $userId)->first();
+
+            if (!$employee) {
+                throw new Exception("No employee profile is associated with your account.");
+            }
+
+            $source = 'Web Portal' . ($ipAddress ? " (IP: {$ipAddress})" : '');
+
+            return $this->processPunch(
+                $employee,
+                now(),
+                $source
+            );
+        });
+    }
+
+    /**
+     * Core shared logic to process a punch (check-in/check-out) for a specific employee.
+     * Automatically pairs check-ins and check-outs, calculates late status,
+     * and strictly enforces that check-outs only register ON or AFTER the official HRM setting time.
+     *
+     * @param Employee $employee
+     * @param Carbon $punchTimestamp
+     * @param string $source
+     * @return array{attendance: Attendance, type: string}|null
+     */
+    private function processPunch(Employee $employee, Carbon $punchTimestamp, string $source): ?array
+    {
+        $date = $punchTimestamp->format('Y-m-d');
+        $time = $punchTimestamp->format('H:i:s');
+
+        // Fetch Global HRM Settings for strict calculations
+        $hrmSetting = DB::table('hrm_settings')->latest()->first();
+        $defaultCheckin = $hrmSetting ? $hrmSetting->checkin : '08:00:00';
+        $defaultCheckout = $hrmSetting ? $hrmSetting->checkout : '17:00:00';
+
+        $attendance = Attendance::query()
+            ->where('date', $date)
+            ->where('employee_id', $employee->id)
+            ->first();
+
+        // ==========================================
+        // SCENARIO 1: First punch of the day (Check-in)
+        // ==========================================
+        if (!$attendance) {
+            $status = $punchTimestamp->format('H:i:s') <= Carbon::parse($defaultCheckin)->format('H:i:s')
+                ? AttendanceStatusEnum::PRESENT->value
+                : AttendanceStatusEnum::LATE->value;
+
+            $attendance = Attendance::query()->create([
+                'date' => $date,
+                'employee_id' => $employee->id,
+                'user_id' => $employee->user_id ?? 1,
+                'checkin' => $time,
+                'checkout' => null,
+                'status' => $status,
+                'note' => "Check-in via {$source}",
+            ]);
+
+            return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-in'];
+        }
+
+        // ==========================================
+        // SCENARIO 2: Subsequent punch (Check-out)
+        // ==========================================
+        $newPunchTime = Carbon::parse($time);
+        $officialCheckoutTime = Carbon::parse($defaultCheckout);
+
+        // STRICT RULE: Only consider as Check-out if time is ON or AFTER the official checkout time
+        if ($newPunchTime->greaterThanOrEqualTo($officialCheckoutTime)) {
+
+            $attendance->update([
+                'checkout' => $time,
+                'note' => ltrim($attendance->note . " | Check-out via {$source}", ' | '),
+            ]);
+
+            return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-out'];
+
+        } else {
+            // Early punch attempt log (e.g. employee trying to leave at 2 PM)
+            $checkinTime = Carbon::parse($attendance->checkin);
+
+            // 15-minute anti-double-punch buffer
+            if ($newPunchTime->diffInMinutes($checkinTime) >= 15) {
+                $attendance->update([
+                    'note' => ltrim($attendance->note . " | Early punch attempt via {$source} at {$time}", ' | '),
+                ]);
+            }
+        }
+
+        // Ignored punch (either too early to leave, or a double-punch)
+        return null;
     }
 }
