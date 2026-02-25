@@ -18,8 +18,11 @@ use App\Models\MailSetting;
 use App\Models\User;
 use App\Models\Attendance;
 use App\Services\AttendanceService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -360,9 +363,9 @@ class AttendanceController extends Controller
      * Parses the ADMS format, logs the attendance, and triggers Reverb broadcasting.
      *
      * @param Request $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function deviceClock(Request $request): \Illuminate\Http\Response
+    public function deviceClock(Request $request): Response
     {
         // ZKTeco ADMS sends data in raw text body, not as JSON.
         $rawData = $request->getContent();
@@ -395,8 +398,8 @@ class AttendanceController extends Controller
                         event(new AttendancePunched($result['attendance'], $result['type']));
                     }
 
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Device ADMS sync failed for {$staffId}: " . $e->getMessage());
+                } catch (Exception $e) {
+                    Log::error("Device ADMS sync failed for {$staffId}: " . $e->getMessage());
                 }
             }
         }

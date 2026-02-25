@@ -31,15 +31,20 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, With
      */
     public function model(array $row): Attendance
     {
-        $checkinTime = Carbon::parse($row['checkin']);
+        // 1. Fetch Global Settings
+        $hrmSetting = DB::table('hrm_settings')->latest()->first();
+        $defaultCheckin = $hrmSetting ? $hrmSetting->checkin : '08:00:00';
+
+        // 2. Resolve Check-in
+        $checkinTime = !empty($row['checkin'])
+            ? Carbon::parse($row['checkin'])
+            : Carbon::parse($defaultCheckin);
+
+        // 3. Resolve Status
         $statusStr = strtolower((string)($row['status'] ?? ''));
 
-        // Auto-calculate status if it's blank or invalid, mimicking store logic perfectly.
         if (!in_array($statusStr, ['present', 'late', 'absent'])) {
-            $hrmSetting = DB::table('hrm_settings')->latest()->first();
-            $expectedCheckin = Carbon::parse($hrmSetting ? $hrmSetting->checkin : '08:00:00');
-
-            $statusValue = $checkinTime->lte($expectedCheckin)
+            $statusValue = $checkinTime->lte(Carbon::parse($defaultCheckin))
                 ? AttendanceStatusEnum::PRESENT->value
                 : AttendanceStatusEnum::LATE->value;
         } else {
