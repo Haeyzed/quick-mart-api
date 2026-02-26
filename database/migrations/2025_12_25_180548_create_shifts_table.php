@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('total_hours', 5, 2)->nullable()->comment('Total working hours for the shift');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index('is_active');
         });
