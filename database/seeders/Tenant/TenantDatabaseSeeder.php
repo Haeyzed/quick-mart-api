@@ -391,12 +391,12 @@ class TenantDatabaseSeeder extends Seeder
                 'export leaves',
             ],
             'leave type' => [
-                'view leave typess',
-                'create leave typess',
-                'update leave typess',
-                'delete leave typess',
-                'import leave typess',
-                'export leave typess',
+                'view leave types',
+                'create leave types',
+                'update leave types',
+                'delete leave types',
+                'import leave types',
+                'export leave types',
             ],
             'reports' => [
                 'view product report',
