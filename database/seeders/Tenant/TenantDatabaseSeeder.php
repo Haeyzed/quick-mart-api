@@ -333,12 +333,12 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'holidays' => [
                 'view holidays',
-                'create holiday',
-                'update holiday',
-                'delete holiday',
+                'create holidays',
+                'update holidays',
+                'delete holidays',
                 'import holidays',
                 'export holidays',
-                'approve holiday',
+                'approve holidays',
             ],
             'payrolls' => [
                 'view payrolls',
