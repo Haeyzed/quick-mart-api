@@ -37,11 +37,15 @@ class HolidayResource extends JsonResource
             'user_id' => $this->user_id,
 
             /**
-             * The name of the user (if relation is loaded).
+             * The user associated with the holiday (if relation is loaded).
              *
-             * @example John Doe
+             * @example {"id": 5, "name": "John Doe", "email": "john.doe@example.com"}
              */
-            'user_name' => $this->whenLoaded('user', fn() => $this->user->name),
+            'user' => $this->whenLoaded('user', fn() => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+                'email' => $this->user->email,
+            ]),
 
             /**
              * The start date of the holiday.
