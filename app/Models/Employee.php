@@ -63,14 +63,14 @@ class Employee extends Model implements AuditableContract
      */
     protected $fillable = [
         'name',
+        'email',
+        'phone_number',
         'image',
         'image_url',
         'department_id',
         'designation_id',
         'shift_id',
         'basic_salary',
-        'email',
-        'phone_number',
         'user_id',
         'staff_id',
         'country_id',
@@ -118,8 +118,28 @@ class Employee extends Model implements AuditableContract
                 fn (Builder $q) => $q->active()
             )
             ->when(
+                isset($filters['is_sale_agent']),
+                fn (Builder $q) => $q->saleAgent()
+            )
+            ->when(
                 ! empty($filters['department_id']),
                 fn (Builder $q) => $q->where('department_id', (int) $filters['department_id'])
+            )
+            ->when(
+                ! empty($filters['designation_id']),
+                fn (Builder $q) => $q->where('designation_id', (int) $filters['designation_id'])
+            )
+            ->when(
+                ! empty($filters['country_id']),
+                fn (Builder $q) => $q->where('country_id', (int) $filters['country_id'])
+            )
+            ->when(
+                ! empty($filters['state_id']),
+                fn (Builder $q) => $q->where('state_id', (int) $filters['state_id'])
+            )
+            ->when(
+                ! empty($filters['city_id']),
+                fn (Builder $q) => $q->where('city_id', (int) $filters['city_id'])
             )
             ->when(
                 ! empty($filters['search']),
@@ -130,6 +150,11 @@ class Employee extends Model implements AuditableContract
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone_number', 'like', $term)
                         ->orWhere('staff_id', 'like', $term)
+                        ->orWhereHas('user', function ($q) use ($term) {
+                            $q->where('name', 'like', $term)
+                            ->orWhere('email', 'like', $term)
+                            ->orWhere('phone_number', 'like', $term);
+                        })
                     );
                 }
             )
@@ -150,7 +175,7 @@ class Employee extends Model implements AuditableContract
     /**
      * Scope a query to only include sale agents.
      */
-    public function scopeSaleAgents(Builder $query): Builder
+    public function scopeSaleAgent(Builder $query): Builder
     {
         return $query->where('is_sale_agent', true);
     }

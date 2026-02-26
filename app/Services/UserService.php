@@ -50,7 +50,6 @@ class UserService extends BaseService
      */
     public function createUser(array $data): User
     {
-        unset($data['role_id']);
         $user = User::create($data);
 
         if (! empty($data['roles']) || ! empty($data['permissions'])) {
@@ -74,8 +73,6 @@ class UserService extends BaseService
         if (array_key_exists('password', $data) && empty($data['password'])) {
             unset($data['password']);
         }
-        unset($data['role_id']);
-
         $user->update($data);
 
         if (array_key_exists('roles', $data) || array_key_exists('permissions', $data)) {

@@ -6,41 +6,49 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->foreign('department_id')
-                ->references('id')
-                ->on('departments')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
 
-            $table->foreign('designation_id')
-                ->references('id')
-                ->on('designations')
-                ->onDelete('set null')
-                ->onUpdate('cascade');
+            $table->foreignId('department_id')
+                ->nullable()
+                ->after('user_id')
+                ->constrained('departments')
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
 
-            $table->foreign('shift_id')
-                ->references('id')
-                ->on('shifts')
-                ->onDelete('set null')
-                ->onUpdate('cascade');
+            $table->foreignId('designation_id')
+                ->nullable()
+                ->after('department_id')
+                ->constrained('designations')
+                ->nullOnDelete()
+                ->cascadeOnUpdate();
+
+            $table->foreignId('shift_id')
+                ->nullable()
+                ->after('designation_id')
+                ->constrained('shifts')
+                ->nullOnDelete()
+                ->cascadeOnUpdate();
+
+            $table->index('department_id');
+            $table->index('designation_id');
+            $table->index('shift_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
             $table->dropForeign(['designation_id']);
             $table->dropForeign(['shift_id']);
+
+            $table->dropColumn([
+                'department_id',
+                'designation_id',
+                'shift_id'
+            ]);
         });
     }
 };

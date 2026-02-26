@@ -40,7 +40,7 @@ class WarehouseResource extends JsonResource
              *
              * @example +1234567890
              */
-            'phone' => $this->phone,
+            'phone_number' => $this->phone_number,
 
             /**
              * Contact email for the warehouse.

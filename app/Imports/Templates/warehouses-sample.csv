@@ -1,4 +1,4 @@
-name,phone,email,address,is_active
+name,phone_number,email,address,is_active
 Main Warehouse,+1234567890,warehouse@example.com,123 Main St,1
 Secondary Warehouse,+0987654321,secondary@example.com,456 Oak Ave,1
 Central Distribution Hub,+1122334455,central@example.com,12 Industrial Road,1

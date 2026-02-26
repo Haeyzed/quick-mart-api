@@ -17,13 +17,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Warehouse
- * 
+ *
  * Represents a warehouse within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for warehouse entities.
  *
  * @property int $id
  * @property string $name
- * @property string|null $phone
+ * @property string|null $phone_number
  * @property string|null $email
  * @property string|null $address
  * @property bool $is_active
@@ -84,7 +84,7 @@ class Warehouse extends Model implements AuditableContract
      */
     protected $fillable = [
         'name',
-        'phone',
+        'phone_number',
         'email',
         'address',
         'is_active',
@@ -122,7 +122,7 @@ class Warehouse extends Model implements AuditableContract
                     $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
-                        ->orWhere('phone', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
                     );
                 }
             )

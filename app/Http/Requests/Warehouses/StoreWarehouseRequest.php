@@ -64,7 +64,7 @@ class StoreWarehouseRequest extends FormRequest
              *
              * @example +1234567890
              */
-            'phone' => ['required', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:255'],
 
             /**
              * Contact email for the warehouse.

@@ -67,130 +67,111 @@ class EmployeeResource extends JsonResource
             'basic_salary' => (float) $this->basic_salary,
 
             /**
-             * The ID of the associated department.
-             *
-             * @example 2
-             */
-            'department_id' => $this->department_id,
-
-            /**
-             * The loaded department relationship data.
-             *
-             * @example {"id": 2, "name": "IT"}
-             */
-            'department' => $this->whenLoaded('department', fn () => ['id' => $this->department->id, 'name' => $this->department->name]),
-
-            /**
-             * The ID of the associated designation.
-             *
-             * @example 3
-             */
-            'designation_id' => $this->designation_id,
-
-            /**
-             * The loaded designation relationship data.
-             *
-             * @example {"id": 3, "name": "Senior Developer"}
-             */
-            'designation' => $this->whenLoaded('designation', fn () => ['id' => $this->designation->id, 'name' => $this->designation->name]),
-
-            /**
-             * The ID of the associated shift.
-             *
-             * @example 1
-             */
-            'shift_id' => $this->shift_id,
-
-            /**
-             * The street address of the employee.
+             * The physical address of the employee.
              *
              * @example 123 Main Street
              */
             'address' => $this->address,
 
             /**
-             * The ID of the associated country.
+             * The associated country ID.
              *
              * @example 1
              */
             'country_id' => $this->country_id,
 
             /**
-             * The ID of the associated state.
+             * The associated state ID.
              *
              * @example 12
              */
             'state_id' => $this->state_id,
 
             /**
-             * The ID of the associated city.
+             * The associated city ID.
              *
              * @example 45
              */
             'city_id' => $this->city_id,
 
             /**
-             * The loaded country relationship data.
+             * The URL of the employee's image.
              *
-             * @example {"id": 1, "name": "United States"}
-             */
-            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
-
-            /**
-             * The loaded state relationship data.
-             *
-             * @example {"id": 12, "name": "California"}
-             */
-            'state' => $this->whenLoaded('state', fn () => $this->state ? ['id' => $this->state->id, 'name' => $this->state->name] : null),
-
-            /**
-             * The loaded city relationship data.
-             *
-             * @example {"id": 45, "name": "Los Angeles"}
-             */
-            'city' => $this->whenLoaded('city', fn () => $this->city ? ['id' => $this->city->id, 'name' => $this->city->name] : null),
-
-            /**
-             * The relative path to the employee's image.
-             *
-             * @example images/employees/avatar.png
-             */
-            'image' => $this->image,
-
-            /**
-             * The absolute URL to the employee's image.
-             *
-             * @example https://api.example.com/storage/images/employees/avatar.png
+             * @example "https://yourdomain.com/storage/images/employees/avatar.png"
              */
             'image_url' => $this->image_url,
 
             /**
-             * Indicates if the employee is currently active.
+             * Details regarding the user account associated with the employee.
+             */
+            'user' => $this->whenLoaded('user', fn() => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+                'email' => $this->user->email,
+                'phone_number' => $this->user->phone_number,
+                'is_active' => $this->user->is_active,
+                'roles' => $this->user->roles->pluck('id'),
+                'permissions' => $this->user->permissions->pluck('id'),
+            ]),
+
+            /**
+             * The department associated with the employee.
+             */
+            'department' => $this->whenLoaded('department', fn() => [
+                'id' => $this->department->id,
+                'name' => $this->department->name,
+            ]),
+
+            /**
+             * The designation associated with the employee.
+             */
+            'designation' => $this->whenLoaded('designation', fn() => [
+                'id' => $this->designation->id,
+                'name' => $this->designation->name,
+            ]),
+
+            /**
+             * The shift associated with the employee.
+             */
+            'shift' => $this->whenLoaded('shift', fn() => [
+                'id' => $this->shift->id,
+                'name' => $this->shift->name,
+                'start_time' => $this->shift->start_time,
+                'end_time' => $this->shift->end_time,
+            ]),
+
+            /**
+             * Indicates if the employee is active.
              *
              * @example true
              */
-            'is_active' => $this->is_active,
+            'is_active' => (bool) $this->is_active,
 
             /**
              * Indicates if the employee is a sales agent.
              *
              * @example false
              */
-            'is_sale_agent' => $this->is_sale_agent,
+            'is_sale_agent' => (bool) $this->is_sale_agent,
 
             /**
              * The commission percentage for the sale agent.
              *
              * @example 5.5
              */
-            'sale_commission_percent' => $this->sale_commission_percent,
+            'sale_commission_percent' => $this->sale_commission_percent ? (float) $this->sale_commission_percent : null,
 
             /**
              * The structured array defining sales targets and tier percentages.
+             * Ensures proper float casting for frontend mathematical calculations.
              *
              * @example [{"sales_from": 0, "sales_to": 1000, "percent": 5}]
              */
-            'sales_target' => $this->sales_target,
+            'sales_target' => is_array($this->sales_target) ? collect($this->sales_target)->map(fn($target) => [
+                'sales_from' => isset($target['sales_from']) ? (float) $target['sales_from'] : 0.0,
+                'sales_to'   => isset($target['sales_to']) ? (float) $target['sales_to'] : 0.0,
+                'percent'    => isset($target['percent']) ? (float) $target['percent'] : 0.0,
+            ])->toArray() : [],
 
             /**
              * The human-readable active status.
@@ -198,6 +179,13 @@ class EmployeeResource extends JsonResource
              * @example active
              */
             'active_status' => $this->is_active ? 'active' : 'inactive',
+
+            /**
+             * The human-readable sales agent status.
+             *
+             * @example yes
+             */
+            'sales_agent' => $this->is_sale_agent ? 'yes' : 'no',
 
             /**
              * The date and time when the record was created.

@@ -7,11 +7,14 @@ namespace App\Services;
 use App\Exports\EmployeesExport;
 use App\Imports\EmployeesImport;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
@@ -39,12 +42,12 @@ class EmployeeService
      * EmployeeService constructor.
      *
      * @param UploadService $uploadService Service responsible for handling file uploads.
+     * @param UserRolePermissionService $userRolePermissionService Service responsible for syncing roles and permissions.
      */
     public function __construct(
-        private readonly UploadService $uploadService
-    )
-    {
-    }
+        private readonly UploadService $uploadService,
+        private readonly UserRolePermissionService $userRolePermissionService
+    ) {}
 
     /**
      * Get paginated employees based on filters.
@@ -55,7 +58,7 @@ class EmployeeService
      */
     public function getPaginatedEmployees(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        return Employee::query()
+        $query = Employee::query()
             ->with([
                 'department:id,name',
                 'designation:id,name',
@@ -65,134 +68,190 @@ class EmployeeService
                 'city:id,name',
             ])
             ->filter($filters)
-            ->latest()
-            ->paginate($perPage);
+            ->latest();
+
+        $generalSetting = DB::table('general_settings')->latest()->first();
+
+        if (Auth::check() && $generalSetting?->staff_access === 'own') {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**
-     * Get list of employee options.
-     * Returns value/label format for select/combobox components.
+     * Create a newly registered employee and manage associated user account and files.
+     * Extracts the nested 'user' array to generate system access and sync roles/permissions.
      *
-     * @param int|null $warehouseId
-     * @return Collection<int, array{value: int, label: string}>
-     */
-    public function getOptions(?int $warehouseId): Collection
-    {
-        return Employee::active()
-            ->select('id', 'name', 'staff_id')
-            ->when($warehouseId && $warehouseId != 0, fn($query) => $query->whereHas('user', fn($q) => $q->where('warehouse_id', $warehouseId)))
-            ->orderBy('name')
-            ->get()
-            ->map(fn(Employee $employee) => [
-                'value' => $employee->id,
-                'label' => "{$employee->name} ({$employee->staff_id})",
-            ]);
-    }
-
-    /**
-     * Create a newly registered employee.
-     *
-     * @param array<string, mixed> $data
-     * @return Employee The newly created Employee model instance.
+     * @param  array<string, mixed>  $data
+     * @return Employee
      */
     public function createEmployee(array $data): Employee
     {
         return DB::transaction(function () use ($data) {
-            $data = $this->handleUploads($data);
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+                $data['image'] = $path;
+                $data['image_url'] = $this->uploadService->url($path);
+            }
+
+            if (!empty($data['user']) && is_array($data['user'])) {
+                $userData = $data['user'];
+
+                $user = User::query()->create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone_number' => $data['phone_number'] ?? null,
+                    'username' => $userData['username'],
+                    'password' => Hash::make($userData['password']),
+                    'image' => $data['image'] ?? null,
+                    'image_url' => $data['image_url'] ?? null,
+                    'is_active' => true,
+                ]);
+
+                if (!empty($userData['roles']) || !empty($userData['permissions'])) {
+                    $this->userRolePermissionService->assignRolesAndPermissions(
+                        $user,
+                        $userData['roles'] ?? [],
+                        $userData['permissions'] ?? []
+                    );
+                }
+
+                $data['user_id'] = $user->id;
+            }
+
+            unset($data['user']);
 
             return Employee::query()->create($data);
         });
     }
 
     /**
-     * Handle Image Upload via UploadService.
+     * Update an existing employee, their associated files, and their linked User account.
+     * Intelligently creates a user if added later, or updates the existing one.
+     * Synchronizes Spatie roles and permissions seamlessly.
      *
-     * @param array<string, mixed> $data
-     * @param Employee|null $employee
-     * @return array<string, mixed>
-     */
-    private function handleUploads(array $data, ?Employee $employee = null): array
-    {
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            if ($employee?->image) {
-                $this->uploadService->delete($employee->image);
-            }
-            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-            $data['image'] = $path;
-            $data['image_url'] = $this->uploadService->url($path);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Update an existing employee.
-     *
-     * @param Employee $employee The employee model instance to update.
-     * @param array<string, mixed> $data
-     * @return Employee The freshly updated Employee model instance.
+     * @param  Employee  $employee
+     * @param  array<string, mixed>  $data
+     * @return Employee
      */
     public function updateEmployee(Employee $employee, array $data): Employee
     {
         return DB::transaction(function () use ($employee, $data) {
-            $data = $this->handleUploads($data, $employee);
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                if ($employee->image) {
+                    $this->uploadService->delete($employee->image);
+                }
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+                $data['image'] = $path;
+                $data['image_url'] = $this->uploadService->url($path);
+            }
+
+            if (array_key_exists('user', $data) || $employee->user_id) {
+                $userData = $data['user'];
+
+                if (!$employee->user_id && !empty($userData['password'])) {
+                    $user = User::query()->create([
+                        'name' => $data['name'] ?? $employee->name,
+                        'email' => $data['email'] ?? $employee->email,
+                        'phone_number' => $data['phone_number'] ?? $employee->phone_number,
+                        'username' => $userData['username'] ?? null,
+                        'password' => Hash::make($userData['password']),
+                        'image' => $data['image'] ?? $employee->image,
+                        'image_url' => $data['image_url'] ?? $employee->image_url,
+                        'is_active' => true,
+                    ]);
+
+                    if (!empty($userData['roles']) || !empty($userData['permissions'])) {
+                        $this->userRolePermissionService->assignRolesAndPermissions(
+                            $user,
+                            $userData['roles'] ?? [],
+                            $userData['permissions'] ?? []
+                        );
+                    }
+
+                    $data['user_id'] = $user->id;
+                } elseif ($employee->user_id) {
+                    $user = User::query()->find($employee->user_id);
+                    if ($user) {
+                        $updatePayload = [
+                            'name' => $data['name'] ?? $employee->name,
+                            'email' => $data['email'] ?? $employee->email,
+                            'phone_number' => $data['phone_number'] ?? $employee->phone_number,
+                        ];
+
+                        if (!empty($userData['username'])) {
+                            $updatePayload['username'] = $userData['username'];
+                        }
+
+                        if (array_key_exists('image', $data)) {
+                            $updatePayload['image'] = $data['image'];
+                            $updatePayload['image_url'] = $data['image_url'] ?? null;
+                        }
+
+                        if (!empty($userData['password'])) {
+                            $updatePayload['password'] = Hash::make($userData['password']);
+                        }
+
+                        $user->update($updatePayload);
+
+                        if (isset($userData['roles']) || isset($userData['permissions'])) {
+                            $this->userRolePermissionService->assignRolesAndPermissions(
+                                $user,
+                                $userData['roles'] ?? [],
+                                $userData['permissions'] ?? []
+                            );
+                        }
+                    }
+                }
+            }
+
+            unset($data['user']);
+
             $employee->update($data);
 
-            return $employee->fresh();
+            return $employee->fresh(['department', 'designation', 'company', 'user']);
         });
     }
 
     /**
-     * Delete an employee.
+     * Delete an employee, their files, and soft-delete their user account.
      *
-     * @param Employee $employee
+     * @param  Employee  $employee
      * @return void
-     * @throws ConflictHttpException If the employee is linked to existing payrolls or attendances.
      */
     public function deleteEmployee(Employee $employee): void
     {
-        if ($employee->payrolls()->exists() || $employee->attendances()->exists()) {
-            throw new ConflictHttpException("Cannot delete employee '{$employee->name}' as they have associated HR records.");
-        }
-
         DB::transaction(function () use ($employee) {
-            $this->cleanupFiles($employee);
+            if ($employee->user_id) {
+                $user = User::query()->find($employee->user_id);
+                if ($user && $user->id > 2) {
+                    $user->update(['is_active' => false]);
+                }
+            }
+
+            if ($employee->image) {
+                $this->uploadService->delete($employee->image);
+            }
+
             $employee->delete();
         });
     }
 
     /**
-     * Remove associated files.
+     * Bulk delete multiple employees safely.
      *
-     * @param Employee $employee
-     * @return void
-     */
-    private function cleanupFiles(Employee $employee): void
-    {
-        if ($employee->image) {
-            $this->uploadService->delete($employee->image);
-        }
-    }
-
-    /**
-     * Bulk delete multiple employee records.
-     *
-     * @param array<int> $ids Array of employee IDs to be deleted.
-     * @return int The total count of successfully deleted employee records.
+     * @param  array<int>  $ids
+     * @return int
      */
     public function bulkDeleteEmployees(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
-            $employees = Employee::query()->whereIn('id', $ids)->withCount(['payrolls', 'attendances'])->get();
+            $employees = Employee::query()->whereIn('id', $ids)->get();
             $count = 0;
 
             foreach ($employees as $employee) {
-                if ($employee->payrolls_count > 0 || $employee->attendances_count > 0) {
-                    continue;
-                }
-
-                $this->cleanupFiles($employee);
-                $employee->delete();
+                $this->deleteEmployee($employee);
                 $count++;
             }
 
@@ -201,21 +260,9 @@ class EmployeeService
     }
 
     /**
-     * Update the status for multiple employee records.
+     * Import multiple employees from an uploaded file.
      *
-     * @param array<int> $ids Array of employee IDs to update.
-     * @param bool $isActive The new status value.
-     * @return int The number of records updated.
-     */
-    public function bulkUpdateStatus(array $ids, bool $isActive): int
-    {
-        return Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
-    }
-
-    /**
-     * Import multiple employee records from an uploaded file.
-     *
-     * @param UploadedFile $file The uploaded spreadsheet file.
+     * @param  UploadedFile  $file
      * @return void
      */
     public function importEmployees(UploadedFile $file): void
@@ -226,8 +273,8 @@ class EmployeeService
     /**
      * Download an employees CSV template.
      *
-     * @return string The absolute path to the downloaded file.
-     * @throws RuntimeException If the template file is missing.
+     * @return string
+     * @throws RuntimeException
      */
     public function download(): string
     {
@@ -244,11 +291,11 @@ class EmployeeService
     /**
      * Generate an export file containing employee data.
      *
-     * @param array<int> $ids Specific employee IDs to export.
-     * @param string $format The file format requested (excel/pdf).
-     * @param array<string> $columns Specific column names to include.
-     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
-     * @return string The relative file path to the generated export file.
+     * @param array<int> $ids
+     * @param string $format
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters
+     * @return string
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {

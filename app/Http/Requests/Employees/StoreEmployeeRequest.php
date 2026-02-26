@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Employees;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,13 +13,24 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for creating a new employee record.
  */
-class StoreEmployeeRequest extends FormRequest
+class StoreEmployeeRequest extends BaseRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool True if authorized, false otherwise.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Prepare the data for validation.
+     * Formats the boolean flags before rules are applied.
+     *
+     * @return void
+     */
     protected function prepareForValidation(): void
     {
         $merge = [];
@@ -135,6 +147,79 @@ class StoreEmployeeRequest extends FormRequest
              * Tiered commission array for the agent.
              */
             'sales_target' => ['nullable', 'array'],
+            'sales_target.*.sales_from' => ['required_with:sales_target', 'numeric', 'min:0'],
+            'sales_target.*.sales_to' => ['required_with:sales_target', 'numeric', 'gt:sales_target.*.sales_from'],
+            'sales_target.*.percent' => ['required_with:sales_target', 'numeric', 'min:0', 'max:100'],
+
+            /**
+             * The existing user ID to link, if not creating a new one.
+             * @example 5
+             */
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+
+            /**
+             * Nested user object for automatic system account creation.
+             * Only needs username, password, roles, and permissions since name/email are pulled from the root.
+             */
+            'user' => ['nullable', 'array'],
+
+            /**
+             * The unique username for the system account.
+             * @example janedoe
+             */
+            'user.username' => [
+                'required_with:user',
+                'string',
+                'max:255',
+                Rule::unique('users', 'username')->withoutTrashed()
+            ],
+
+            'user.password' => ['required_with:user', 'string', 'min:8'],
+
+            /**
+             * Roles array for Spatie permissions.
+             */
+            'user.roles' => ['nullable', 'array'],
+            'user.roles.*' => ['integer', 'exists:roles,id'],
+
+            /**
+             * Direct permissions array for Spatie permissions.
+             */
+            'user.permissions' => ['nullable', 'array'],
+            'user.permissions.*' => ['integer', 'exists:permissions,id'],
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     * Implements advanced cross-row validation for the sales_target array
+     * to ensure tiers do not overlap and progress sequentially.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $salesTargets = $this->input('sales_target');
+
+            if (is_array($salesTargets) && count($salesTargets) > 0) {
+                $previousTo = null;
+
+                foreach ($salesTargets as $index => $target) {
+                    $from = (float) ($target['sales_from'] ?? 0);
+                    $to = (float) ($target['sales_to'] ?? 0);
+
+                    if ($previousTo !== null && $from <= $previousTo) {
+                        $validator->errors()->add(
+                            "sales_target.{$index}.sales_from",
+                            "The sales from value must be greater than the previous tier's sales to value ({$previousTo})."
+                        );
+                    }
+
+                    $previousTo = $to;
+                }
+            }
+        });
     }
 }

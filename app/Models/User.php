@@ -23,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * User Model
- * 
+ *
  * Represents a user in the system with authentication, roles, and permissions.
  *
  * @property int $id
@@ -116,17 +116,16 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
         'name',
         'username',
         'email',
-        'avatar',
-        'avatar_url',
+        'image',
+        'image_url',
         'password',
-        'phone',
+        'phone_number',
         'company_name',
         'biller_id',
         'warehouse_id',
         'kitchen_id',
         'service_staff',
         'is_active',
-        'is_deleted',
     ];
 
     /**

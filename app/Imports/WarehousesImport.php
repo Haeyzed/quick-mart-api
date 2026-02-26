@@ -39,7 +39,7 @@ class WarehousesImport implements
 
         return new Warehouse([
             'name' => $name,
-            'phone' => $row['phone'] ?? null,
+            'phone_number' => $row['phone_number'] ?? null,
             'email' => $row['email'] ?? null,
             'address' => $row['address'] ?? null,
             'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
@@ -61,7 +61,7 @@ class WarehousesImport implements
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'phone_number' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],

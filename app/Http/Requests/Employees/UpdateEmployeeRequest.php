@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Employees;
 
+use App\Http\Requests\BaseRequest;
 use App\Models\Employee;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for updating an existing employee record.
  */
-class UpdateEmployeeRequest extends FormRequest
+class UpdateEmployeeRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -154,12 +155,7 @@ class UpdateEmployeeRequest extends FormRequest
             /**
              * The optional image or avatar for the employee.
              */
-            'image' => [
-                'nullable',
-                'image',
-                'mimes:jpeg,png,jpg,webp',
-                'max:5120',
-            ],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
             /**
              * Determines if the employee is active.
@@ -186,6 +182,81 @@ class UpdateEmployeeRequest extends FormRequest
              * Tiered commission array for the agent.
              */
             'sales_target' => ['nullable', 'array'],
+            'sales_target.*.sales_from' => ['required_with:sales_target', 'numeric', 'min:0'],
+            'sales_target.*.sales_to' => ['required_with:sales_target', 'numeric', 'gt:sales_target.*.sales_from'],
+            'sales_target.*.percent' => ['required_with:sales_target', 'numeric', 'min:0', 'max:100'],
+
+            /**
+             * The existing user ID to link.
+             * @example 5
+             */
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+
+            /**
+             * Nested user object for system account synchronization.
+             */
+            'user' => ['nullable', 'array'],
+
+            /**
+             * The unique username for the system account.
+             * Ignores the current user's ID to allow updating without conflict.
+             * @example janedoe
+             */
+            'user.username' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('users', 'username')
+                    ->ignore($employee?->user_id)
+                    ->withoutTrashed()
+            ],
+
+            'user.password' => ['nullable', 'string', 'min:8'],
+
+            /**
+             * Roles array for Spatie permissions.
+             */
+            'user.roles' => ['nullable', 'array'],
+            'user.roles.*' => ['integer', 'exists:roles,id'],
+
+            /**
+             * Direct permissions array for Spatie permissions.
+             */
+            'user.permissions' => ['nullable', 'array'],
+            'user.permissions.*' => ['integer', 'exists:permissions,id'],
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     * Implements advanced cross-row validation for the sales_target array
+     * to ensure tiers do not overlap and progress sequentially.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $salesTargets = $this->input('sales_target');
+
+            if (is_array($salesTargets) && count($salesTargets) > 0) {
+                $previousTo = null;
+
+                foreach ($salesTargets as $index => $target) {
+                    $from = (float) ($target['sales_from'] ?? 0);
+                    $to = (float) ($target['sales_to'] ?? 0);
+
+                    if ($previousTo !== null && $from <= $previousTo) {
+                        $validator->errors()->add(
+                            "sales_target.{$index}.sales_from",
+                            "The sales from value must be greater than the previous tier's sales to value ({$previousTo})."
+                        );
+                    }
+
+                    $previousTo = $to;
+                }
+            }
+        });
     }
 }
