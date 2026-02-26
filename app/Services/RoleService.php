@@ -18,7 +18,7 @@ use RuntimeException;
 
 /**
  * Class RoleService
- * Handles business logic for Roles.
+ * * Handles all core business logic and database interactions for Roles.
  */
 class RoleService
 {
@@ -28,6 +28,8 @@ class RoleService
      * Get paginated roles based on filters.
      *
      * @param array<string, mixed> $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
      */
     public function getPaginatedRoles(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -39,7 +41,9 @@ class RoleService
     }
 
     /**
-     * Get list of role options (value/label format).
+     * Get a list of role options.
+     *
+     * @return Collection
      */
     public function getOptions(): Collection
     {
@@ -47,48 +51,54 @@ class RoleService
             ->where('guard_name', 'web')
             ->select('id', 'name')
             ->orderBy('name')
-            ->get()
-            ->map(fn (Role $role) => [
-                'value' => $role->id,
-                'label' => $role->name,
-            ]);
+            ->get();
     }
 
     /**
-     * Create a new role.
+     * Create a new role and optionally sync permissions.
      *
      * @param array<string, mixed> $data
+     * @return Role
      */
     public function createRole(array $data): Role
     {
         return DB::transaction(function () use ($data) {
             $data['guard_name'] = $data['guard_name'] ?? 'web';
-            $role = Role::query()->create($data);
-            if (! empty($data['permission_ids'])) {
-                $role->syncPermissions($data['permission_ids']);
+            $role = Role::create($data);
+
+            if (!empty($data['permissions'])) {
+                $role->syncPermissions($data['permissions']);
             }
-            return $role;
+
+            return $role->load('permissions');
         });
     }
 
     /**
-     * Update an existing role.
+     * Update an existing role and sync its permissions.
      *
+     * @param Role $role
      * @param array<string, mixed> $data
+     * @return Role
      */
     public function updateRole(Role $role, array $data): Role
     {
         return DB::transaction(function () use ($role, $data) {
             $role->update($data);
-            if (array_key_exists('permission_ids', $data)) {
-                $role->syncPermissions($data['permission_ids'] ?? []);
+
+            if (array_key_exists('permissions', $data)) {
+                $role->syncPermissions($data['permissions']);
             }
-            return $role->fresh();
+
+            return $role->fresh('permissions');
         });
     }
 
     /**
      * Delete a role.
+     *
+     * @param Role $role
+     * @return void
      */
     public function deleteRole(Role $role): void
     {
@@ -98,28 +108,24 @@ class RoleService
     }
 
     /**
-     * Bulk delete roles.
+     * Bulk delete multiple roles.
      *
      * @param array<int> $ids
-     * @return int Count of deleted items.
+     * @return int
      */
     public function bulkDeleteRoles(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
-            $roles = Role::query()->whereIn('id', $ids)->get();
-            $count = 0;
-            foreach ($roles as $role) {
-                $role->delete();
-                $count++;
-            }
-            return $count;
+            return Role::query()->whereIn('id', $ids)->delete();
         });
     }
 
     /**
-     * Update status for multiple roles.
+     * Bulk update active status for roles.
      *
      * @param array<int> $ids
+     * @param bool $isActive
+     * @return int
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -127,7 +133,10 @@ class RoleService
     }
 
     /**
-     * Import roles from file.
+     * Import multiple roles from an uploaded file.
+     *
+     * @param UploadedFile $file
+     * @return void
      */
     public function importRoles(UploadedFile $file): void
     {
@@ -135,36 +144,45 @@ class RoleService
     }
 
     /**
-     * Download roles CSV template.
+     * Download a roles CSV template.
+     *
+     * @return string
+     * @throws RuntimeException
      */
     public function download(): string
     {
         $fileName = 'roles-sample.csv';
         $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
-        if (! File::exists($path)) {
+
+        if (!File::exists($path)) {
             throw new RuntimeException('Roles import template not found.');
         }
+
         return $path;
     }
 
     /**
-     * Generate roles export file.
+     * Generate an export file containing role data.
      *
      * @param array<int> $ids
+     * @param string $format
      * @param array<string> $columns
      * @param array<string, mixed> $filters
+     * @return string
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
         $fileName = 'roles_'.now()->timestamp;
         $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
         ExcelFacade::store(
             new RolesExport($ids, $columns, $filters),
             $relativePath,
             'public',
             $writerType
         );
+
         return $relativePath;
     }
 }

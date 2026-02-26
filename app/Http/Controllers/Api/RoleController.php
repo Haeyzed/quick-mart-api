@@ -30,20 +30,17 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Role CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to RoleService.
  *
- * @group Role Management
+ * @tags Role Management
  */
 class RoleController extends Controller
 {
-    /**
-     * RoleController constructor.
-     */
     public function __construct(
         private readonly RoleService $service
-    )
-    {
-    }
+    ) {}
 
     /**
+     * List Roles
+     *
      * Display a paginated listing of roles.
      */
     public function index(Request $request): JsonResponse
@@ -53,8 +50,46 @@ class RoleController extends Controller
         }
 
         $roles = $this->service->getPaginatedRoles(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter shifts by name.
+                 *
+                 * @example "Morning"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'is_active' => ['nullable', 'boolean'],
+                /**
+                 * Filter shifts starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter shifts up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+                /**
+                 * Filter by guard name.
+                 *
+                 * @example "web"
+                 */
+                'guard_name' => ['nullable', 'string'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -64,24 +99,25 @@ class RoleController extends Controller
     }
 
     /**
-     * Get role options for select components.
+     * List Options
+     *
+     * Retrieves a lightweight list of roles for dropdowns.
      */
     public function options(): JsonResponse
     {
-        if (auth()->user()->denies('view roles')) {
-            return response()->forbidden('Permission denied for viewing roles options.');
-        }
-
-        return response()->success($this->service->getOptions(), 'Role options retrieved successfully');
+        return response()->success(
+            $this->service->getOptions(),
+            'Role options retrieved successfully'
+        );
     }
 
     /**
-     * Store a newly created role.
+     * Create Role
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
         if (auth()->user()->denies('create roles')) {
-            return response()->forbidden('Permission denied for create role.');
+            return response()->forbidden('Permission denied for creating role.');
         }
 
         $role = $this->service->createRole($request->validated());
@@ -94,27 +130,27 @@ class RoleController extends Controller
     }
 
     /**
-     * Display the specified role.
+     * Show Role
      */
     public function show(Role $role): JsonResponse
     {
-        if (auth()->user()->denies('view role details')) {
-            return response()->forbidden('Permission denied for view role.');
+        if (auth()->user()->denies('view roles')) {
+            return response()->forbidden('Permission denied for viewing role.');
         }
 
         return response()->success(
             new RoleResource($role->load('permissions')),
-            'Role details retrieved successfully'
+            'Role retrieved successfully'
         );
     }
 
     /**
-     * Update the specified role.
+     * Update Role
      */
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
         if (auth()->user()->denies('update roles')) {
-            return response()->forbidden('Permission denied for update role.');
+            return response()->forbidden('Permission denied for updating role.');
         }
 
         $updatedRole = $this->service->updateRole($role, $request->validated());
@@ -126,12 +162,16 @@ class RoleController extends Controller
     }
 
     /**
-     * Remove the specified role.
+     * Delete Role
      */
     public function destroy(Role $role): JsonResponse
     {
         if (auth()->user()->denies('delete roles')) {
-            return response()->forbidden('Permission denied for delete role.');
+            return response()->forbidden('Permission denied for deleting role.');
+        }
+
+        if (in_array($role->name, ['admin', 'super-admin', 'Customer'])) {
+            return response()->error("System roles cannot be deleted.", ResponseAlias::HTTP_FORBIDDEN);
         }
 
         $this->service->deleteRole($role);
@@ -140,12 +180,12 @@ class RoleController extends Controller
     }
 
     /**
-     * Bulk delete roles.
+     * Bulk Delete Roles
      */
     public function bulkDestroy(RoleBulkActionRequest $request): JsonResponse
     {
         if (auth()->user()->denies('delete roles')) {
-            return response()->forbidden('Permission denied for bulk delete roles.');
+            return response()->forbidden('Permission denied for bulk deleting roles.');
         }
 
         $count = $this->service->bulkDeleteRoles($request->validated()['ids']);
@@ -157,85 +197,74 @@ class RoleController extends Controller
     }
 
     /**
-     * Bulk activate roles.
+     * Bulk Mark Active/Inactive
      */
-    public function bulkActivate(RoleBulkActionRequest $request): JsonResponse
+    public function bulkUpdateStatus(RoleBulkActionRequest $request): JsonResponse
     {
         if (auth()->user()->denies('update roles')) {
-            return response()->forbidden('Permission denied for bulk update roles.');
+            return response()->forbidden('Permission denied for updating roles.');
         }
 
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+        $isActive = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], $isActive);
+        $statusText = $isActive ? 'active' : 'inactive';
 
         return response()->success(
-            ['activated_count' => $count],
-            "{$count} roles activated"
+            ['updated_count' => $count],
+            "Successfully marked {$count} roles as {$statusText}"
         );
     }
 
     /**
-     * Bulk deactivate roles.
-     */
-    public function bulkDeactivate(RoleBulkActionRequest $request): JsonResponse
-    {
-        if (auth()->user()->denies('update roles')) {
-            return response()->forbidden('Permission denied for bulk update roles.');
-        }
-
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
-
-        return response()->success(
-            ['deactivated_count' => $count],
-            "{$count} roles deactivated"
-        );
-    }
-
-    /**
-     * Import roles from Excel/CSV.
+     * Import Roles
      */
     public function import(ImportRequest $request): JsonResponse
     {
         if (auth()->user()->denies('import roles')) {
-            return response()->forbidden('Permission denied for import roles.');
+            return response()->forbidden('Permission denied for importing roles.');
         }
+
         $this->service->importRoles($request->file('file'));
+
         return response()->success(null, 'Roles imported successfully');
     }
 
     /**
-     * Export roles to Excel or PDF.
+     * Export Roles
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
         if (auth()->user()->denies('export roles')) {
-            return response()->forbidden('Permission denied for export roles.');
+            return response()->forbidden('Permission denied for exporting roles.');
         }
+
         $validated = $request->validated();
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
             $validated['columns'] ?? [],
-            [
-                'start_date' => $validated['start_date'] ?? null,
-                'end_date' => $validated['end_date'] ?? null,
-            ]
+            $validated['filters'] ?? []
         );
+
         if (($validated['method'] ?? 'download') === 'download') {
-            return response()
-                ->download(Storage::disk('public')->path($path))
-                ->deleteFileAfterSend();
+            return response()->download(Storage::disk('public')->path($path))->deleteFileAfterSend();
         }
+
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
-            $user = User::query()->find($userId);
-            if (! $user) {
-                return response()->error('User not found for email delivery.');
+            $user = User::find($userId);
+
+            if (!$user || !$user->email) {
+                return response()->error('User not found or missing email for delivery.');
             }
+
             $mailSetting = MailSetting::default()->first();
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
+
             $generalSetting = GeneralSetting::query()->latest()->first();
+
             Mail::to($user)->queue(
                 new ExportMail(
                     $user,
@@ -246,23 +275,24 @@ class RoleController extends Controller
                     $mailSetting
                 )
             );
-            return response()->success(
-                null,
-                'Export is being processed and will be sent to email: '.$user->email
-            );
+
+            return response()->success(null, 'Export is being processed and will be sent to email: '.$user->email);
         }
+
         return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Download roles import sample template.
+     * Download Role Import Template
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
         if (auth()->user()->denies('import roles')) {
             return response()->forbidden('Permission denied for downloading roles import template.');
         }
+
         $path = $this->service->download();
+
         return response()->download(
             $path,
             basename($path),

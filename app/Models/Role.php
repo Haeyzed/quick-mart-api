@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use OwenIt\Auditing\Auditable;
-use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 /**
  * Role Model
- * 
+ *
  * Extends Spatie Permission Role with description, module, and is_active.
  *
  * @property int $id
@@ -25,76 +25,50 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @method static Builder|Role active()
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
- * @property-read int|null $audits_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Permission> $permissions
- * @property-read int|null $permissions_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
- * @property-read int|null $users_count
  * @method static Builder<static>|Role filter(array $filters)
- * @method static Builder<static>|Role newModelQuery()
- * @method static Builder<static>|Role newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Role permission($permissions, $without = false)
- * @method static Builder<static>|Role query()
- * @method static Builder<static>|Role whereCreatedAt($value)
- * @method static Builder<static>|Role whereDescription($value)
- * @method static Builder<static>|Role whereGuardName($value)
- * @method static Builder<static>|Role whereId($value)
- * @method static Builder<static>|Role whereIsActive($value)
- * @method static Builder<static>|Role whereModule($value)
- * @method static Builder<static>|Role whereName($value)
- * @method static Builder<static>|Role whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Role withoutPermission($permissions)
- * @mixin \Eloquent
  */
-class Role extends \Spatie\Permission\Models\Role implements AuditableContract
+class Role extends SpatieRole
 {
-    use Auditable, HasFactory;
+    use HasFactory, FilterableByDates, SoftDeletes;
 
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'roles';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
-        'description',
         'guard_name',
+        'description',
         'is_active',
-        'module',
     ];
 
     /**
      * Scope a query to apply filters.
+     *
+     * @param Builder $query
+     * @param array<string, mixed> $filters
+     * @return Builder
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                isset($filters['status']),
-                fn (Builder $q) => $q->where('is_active', (bool) $filters['status'])
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
+                    $term = '%' . $filters['search'] . '%';
                     $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('description', 'like', $term)
-                        ->orWhere('module', 'like', $term)
                     );
                 }
             )
             ->when(
-                ! empty($filters['guard_name']),
+                !empty($filters['guard_name']),
                 fn (Builder $q) => $q->where('guard_name', $filters['guard_name'])
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

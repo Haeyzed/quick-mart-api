@@ -18,7 +18,7 @@ use RuntimeException;
 
 /**
  * Class PermissionService
- * Handles business logic for Permissions.
+ * * Handles all core business logic and database interactions for Permissions.
  */
 class PermissionService
 {
@@ -28,6 +28,8 @@ class PermissionService
      * Get paginated permissions based on filters.
      *
      * @param array<string, mixed> $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
      */
     public function getPaginatedPermissions(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -38,7 +40,9 @@ class PermissionService
     }
 
     /**
-     * Get list of permission options (value/label format).
+     * Get a list of permission options for dropdowns.
+     *
+     * @return Collection
      */
     public function getOptions(): Collection
     {
@@ -46,30 +50,29 @@ class PermissionService
             ->where('guard_name', 'web')
             ->select('id', 'name')
             ->orderBy('name')
-            ->get()
-            ->map(fn (Permission $permission) => [
-                'value' => $permission->id,
-                'label' => $permission->name,
-            ]);
+            ->get();
     }
 
     /**
      * Create a new permission.
      *
      * @param array<string, mixed> $data
+     * @return Permission
      */
     public function createPermission(array $data): Permission
     {
         return DB::transaction(function () use ($data) {
             $data['guard_name'] = $data['guard_name'] ?? 'web';
-            return Permission::query()->create($data);
+            return Permission::create($data);
         });
     }
 
     /**
      * Update an existing permission.
      *
+     * @param Permission $permission
      * @param array<string, mixed> $data
+     * @return Permission
      */
     public function updatePermission(Permission $permission, array $data): Permission
     {
@@ -81,6 +84,9 @@ class PermissionService
 
     /**
      * Delete a permission.
+     *
+     * @param Permission $permission
+     * @return void
      */
     public function deletePermission(Permission $permission): void
     {
@@ -90,28 +96,24 @@ class PermissionService
     }
 
     /**
-     * Bulk delete permissions.
+     * Bulk delete multiple permissions.
      *
      * @param array<int> $ids
-     * @return int Count of deleted items.
+     * @return int
      */
     public function bulkDeletePermissions(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
-            $permissions = Permission::query()->whereIn('id', $ids)->get();
-            $count = 0;
-            foreach ($permissions as $permission) {
-                $permission->delete();
-                $count++;
-            }
-            return $count;
+            return Permission::query()->whereIn('id', $ids)->delete();
         });
     }
 
     /**
-     * Update status for multiple permissions.
+     * Bulk update active status for permissions.
      *
      * @param array<int> $ids
+     * @param bool $isActive
+     * @return int
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -119,7 +121,10 @@ class PermissionService
     }
 
     /**
-     * Import permissions from file.
+     * Import multiple permissions from an uploaded file.
+     *
+     * @param UploadedFile $file
+     * @return void
      */
     public function importPermissions(UploadedFile $file): void
     {
@@ -127,36 +132,45 @@ class PermissionService
     }
 
     /**
-     * Download permissions CSV template.
+     * Download a permissions CSV template.
+     *
+     * @return string
+     * @throws RuntimeException
      */
     public function download(): string
     {
         $fileName = 'permissions-sample.csv';
         $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
-        if (! File::exists($path)) {
+
+        if (!File::exists($path)) {
             throw new RuntimeException('Permissions import template not found.');
         }
+
         return $path;
     }
 
     /**
-     * Generate permissions export file.
+     * Generate an export file containing permission data.
      *
      * @param array<int> $ids
+     * @param string $format
      * @param array<string> $columns
      * @param array<string, mixed> $filters
+     * @return string
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
         $fileName = 'permissions_'.now()->timestamp;
         $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
         ExcelFacade::store(
             new PermissionsExport($ids, $columns, $filters),
             $relativePath,
             'public',
             $writerType
         );
+
         return $relativePath;
     }
 }

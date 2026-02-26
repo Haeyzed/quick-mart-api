@@ -30,20 +30,17 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * API Controller for Permission CRUD and bulk operations.
  * Handles authorization via Policy and delegates logic to PermissionService.
  *
- * @group Permission Management
+ * @tags Permission Management
  */
 class PermissionController extends Controller
 {
-    /**
-     * PermissionController constructor.
-     */
     public function __construct(
         private readonly PermissionService $service
-    )
-    {
-    }
+    ) {}
 
     /**
+     * List Permissions
+     *
      * Display a paginated listing of permissions.
      */
     public function index(Request $request): JsonResponse
@@ -53,8 +50,52 @@ class PermissionController extends Controller
         }
 
         $permissions = $this->service->getPaginatedPermissions(
-            $request->all(),
-            (int)$request->input('per_page', 10)
+            $request->validate([
+                /**
+                 * Search term to filter shifts by name.
+                 *
+                 * @example "Morning"
+                 */
+                'search' => ['nullable', 'string'],
+                /**
+                 * Filter by active status.
+                 *
+                 * @example true
+                 */
+                'is_active' => ['nullable', 'boolean'],
+                /**
+                 * Filter shifts starting from this date.
+                 *
+                 * @example "2024-01-01"
+                 */
+                'start_date' => ['nullable', 'date'],
+                /**
+                 * Filter shifts up to this date.
+                 *
+                 * @example "2024-12-31"
+                 */
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+                /**
+                 * Filter by guard name.
+                 *
+                 * @example "web"
+                 */
+                'guard_name' => ['nullable', 'string'],
+                /**
+                 * Filter by module.
+                 *
+                 * @example "hrm"
+                 */
+                'module' => ['nullable', 'string'],
+            ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
+            $request->integer('per_page', config('app.per_page'))
         );
 
         return response()->success(
@@ -64,24 +105,25 @@ class PermissionController extends Controller
     }
 
     /**
-     * Get permission options for select components.
+     * List Options
+     *
+     * Retrieves a lightweight list of permissions for dropdowns.
      */
     public function options(): JsonResponse
     {
-        if (auth()->user()->denies('view permissions')) {
-            return response()->forbidden('Permission denied for viewing permissions options.');
-        }
-
-        return response()->success($this->service->getOptions(), 'Permission options retrieved successfully');
+        return response()->success(
+            $this->service->getOptions(),
+            'Permission options retrieved successfully'
+        );
     }
 
     /**
-     * Store a newly created permission.
+     * Create Permission
      */
     public function store(StorePermissionRequest $request): JsonResponse
     {
         if (auth()->user()->denies('create permissions')) {
-            return response()->forbidden('Permission denied for create permission.');
+            return response()->forbidden('Permission denied for creating permission.');
         }
 
         $permission = $this->service->createPermission($request->validated());
@@ -94,27 +136,27 @@ class PermissionController extends Controller
     }
 
     /**
-     * Display the specified permission.
+     * Show Permission
      */
     public function show(Permission $permission): JsonResponse
     {
-        if (auth()->user()->denies('view permission details')) {
-            return response()->forbidden('Permission denied for view permission.');
+        if (auth()->user()->denies('view permissions')) {
+            return response()->forbidden('Permission denied for viewing permission.');
         }
 
         return response()->success(
             new PermissionResource($permission),
-            'Permission details retrieved successfully'
+            'Permission retrieved successfully'
         );
     }
 
     /**
-     * Update the specified permission.
+     * Update Permission
      */
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
         if (auth()->user()->denies('update permissions')) {
-            return response()->forbidden('Permission denied for update permission.');
+            return response()->forbidden('Permission denied for updating permission.');
         }
 
         $updatedPermission = $this->service->updatePermission($permission, $request->validated());
@@ -126,12 +168,12 @@ class PermissionController extends Controller
     }
 
     /**
-     * Remove the specified permission.
+     * Delete Permission
      */
     public function destroy(Permission $permission): JsonResponse
     {
         if (auth()->user()->denies('delete permissions')) {
-            return response()->forbidden('Permission denied for delete permission.');
+            return response()->forbidden('Permission denied for deleting permission.');
         }
 
         $this->service->deletePermission($permission);
@@ -140,12 +182,12 @@ class PermissionController extends Controller
     }
 
     /**
-     * Bulk delete permissions.
+     * Bulk Delete Permissions
      */
     public function bulkDestroy(PermissionBulkActionRequest $request): JsonResponse
     {
         if (auth()->user()->denies('delete permissions')) {
-            return response()->forbidden('Permission denied for bulk delete permissions.');
+            return response()->forbidden('Permission denied for bulk deleting permissions.');
         }
 
         $count = $this->service->bulkDeletePermissions($request->validated()['ids']);
@@ -157,85 +199,74 @@ class PermissionController extends Controller
     }
 
     /**
-     * Bulk activate permissions.
+     * Bulk Mark Active/Inactive
      */
-    public function bulkActivate(PermissionBulkActionRequest $request): JsonResponse
+    public function bulkUpdateStatus(PermissionBulkActionRequest $request): JsonResponse
     {
         if (auth()->user()->denies('update permissions')) {
-            return response()->forbidden('Permission denied for bulk update permissions.');
+            return response()->forbidden('Permission denied for updating permissions.');
         }
 
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], true);
+        $isActive = filter_var($request->input('is_active', true), FILTER_VALIDATE_BOOLEAN);
+        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], $isActive);
+        $statusText = $isActive ? 'active' : 'inactive';
 
         return response()->success(
-            ['activated_count' => $count],
-            "{$count} permissions activated"
+            ['updated_count' => $count],
+            "Successfully marked {$count} permissions as {$statusText}"
         );
     }
 
     /**
-     * Bulk deactivate permissions.
-     */
-    public function bulkDeactivate(PermissionBulkActionRequest $request): JsonResponse
-    {
-        if (auth()->user()->denies('update permissions')) {
-            return response()->forbidden('Permission denied for bulk update permissions.');
-        }
-
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], false);
-
-        return response()->success(
-            ['deactivated_count' => $count],
-            "{$count} permissions deactivated"
-        );
-    }
-
-    /**
-     * Import permissions from Excel/CSV.
+     * Import Permissions
      */
     public function import(ImportRequest $request): JsonResponse
     {
         if (auth()->user()->denies('import permissions')) {
-            return response()->forbidden('Permission denied for import permissions.');
+            return response()->forbidden('Permission denied for importing permissions.');
         }
+
         $this->service->importPermissions($request->file('file'));
+
         return response()->success(null, 'Permissions imported successfully');
     }
 
     /**
-     * Export permissions to Excel or PDF.
+     * Export Permissions
      */
     public function export(ExportRequest $request): JsonResponse|BinaryFileResponse
     {
         if (auth()->user()->denies('export permissions')) {
-            return response()->forbidden('Permission denied for export permissions.');
+            return response()->forbidden('Permission denied for exporting permissions.');
         }
+
         $validated = $request->validated();
         $path = $this->service->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
             $validated['columns'] ?? [],
-            [
-                'start_date' => $validated['start_date'] ?? null,
-                'end_date' => $validated['end_date'] ?? null,
-            ]
+            $validated['filters'] ?? []
         );
+
         if (($validated['method'] ?? 'download') === 'download') {
-            return response()
-                ->download(Storage::disk('public')->path($path))
-                ->deleteFileAfterSend();
+            return response()->download(Storage::disk('public')->path($path))->deleteFileAfterSend();
         }
+
         if ($validated['method'] === 'email') {
             $userId = $validated['user_id'] ?? auth()->id();
-            $user = User::query()->find($userId);
-            if (! $user) {
-                return response()->error('User not found for email delivery.');
+            $user = User::find($userId);
+
+            if (!$user || !$user->email) {
+                return response()->error('User not found or missing email for delivery.');
             }
+
             $mailSetting = MailSetting::default()->first();
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
+
             $generalSetting = GeneralSetting::query()->latest()->first();
+
             Mail::to($user)->queue(
                 new ExportMail(
                     $user,
@@ -246,23 +277,24 @@ class PermissionController extends Controller
                     $mailSetting
                 )
             );
-            return response()->success(
-                null,
-                'Export is being processed and will be sent to email: '.$user->email
-            );
+
+            return response()->success(null, 'Export is being processed and will be sent to email: '.$user->email);
         }
+
         return response()->error('Invalid export method provided.');
     }
 
     /**
-     * Download permissions import sample template.
+     * Download Permission Import Template
      */
     public function download(): JsonResponse|BinaryFileResponse
     {
         if (auth()->user()->denies('import permissions')) {
             return response()->forbidden('Permission denied for downloading permissions import template.');
         }
+
         $path = $this->service->download();
+
         return response()->download(
             $path,
             basename($path),

@@ -4,40 +4,85 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Roles;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreRoleRequest extends FormRequest
+/**
+ * Class StoreRoleRequest
+ *
+ * Handles validation and authorization for creating a new role.
+ */
+class StoreRoleRequest extends BaseRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * @return array<string, array<int, mixed>>
+     * Prepare the data for validation.
      */
-    public function rules(): array
-    {
-        $guard = $this->input('guard_name', 'web');
-        return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->where('guard_name', $guard)],
-            'description' => ['nullable', 'string', 'max:500'],
-            'guard_name' => ['nullable', 'string', 'max:255'],
-            'module' => ['nullable', 'string', 'max:255'],
-            'is_active' => ['nullable', 'boolean'],
-            'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => ['integer', 'exists:permissions,id'],
-        ];
-    }
-
     protected function prepareForValidation(): void
     {
         if ($this->has('is_active')) {
             $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
         }
-        if ($this->has('guard_name') && empty($this->guard_name)) {
-            $this->merge(['guard_name' => 'web']);
-        }
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(): array
+    {
+        $guard = $this->input('guard_name', 'web');
+
+        return [
+            /**
+             * The name of the role.
+             * @example HR Manager
+             */
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('roles', 'name')->where('guard_name', $guard)
+            ],
+
+            /**
+             * The description of the role's purpose.
+             * @example Manages all human resource activities.
+             */
+            'description' => ['nullable', 'string', 'max:500'],
+
+            /**
+             * The authentication guard the role belongs to.
+             * @example web
+             */
+            'guard_name' => ['nullable', 'string', 'max:255'],
+
+            /**
+             * Determines if the role is active.
+             * @example true
+             */
+            'is_active' => ['nullable', 'boolean'],
+
+            /**
+             * An array of permission IDs attached to this role.
+             * @example [1, 2, 5]
+             */
+            'permissions' => ['nullable', 'array'],
+
+            /**
+             * Validate each permission exists.
+             * @example 1
+             */
+            'permissions.*' => ['integer', 'exists:permissions,id'],
+        ];
     }
 }

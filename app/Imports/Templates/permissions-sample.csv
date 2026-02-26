@@ -1,7 +1,7 @@
-name,guard_name,module,is_active
-view roles,web,roles,1
-create roles,web,roles,1
-update roles,web,roles,1
-delete roles,web,roles,1
-view permissions,web,permissions,1
-create permissions,web,permissions,1
+name,guard_name,module,description,is_active
+view roles,web,roles,Can view all roles,true
+create roles,web,roles,Can create new roles,true
+update roles,web,roles,Can update existing roles,true
+delete roles,web,roles,Can delete roles,true
+view permissions,web,permissions,Can view all permissions,true
+create permissions,web,permissions,Can create new permissions,true

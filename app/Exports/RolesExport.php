@@ -12,59 +12,88 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Export roles to Excel/PDF.
+ * Class RolesExport
+ *
+ * Handles the logic for exporting role records to an Excel or PDF file.
+ * Supports selective exporting via IDs, custom columns, and dynamic filters.
  */
 class RolesExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
+    /**
+     * Default columns to export if none are explicitly specified.
+     */
     private const DEFAULT_COLUMNS = [
         'id',
         'name',
         'description',
         'guard_name',
-        'module',
         'permissions_count',
         'is_active',
         'created_at',
         'updated_at',
     ];
 
-    /** @param array<int> $ids @param array<string> $columns @param array<string, mixed> $filters */
+    /**
+     * RolesExport constructor.
+     *
+     * @param array<int> $ids Array of specific role IDs to export.
+     * @param array<string> $columns Array of specific columns to include in the export.
+     * @param array<string, mixed> $filters Associative array of dynamic filters to apply to the query.
+     */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {
-    }
+    ) {}
 
+    /**
+     * Prepare the query for the export.
+     *
+     * @return Builder
+     */
     public function query(): Builder
     {
         return Role::query()
             ->withCount('permissions')
             ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
             ->when(! empty($this->filters), fn (Builder $q) => $q->filter($this->filters))
+            ->filter($this->filters)
             ->orderBy('name');
     }
 
+    /**
+     * Define the headings for the top row of the export file.
+     *
+     * @return array<int, string>
+     */
     public function headings(): array
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
+
         return array_map(fn (string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
     }
 
-    /** @param Role $row @return array<int, mixed> */
+    /**
+     * Map the role model data to the corresponding export columns.
+     *
+     * @param Role $row The current role model instance being processed.
+     * @return array<int, mixed>
+     */
     public function map($row): array
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
+
         return array_map(function ($col) use ($row) {
             return match ($col) {
                 'permissions_count' => $row->permissions_count ?? $row->permissions()->count(),
                 'is_active' => $row->is_active ? 'Active' : 'Inactive',
-                'created_at' => $row->created_at?->toDateTimeString(),
-                'updated_at' => $row->updated_at?->toDateTimeString(),
-                default => $row->{$col} ?? '',
+                'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'updated_at' => $row->updated_at?->format('Y-m-d H:i:s'),
+                default => $row->{$col},
             };
         }, $columns);
     }
 }
+
