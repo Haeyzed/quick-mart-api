@@ -320,7 +320,7 @@ class LeaveTypeController extends Controller
     }
 
     /**
-     * Download Import Template
+     * Download Leave Type Import Template
      *
      * Download a sample CSV template file to assist with formatting data for the bulk import feature.
      */

@@ -1,4 +1,11 @@
-name,start_time,end_time,late_time_limit,is_active
-Morning Shift,08:00,16:00,08:15,true
-Evening Shift,16:00,00:00,16:15,true
-Night Shift,00:00,08:00,00:15,true
+name,start_time,end_time,grace_in,grace_out,is_active
+Morning Shift,08:00,16:00,15,15,true
+Evening Shift,16:00,00:00,10,10,true
+Night Shift,00:00,08:00,15,15,true
+General Shift,09:00,17:00,20,10,true
+Midday Shift,12:00,20:00,15,15,true
+Early Morning Shift,06:00,14:00,10,10,true
+Afternoon Shift,14:00,22:00,15,15,true
+Late Night Shift,22:00,06:00,15,15,false
+Weekend Shift,08:00,20:00,30,30,true
+Security Shift,18:00,06:00,15,15,true

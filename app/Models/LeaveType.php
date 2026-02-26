@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class LeaveType
- * 
+ *
  * Represents a leave type within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for leave type entities.
  *
@@ -134,6 +134,6 @@ class LeaveType extends Model implements AuditableContract
      */
     public function leaves(): HasMany
     {
-        return $this->hasMany(Leave::class, 'leave_types');
+        return $this->hasMany(Leave::class);
     }
 }

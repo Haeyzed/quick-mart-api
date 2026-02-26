@@ -2,3 +2,10 @@ name,annual_quota,encashable,carry_forward_limit,is_active
 Annual Leave,21,true,5,true
 Sick Leave,14,false,0,true
 Maternity Leave,90,false,0,true
+Paternity Leave,14,false,0,true
+Unpaid Leave,0,false,0,true
+Bereavement Leave,5,false,0,true
+Study Leave,10,false,0,true
+Marriage Leave,5,false,0,true
+Casual Leave,7,true,2,true
+Public Holiday,0,false,0,false
