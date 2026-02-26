@@ -90,6 +90,13 @@ class HolidayResource extends JsonResource
             'is_approved' => $this->is_approved,
 
             /**
+             * The approve status as a readable string.
+             *
+             * @example approve
+             */
+            'approve_status' => $this->is_approved ? 'approved' : 'unapproved',
+
+            /**
              * The date and time when the holiday was created.
              *
              * @example 2024-01-01T12:00:00Z
