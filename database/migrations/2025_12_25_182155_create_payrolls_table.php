@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PaymentMethodEnum;
 use App\Enums\PayrollStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -19,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('account_id');
             $table->unsignedBigInteger('user_id');
             $table->double('amount');
-            $table->string('paying_method');
+            $table->string('paying_method')->default(PaymentMethodEnum::CASH->value);
             $table->text('note')->nullable();
             $table->string('status')->default(PayrollStatusEnum::DRAFT->value);
             $table->json('amount_array')->nullable();
