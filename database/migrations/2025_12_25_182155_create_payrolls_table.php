@@ -16,9 +16,18 @@ return new class extends Migration
         Schema::create('payrolls', function (Blueprint $table) {
             $table->id();
             $table->string('reference_no');
-            $table->unsignedBigInteger('employee_id');
-            $table->unsignedBigInteger('account_id');
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('employee_id')
+                ->constrained('employees')
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
+            $table->foreignId('account_id')
+                ->constrained('accounts')
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->restrictOnDelete()
+                ->cascadeOnUpdate();
             $table->double('amount');
             $table->string('paying_method')->default(PaymentMethodEnum::CASH->value);
             $table->text('note')->nullable();
@@ -27,24 +36,6 @@ return new class extends Migration
             $table->string('month')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->foreign('employee_id')
-                ->references('id')
-                ->on('employees')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-
-            $table->foreign('account_id')
-                ->references('id')
-                ->on('accounts')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
 
             $table->index('reference_no');
             $table->index('employee_id');
