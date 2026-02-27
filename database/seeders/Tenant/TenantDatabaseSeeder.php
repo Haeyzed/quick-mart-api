@@ -292,9 +292,9 @@ class TenantDatabaseSeeder extends Seeder
             ],
             'employees' => [
                 'view employees',
-                'create employee',
-                'update employee',
-                'delete employee',
+                'create employees',
+                'update employees',
+                'delete employees',
                 'import employees',
                 'export employees',
             ],
