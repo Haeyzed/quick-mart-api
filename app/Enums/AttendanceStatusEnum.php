@@ -14,4 +14,5 @@ enum AttendanceStatusEnum: string
     case PRESENT = 'present';
     case LATE = 'late';
     case ABSENT = 'absent';
+    case LEAVE = 'leave';
 }

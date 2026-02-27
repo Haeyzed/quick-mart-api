@@ -48,7 +48,10 @@ class AttendanceResource extends JsonResource
              *
              * @example John Doe
              */
-            'employee_name' => $this->whenLoaded('employee', fn() => $this->employee->name),
+            'employee' => $this->whenLoaded('employee', fn() => [
+                'id' => $this->employee->id,
+                'name' => $this->employee->name,
+            ]),
 
             /**
              * The ID of the user who recorded the attendance.
@@ -58,11 +61,14 @@ class AttendanceResource extends JsonResource
             'user_id' => $this->user_id,
 
             /**
-             * The name of the user who recorded the attendance (if relation is loaded).
+             * The name of the user (if relation is loaded).
              *
-             * @example Admin User
+             * @example John Doe
              */
-            'user_name' => $this->whenLoaded('user', fn() => $this->user->name),
+            'user' => $this->whenLoaded('user', fn() => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+            ]),
 
             /**
              * The check-in time.

@@ -259,7 +259,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('bulk-destroy', [AttendanceController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-mark-present', [AttendanceController::class, 'bulkMarkPresent'])->name('bulk-mark-present');
         Route::post('bulk-mark-late', [AttendanceController::class, 'bulkMarkLate'])->name('bulk-mark-late');
-        Route::post('bulk-mark-absent', [AttendanceController::class, 'bulkMarkAbsent'])->name('bulk-mark-absent');
         Route::post('import', [AttendanceController::class, 'import'])->name('import');
         Route::post('export', [AttendanceController::class, 'export'])->name('export');
         Route::get('download', [AttendanceController::class, 'download'])->name('download');

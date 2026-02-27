@@ -9,6 +9,7 @@ use App\Exports\AttendancesExport;
 use App\Imports\AttendancesImport;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\GeneralSetting;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -39,108 +40,103 @@ class AttendanceService
      * Get paginated attendances based on filters.
      * Inherits legacy access control logic limiting regular staff to their own records.
      *
-     * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
+     * @param array<string, mixed> $filters
+     * @param int $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginatedAttendances(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         $generalSetting = DB::table('general_settings')->latest()->first();
 
-        if (Auth::check() && Auth::user() && $generalSetting && $generalSetting?->staff_access === 'own') {
-            $filters['user_id'] = Auth::id();
+        $query = Attendance::query()
+            ->with(['employee:id,name', 'user:id,name,warehouse_id'])
+            ->filter($filters)
+            ->orderByDesc('date');
+
+        if (Auth::check() &&
+            !Auth::user()->hasRole('Super Admin') &&
+            $generalSetting?->staff_access === 'own'
+        ) {
+            $query->where('user_id', Auth::id());
         }
 
-        return Attendance::query()
-            ->with(['employee', 'user'])
-            ->filter($filters)
-            ->latest('date')
-            ->paginate($perPage);
+        $paginator = $query->paginate($perPage);
+        $groupedCollection = $paginator->getCollection()->groupBy(['date', 'employee_id']);
+
+        return $paginator->setCollection($groupedCollection);
     }
 
     /**
-     * Create multiple attendance records simultaneously (Bulk Store).
-     * MODERN STANDARD: Uses highly efficient DB::upsert() to prevent N+1 query loops.
-     * Integrates HrmSetting defaults if times are omitted, and auto-calculates statuses.
+     * Create a newly registered attendance.
      *
      * @param array<string, mixed> $data
      * @return Collection
      */
-    public function createAttendances(array $data): Collection
+    public function createAttendance(array $data): Collection
     {
         return DB::transaction(function () use ($data) {
-            $userId = Auth::id();
+            $setting = DB::table('hrm_settings')->latest()->first();
+            $checkinStandard = $setting->checkin ?? '08:00:00';
+
+            $createdAttendances = collect();
+
             $date = Carbon::parse($data['date'])->format('Y-m-d');
 
-            // 1. Fetch Global HRM Settings
-            $hrmSetting = DB::table('hrm_settings')->latest()->first();
-            $defaultCheckin = $hrmSetting ? $hrmSetting->checkin : '08:00:00';
-
-            // 2. Resolve final times
-            $actualCheckin = !empty($data['checkin']) ? Carbon::parse($data['checkin'])->format('H:i:s') : Carbon::parse($defaultCheckin)->format('H:i:s');
-            $actualCheckout = !empty($data['checkout']) ? Carbon::parse($data['checkout'])->format('H:i:s') : null;
-
-            // 3. Auto-calculate status if omitted
-            $status = $data['status'] ?? null;
-            if (!$status) {
-                $status = Carbon::parse($actualCheckin)->lte(Carbon::parse($defaultCheckin))
-                    ? AttendanceStatusEnum::PRESENT->value
-                    : AttendanceStatusEnum::LATE->value;
-            } elseif ($status instanceof AttendanceStatusEnum) {
-                $status = $status->value;
-            }
-
-            // 4. Prepare bulk payload
-            $upsertPayload = [];
-            $now = now()->toDateTimeString();
-
             foreach ($data['employee_ids'] as $employeeId) {
-                $upsertPayload[] = [
+                $existing = Attendance::query()
+                    ->where('date', $date)
+                    ->where('employee_id', $employeeId)
+                    ->first();
+
+                if ($existing) {
+                    throw new Exception(
+                        "Attendance record already exists for Employee ID {$employeeId} on {$date}. Please update the existing record instead of creating a duplicate."
+                    );
+                }
+
+                $status = $data['status'] ?? (
+                strtotime($checkinStandard) >= strtotime($data['checkin'])
+                    ? AttendanceStatusEnum::PRESENT->value
+                    : AttendanceStatusEnum::LATE->value
+                );
+
+                if ($status instanceof AttendanceStatusEnum) {
+                    $status = $status->value;
+                }
+
+                $attendance = Attendance::create([
                     'date' => $date,
                     'employee_id' => $employeeId,
-                    'user_id' => $userId,
-                    'checkin' => $actualCheckin,
-                    'checkout' => $actualCheckout,
+                    'user_id' => Auth::id(),
+                    'checkin' => Carbon::parse($data['checkin'])->format('H:i:s'),
+                    'checkout' => !empty($data['checkout']) ? Carbon::parse($data['checkout'])->format('H:i:s') : null,
                     'status' => $status,
                     'note' => $data['note'] ?? null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
+                ]);
+
+                $createdAttendances->push($attendance);
             }
 
-            // 5. Execute a single, massive performance Upsert query
-            Attendance::query()->upsert(
-                $upsertPayload,
-                ['date', 'employee_id'],
-                ['user_id', 'checkin', 'checkout', 'status', 'note', 'updated_at']
-            );
-
-            // 6. Return the freshly updated/created collection
-            return Attendance::query()
-                ->where('date', $date)
-                ->whereIn('employee_id', $data['employee_ids'])
-                ->with(['employee'])
-                ->get();
+            return $createdAttendances;
         });
     }
 
     /**
      * Update an existing attendance record manually via HR.
      *
-     * @param  Attendance  $attendance
-     * @param  array<string, mixed>  $data
+     * @param Attendance $attendance
+     * @param array<string, mixed> $data
      * @return Attendance
      */
     public function updateAttendance(Attendance $attendance, array $data): Attendance
     {
         return DB::transaction(function () use ($attendance, $data) {
-            // Auto-recalculate status if HR changed the checkin time but forgot to update the status
             if (array_key_exists('checkin', $data) && empty($data['status'])) {
-                $hrmSetting = DB::table('hrm_settings')->latest()->first();
-                $expectedCheckin = Carbon::parse($hrmSetting ? $hrmSetting->checkin : '08:00:00');
+                $setting = DB::table('hrm_settings')->latest()->first();
+                $expectedCheckin = Carbon::parse($setting->checkin ?? '08:00:00');
                 $actualCheckin = Carbon::parse($data['checkin']);
 
-                $data['status'] = $actualCheckin->lte($expectedCheckin)
+                $data['status'] = $actualCheckin->format('H:i:s') <= $expectedCheckin->format('H:i:s')
                     ? AttendanceStatusEnum::PRESENT->value
                     : AttendanceStatusEnum::LATE->value;
             }
@@ -167,7 +163,7 @@ class AttendanceService
             $employee = Employee::query()->where('staff_id', $data['staff_id'])->first();
 
             if (!$employee) {
-                Log::warning("Device Punch: Employee with staff ID {$data['staff_id']} not found.");
+                Log::warning("Device Punch Failed: Employee with staff ID {$data['staff_id']} not found.");
                 return null;
             }
 
@@ -193,14 +189,14 @@ class AttendanceService
             $employee = Employee::query()->where('user_id', $userId)->first();
 
             if (!$employee) {
-                throw new Exception("No employee profile is associated with your account.");
+                throw new Exception("No employee profile is associated with your account. Unable to log attendance.");
             }
 
             $source = 'Web Portal' . ($ipAddress ? " (IP: {$ipAddress})" : '');
 
             return $this->processPunch(
                 $employee,
-                now(), // Uses strict server time to prevent employees from spoofing their clock-in
+                now(),
                 $source
             );
         });
@@ -208,7 +204,7 @@ class AttendanceService
 
     /**
      * Core shared logic to process a punch (check-in/check-out) for a specific employee.
-     * MODERN STANDARD: Always logs the checkout time for payroll calculation, even if they leave early.
+     * Tracks check-ins, early check-outs, and handles double-punch debouncing.
      *
      * @param Employee $employee
      * @param Carbon $punchTimestamp
@@ -220,28 +216,24 @@ class AttendanceService
         $date = $punchTimestamp->format('Y-m-d');
         $time = $punchTimestamp->format('H:i:s');
 
-        // Fetch Global HRM Settings for calculations
         $hrmSetting = DB::table('hrm_settings')->latest()->first();
-        $defaultCheckin = $hrmSetting ? Carbon::parse($hrmSetting->checkin) : Carbon::parse('08:00:00');
-        $defaultCheckout = $hrmSetting ? Carbon::parse($hrmSetting->checkout) : Carbon::parse('17:00:00');
+        $defaultCheckin = Carbon::parse($hrmSetting->checkin ?? '08:00:00');
+        $defaultCheckout = Carbon::parse($hrmSetting->checkout ?? '17:00:00');
 
         $attendance = Attendance::query()
             ->where('date', $date)
             ->where('employee_id', $employee->id)
             ->first();
 
-        // ==========================================
-        // SCENARIO 1: First punch of the day (Check-in)
-        // ==========================================
         if (!$attendance) {
-            $status = $punchTimestamp->format('H:i:s') <= $defaultCheckin->format('H:i:s')
+            $status = $time <= $defaultCheckin->format('H:i:s')
                 ? AttendanceStatusEnum::PRESENT->value
                 : AttendanceStatusEnum::LATE->value;
 
             $attendance = Attendance::query()->create([
                 'date' => $date,
                 'employee_id' => $employee->id,
-                'user_id' => $employee->user_id ?? 1, // Fallback to system admin if employee lacks a user login
+                'user_id' => $employee->user_id ?? Auth::id() ?? 1,
                 'checkin' => $time,
                 'checkout' => null,
                 'status' => $status,
@@ -251,26 +243,21 @@ class AttendanceService
             return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-in'];
         }
 
-        // ==========================================
-        // SCENARIO 2: Subsequent punch (Check-out)
-        // ==========================================
         $newPunchTime = Carbon::parse($time);
         $checkinTime = Carbon::parse($attendance->checkin);
 
-        // 1. Anti-Double-Punch Debounce (Ignore punches within 15 mins of checkin)
         if ($newPunchTime->diffInMinutes($checkinTime) < 15) {
             return null;
         }
 
-        // 2. Identify if this is an early departure
-        $isEarly = $newPunchTime->lessThan($defaultCheckout);
+        $isEarly = $time < $defaultCheckout->format('H:i:s');
         $noteStatus = $isEarly ? "Early Check-out" : "Check-out";
 
-        // 3. ALWAYS update the checkout time so payroll can calculate total hours worked.
-        // If they punch multiple times at the end of the day, it updates to the latest exit time.
+        $existingNote = $attendance->note ? $attendance->note . " | " : "";
+
         $attendance->update([
             'checkout' => $time,
-            'note' => ltrim($attendance->note . " | {$noteStatus} via {$source}", ' | '),
+            'note' => $existingNote . "{$noteStatus} via {$source} at {$time}",
         ]);
 
         return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-out'];
@@ -279,7 +266,7 @@ class AttendanceService
     /**
      * Delete an attendance record.
      *
-     * @param  Attendance  $attendance
+     * @param Attendance $attendance
      * @return void
      */
     public function deleteAttendance(Attendance $attendance): void
@@ -292,7 +279,7 @@ class AttendanceService
     /**
      * Bulk delete multiple attendance records.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      * @return int
      */
     public function bulkDeleteAttendances(array $ids): int
@@ -305,8 +292,8 @@ class AttendanceService
     /**
      * Update the status for multiple attendance records.
      *
-     * @param  array<int>  $ids
-     * @param  AttendanceStatusEnum  $status
+     * @param array<int> $ids
+     * @param AttendanceStatusEnum $status
      * @return int
      */
     public function bulkUpdateStatus(array $ids, AttendanceStatusEnum $status): int
@@ -317,7 +304,7 @@ class AttendanceService
     /**
      * Import multiple attendance records from an uploaded file.
      *
-     * @param  UploadedFile  $file
+     * @param UploadedFile $file
      * @return void
      */
     public function importAttendances(UploadedFile $file): void
@@ -334,9 +321,9 @@ class AttendanceService
     public function download(): string
     {
         $fileName = 'attendances-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template attendances not found.');
         }
 
@@ -346,16 +333,16 @@ class AttendanceService
     /**
      * Generate an export file containing attendance data.
      *
-     * @param  array<int>  $ids
-     * @param  string  $format
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters
+     * @param array<int> $ids
+     * @param string $format
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters
      * @return string
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'attendances_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'attendances_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

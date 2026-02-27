@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Attendances;
 
 use App\Enums\AttendanceStatusEnum;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -14,7 +15,7 @@ use Illuminate\Validation\Rules\Enum;
  *
  * Handles validation and authorization for creating a new attendance record.
  */
-class StoreAttendanceRequest extends FormRequest
+class StoreAttendanceRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -60,13 +61,6 @@ class StoreAttendanceRequest extends FormRequest
              * @example 17:00:00
              */
             'checkout' => ['nullable', 'string'],
-
-            /**
-             * Optional status flag. If omitted, the system auto-calculates Late/Present based on HRM settings.
-             *
-             * @example present
-             */
-            'status' => ['nullable', new Enum(AttendanceStatusEnum::class)],
 
             /**
              * Any notes regarding this attendance.

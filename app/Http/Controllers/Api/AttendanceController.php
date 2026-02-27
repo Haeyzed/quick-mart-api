@@ -107,7 +107,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Create Attendance(s)
+     * Create Attendance
      *
      * Store new attendance records. Supports bulk employee assignments and automatically calculates Present/Late statuses
      * against global HRM settings if no explicit status is provided.
@@ -118,7 +118,7 @@ class AttendanceController extends Controller
             return response()->forbidden('Permission denied for creating attendance.');
         }
 
-        $attendances = $this->service->createAttendances($request->validated());
+        $attendances = $this->service->createAttendance($request->validated());
 
         return response()->success(
             AttendanceResource::collection($attendances),
