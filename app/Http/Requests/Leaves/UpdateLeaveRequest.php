@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Leaves;
 
+use App\Enums\LeaveStatusEnum;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 /**
  * Class UpdateLeaveRequest
  *
  * Handles validation and authorization for updating an existing leave record.
  */
-class UpdateLeaveRequest extends FormRequest
+class UpdateLeaveRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -63,7 +66,7 @@ class UpdateLeaveRequest extends FormRequest
              *
              * @example Approved
              */
-            'status' => ['sometimes', 'required', 'string', Rule::in(['Pending', 'Approved', 'Rejected'])],
+            'status' => ['sometimes', 'required', 'string', new Enum(LeaveStatusEnum::class)],
         ];
     }
 }

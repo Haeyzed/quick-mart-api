@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Overtimes;
 
 use App\Enums\OvertimeStatusEnum;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -14,7 +15,7 @@ use Illuminate\Validation\Rules\Enum;
  *
  * Handles validation and authorization for updating an existing overtime record.
  */
-class UpdateOvertimeRequest extends FormRequest
+class UpdateOvertimeRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

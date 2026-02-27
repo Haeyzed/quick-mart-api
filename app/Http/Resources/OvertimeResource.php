@@ -41,7 +41,10 @@ class OvertimeResource extends JsonResource
              *
              * @example John Doe
              */
-            'employee_name' => $this->whenLoaded('employee', fn() => $this->employee->name),
+            'employee' => $this->whenLoaded('employee', fn() => [
+                'id' => $this->employee->id,
+                'name' => $this->employee->name,
+            ]),
 
             /**
              * The date the overtime was performed.
@@ -88,9 +91,12 @@ class OvertimeResource extends JsonResource
             /**
              * The name of the approver (if relation is loaded).
              *
-             * @example Admin User
+             * @example John Doe
              */
-            'approver_name' => $this->whenLoaded('approver', fn() => $this->approver->name),
+            'approver' => $this->whenLoaded('approver', fn() => [
+                'id' => $this->approver->id,
+                'name' => $this->approver->name,
+            ]),
 
             /**
              * The date and time when the overtime request was created.

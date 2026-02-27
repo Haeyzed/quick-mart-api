@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Overtimes;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for bulk actions on overtime requests.
  */
-class OvertimeBulkActionRequest extends FormRequest
+class OvertimeBulkActionRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
