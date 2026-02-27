@@ -293,13 +293,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Employees
     Route::prefix('employees')->name('employees.')->group(function () {
-        Route::get('options', [EmployeeController::class, 'options'])->name('options');
         Route::post('bulk-destroy', [EmployeeController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [EmployeeController::class, 'bulkActivate'])->name('bulk-activate');
         Route::post('bulk-deactivate', [EmployeeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
         Route::post('import', [EmployeeController::class, 'import'])->name('import');
         Route::post('export', [EmployeeController::class, 'export'])->name('export');
         Route::get('download', [EmployeeController::class, 'download'])->name('download');
+        Route::get('options', [EmployeeController::class, 'options'])->name('options');
     });
     Route::apiResource('employees', EmployeeController::class);
 

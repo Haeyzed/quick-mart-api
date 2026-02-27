@@ -81,6 +81,23 @@ class EmployeeService
     }
 
     /**
+     * Get a lightweight list of active employee options.
+     *
+     * @return Collection A collection of arrays containing 'value' (id) and 'label' (name).
+     */
+    public function getOptions(): Collection
+    {
+        return Employee::active()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Employee $employee) => [
+                'value' => $employee->id,
+                'label' => $employee->name,
+            ]);
+    }
+
+    /**
      * Create a newly registered employee and manage associated user account and files.
      * Extracts the nested 'user' array to generate system access and sync roles/permissions.
      *
