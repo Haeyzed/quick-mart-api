@@ -70,11 +70,11 @@ class EmployeeService
             ->filter($filters)
             ->latest();
 
-        $generalSetting = DB::table('general_settings')->latest()->first();
+//        $generalSetting = DB::table('general_settings')->latest()->first();
 
-        if (Auth::check() && $generalSetting?->staff_access === 'own') {
-            $query->where('user_id', Auth::id());
-        }
+//        if (Auth::check() && $generalSetting?->staff_access === 'own') {
+//            $query->where('user_id', Auth::id());
+//        }
 
         return $query->paginate($perPage);
     }
