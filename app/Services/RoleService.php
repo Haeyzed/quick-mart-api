@@ -51,7 +51,11 @@ class RoleService
             ->where('guard_name', 'web')
             ->select('id', 'name')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(fn (Role $role) => [
+                'value' => $role->id,
+                'label' => $role->name,
+            ]);
     }
 
     /**

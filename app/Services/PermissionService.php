@@ -50,7 +50,11 @@ class PermissionService
             ->where('guard_name', 'web')
             ->select('id', 'name')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(fn (Permission $permission) => [
+                'value' => $permission->id,
+                'label' => $permission->name,
+            ]);
     }
 
     /**
