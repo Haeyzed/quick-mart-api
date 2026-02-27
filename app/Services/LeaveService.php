@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\LeaveStatusEnum;
 use App\Exports\LeavesExport;
 use App\Imports\LeavesImport;
 use App\Models\Leave;
@@ -62,7 +63,7 @@ class LeaveService
     {
         return DB::transaction(function () use ($data) {
             $data['days'] = $this->calculateDays($data['start_date'], $data['end_date']);
-            $data['status'] = 'Pending';
+            $data['status'] = LeaveStatusEnum::PENDING->value;
             $data['approver_id'] = Auth::id();
 
             return Leave::query()->create($data);
