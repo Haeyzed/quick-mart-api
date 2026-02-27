@@ -49,7 +49,7 @@ class RoleService
     {
         return Role::active()
             ->where('guard_name', 'web')
-            ->select('id', 'name')
+            ->select('id', 'name', 'permissions:id,name')
             ->orderBy('name')
             ->get()
             ->map(fn (Role $role) => [
