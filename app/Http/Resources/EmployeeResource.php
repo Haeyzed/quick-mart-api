@@ -115,6 +115,7 @@ class EmployeeResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,
+                'username' => $this->user->username,
                 'phone_number' => $this->user->phone_number,
                 'is_active' => $this->user->is_active,
                 'roles' => $this->user->roles->map(fn ($role) => [
