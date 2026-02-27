@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\HrmSettingController;
+use App\Http\Controllers\Api\IdCardTemplateController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\LanguageController;
@@ -380,6 +381,13 @@ Route::middleware('auth:sanctum')->group(function () {
     | End HRM Module
     |--------------------------------------------------------------------------
     */
+
+    Route::prefix('id-card-templates')->group(function () {
+        Route::get('active', [IdCardTemplateController::class, 'active']);
+        Route::patch('{id_card_template}/activate', [IdCardTemplateController::class, 'activate']);
+        Route::post('bulk-destroy', [IdCardTemplateController::class, 'bulkDestroy']);
+    });
+    Route::apiResource('id-card-templates', IdCardTemplateController::class);
 
     Route::get('reports/audit-logs', [ReportController::class, 'auditLogIndex'])
         ->name('reports.audit-logs.index');
