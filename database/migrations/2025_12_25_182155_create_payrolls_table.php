@@ -25,6 +25,7 @@ return new class extends Migration
             $table->json('amount_array')->nullable();
             $table->string('month')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('employee_id')
                 ->references('id')
