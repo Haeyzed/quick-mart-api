@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Leaves;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for creating a new leave request.
  */
-class StoreLeaveRequest extends FormRequest
+class StoreLeaveRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -42,7 +43,7 @@ class StoreLeaveRequest extends FormRequest
              *
              * @example 2
              */
-            'leave_types' => ['required', 'integer', Rule::exists('leave_types', 'id')],
+            'leave_type_id' => ['required', 'integer', Rule::exists('leave_types', 'id')],
 
             /**
              * The starting date of the leave.

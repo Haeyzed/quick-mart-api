@@ -40,21 +40,27 @@ class LeaveResource extends JsonResource
              *
              * @example John Doe
              */
-            'employee_name' => $this->whenLoaded('employee', fn() => $this->employee->name),
+            'employee' => $this->whenLoaded('employee', fn() => [
+                'id' => $this->employee->id,
+                'name' => $this->employee->name,
+            ]),
 
             /**
              * The ID of the requested leave type.
              *
              * @example 2
              */
-            'leave_type_id' => $this->leave_types,
+            'leave_type_id' => $this->leave_type_id,
 
             /**
-             * The name of the leave type (if relation is loaded).
+             * The name of the employee (if relation is loaded).
              *
-             * @example Sick Leave
+             * @example Annual Leave
              */
-            'leave_type_name' => $this->whenLoaded('leaveType', fn() => $this->leaveType->name),
+            'leave_type' => $this->whenLoaded('leaveType', fn() => [
+                'id' => $this->leaveType->id,
+                'name' => $this->leaveType->name,
+            ]),
 
             /**
              * The start date of the leave.
