@@ -35,6 +35,7 @@ class RoleService
     {
         return Role::query()
             ->filter($filters)
+            ->with('permissions:id,name')
             ->withCount('permissions')
             ->latest()
             ->paginate($perPage);
@@ -49,7 +50,7 @@ class RoleService
     {
         return Role::active()
             ->where('guard_name', 'web')
-            ->select('id', 'name', 'permissions:id,name')
+            ->select('id', 'name')
             ->orderBy('name')
             ->get()
             ->map(fn (Role $role) => [
