@@ -66,6 +66,7 @@ class EmployeeService
                 'country:id,name',
                 'state:id,name',
                 'city:id,name',
+                'user'
             ])
             ->filter($filters)
             ->latest();

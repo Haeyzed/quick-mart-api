@@ -110,8 +110,14 @@ class EmployeeResource extends JsonResource
                 'email' => $this->user->email,
                 'phone_number' => $this->user->phone_number,
                 'is_active' => $this->user->is_active,
-                'roles' => $this->user->roles->pluck('id'),
-                'permissions' => $this->user->permissions->pluck('id'),
+                'roles' => $this->user->roles->map(fn ($role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ]),
+                'permissions' => $this->user->permissions->map(fn ($permission) => [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                ]),
             ]),
 
             /**
