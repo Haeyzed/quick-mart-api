@@ -62,7 +62,7 @@ class EmployeeService
             ->with([
                 'department:id,name',
                 'designation:id,name',
-                'shift:id,name',
+                'shift:id,name,start_time,end_time',
                 'country:id,name',
                 'state:id,name',
                 'city:id,name',
