@@ -74,6 +74,13 @@ class EmployeeResource extends JsonResource
             'address' => $this->address,
 
             /**
+             * The associated user ID.
+             *
+             * @example 1
+             */
+            'user_id' => $this->user_id,
+
+            /**
              * The associated country ID.
              *
              * @example 1
