@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
@@ -62,6 +63,7 @@ class Employee extends Model implements AuditableContract
      * @var array<int, string>
      */
     protected $fillable = [
+        'employee_code',
         'name',
         'email',
         'phone_number',
@@ -81,6 +83,15 @@ class Employee extends Model implements AuditableContract
         'is_sale_agent',
         'sale_commission_percent',
         'sales_target',
+        'employment_type_id',
+        'joining_date',
+        'confirmation_date',
+        'probation_end_date',
+        'reporting_manager_id',
+        'warehouse_id',
+        'work_location_id',
+        'salary_structure_id',
+        'employment_status',
     ];
 
     /**
@@ -101,14 +112,21 @@ class Employee extends Model implements AuditableContract
         'is_sale_agent' => 'boolean',
         'sale_commission_percent' => 'float',
         'sales_target' => 'array',
+        'employment_type_id' => 'integer',
+        'joining_date' => 'date',
+        'confirmation_date' => 'date',
+        'probation_end_date' => 'date',
+        'reporting_manager_id' => 'integer',
+        'warehouse_id' => 'integer',
+        'work_location_id' => 'integer',
+        'salary_structure_id' => 'integer',
+        'employment_status' => 'string',
     ];
 
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query
      * @param  array<string, mixed>  $filters
-     * @return Builder
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
@@ -142,6 +160,18 @@ class Employee extends Model implements AuditableContract
                 fn (Builder $q) => $q->where('city_id', (int) $filters['city_id'])
             )
             ->when(
+                ! empty($filters['warehouse_id']),
+                fn (Builder $q) => $q->where('warehouse_id', (int) $filters['warehouse_id'])
+            )
+            ->when(
+                ! empty($filters['employment_status']),
+                fn (Builder $q) => $q->where('employment_status', $filters['employment_status'])
+            )
+            ->when(
+                ! empty($filters['employee_code']),
+                fn (Builder $q) => $q->where('employee_code', 'like', '%'.$filters['employee_code'].'%')
+            )
+            ->when(
                 ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
@@ -152,8 +182,8 @@ class Employee extends Model implements AuditableContract
                         ->orWhere('staff_id', 'like', $term)
                         ->orWhereHas('user', function ($q) use ($term) {
                             $q->where('name', 'like', $term)
-                            ->orWhere('email', 'like', $term)
-                            ->orWhere('phone_number', 'like', $term);
+                                ->orWhere('email', 'like', $term)
+                                ->orWhere('phone_number', 'like', $term);
                         })
                     );
                 }
@@ -292,5 +322,116 @@ class Employee extends Model implements AuditableContract
     public function transactions(): HasMany
     {
         return $this->hasMany(EmployeeTransaction::class);
+    }
+
+    /**
+     * Get the employment type for this employee.
+     *
+     * @return BelongsTo<EmploymentType, self>
+     */
+    public function employmentType(): BelongsTo
+    {
+        return $this->belongsTo(EmploymentType::class);
+    }
+
+    /**
+     * Get the reporting manager (employee) for this employee.
+     *
+     * @return BelongsTo<Employee, self>
+     */
+    public function reportingManager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'reporting_manager_id');
+    }
+
+    /**
+     * Get the subordinates (employees reporting to this employee).
+     *
+     * @return HasMany<Employee, self>
+     */
+    public function subordinates(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'reporting_manager_id');
+    }
+
+    /**
+     * Get the warehouse assigned to this employee.
+     *
+     * @return BelongsTo<Warehouse, self>
+     */
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    /**
+     * Get the work location for this employee.
+     *
+     * @return BelongsTo<WorkLocation, self>
+     */
+    public function workLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class);
+    }
+
+    /**
+     * Get the salary structure for this employee.
+     *
+     * @return BelongsTo<SalaryStructure, self>
+     */
+    public function salaryStructure(): BelongsTo
+    {
+        return $this->belongsTo(SalaryStructure::class);
+    }
+
+    /**
+     * Get the extended profile for this employee.
+     *
+     * @return HasOne<EmployeeProfile, self>
+     */
+    public function profile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class);
+    }
+
+    /**
+     * Get the shift assignments (history) for this employee.
+     *
+     * @return HasMany<EmployeeShiftAssignment, self>
+     */
+    public function shiftAssignments(): HasMany
+    {
+        return $this->hasMany(EmployeeShiftAssignment::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class);
+    }
+
+    public function employeeOnboardings(): HasMany
+    {
+        return $this->hasMany(EmployeeOnboarding::class);
+    }
+
+    /**
+     * Boot the model and register creating listener for employee_code.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Employee $employee): void {
+            if (empty($employee->employee_code)) {
+                $prefix = 'EMP';
+                $last = static::withTrashed()->orderByDesc('id')->value('id') ?? 0;
+                $employee->employee_code = $prefix.str_pad((string) ($last + 1), 5, '0', STR_PAD_LEFT);
+            }
+        });
     }
 }

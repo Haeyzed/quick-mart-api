@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Tenant;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\UserRolePermissionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\Permission;
-use App\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -397,6 +397,60 @@ class TenantDatabaseSeeder extends Seeder
                 'delete leave types',
                 'import leave types',
                 'export leave types',
+            ],
+            'employment types' => [
+                'view employment types',
+                'create employment types',
+                'update employment types',
+                'delete employment types',
+            ],
+            'work locations' => [
+                'view work locations',
+                'create work locations',
+                'update work locations',
+                'delete work locations',
+            ],
+            'salary components' => [
+                'view salary components',
+                'create salary components',
+                'update salary components',
+                'delete salary components',
+            ],
+            'salary structures' => [
+                'view salary structures',
+                'create salary structures',
+                'update salary structures',
+                'delete salary structures',
+            ],
+            'payroll runs' => [
+                'view payroll runs',
+                'create payroll runs',
+                'update payroll runs',
+                'delete payroll runs',
+            ],
+            'employee documents' => [
+                'view employee documents',
+                'create employee documents',
+                'update employee documents',
+                'delete employee documents',
+            ],
+            'performance reviews' => [
+                'view performance reviews',
+                'create performance reviews',
+                'update performance reviews',
+                'delete performance reviews',
+            ],
+            'job openings' => [
+                'view job openings',
+                'create job openings',
+                'update job openings',
+                'delete job openings',
+            ],
+            'candidates' => [
+                'view candidates',
+                'create candidates',
+                'update candidates',
+                'delete candidates',
             ],
             'reports' => [
                 'view product report',

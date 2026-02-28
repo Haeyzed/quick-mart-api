@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Class EmployeeService
@@ -41,8 +40,8 @@ class EmployeeService
     /**
      * EmployeeService constructor.
      *
-     * @param UploadService $uploadService Service responsible for handling file uploads.
-     * @param UserRolePermissionService $userRolePermissionService Service responsible for syncing roles and permissions.
+     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param  UserRolePermissionService  $userRolePermissionService  Service responsible for syncing roles and permissions.
      */
     public function __construct(
         private readonly UploadService $uploadService,
@@ -52,9 +51,7 @@ class EmployeeService
     /**
      * Get paginated employees based on filters.
      *
-     * @param array<string, mixed> $filters
-     * @param int $perPage
-     * @return LengthAwarePaginator
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedEmployees(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -66,16 +63,16 @@ class EmployeeService
                 'country:id,name',
                 'state:id,name',
                 'city:id,name',
-                'user'
+                'user',
             ])
             ->filter($filters)
             ->latest();
 
-//        $generalSetting = DB::table('general_settings')->latest()->first();
+        //        $generalSetting = DB::table('general_settings')->latest()->first();
 
-//        if (Auth::check() && $generalSetting?->staff_access === 'own') {
-//            $query->where('user_id', Auth::id());
-//        }
+        //        if (Auth::check() && $generalSetting?->staff_access === 'own') {
+        //            $query->where('user_id', Auth::id());
+        //        }
 
         return $query->paginate($perPage);
     }
@@ -83,14 +80,18 @@ class EmployeeService
     /**
      * Get a lightweight list of active employee options.
      *
+     * @param  int|null  $warehouseId  Optional warehouse ID to filter employees (e.g. via user.warehouse_id when applicable).
      * @return Collection A collection of arrays containing 'value' (id) and 'label' (name).
      */
-    public function getOptions(): Collection
+    public function getOptions(?int $warehouseId = null): Collection
     {
-        return Employee::active()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get()
+        $query = Employee::active()->select('id', 'name')->orderBy('name');
+
+        if ($warehouseId !== null) {
+            $query->whereHas('user', fn ($q) => $q->where('warehouse_id', $warehouseId));
+        }
+
+        return $query->get()
             ->map(fn (Employee $employee) => [
                 'value' => $employee->id,
                 'label' => $employee->name,
@@ -102,7 +103,6 @@ class EmployeeService
      * Extracts the nested 'user' array to generate system access and sync roles/permissions.
      *
      * @param  array<string, mixed>  $data
-     * @return Employee
      */
     public function createEmployee(array $data): Employee
     {
@@ -113,7 +113,7 @@ class EmployeeService
                 $data['image_url'] = $this->uploadService->url($path);
             }
 
-            if (!empty($data['user']) && is_array($data['user'])) {
+            if (! empty($data['user']) && is_array($data['user'])) {
                 $userData = $data['user'];
 
                 $user = User::query()->create([
@@ -127,7 +127,7 @@ class EmployeeService
                     'is_active' => true,
                 ]);
 
-                if (!empty($userData['roles']) || !empty($userData['permissions'])) {
+                if (! empty($userData['roles']) || ! empty($userData['permissions'])) {
                     $this->userRolePermissionService->assignRolesAndPermissions(
                         $user,
                         $userData['roles'] ?? [],
@@ -149,9 +149,7 @@ class EmployeeService
      * Intelligently creates a user if added later, or updates the existing one.
      * Synchronizes Spatie roles and permissions seamlessly.
      *
-     * @param  Employee  $employee
      * @param  array<string, mixed>  $data
-     * @return Employee
      */
     public function updateEmployee(Employee $employee, array $data): Employee
     {
@@ -168,7 +166,7 @@ class EmployeeService
             if (array_key_exists('user', $data) || $employee->user_id) {
                 $userData = $data['user'];
 
-                if (!$employee->user_id && !empty($userData['password'])) {
+                if (! $employee->user_id && ! empty($userData['password'])) {
                     $user = User::query()->create([
                         'name' => $data['name'] ?? $employee->name,
                         'email' => $data['email'] ?? $employee->email,
@@ -180,7 +178,7 @@ class EmployeeService
                         'is_active' => true,
                     ]);
 
-                    if (!empty($userData['roles']) || !empty($userData['permissions'])) {
+                    if (! empty($userData['roles']) || ! empty($userData['permissions'])) {
                         $this->userRolePermissionService->assignRolesAndPermissions(
                             $user,
                             $userData['roles'] ?? [],
@@ -198,7 +196,7 @@ class EmployeeService
                             'phone_number' => $data['phone_number'] ?? $employee->phone_number,
                         ];
 
-                        if (!empty($userData['username'])) {
+                        if (! empty($userData['username'])) {
                             $updatePayload['username'] = $userData['username'];
                         }
 
@@ -207,7 +205,7 @@ class EmployeeService
                             $updatePayload['image_url'] = $data['image_url'] ?? null;
                         }
 
-                        if (!empty($userData['password'])) {
+                        if (! empty($userData['password'])) {
                             $updatePayload['password'] = Hash::make($userData['password']);
                         }
 
@@ -234,9 +232,6 @@ class EmployeeService
 
     /**
      * Delete an employee, their files, and soft-delete their user account.
-     *
-     * @param  Employee  $employee
-     * @return void
      */
     public function deleteEmployee(Employee $employee): void
     {
@@ -260,7 +255,6 @@ class EmployeeService
      * Bulk delete multiple employees safely.
      *
      * @param  array<int>  $ids
-     * @return int
      */
     public function bulkDeleteEmployees(array $ids): int
     {
@@ -279,9 +273,6 @@ class EmployeeService
 
     /**
      * Import multiple employees from an uploaded file.
-     *
-     * @param  UploadedFile  $file
-     * @return void
      */
     public function importEmployees(UploadedFile $file): void
     {
@@ -291,15 +282,14 @@ class EmployeeService
     /**
      * Download an employees CSV template.
      *
-     * @return string
      * @throws RuntimeException
      */
     public function download(): string
     {
         $fileName = 'employees-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             throw new RuntimeException('Template employees not found.');
         }
 
@@ -309,16 +299,14 @@ class EmployeeService
     /**
      * Generate an export file containing employee data.
      *
-     * @param array<int> $ids
-     * @param string $format
-     * @param array<string> $columns
-     * @param array{start_date?: string, end_date?: string} $filters
-     * @return string
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  array{start_date?: string, end_date?: string}  $filters
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'employees_' . now()->timestamp;
-        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'employees_'.now()->timestamp;
+        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

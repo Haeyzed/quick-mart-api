@@ -58,10 +58,18 @@ class Attendance extends Model implements AuditableContract
         'date',
         'employee_id',
         'user_id',
+        'shift_id',
         'checkin',
         'checkout',
+        'late_minutes',
+        'early_exit_minutes',
+        'worked_hours',
+        'overtime_minutes',
+        'checkin_source',
+        'latitude',
+        'longitude',
         'status',
-        'note'
+        'note',
     ];
 
     /**
@@ -72,6 +80,12 @@ class Attendance extends Model implements AuditableContract
     protected $casts = [
         'date' => 'date:Y-m-d',
         'status' => AttendanceStatusEnum::class,
+        'late_minutes' => 'integer',
+        'early_exit_minutes' => 'integer',
+        'worked_hours' => 'float',
+        'overtime_minutes' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     /**
@@ -126,5 +140,15 @@ class Attendance extends Model implements AuditableContract
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the shift associated with this attendance record.
+     *
+     * @return BelongsTo<Shift, self>
+     */
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

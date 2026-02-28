@@ -6,7 +6,6 @@ namespace App\Http\Requests\Employees;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Employee;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -29,8 +28,6 @@ class UpdateEmployeeRequest extends BaseRequest
     /**
      * Prepare the data for validation.
      * Formats the boolean flags before rules are applied.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -41,7 +38,7 @@ class UpdateEmployeeRequest extends BaseRequest
         if ($this->has('is_sale_agent')) {
             $merge['is_sale_agent'] = filter_var($this->is_sale_agent, FILTER_VALIDATE_BOOLEAN);
         }
-        if (!empty($merge)) {
+        if (! empty($merge)) {
             $this->merge($merge);
         }
     }
@@ -157,6 +154,23 @@ class UpdateEmployeeRequest extends BaseRequest
              */
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
+            'employee_code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employees', 'employee_code')->ignore($employee)->withoutTrashed(),
+            ],
+            'employment_type_id' => ['nullable', 'integer', 'exists:employment_types,id'],
+            'joining_date' => ['nullable', 'date'],
+            'confirmation_date' => ['nullable', 'date'],
+            'probation_end_date' => ['nullable', 'date'],
+            'reporting_manager_id' => ['nullable', 'integer', 'exists:employees,id'],
+            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
+            'salary_structure_id' => ['nullable', 'integer', 'exists:salary_structures,id'],
+            'employment_status' => ['nullable', 'string', 'in:active,suspended,resigned,terminated'],
+
             /**
              * Determines if the employee is active.
              *
@@ -188,6 +202,7 @@ class UpdateEmployeeRequest extends BaseRequest
 
             /**
              * The existing user ID to link.
+             *
              * @example 5
              */
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -200,6 +215,7 @@ class UpdateEmployeeRequest extends BaseRequest
             /**
              * The unique username for the system account.
              * Ignores the current user's ID to allow updating without conflict.
+             *
              * @example janedoe
              */
             'user.username' => [
@@ -208,7 +224,7 @@ class UpdateEmployeeRequest extends BaseRequest
                 'max:255',
                 Rule::unique('users', 'username')
                     ->ignore($employee?->user_id)
-                    ->withoutTrashed()
+                    ->withoutTrashed(),
             ],
 
             'user.password' => ['nullable', 'string', 'min:8'],
@@ -233,7 +249,6 @@ class UpdateEmployeeRequest extends BaseRequest
      * to ensure tiers do not overlap and progress sequentially.
      *
      * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
      */
     public function withValidator($validator): void
     {

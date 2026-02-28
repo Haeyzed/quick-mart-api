@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillerController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\CandidateController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\CountryController;
@@ -17,7 +18,11 @@ use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\DiscountController;
 use App\Http\Controllers\Api\DiscountPlanController;
+use App\Http\Controllers\Api\DocumentTypeController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\EmployeeDocumentController;
+use App\Http\Controllers\Api\EmployeeOnboardingController;
+use App\Http\Controllers\Api\EmploymentTypeController;
 use App\Http\Controllers\Api\ExpenseCategoryController;
 use App\Http\Controllers\Api\GeneralSettingController;
 use App\Http\Controllers\Api\GiftCardController;
@@ -26,19 +31,27 @@ use App\Http\Controllers\Api\HrmSettingController;
 use App\Http\Controllers\Api\IdCardTemplateController;
 use App\Http\Controllers\Api\IncomeCategoryController;
 use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\InterviewController;
+use App\Http\Controllers\Api\JobOpeningController;
 use App\Http\Controllers\Api\LanguageController;
-use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\LeaveController;
+use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\MailSettingController;
+use App\Http\Controllers\Api\OnboardingChecklistTemplateController;
 use App\Http\Controllers\Api\OvertimeController;
 use App\Http\Controllers\Api\PaymentGatewaySettingController;
 use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\PayrollEntryController;
+use App\Http\Controllers\Api\PayrollRunController;
+use App\Http\Controllers\Api\PerformanceReviewController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\PosSettingController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RewardPointSettingController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SalaryComponentController;
+use App\Http\Controllers\Api\SalaryStructureController;
 use App\Http\Controllers\Api\SaleAgentController;
 use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\SmsSettingController;
@@ -52,6 +65,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
 use App\Http\Controllers\Api\VariantController;
 use App\Http\Controllers\Api\WarehouseController;
+use App\Http\Controllers\Api\WorkLocationController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes (public)
@@ -374,6 +388,77 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [ShiftController::class, 'options'])->name('options');
     });
     Route::apiResource('shifts', ShiftController::class);
+
+    // Employment Types
+    Route::prefix('employment-types')->name('employment-types.')->group(function () {
+        Route::post('bulk-destroy', [EmploymentTypeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [EmploymentTypeController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [EmploymentTypeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::get('options', [EmploymentTypeController::class, 'options'])->name('options');
+    });
+    Route::apiResource('employment-types', EmploymentTypeController::class);
+
+    // Work Locations
+    Route::prefix('work-locations')->name('work-locations.')->group(function () {
+        Route::post('bulk-destroy', [WorkLocationController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [WorkLocationController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [WorkLocationController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::get('options', [WorkLocationController::class, 'options'])->name('options');
+    });
+    Route::apiResource('work-locations', WorkLocationController::class);
+
+    // Salary Components
+    Route::prefix('salary-components')->name('salary-components.')->group(function () {
+        Route::post('bulk-destroy', [SalaryComponentController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::get('options', [SalaryComponentController::class, 'options'])->name('options');
+    });
+    Route::apiResource('salary-components', SalaryComponentController::class);
+
+    // Salary Structures
+    Route::prefix('salary-structures')->name('salary-structures.')->group(function () {
+        Route::post('bulk-destroy', [SalaryStructureController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::get('options', [SalaryStructureController::class, 'options'])->name('options');
+    });
+    Route::apiResource('salary-structures', SalaryStructureController::class);
+
+    // Payroll Runs & Entries
+    Route::prefix('payroll-runs')->name('payroll-runs.')->group(function () {
+        Route::get('options', [PayrollRunController::class, 'options'])->name('options');
+        Route::post('{payroll_run}/generate-entries', [PayrollRunController::class, 'generateEntries'])->name('generate-entries');
+    });
+    Route::apiResource('payroll-runs', PayrollRunController::class);
+    Route::get('payroll-runs/{payroll_run}/entries', [PayrollEntryController::class, 'index'])->name('payroll-runs.entries.index');
+    Route::get('payroll-entries/{payroll_entry}', [PayrollEntryController::class, 'show'])->name('payroll-entries.show');
+    Route::put('payroll-entries/{payroll_entry}', [PayrollEntryController::class, 'update'])->name('payroll-entries.update');
+
+    // Document Types & Employee Documents
+    Route::prefix('document-types')->name('document-types.')->group(function () {
+        Route::post('bulk-destroy', [DocumentTypeController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::post('bulk-activate', [DocumentTypeController::class, 'bulkActivate'])->name('bulk-activate');
+        Route::post('bulk-deactivate', [DocumentTypeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::get('options', [DocumentTypeController::class, 'options'])->name('options');
+    });
+    Route::apiResource('document-types', DocumentTypeController::class);
+    Route::apiResource('employee-documents', EmployeeDocumentController::class);
+
+    // Performance Reviews
+    Route::apiResource('performance-reviews', PerformanceReviewController::class);
+
+    // Job Openings & Recruitment
+    Route::prefix('job-openings')->name('job-openings.')->group(function () {
+        Route::get('options', [JobOpeningController::class, 'options'])->name('options');
+    });
+    Route::apiResource('job-openings', JobOpeningController::class);
+    Route::apiResource('candidates', CandidateController::class);
+    Route::apiResource('interviews', InterviewController::class);
+
+    // Onboarding
+    Route::prefix('onboarding-checklist-templates')->name('onboarding-checklist-templates.')->group(function () {
+        Route::get('options', [OnboardingChecklistTemplateController::class, 'options'])->name('options');
+    });
+    Route::apiResource('onboarding-checklist-templates', OnboardingChecklistTemplateController::class);
+    Route::apiResource('employee-onboardings', EmployeeOnboardingController::class);
+    Route::post('employee-onboarding-items/{employee_onboarding_item}/complete', [EmployeeOnboardingController::class, 'completeItem'])->name('employee-onboarding-items.complete');
 
     /*
     |--------------------------------------------------------------------------

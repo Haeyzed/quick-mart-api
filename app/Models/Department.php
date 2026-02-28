@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Department
- * 
+ *
  * Represents a department within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for department entities.
  *
@@ -26,15 +26,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Department newModelQuery()
  * @method static Builder|Department newQuery()
  * @method static Builder|Department query()
  * @method static Builder|Department active()
  * @method static Builder|Department filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
  * @property-read int|null $employees_count
+ *
  * @method static Builder<static>|Department customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Department last30Days(string $column = 'created_at')
  * @method static Builder<static>|Department last7Days(string $column = 'created_at')
@@ -54,6 +57,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Department withoutTrashed()
  * @method static Builder<static>|Department yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Department yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Department extends Model implements AuditableContract
@@ -68,6 +72,8 @@ class Department extends Model implements AuditableContract
     protected $fillable = [
         'name',
         'is_active',
+        'parent_id',
+        'manager_id',
     ];
 
     /**
@@ -77,6 +83,8 @@ class Department extends Model implements AuditableContract
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'parent_id' => 'integer',
+        'manager_id' => 'integer',
     ];
 
     /**
@@ -115,6 +123,36 @@ class Department extends Model implements AuditableContract
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Get the parent department (for hierarchy).
+     *
+     * @return BelongsTo<Department, self>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'parent_id');
+    }
+
+    /**
+     * Get the child departments.
+     *
+     * @return HasMany<Department, self>
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Department::class, 'parent_id');
+    }
+
+    /**
+     * Get the department manager (employee).
+     *
+     * @return BelongsTo<Employee, self>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
     }
 
     /**

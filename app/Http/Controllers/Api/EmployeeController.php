@@ -111,7 +111,7 @@ class EmployeeController extends Controller
         if (auth()->user()->denies('view employees')) {
             return response()->forbidden('Permission denied for viewing employees options.');
         }
-        $warehouseId = $request->input('warehouse_id');
+        $warehouseId = $request->filled('warehouse_id') ? (int) $request->input('warehouse_id') : null;
 
         return response()->success($this->service->getOptions($warehouseId), 'Employee options retrieved successfully');
     }
@@ -294,13 +294,13 @@ class EmployeeController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -310,7 +310,7 @@ class EmployeeController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'employees_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'employees_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Employee Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -319,7 +319,7 @@ class EmployeeController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 

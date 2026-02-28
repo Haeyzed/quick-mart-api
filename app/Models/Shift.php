@@ -8,7 +8,7 @@ use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Shift
- * 
+ *
  * Represents an employee work shift within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for shift entities.
  *
@@ -28,17 +28,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Shift newModelQuery()
  * @method static Builder|Shift newQuery()
  * @method static Builder|Shift query()
  * @method static Builder|Shift active()
  * @method static Builder|Shift filter(array $filters)
+ *
  * @property int $grace_in Grace period (minutes) before marking late
  * @property int $grace_out Grace period (minutes) before marking early leave
  * @property numeric|null $total_hours Total working hours for the shift
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \App\Models\Employee|null $employee
+ *
  * @method static Builder<static>|Shift customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Shift last30Days(string $column = 'created_at')
  * @method static Builder<static>|Shift last7Days(string $column = 'created_at')
@@ -62,6 +65,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Shift withoutTrashed()
  * @method static Builder<static>|Shift yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Shift yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Shift extends Model implements AuditableContract
@@ -80,6 +84,9 @@ class Shift extends Model implements AuditableContract
         'grace_in',
         'grace_out',
         'total_hours',
+        'break_duration',
+        'is_rotational',
+        'overtime_allowed',
         'is_active',
     ];
 
@@ -90,6 +97,9 @@ class Shift extends Model implements AuditableContract
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'is_rotational' => 'boolean',
+        'overtime_allowed' => 'boolean',
+        'break_duration' => 'integer',
     ];
 
     /**
@@ -120,11 +130,23 @@ class Shift extends Model implements AuditableContract
     }
 
     /**
-     * Get the employee associated with this shift record.
+     * Get the employees currently assigned to this shift (via employees.shift_id).
+     *
+     * @return HasMany<Employee, self>
      */
-    public function employee(): BelongsTo
+    public function employees(): HasMany
     {
-        return $this->belongsTo(Employee::class);
+        return $this->hasMany(Employee::class, 'shift_id');
+    }
+
+    /**
+     * Get the shift assignments (history) for this shift.
+     *
+     * @return HasMany<EmployeeShiftAssignment, self>
+     */
+    public function shiftAssignments(): HasMany
+    {
+        return $this->hasMany(EmployeeShiftAssignment::class);
     }
 
     /**

@@ -32,15 +32,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Leave newModelQuery()
  * @method static Builder|Leave newQuery()
  * @method static Builder|Leave query()
  * @method static Builder|Leave filter(array $filters)
+ *
  * @property-read \App\Models\User|null $approver
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \App\Models\Employee $employee
  * @property-read \App\Models\LeaveType $leaveType
+ *
  * @method static Builder<static>|Leave customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Leave last30Days(string $column = 'created_at')
  * @method static Builder<static>|Leave last7Days(string $column = 'created_at')
@@ -64,6 +67,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Leave withoutTrashed()
  * @method static Builder<static>|Leave yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Leave yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Leave extends Model implements AuditableContract
@@ -81,8 +85,10 @@ class Leave extends Model implements AuditableContract
         'start_date',
         'end_date',
         'days',
+        'reason',
+        'attachment',
         'status',
-        'approver_id'
+        'approver_id',
     ];
 
     /**

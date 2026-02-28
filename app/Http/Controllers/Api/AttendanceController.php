@@ -5,18 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Enums\AttendanceStatusEnum;
+use App\Events\AttendancePunched;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ExportRequest;
-use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Attendances\AttendanceBulkActionRequest;
 use App\Http\Requests\Attendances\StoreAttendanceRequest;
 use App\Http\Requests\Attendances\UpdateAttendanceRequest;
-use App\Http\Requests\Attendances\AttendanceBulkActionRequest;
+use App\Http\Requests\ExportRequest;
+use App\Http\Requests\ImportRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Mail\ExportMail;
+use App\Models\Attendance;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
-use App\Models\Attendance;
 use App\Services\AttendanceService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
-use App\Events\AttendancePunched;
 
 /**
  * Class AttendanceController
@@ -237,25 +237,6 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Bulk Mark Absent
-     *
-     * Set the status of multiple attendance records to 'absent'.
-     */
-    public function bulkMarkAbsent(AttendanceBulkActionRequest $request): JsonResponse
-    {
-        if (auth()->user()->denies('update attendances')) {
-            return response()->forbidden('Permission denied for bulk update attendances.');
-        }
-
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], AttendanceStatusEnum::ABSENT);
-
-        return response()->success(
-            ['updated_count' => $count],
-            "{$count} attendance records marked as absent"
-        );
-    }
-
-    /**
      * Import Attendances
      *
      * Import multiple attendance records into the system from an uploaded Excel or CSV file.
@@ -361,9 +342,6 @@ class AttendanceController extends Controller
      *
      * Receives raw text payload from physical biometric/facial recognition machines.
      * Parses the ADMS format, logs the attendance, and triggers Reverb broadcasting.
-     *
-     * @param Request $request
-     * @return Response
      */
     public function deviceClock(Request $request): Response
     {
@@ -384,7 +362,7 @@ class AttendanceController extends Controller
 
             if (count($parts) >= 3) {
                 $staffId = $parts[0];
-                $timestamp = $parts[1] . ' ' . $parts[2]; // Combine Date and Time
+                $timestamp = $parts[1].' '.$parts[2]; // Combine Date and Time
 
                 try {
                     $result = $this->service->handleDevicePunch([
@@ -399,7 +377,7 @@ class AttendanceController extends Controller
                     }
 
                 } catch (Exception $e) {
-                    Log::error("Device ADMS sync failed for {$staffId}: " . $e->getMessage());
+                    Log::error("Device ADMS sync failed for {$staffId}: ".$e->getMessage());
                 }
             }
         }
@@ -413,21 +391,18 @@ class AttendanceController extends Controller
      *
      * Allows authenticated employees to punch in/out directly from their web dashboard.
      * Uses strict server time to prevent manipulation.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function webClock(Request $request): JsonResponse
     {
-         if (auth()->user()->denies('web punch attendance')) {
-             return response()->forbidden('Permission denied for web clock-in.');
-         }
+        if (auth()->user()->denies('web punch attendance')) {
+            return response()->forbidden('Permission denied for web clock-in.');
+        }
 
         try {
             // Calls the new web punch logic, passing the auth ID and IP Address
             $result = $this->service->handleWebPunch(auth()->id(), $request->ip());
 
-            if (!$result) {
+            if (! $result) {
                 return response()->error(
                     'Punch ignored. You either recently punched in, or attempted an early checkout before the official closing time.'
                 );

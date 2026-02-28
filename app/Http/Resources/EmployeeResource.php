@@ -18,7 +18,6 @@ class EmployeeResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -30,6 +29,8 @@ class EmployeeResource extends JsonResource
              * @example 1
              */
             'id' => $this->id,
+
+            'employee_code' => $this->employee_code,
 
             /**
              * The staff identifier or code.
@@ -111,7 +112,7 @@ class EmployeeResource extends JsonResource
             /**
              * Details regarding the user account associated with the employee.
              */
-            'user' => $this->whenLoaded('user', fn() => [
+            'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,
@@ -131,7 +132,7 @@ class EmployeeResource extends JsonResource
             /**
              * The department associated with the employee.
              */
-            'department' => $this->whenLoaded('department', fn() => [
+            'department' => $this->whenLoaded('department', fn () => [
                 'id' => $this->department->id,
                 'name' => $this->department->name,
             ]),
@@ -139,7 +140,7 @@ class EmployeeResource extends JsonResource
             /**
              * The designation associated with the employee.
              */
-            'designation' => $this->whenLoaded('designation', fn() => [
+            'designation' => $this->whenLoaded('designation', fn () => [
                 'id' => $this->designation->id,
                 'name' => $this->designation->name,
             ]),
@@ -147,7 +148,7 @@ class EmployeeResource extends JsonResource
             /**
              * The shift associated with the employee.
              */
-            'shift' => $this->whenLoaded('shift', fn() => [
+            'shift' => $this->whenLoaded('shift', fn () => [
                 'id' => $this->shift->id,
                 'name' => $this->shift->name,
                 'start_time' => $this->shift->start_time,
@@ -181,10 +182,10 @@ class EmployeeResource extends JsonResource
              *
              * @example [{"sales_from": 0, "sales_to": 1000, "percent": 5}]
              */
-            'sales_target' => is_array($this->sales_target) ? collect($this->sales_target)->map(fn($target) => [
+            'sales_target' => is_array($this->sales_target) ? collect($this->sales_target)->map(fn ($target) => [
                 'sales_from' => isset($target['sales_from']) ? (float) $target['sales_from'] : 0.0,
-                'sales_to'   => isset($target['sales_to']) ? (float) $target['sales_to'] : 0.0,
-                'percent'    => isset($target['percent']) ? (float) $target['percent'] : 0.0,
+                'sales_to' => isset($target['sales_to']) ? (float) $target['sales_to'] : 0.0,
+                'percent' => isset($target['percent']) ? (float) $target['percent'] : 0.0,
             ])->toArray() : [],
 
             /**
@@ -200,6 +201,47 @@ class EmployeeResource extends JsonResource
              * @example yes
              */
             'sales_agent' => $this->is_sale_agent ? 'yes' : 'no',
+
+            'employment_type_id' => $this->employment_type_id,
+            'joining_date' => $this->joining_date?->format('Y-m-d'),
+            'confirmation_date' => $this->confirmation_date?->format('Y-m-d'),
+            'probation_end_date' => $this->probation_end_date?->format('Y-m-d'),
+            'reporting_manager_id' => $this->reporting_manager_id,
+            'warehouse_id' => $this->warehouse_id,
+            'work_location_id' => $this->work_location_id,
+            'salary_structure_id' => $this->salary_structure_id,
+            'employment_status' => $this->employment_status ?? 'active',
+
+            'employment_type' => $this->whenLoaded('employmentType', fn () => [
+                'id' => $this->employmentType->id,
+                'name' => $this->employmentType->name,
+            ]),
+            'warehouse' => $this->whenLoaded('warehouse', fn () => [
+                'id' => $this->warehouse->id,
+                'name' => $this->warehouse->name,
+            ]),
+            'work_location' => $this->whenLoaded('workLocation', fn () => [
+                'id' => $this->workLocation->id,
+                'name' => $this->workLocation->name,
+            ]),
+            'salary_structure' => $this->whenLoaded('salaryStructure', fn () => [
+                'id' => $this->salaryStructure->id,
+                'name' => $this->salaryStructure->name,
+            ]),
+            'reporting_manager' => $this->whenLoaded('reportingManager', fn () => [
+                'id' => $this->reportingManager->id,
+                'name' => $this->reportingManager->name,
+                'employee_code' => $this->reportingManager->employee_code,
+            ]),
+            'profile' => $this->whenLoaded('profile', fn () => [
+                'date_of_birth' => $this->profile->date_of_birth?->format('Y-m-d'),
+                'gender' => $this->profile->gender,
+                'marital_status' => $this->profile->marital_status,
+                'national_id' => $this->profile->national_id,
+                'tax_number' => $this->profile->tax_number,
+                'bank_name' => $this->profile->bank_name,
+                'account_number' => $this->profile->account_number,
+            ]),
 
             /**
              * The date and time when the record was created.
