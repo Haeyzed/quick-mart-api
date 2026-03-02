@@ -46,8 +46,7 @@ class SupplierService extends BaseService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {
-    }
+    ) {}
 
     public function getSupplier(Supplier $supplier): Supplier
     {
@@ -102,7 +101,7 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     /**
      * Get list of supplier options for select/combobox.
@@ -123,19 +122,19 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createSupplier(array $data): Supplier
     {
         return DB::transaction(function () use ($data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
                 $data = $this->handleImageUpload($data);
             }
             $data['is_active'] = $data['is_active'] ?? true;
 
             $supplier = Supplier::create($data);
 
-            $openingBalance = (float)($data['opening_balance'] ?? 0);
+            $openingBalance = (float) ($data['opening_balance'] ?? 0);
             if ($openingBalance > 0) {
                 $this->createOpeningBalancePurchase($supplier, $openingBalance);
             }
@@ -147,17 +146,17 @@ class SupplierService extends BaseService
     /**
      * Process image upload and merge path into supplier data.
      *
-     * @param array<string, mixed> $data Input data containing 'image' as UploadedFile.
+     * @param  array<string, mixed>  $data  Input data containing 'image' as UploadedFile.
      * @return array<string, mixed> Data with 'image' (path) set.
      */
     private function handleImageUpload(array $data): array
     {
         $path = $this->uploadService->upload(
-            $data['image'],
+            $data['image_path'],
             config('storage.suppliers.images', self::DEFAULT_SUPPLIER_IMAGES_PATH)
         );
 
-        $data['image'] = $path;
+        $data['image_path'] = $path;
 
         return $data;
     }
@@ -168,12 +167,12 @@ class SupplierService extends BaseService
     private function createOpeningBalancePurchase(Supplier $supplier, float $amount): Purchase
     {
         $warehouse = Warehouse::query()->first();
-        if (!$warehouse) {
+        if (! $warehouse) {
             throw new RuntimeException('No warehouse found. Please create a warehouse first.');
         }
 
         return Purchase::create([
-            'reference_no' => 'sob-' . now()->format('Ymd') . '-' . now()->format('his'),
+            'reference_no' => 'sob-'.now()->format('Ymd').'-'.now()->format('his'),
             'supplier_id' => $supplier->id,
             'user_id' => auth()->id(),
             'warehouse_id' => $warehouse->id,
@@ -191,17 +190,17 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateSupplier(Supplier $supplier, array $data): Supplier
     {
         return DB::transaction(function () use ($supplier, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                if ($supplier->image) {
-                    $this->uploadService->delete($supplier->image);
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+                if ($supplier->image_path) {
+                    $this->uploadService->delete($supplier->image_path);
                 }
                 $data = $this->handleImageUpload($data);
             }
@@ -224,7 +223,7 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      */
     public function bulkDeleteSuppliers(array $ids): int
     {
@@ -243,8 +242,8 @@ class SupplierService extends BaseService
     public function deleteSupplier(Supplier $supplier): void
     {
         DB::transaction(function () use ($supplier) {
-            if ($supplier->image) {
-                $this->uploadService->delete($supplier->image);
+            if ($supplier->image_path) {
+                $this->uploadService->delete($supplier->image_path);
             }
             $supplier->update(['is_active' => false]);
         });
@@ -308,20 +307,21 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param array<int> $ids
-     * @param array<string> $columns
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     *
      * @deprecated Use generateExportFile() and handle email in controller
      */
     public function exportSuppliers(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
         $fileName = 'suppliers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/' . $fileName;
+        $relativePath = 'exports/'.$fileName;
 
         if ($format === 'excel') {
             Excel::store(new SuppliersExport($ids, $columns), $relativePath, 'public');
         } else {
             $suppliers = Supplier::query()
-                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
+                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
                 ->orderBy('company_name')
                 ->get();
 
@@ -339,7 +339,7 @@ class SupplierService extends BaseService
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn() => throw new RuntimeException('Mail settings are not configured.')
+            fn () => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
         $this->setMailInfo($mailSetting);
@@ -361,12 +361,12 @@ class SupplierService extends BaseService
         $purchases = Purchase::query()
             ->where('supplier_id', $supplier->id)
             ->get()
-            ->map(fn(Purchase $p) => [
+            ->map(fn (Purchase $p) => [
                 'id' => $p->id,
                 'date' => $p->created_at?->format('Y-m-d'),
                 'type' => 'Purchase',
                 'reference' => $p->reference_no,
-                'debit' => (float)$p->grand_total,
+                'debit' => (float) $p->grand_total,
                 'credit' => 0.0,
             ]);
 
@@ -379,20 +379,20 @@ class SupplierService extends BaseService
                     'type' => 'Payment',
                     'reference' => $payment->payment_reference ?? '-',
                     'debit' => 0.0,
-                    'credit' => (float)$payment->amount,
+                    'credit' => (float) $payment->amount,
                 ]);
             }
         }
 
         $returns = ReturnPurchase::where('supplier_id', $supplier->id)
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'id' => $r->id,
                 'date' => $r->created_at?->format('Y-m-d'),
                 'type' => 'Purchase Return',
                 'reference' => $r->reference_no,
                 'debit' => 0.0,
-                'credit' => (float)$r->grand_total,
+                'credit' => (float) $r->grand_total,
             ]);
 
         $ledger = $purchases->merge($payments)->merge($returns)
@@ -414,14 +414,14 @@ class SupplierService extends BaseService
      */
     public function getBalanceDue(Supplier $supplier): float
     {
-        $openingBalance = (float)($supplier->opening_balance ?? 0);
-        $totalPurchases = (float)Purchase::where('supplier_id', $supplier->id)->sum('grand_total');
-        $totalPaid = (float)DB::table('payments')
+        $openingBalance = (float) ($supplier->opening_balance ?? 0);
+        $totalPurchases = (float) Purchase::where('supplier_id', $supplier->id)->sum('grand_total');
+        $totalPaid = (float) DB::table('payments')
             ->join('purchases', 'payments.purchase_id', '=', 'purchases.id')
             ->where('purchases.supplier_id', $supplier->id)
             ->whereNull('purchases.deleted_at')
             ->sum('payments.amount');
-        $totalReturns = (float)ReturnPurchase::where('supplier_id', $supplier->id)->sum('grand_total');
+        $totalReturns = (float) ReturnPurchase::where('supplier_id', $supplier->id)->sum('grand_total');
 
         return max(0, $openingBalance + $totalPurchases - $totalReturns - $totalPaid);
     }
@@ -450,11 +450,11 @@ class SupplierService extends BaseService
             )
             ->orderByDesc('payments.created_at')
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'created_at' => $p->created_at ? date('Y-m-d', strtotime($p->created_at)) : '-',
                 'payment_reference' => $p->payment_reference ?? '-',
-                'amount' => number_format((float)$p->amount, 2),
+                'amount' => number_format((float) $p->amount, 2),
                 'paying_method' => ucfirst($p->paying_method ?? '-'),
                 'payment_at' => $p->payment_at
                     ? date('Y-m-d H:i', strtotime($p->payment_at))
@@ -477,7 +477,7 @@ class SupplierService extends BaseService
             ->get();
 
         $account = Account::query()->where('is_default', true)->first();
-        if (!$account) {
+        if (! $account) {
             throw new RuntimeException('No default account found. Please configure accounting.');
         }
 
@@ -500,7 +500,7 @@ class SupplierService extends BaseService
                 }
 
                 Payment::create([
-                    'payment_reference' => 'ppr-' . now()->format('Ymd') . '-' . now()->format('his'),
+                    'payment_reference' => 'ppr-'.now()->format('Ymd').'-'.now()->format('his'),
                     'purchase_id' => $purchase->id,
                     'user_id' => auth()->id(),
                     'cash_register_id' => $cashRegisterId,

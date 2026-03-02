@@ -17,21 +17,10 @@ class DocumentTypeService
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $query = DocumentType::query()->latest();
-
-        if (isset($filters['is_active'])) {
-            $query->when(
-                $filters['is_active'],
-                fn ($q) => $q->active(),
-                fn ($q) => $q->where('is_active', false)
-            );
-        }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
-            $query->where('name', 'like', $term)->orWhere('code', 'like', $term);
-        }
-
-        return $query->paginate($perPage);
+        return DocumentType::query()
+            ->filter($filters)
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**

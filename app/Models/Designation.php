@@ -8,6 +8,7 @@ use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -16,25 +17,30 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Designation
- * 
+ *
  * Represents an employee job designation/title within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for designation entities.
  *
  * @property int $id
  * @property string $name
+ * @property int $department_id
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Designation newModelQuery()
  * @method static Builder|Designation newQuery()
  * @method static Builder|Designation query()
  * @method static Builder|Designation active()
  * @method static Builder|Designation filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
  * @property-read int|null $employees_count
+ * @property-read \App\Models\Department $department
+ *
  * @method static Builder<static>|Designation customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Designation last30Days(string $column = 'created_at')
  * @method static Builder<static>|Designation last7Days(string $column = 'created_at')
@@ -46,6 +52,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Designation today(string $column = 'created_at')
  * @method static Builder<static>|Designation whereCreatedAt($value)
  * @method static Builder<static>|Designation whereDeletedAt($value)
+ * @method static Builder<static>|Designation whereDepartmentId($value)
  * @method static Builder<static>|Designation whereId($value)
  * @method static Builder<static>|Designation whereIsActive($value)
  * @method static Builder<static>|Designation whereName($value)
@@ -54,6 +61,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Designation withoutTrashed()
  * @method static Builder<static>|Designation yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Designation yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Designation extends Model implements AuditableContract
@@ -67,6 +75,7 @@ class Designation extends Model implements AuditableContract
      */
     protected $fillable = [
         'name',
+        'department_id',
         'is_active',
     ];
 
@@ -76,6 +85,7 @@ class Designation extends Model implements AuditableContract
      * @var array<string, string>
      */
     protected $casts = [
+        'department_id' => 'integer',
         'is_active' => 'boolean',
     ];
 
@@ -92,6 +102,10 @@ class Designation extends Model implements AuditableContract
             ->when(
                 isset($filters['is_active']),
                 fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['department_id']),
+                fn (Builder $q) => $q->where('department_id', $filters['department_id'])
             )
             ->when(
                 ! empty($filters['search']),
@@ -125,5 +139,15 @@ class Designation extends Model implements AuditableContract
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'designation_id');
+    }
+
+    /**
+     * Get the department associated with this designation.
+     *
+     * Defines an inverse relationship linking this designation to its parent department.
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }

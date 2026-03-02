@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
@@ -28,6 +29,9 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon $end_date
  * @property float $days
  * @property string $status
+ * @property string $approval_status
+ * @property int $current_approval_level
+ * @property int $max_approval_level
  * @property int|null $approver_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -39,6 +43,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Leave filter(array $filters)
  *
  * @property-read \App\Models\User|null $approver
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, LeaveApproval> $leaveApprovals
+ * @property-read int|null $leave_approvals_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \App\Models\Employee $employee
@@ -88,6 +94,9 @@ class Leave extends Model implements AuditableContract
         'reason',
         'attachment',
         'status',
+        'approval_status',
+        'current_approval_level',
+        'max_approval_level',
         'approver_id',
     ];
 
@@ -101,6 +110,8 @@ class Leave extends Model implements AuditableContract
         'end_date' => 'date:Y-m-d',
         'days' => 'float',
         'status' => LeaveStatusEnum::class,
+        'current_approval_level' => 'integer',
+        'max_approval_level' => 'integer',
     ];
 
     /**
@@ -116,6 +127,10 @@ class Leave extends Model implements AuditableContract
             ->when(
                 isset($filters['status']),
                 fn (Builder $q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                ! empty($filters['approval_status']),
+                fn (Builder $q) => $q->where('approval_status', $filters['approval_status'])
             )
             ->when(
                 ! empty($filters['search']),
@@ -146,6 +161,14 @@ class Leave extends Model implements AuditableContract
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class);
+    }
+
+    /**
+     * Get the approval history for this leave (multi-level approvals).
+     */
+    public function leaveApprovals(): HasMany
+    {
+        return $this->hasMany(LeaveApproval::class)->orderBy('level');
     }
 
     /**

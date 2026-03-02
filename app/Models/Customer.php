@@ -5,23 +5,25 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CustomerTypeEnum;
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Customer Model
- * 
- * Represents a customer in the system.
+ * Class Customer
+ *
+ * Represents a customer in the system. Handles the underlying data
+ * structure, relationships, and specific query scopes for customer entities.
  *
  * @property int $id
  * @property int|null $customer_group_id
@@ -49,59 +51,50 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ *
+ * @method static Builder|Customer newModelQuery()
+ * @method static Builder|Customer newQuery()
+ * @method static Builder|Customer query()
+ * @method static Builder|Customer active()
+ * @method static Builder|Customer filter(array $filters)
+ *
  * @property-read Country|null $country
  * @property-read State|null $state
  * @property-read City|null $city
  * @property-read CustomerGroup|null $customerGroup
  * @property-read User|null $user
  * @property-read Collection<int, Sale> $sales
+ * @property-read int|null $sales_count
  * @property-read Collection<int, DiscountPlan> $discountPlans
+ * @property-read int|null $discount_plans_count
  * @property-read Collection<int, RewardPoint> $rewardPoints
+ * @property-read int|null $reward_points_count
  * @property-read Collection<int, Deposit> $deposits
- * @method static Builder|Customer active()
- * @method static Builder|Customer filter(array $filters)
- * @property string|null $ecom
- * @property string $dsf
- * @property string|null $arabic_name
- * @property string|null $admin
- * @property string|null $franchise_location
- * @property string $customer_type
- * @property string $customer_assigned_to
- * @property string $assigned
- * @property string $aaaaaaaa
- * @property string|null $district
- * @property Carbon|null $deleted_at
+ * @property-read int|null $deposits_count
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @property-read int|null $deposits_count
- * @property-read int|null $discount_plans_count
- * @property-read int|null $reward_points_count
- * @property-read int|null $sales_count
- * @method static Builder<static>|Customer newModelQuery()
- * @method static Builder<static>|Customer newQuery()
+ *
+ * @method static Builder<static>|Customer customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Customer last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Customer last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Customer lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Customer lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Customer monthToDate(string $column = 'created_at')
  * @method static Builder<static>|Customer onlyTrashed()
- * @method static Builder<static>|Customer query()
- * @method static Builder<static>|Customer whereAaaaaaaa($value)
+ * @method static Builder<static>|Customer quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Customer today(string $column = 'created_at')
  * @method static Builder<static>|Customer whereAddress($value)
- * @method static Builder<static>|Customer whereAdmin($value)
- * @method static Builder<static>|Customer whereArabicName($value)
- * @method static Builder<static>|Customer whereAssigned($value)
  * @method static Builder<static>|Customer whereCityId($value)
  * @method static Builder<static>|Customer whereCompanyName($value)
  * @method static Builder<static>|Customer whereCountryId($value)
  * @method static Builder<static>|Customer whereCreatedAt($value)
  * @method static Builder<static>|Customer whereCreditLimit($value)
- * @method static Builder<static>|Customer whereCustomerAssignedTo($value)
  * @method static Builder<static>|Customer whereCustomerGroupId($value)
- * @method static Builder<static>|Customer whereCustomerType($value)
  * @method static Builder<static>|Customer whereDeletedAt($value)
  * @method static Builder<static>|Customer whereDeposit($value)
- * @method static Builder<static>|Customer whereDistrict($value)
- * @method static Builder<static>|Customer whereDsf($value)
- * @method static Builder<static>|Customer whereEcom($value)
  * @method static Builder<static>|Customer whereEmail($value)
  * @method static Builder<static>|Customer whereExpense($value)
- * @method static Builder<static>|Customer whereFranchiseLocation($value)
  * @method static Builder<static>|Customer whereId($value)
  * @method static Builder<static>|Customer whereIsActive($value)
  * @method static Builder<static>|Customer whereName($value)
@@ -120,11 +113,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Customer whereWishlist($value)
  * @method static Builder<static>|Customer withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Customer withoutTrashed()
+ * @method static Builder<static>|Customer yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Customer yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Customer extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -156,6 +152,71 @@ class Customer extends Model implements AuditableContract
         'wishlist',
         'is_active',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'customer_group_id' => 'integer',
+        'user_id' => 'integer',
+        'country_id' => 'integer',
+        'state_id' => 'integer',
+        'city_id' => 'integer',
+        'type' => CustomerTypeEnum::class,
+        'opening_balance' => 'float',
+        'credit_limit' => 'float',
+        'points' => 'float',
+        'deposit' => 'float',
+        'pay_term_no' => 'integer',
+        'expense' => 'float',
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['customer_group_id']),
+                fn (Builder $q) => $q->where('customer_group_id', $filters['customer_group_id'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = '%'.$filters['search'].'%';
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('company_name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('phone_number', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
+    /**
+     * Scope a query to only include active customers.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
 
     /**
      * Get the country.
@@ -299,67 +360,5 @@ class Customer extends Model implements AuditableContract
         }
 
         return $result;
-    }
-
-    /**
-     * Scope a query to only include active customers.
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope a query to apply filters.
-     *
-     * @param  array<string, mixed>  $filters
-     */
-    public function scopeFilter(Builder $query, array $filters): Builder
-    {
-        return $query
-            ->when(
-                isset($filters['status']),
-                fn (Builder $q) => $q->active()
-            )
-            ->when(
-                ! empty($filters['customer_group_id']),
-                fn (Builder $q) => $q->where('customer_group_id', $filters['customer_group_id'])
-            )
-            ->when(
-                ! empty($filters['search']),
-                function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
-                    $q->where(fn (Builder $subQ) => $subQ
-                        ->where('name', 'like', $term)
-                        ->orWhere('company_name', 'like', $term)
-                        ->orWhere('email', 'like', $term)
-                        ->orWhere('phone_number', 'like', $term)
-                    );
-                }
-            );
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'customer_group_id' => 'integer',
-            'user_id' => 'integer',
-            'country_id' => 'integer',
-            'state_id' => 'integer',
-            'city_id' => 'integer',
-            'type' => CustomerTypeEnum::class,
-            'opening_balance' => 'float',
-            'credit_limit' => 'float',
-            'points' => 'float',
-            'deposit' => 'float',
-            'pay_term_no' => 'integer',
-            'expense' => 'float',
-            'is_active' => 'boolean',
-        ];
     }
 }

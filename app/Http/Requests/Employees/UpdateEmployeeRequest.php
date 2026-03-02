@@ -152,7 +152,7 @@ class UpdateEmployeeRequest extends BaseRequest
             /**
              * The optional image or avatar for the employee.
              */
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
             'employee_code' => [
                 'sometimes',

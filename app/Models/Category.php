@@ -18,7 +18,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Category
- * 
+ *
  * Represents a product category within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for category entities.
  *
@@ -27,7 +27,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string $slug
  * @property string|null $short_description
  * @property string|null $page_title
- * @property string|null $image
+ * @property string|null $image_path
  * @property string|null $image_url
  * @property string|null $icon
  * @property string|null $icon_url
@@ -39,6 +39,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Category newModelQuery()
  * @method static Builder|Category newQuery()
  * @method static Builder|Category query()
@@ -46,6 +47,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Category featured()
  * @method static Builder|Category syncDisabled()
  * @method static Builder|Category filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $children
@@ -55,6 +57,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Category|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
  * @property-read int|null $products_count
+ *
  * @method static Builder<static>|Category customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Category last30Days(string $column = 'created_at')
  * @method static Builder<static>|Category last7Days(string $column = 'created_at')
@@ -85,6 +88,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Category withoutTrashed()
  * @method static Builder<static>|Category yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Category yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Category extends Model implements AuditableContract
@@ -101,7 +105,7 @@ class Category extends Model implements AuditableContract
         'slug',
         'short_description',
         'page_title',
-        'image',
+        'image_path',
         'image_url',
         'icon',
         'icon_url',

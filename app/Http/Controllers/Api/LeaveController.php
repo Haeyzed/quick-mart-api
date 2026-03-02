@@ -7,15 +7,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Leaves\LeaveBulkActionRequest;
 use App\Http\Requests\Leaves\StoreLeaveRequest;
 use App\Http\Requests\Leaves\UpdateLeaveRequest;
-use App\Http\Requests\Leaves\LeaveBulkActionRequest;
 use App\Http\Resources\LeaveResource;
 use App\Mail\ExportMail;
 use App\Models\GeneralSetting;
+use App\Models\Leave;
 use App\Models\MailSetting;
 use App\Models\User;
-use App\Models\Leave;
 use App\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +38,7 @@ class LeaveController extends Controller
      * LeaveController constructor.
      */
     public function __construct(
-        private readonly LeaveService $service
+        private readonly LeaveService $leaveService
     ) {}
 
     /**
@@ -52,7 +52,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for viewing leaves list.');
         }
 
-        $leaves = $this->service->getPaginatedLeaves(
+        $leaves = $this->leaveService->getPaginated(
             $request->validate([
                 /**
                  * Search term to filter leaves by employee name.
@@ -106,7 +106,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for create leave.');
         }
 
-        $leave = $this->service->createLeave($request->validated());
+        $leave = $this->leaveService->create($request->validated());
 
         return response()->success(
             new LeaveResource($leave),
@@ -143,7 +143,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for update leave.');
         }
 
-        $updatedLeave = $this->service->updateLeave($leave, $request->validated());
+        $updatedLeave = $this->leaveService->update($leave, $request->validated());
 
         return response()->success(
             new LeaveResource($updatedLeave),
@@ -162,7 +162,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for delete leave.');
         }
 
-        $this->service->deleteLeave($leave);
+        $this->leaveService->delete($leave);
 
         return response()->success(null, 'Leave deleted successfully');
     }
@@ -178,7 +178,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for bulk delete leaves.');
         }
 
-        $count = $this->service->bulkDeleteLeaves($request->validated()['ids']);
+        $count = $this->leaveService->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
@@ -197,7 +197,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for bulk approve leaves.');
         }
 
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], 'Approved');
+        $count = $this->leaveService->bulkUpdateStatus($request->validated()['ids'], 'Approved');
 
         return response()->success(
             ['approved_count' => $count],
@@ -216,11 +216,44 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for bulk reject leaves.');
         }
 
-        $count = $this->service->bulkUpdateStatus($request->validated()['ids'], 'Rejected');
+        $count = $this->leaveService->bulkUpdateStatus($request->validated()['ids'], 'Rejected');
 
         return response()->success(
             ['rejected_count' => $count],
             "{$count} leaves rejected"
+        );
+    }
+
+    /**
+     * Approve or Reject Leave (Multi-level approval)
+     *
+     * Approve or reject a leave at a given approval level.
+     */
+    public function approve(Request $request, Leave $leave): JsonResponse
+    {
+        if (auth()->user()->denies('update leaves')) {
+            return response()->forbidden('Permission denied for approving this leave.');
+        }
+
+        $validated = $request->validate([
+            /** @example 1 */
+            'level' => ['required', 'integer', 'min:1', 'max:10'],
+            /** @example "approved" */
+            'status' => ['required', 'string', 'in:approved,rejected'],
+            /** @example "Approved for team capacity" */
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $updatedLeave = $this->leaveService->approve(
+            $leave,
+            (int) $validated['level'],
+            $validated['status'],
+            $validated['notes'] ?? null
+        );
+
+        return response()->success(
+            new LeaveResource($updatedLeave),
+            'Leave approval recorded successfully'
         );
     }
 
@@ -235,7 +268,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for import leaves.');
         }
 
-        $this->service->importLeaves($request->file('file'));
+        $this->leaveService->import($request->file('file'));
 
         return response()->success(null, 'Leaves imported successfully');
     }
@@ -253,7 +286,7 @@ class LeaveController extends Controller
 
         $validated = $request->validated();
 
-        $path = $this->service->generateExportFile(
+        $path = $this->leaveService->generateExportFile(
             $validated['ids'] ?? [],
             $validated['format'],
             $validated['columns'] ?? [],
@@ -316,7 +349,7 @@ class LeaveController extends Controller
             return response()->forbidden('Permission denied for downloading leaves import template.');
         }
 
-        $path = $this->service->download();
+        $path = $this->leaveService->download();
 
         return response()->download(
             $path,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,32 +16,45 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * CashRegister Model
- * 
- * Represents a cash register session for a user in a warehouse.
+ * Class CashRegister
+ *
+ * Represents a cash register session for a user in a warehouse. Handles the underlying data
+ * structure, relationships, and specific query scopes for cash register entities.
  *
  * @property int $id
  * @property float $cash_in_hand
  * @property int $user_id
  * @property int $warehouse_id
  * @property string $status
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read User $user
- * @property-read Warehouse $warehouse
- * @property-read Collection<int, Sale> $sales
- * @property-read Collection<int, Payment> $payments
- * @method static Builder|CashRegister open()
- * @method static Builder|CashRegister closed()
  * @property float|null $closing_balance
  * @property float|null $actual_cash
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ *
+ * @method static Builder|CashRegister newModelQuery()
+ * @method static Builder|CashRegister newQuery()
+ * @method static Builder|CashRegister query()
+ * @method static Builder|CashRegister open()
+ * @method static Builder|CashRegister closed()
+ * @method static Builder|CashRegister filter(array $filters)
+ *
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\Warehouse $warehouse
+ * @property-read Collection<int, Sale> $sales
+ * @property-read int|null $sales_count
+ * @property-read Collection<int, Payment> $payments
+ * @property-read int|null $payments_count
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @property-read int|null $payments_count
- * @property-read int|null $sales_count
- * @method static Builder<static>|CashRegister newModelQuery()
- * @method static Builder<static>|CashRegister newQuery()
- * @method static Builder<static>|CashRegister query()
+ *
+ * @method static Builder<static>|CashRegister customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|CashRegister last30Days(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister last7Days(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister lastYear(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister today(string $column = 'created_at')
  * @method static Builder<static>|CashRegister whereActualCash($value)
  * @method static Builder<static>|CashRegister whereCashInHand($value)
  * @method static Builder<static>|CashRegister whereClosingBalance($value)
@@ -50,11 +64,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|CashRegister whereUpdatedAt($value)
  * @method static Builder<static>|CashRegister whereUserId($value)
  * @method static Builder<static>|CashRegister whereWarehouseId($value)
+ * @method static Builder<static>|CashRegister yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|CashRegister yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class CashRegister extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -67,6 +84,45 @@ class CashRegister extends Model implements AuditableContract
         'warehouse_id',
         'status',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'cash_in_hand' => 'float',
+        'user_id' => 'integer',
+        'warehouse_id' => 'integer',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                ! empty($filters['warehouse_id']),
+                fn (Builder $q) => $q->where('warehouse_id', $filters['warehouse_id'])
+            )
+            ->when(
+                ! empty($filters['user_id']),
+                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
 
     /**
      * Get the user for this cash register.
@@ -138,19 +194,5 @@ class CashRegister extends Model implements AuditableContract
     public function scopeClosed(Builder $query): Builder
     {
         return $query->where('status', 'closed');
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'cash_in_hand' => 'float',
-            'user_id' => 'integer',
-            'warehouse_id' => 'integer',
-        ];
     }
 }

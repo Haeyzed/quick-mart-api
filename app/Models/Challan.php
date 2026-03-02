@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,9 +14,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Challan Model
- * 
- * Represents a challan (delivery receipt) for courier services.
+ * Class Challan
+ *
+ * Represents a challan (delivery receipt) for courier services. Handles the underlying data
+ * structure, relationships, and specific query scopes for challan entities.
  *
  * @property int $id
  * @property string $reference_no
@@ -33,16 +35,28 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $closed_by_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Courier|null $courier
- * @property-read User|null $createdBy
- * @property-read User|null $closedBy
+ *
+ * @method static Builder|Challan newModelQuery()
+ * @method static Builder|Challan newQuery()
+ * @method static Builder|Challan query()
  * @method static Builder|Challan open()
  * @method static Builder|Challan closed()
+ * @method static Builder|Challan filter(array $filters)
+ *
+ * @property-read \App\Models\Courier|null $courier
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\User|null $closedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @method static Builder<static>|Challan newModelQuery()
- * @method static Builder<static>|Challan newQuery()
- * @method static Builder<static>|Challan query()
+ *
+ * @method static Builder<static>|Challan customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Challan last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Challan last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Challan lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Challan lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Challan monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Challan quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Challan today(string $column = 'created_at')
  * @method static Builder<static>|Challan whereAmountList($value)
  * @method static Builder<static>|Challan whereCashList($value)
  * @method static Builder<static>|Challan whereChequeList($value)
@@ -59,11 +73,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Challan whereStatus($value)
  * @method static Builder<static>|Challan whereStatusList($value)
  * @method static Builder<static>|Challan whereUpdatedAt($value)
+ * @method static Builder<static>|Challan yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Challan yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Challan extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -86,6 +103,55 @@ class Challan extends Model implements AuditableContract
         'closed_by_id',
         'created_at',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'courier_id' => 'integer',
+        'closing_date' => 'datetime',
+        'created_by_id' => 'integer',
+        'closed_by_id' => 'integer',
+        'created_at' => 'datetime',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                ! empty($filters['courier_id']),
+                fn (Builder $q) => $q->where('courier_id', $filters['courier_id'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('reference_no', 'like', $term)
+                        ->orWhereHas('courier', function (Builder $courierQ) use ($term) {
+                            $courierQ->where('name', 'like', $term);
+                        })
+                    );
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
 
     /**
      * Get the courier for this challan.
@@ -131,21 +197,5 @@ class Challan extends Model implements AuditableContract
     public function scopeClosed(Builder $query): Builder
     {
         return $query->where('status', 'closed');
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'courier_id' => 'integer',
-            'closing_date' => 'datetime',
-            'created_by_id' => 'integer',
-            'closed_by_id' => 'integer',
-            'created_at' => 'datetime',
-        ];
     }
 }

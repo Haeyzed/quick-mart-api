@@ -16,7 +16,6 @@ class HolidayResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -41,7 +40,7 @@ class HolidayResource extends JsonResource
              *
              * @example {"id": 5, "name": "John Doe", "email": "john.doe@example.com"}
              */
-            'user' => $this->whenLoaded('user', fn() => [
+            'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,

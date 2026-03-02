@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -11,9 +13,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * CustomField Model
- * 
- * Represents a custom field that can be added to various entities.
+ * Class CustomField
+ *
+ * Represents a custom field that can be added to various entities. Handles the underlying data
+ * structure, relationships, and specific query scopes for custom field entities.
  *
  * @property int $id
  * @property string $belongs_to
@@ -29,30 +32,45 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_disable
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * @method static Builder|CustomField newModelQuery()
+ * @method static Builder|CustomField newQuery()
+ * @method static Builder|CustomField query()
+ * @method static Builder|CustomField filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereBelongsTo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereDefaultValue($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereGridValue($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereIsAdmin($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereIsDisable($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereIsInvoice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereIsRequired($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereIsTable($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereOptionValue($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomField whereUpdatedAt($value)
+ *
+ * @method static Builder<static>|CustomField customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|CustomField last30Days(string $column = 'created_at')
+ * @method static Builder<static>|CustomField last7Days(string $column = 'created_at')
+ * @method static Builder<static>|CustomField lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|CustomField lastYear(string $column = 'created_at')
+ * @method static Builder<static>|CustomField monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomField quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomField today(string $column = 'created_at')
+ * @method static Builder<static>|CustomField whereBelongsTo($value)
+ * @method static Builder<static>|CustomField whereCreatedAt($value)
+ * @method static Builder<static>|CustomField whereDefaultValue($value)
+ * @method static Builder<static>|CustomField whereGridValue($value)
+ * @method static Builder<static>|CustomField whereId($value)
+ * @method static Builder<static>|CustomField whereIsAdmin($value)
+ * @method static Builder<static>|CustomField whereIsDisable($value)
+ * @method static Builder<static>|CustomField whereIsInvoice($value)
+ * @method static Builder<static>|CustomField whereIsRequired($value)
+ * @method static Builder<static>|CustomField whereIsTable($value)
+ * @method static Builder<static>|CustomField whereName($value)
+ * @method static Builder<static>|CustomField whereOptionValue($value)
+ * @method static Builder<static>|CustomField whereType($value)
+ * @method static Builder<static>|CustomField whereUpdatedAt($value)
+ * @method static Builder<static>|CustomField yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|CustomField yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class CustomField extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -74,18 +92,42 @@ class CustomField extends Model implements AuditableContract
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
+    protected $casts = [
+        'is_table' => 'boolean',
+        'is_invoice' => 'boolean',
+        'is_required' => 'boolean',
+        'is_admin' => 'boolean',
+        'is_disable' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
-        return [
-            'is_table' => 'boolean',
-            'is_invoice' => 'boolean',
-            'is_required' => 'boolean',
-            'is_admin' => 'boolean',
-            'is_disable' => 'boolean',
-        ];
+        return $query
+            ->when(
+                ! empty($filters['belongs_to']),
+                fn (Builder $q) => $q->where('belongs_to', $filters['belongs_to'])
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('name', 'like', $term);
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,9 +16,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * Coupon Model
- * 
- * Represents a discount coupon code.
+ * Class Coupon
+ *
+ * Represents a discount coupon code. Handles the underlying data
+ * structure, relationships, and specific query scopes for coupon entities.
  *
  * @property int $id
  * @property string $name
@@ -32,17 +34,29 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read User|null $user
- * @property-read Collection<int, Sale> $sales
+ *
+ * @method static Builder|Coupon newModelQuery()
+ * @method static Builder|Coupon newQuery()
+ * @method static Builder|Coupon query()
  * @method static Builder|Coupon active()
  * @method static Builder|Coupon valid()
  * @method static Builder|Coupon expired()
+ * @method static Builder|Coupon filter(array $filters)
+ *
+ * @property-read \App\Models\User|null $user
+ * @property-read Collection<int, Sale> $sales
+ * @property-read int|null $sales_count
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @property-read int|null $sales_count
- * @method static Builder<static>|Coupon newModelQuery()
- * @method static Builder<static>|Coupon newQuery()
- * @method static Builder<static>|Coupon query()
+ *
+ * @method static Builder<static>|Coupon customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Coupon last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Coupon last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Coupon lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Coupon lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Coupon monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Coupon quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Coupon today(string $column = 'created_at')
  * @method static Builder<static>|Coupon whereAmount($value)
  * @method static Builder<static>|Coupon whereCode($value)
  * @method static Builder<static>|Coupon whereCreatedAt($value)
@@ -50,16 +64,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Coupon whereId($value)
  * @method static Builder<static>|Coupon whereIsActive($value)
  * @method static Builder<static>|Coupon whereMinimumAmount($value)
+ * @method static Builder<static>|Coupon whereName($value)
  * @method static Builder<static>|Coupon whereQuantity($value)
  * @method static Builder<static>|Coupon whereType($value)
  * @method static Builder<static>|Coupon whereUpdatedAt($value)
  * @method static Builder<static>|Coupon whereUsed($value)
  * @method static Builder<static>|Coupon whereUserId($value)
+ * @method static Builder<static>|Coupon yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Coupon yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Coupon extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -78,6 +96,51 @@ class Coupon extends Model implements AuditableContract
         'expired_date',
         'is_active',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'amount' => 'float',
+        'minimum_amount' => 'float',
+        'user_id' => 'integer',
+        'quantity' => 'integer',
+        'used' => 'integer',
+        'expired_date' => 'date',
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(fn (Builder $subQ) => $subQ
+                        ->where('name', 'like', $term)
+                        ->orWhere('code', 'like', $term)
+                    );
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
 
     /**
      * Get the user who created this coupon.
@@ -104,7 +167,7 @@ class Coupon extends Model implements AuditableContract
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -178,23 +241,5 @@ class Coupon extends Model implements AuditableContract
     public function scopeExpired(Builder $query): Builder
     {
         return $query->where('expired_date', '<', now());
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'float',
-            'minimum_amount' => 'float',
-            'user_id' => 'integer',
-            'quantity' => 'integer',
-            'used' => 'integer',
-            'expired_date' => 'date',
-            'is_active' => 'boolean',
-        ];
     }
 }

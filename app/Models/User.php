@@ -52,9 +52,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Sale> $sales
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, Payment> $payments
+ *
  * @method static Builder|User active()
  * @method static Builder|User notDeleted()
  * @method static Builder|User filter(array $filters)
+ *
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $holidays_count
@@ -69,6 +71,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $sales_count
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
+ *
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static Builder<static>|User newModelQuery()
  * @method static Builder<static>|User newQuery()
@@ -96,6 +99,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static Builder<static>|User whereWarehouseId($value)
  * @method static Builder<static>|User withoutPermission($permissions)
  * @method static Builder<static>|User withoutRole($roles, $guard = null)
+ *
  * @mixin \Eloquent
  */
 class User extends Authenticatable implements AuditableContract, MustVerifyEmail
@@ -118,7 +122,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
         'name',
         'username',
         'email',
-        'image',
+        'image_path',
         'image_url',
         'password',
         'phone_number',
@@ -277,7 +281,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user has a specific permission.
      * This is a convenience wrapper around Spatie's hasPermissionTo method.
      *
-     * @param string $permission Permission name
+     * @param  string  $permission  Permission name
      */
     public function canPerform(string $permission): bool
     {
@@ -288,12 +292,12 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user denies (lacks) a specific permission.
      * Treats non-existent permissions as denied (avoids 500 when permission name is invalid).
      *
-     * @param string $permission Permission name
+     * @param  string  $permission  Permission name
      */
     public function denies(string $permission): bool
     {
         try {
-            return !$this->hasPermissionTo($permission);
+            return ! $this->hasPermissionTo($permission);
         } catch (PermissionDoesNotExist) {
             return true;
         }
@@ -302,7 +306,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has any of the given permissions.
      *
-     * @param array<string> $permissions Array of permission names
+     * @param  array<string>  $permissions  Array of permission names
      */
     public function canPerformAny(array $permissions): bool
     {
@@ -312,7 +316,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has all of the given permissions.
      *
-     * @param array<string> $permissions Array of permission names
+     * @param  array<string>  $permissions  Array of permission names
      */
     public function canPerformAll(array $permissions): bool
     {

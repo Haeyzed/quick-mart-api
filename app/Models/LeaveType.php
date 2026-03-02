@@ -29,15 +29,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|LeaveType newModelQuery()
  * @method static Builder|LeaveType newQuery()
  * @method static Builder|LeaveType query()
  * @method static Builder|LeaveType active()
  * @method static Builder|LeaveType filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Leave> $leaves
  * @property-read int|null $leaves_count
+ *
  * @method static Builder<static>|LeaveType customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|LeaveType last30Days(string $column = 'created_at')
  * @method static Builder<static>|LeaveType last7Days(string $column = 'created_at')
@@ -52,12 +55,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|LeaveType whereCreatedAt($value)
  * @method static Builder<static>|LeaveType whereEncashable($value)
  * @method static Builder<static>|LeaveType whereId($value)
+ * @method static Builder<static>|LeaveType whereIsActive($value)
  * @method static Builder<static>|LeaveType whereName($value)
  * @method static Builder<static>|LeaveType whereUpdatedAt($value)
  * @method static Builder<static>|LeaveType withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|LeaveType withoutTrashed()
  * @method static Builder<static>|LeaveType yearToDate(string $column = 'created_at')
  * @method static Builder<static>|LeaveType yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class LeaveType extends Model implements AuditableContract

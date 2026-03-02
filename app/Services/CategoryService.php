@@ -161,12 +161,12 @@ class CategoryService
      */
     private function handleUploads(array $data, ?Category $category = null): array
     {
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            if ($category?->image) {
-                $this->uploadService->delete($category->image);
+        if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+            if ($category?->image_path) {
+                $this->uploadService->delete($category->image_path);
             }
-            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-            $data['image'] = $path;
+            $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+            $data['image_path'] = $path;
             $data['image_url'] = $this->uploadService->url($path);
         }
 
@@ -282,8 +282,8 @@ class CategoryService
      */
     private function cleanupFiles(Category $category): void
     {
-        if ($category->image) {
-            $this->uploadService->delete($category->image);
+        if ($category->image_path) {
+            $this->uploadService->delete($category->image_path);
         }
         if ($category->icon) {
             $this->uploadService->delete($category->icon);

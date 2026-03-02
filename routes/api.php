@@ -348,6 +348,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('export', [LeaveController::class, 'export'])->name('export');
         Route::get('download', [LeaveController::class, 'download'])->name('download');
     });
+    Route::post('leaves/{leave}/approve', [LeaveController::class, 'approve'])->name('leaves.approve');
     Route::apiResource('leaves', LeaveController::class);
 
     // Overtimes
@@ -442,18 +443,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('employee-documents', EmployeeDocumentController::class);
 
     // Performance Reviews
+    Route::prefix('performance-reviews')->name('performance-reviews.')->group(function () {
+        Route::post('bulk-destroy', [PerformanceReviewController::class, 'bulkDestroy'])->name('bulk-destroy');
+    });
     Route::apiResource('performance-reviews', PerformanceReviewController::class);
 
     // Job Openings & Recruitment
     Route::prefix('job-openings')->name('job-openings.')->group(function () {
+        Route::post('bulk-destroy', [JobOpeningController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::get('options', [JobOpeningController::class, 'options'])->name('options');
     });
     Route::apiResource('job-openings', JobOpeningController::class);
     Route::apiResource('candidates', CandidateController::class);
+    Route::prefix('interviews')->name('interviews.')->group(function () {
+        Route::post('bulk-destroy', [InterviewController::class, 'bulkDestroy'])->name('bulk-destroy');
+    });
     Route::apiResource('interviews', InterviewController::class);
 
     // Onboarding
     Route::prefix('onboarding-checklist-templates')->name('onboarding-checklist-templates.')->group(function () {
+        Route::post('bulk-destroy', [OnboardingChecklistTemplateController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::get('options', [OnboardingChecklistTemplateController::class, 'options'])->name('options');
     });
     Route::apiResource('onboarding-checklist-templates', OnboardingChecklistTemplateController::class);

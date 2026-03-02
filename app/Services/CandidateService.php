@@ -8,8 +8,19 @@ use App\Models\Candidate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class CandidateService
+ *
+ * Handles all core business logic and database interactions for Candidates.
+ * Acts as the intermediary between the controllers and the database layer.
+ */
 class CandidateService
 {
+    /**
+     * Get paginated candidates based on filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
     public function getPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = Candidate::query()->with(['jobOpening:id,title,status'])->latest();
@@ -27,6 +38,12 @@ class CandidateService
         return $query->paginate($perPage);
     }
 
+    /**
+     * Create a newly registered candidate.
+     *
+     * @param  array<string, mixed>  $data  The validated request data.
+     * @return Candidate The newly created Candidate model instance.
+     */
     public function create(array $data): Candidate
     {
         return DB::transaction(function () use ($data) {
@@ -36,6 +53,13 @@ class CandidateService
         });
     }
 
+    /**
+     * Update an existing candidate.
+     *
+     * @param  Candidate  $candidate  The candidate model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return Candidate The freshly updated Candidate model instance.
+     */
     public function update(Candidate $candidate, array $data): Candidate
     {
         return DB::transaction(function () use ($candidate, $data) {
@@ -48,6 +72,9 @@ class CandidateService
         });
     }
 
+    /**
+     * Delete a candidate.
+     */
     public function delete(Candidate $candidate): void
     {
         DB::transaction(fn () => $candidate->delete());

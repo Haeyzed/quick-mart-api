@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,9 +14,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * InvoiceSetting Model
- * 
- * Represents invoice template and formatting settings.
+ * Class InvoiceSetting
+ *
+ * Represents invoice template and formatting settings. Handles the underlying data
+ * structure, relationships, and specific query scopes for invoice setting entities.
  *
  * @property int $id
  * @property string $template_name
@@ -56,17 +58,29 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $updated_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read User|null $creator
- * @property-read User|null $updater
- * @method static Builder|InvoiceSetting active()
- * @method static Builder|InvoiceSetting default()
  * @property int|null $last_invoice_number
  * @property string|null $extra
+ *
+ * @method static Builder|InvoiceSetting newModelQuery()
+ * @method static Builder|InvoiceSetting newQuery()
+ * @method static Builder|InvoiceSetting query()
+ * @method static Builder|InvoiceSetting active()
+ * @method static Builder|InvoiceSetting default()
+ * @method static Builder|InvoiceSetting filter(array $filters)
+ *
+ * @property-read \App\Models\User|null $creator
+ * @property-read \App\Models\User|null $updater
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @method static Builder<static>|InvoiceSetting newModelQuery()
- * @method static Builder<static>|InvoiceSetting newQuery()
- * @method static Builder<static>|InvoiceSetting query()
+ *
+ * @method static Builder<static>|InvoiceSetting customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting last30Days(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting last7Days(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting lastYear(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting today(string $column = 'created_at')
  * @method static Builder<static>|InvoiceSetting whereCompanyLogo($value)
  * @method static Builder<static>|InvoiceSetting whereCreatedAt($value)
  * @method static Builder<static>|InvoiceSetting whereCreatedBy($value)
@@ -98,11 +112,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|InvoiceSetting whereTextColor($value)
  * @method static Builder<static>|InvoiceSetting whereUpdatedAt($value)
  * @method static Builder<static>|InvoiceSetting whereUpdatedBy($value)
+ * @method static Builder<static>|InvoiceSetting yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|InvoiceSetting yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class InvoiceSetting extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory;
 
     /**
      * The table associated with the model.
@@ -154,6 +171,64 @@ class InvoiceSetting extends Model implements AuditableContract
         'created_by',
         'updated_by',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'number_of_digit' => 'integer',
+        'start_number' => 'integer',
+        'status' => 'integer',
+        'show_barcode' => 'boolean',
+        'show_qr_code' => 'boolean',
+        'is_default' => 'boolean',
+        'show_customer_details' => 'boolean',
+        'show_shipping_details' => 'boolean',
+        'show_payment_info' => 'boolean',
+        'show_discount' => 'boolean',
+        'show_tax_info' => 'boolean',
+        'show_description' => 'boolean',
+        'show_billing_info' => 'boolean',
+        'show_in_words' => 'boolean',
+        'logo_height' => 'integer',
+        'logo_width' => 'integer',
+        'created_by' => 'integer',
+        'updated_by' => 'integer',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['status']),
+                fn (Builder $q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                isset($filters['is_default']),
+                fn (Builder $q) => $q->default()
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('template_name', 'like', $term)
+                        ->orWhere('invoice_name', 'like', $term);
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
 
     /**
      * Get the active invoice setting.
@@ -222,34 +297,5 @@ class InvoiceSetting extends Model implements AuditableContract
     public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'number_of_digit' => 'integer',
-            'start_number' => 'integer',
-            'status' => 'integer',
-            'show_barcode' => 'boolean',
-            'show_qr_code' => 'boolean',
-            'is_default' => 'boolean',
-            'show_customer_details' => 'boolean',
-            'show_shipping_details' => 'boolean',
-            'show_payment_info' => 'boolean',
-            'show_discount' => 'boolean',
-            'show_tax_info' => 'boolean',
-            'show_description' => 'boolean',
-            'show_billing_info' => 'boolean',
-            'show_in_words' => 'boolean',
-            'logo_height' => 'integer',
-            'logo_width' => 'integer',
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
-        ];
     }
 }

@@ -13,12 +13,28 @@ use App\Services\PayrollEntryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Class PayrollEntryController
+ *
+ * API Controller for Payroll Entry listing and update operations.
+ * Handles authorization via permissions and delegates logic to PayrollEntryService.
+ *
+ * @tags HRM Management
+ */
 class PayrollEntryController extends Controller
 {
+    /**
+     * PayrollEntryController constructor.
+     */
     public function __construct(
         private readonly PayrollEntryService $service
     ) {}
 
+    /**
+     * List Payroll Entries
+     *
+     * Display a paginated listing of payroll entries for a given payroll run.
+     */
     public function index(Request $request, PayrollRun $payroll_run): JsonResponse
     {
         if (auth()->user()->denies('view payroll runs')) {
@@ -27,6 +43,13 @@ class PayrollEntryController extends Controller
 
         $entries = $this->service->getPaginatedByRun(
             $payroll_run->id,
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -36,6 +59,11 @@ class PayrollEntryController extends Controller
         );
     }
 
+    /**
+     * Show Payroll Entry
+     *
+     * Retrieve the details of a specific payroll entry by its ID.
+     */
     public function show(PayrollEntry $payroll_entry): JsonResponse
     {
         if (auth()->user()->denies('view payroll runs')) {
@@ -48,6 +76,11 @@ class PayrollEntryController extends Controller
         );
     }
 
+    /**
+     * Update Payroll Entry
+     *
+     * Update the specified payroll entry's information.
+     */
     public function update(UpdatePayrollEntryRequest $request, PayrollEntry $payroll_entry): JsonResponse
     {
         if (auth()->user()->denies('update payroll runs')) {

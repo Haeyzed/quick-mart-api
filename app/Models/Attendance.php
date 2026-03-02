@@ -37,6 +37,47 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Attendance newQuery()
  * @method static Builder|Attendance query()
  * @method static Builder|Attendance filter(array $filters)
+ *
+ * @property-read \App\Models\Employee $employee
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\Shift|null $shift
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ *
+ * @method static Builder<static>|Attendance customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Attendance last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Attendance last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Attendance lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Attendance lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Attendance monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Attendance onlyTrashed()
+ * @method static Builder<static>|Attendance quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Attendance today(string $column = 'created_at')
+ * @method static Builder<static>|Attendance whereCheckin($value)
+ * @method static Builder<static>|Attendance whereCheckinSource($value)
+ * @method static Builder<static>|Attendance whereCheckout($value)
+ * @method static Builder<static>|Attendance whereCreatedAt($value)
+ * @method static Builder<static>|Attendance whereDate($value)
+ * @method static Builder<static>|Attendance whereDeletedAt($value)
+ * @method static Builder<static>|Attendance whereEarlyExitMinutes($value)
+ * @method static Builder<static>|Attendance whereEmployeeId($value)
+ * @method static Builder<static>|Attendance whereId($value)
+ * @method static Builder<static>|Attendance whereLateMinutes($value)
+ * @method static Builder<static>|Attendance whereLatitude($value)
+ * @method static Builder<static>|Attendance whereLongitude($value)
+ * @method static Builder<static>|Attendance whereNote($value)
+ * @method static Builder<static>|Attendance whereOvertimeMinutes($value)
+ * @method static Builder<static>|Attendance whereShiftId($value)
+ * @method static Builder<static>|Attendance whereStatus($value)
+ * @method static Builder<static>|Attendance whereUpdatedAt($value)
+ * @method static Builder<static>|Attendance whereUserId($value)
+ * @method static Builder<static>|Attendance whereWorkedHours($value)
+ * @method static Builder<static>|Attendance withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Attendance withoutTrashed()
+ * @method static Builder<static>|Attendance yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Attendance yesterday(string $column = 'current_at')
+ *
+ * @mixin \Eloquent
  */
 class Attendance extends Model implements AuditableContract
 {

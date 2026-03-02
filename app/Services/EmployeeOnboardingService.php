@@ -18,18 +18,11 @@ class EmployeeOnboardingService
      */
     public function getPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = EmployeeOnboarding::query()
+        return EmployeeOnboarding::query()
             ->with(['employee:id,name,employee_code', 'template:id,name'])
-            ->latest();
-
-        if (! empty($filters['employee_id'])) {
-            $query->where('employee_id', (int) $filters['employee_id']);
-        }
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        return $query->paginate($perPage);
+            ->filter($filters)
+            ->latest()
+            ->paginate($perPage);
     }
 
     public function startOnboarding(int $employeeId, int $templateId): EmployeeOnboarding

@@ -12,25 +12,33 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class PayrollRunService
+ *
+ * Handles all core business logic and database interactions for Payroll Runs.
+ * Acts as the intermediary between the controllers and the database layer.
+ */
 class PayrollRunService
 {
+    /**
+     * Get paginated payroll runs based on filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $query = PayrollRun::query()->with('generatedByUser')->latest();
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-        if (! empty($filters['year'])) {
-            $query->where('year', (int) $filters['year']);
-        }
-        if (! empty($filters['month'])) {
-            $query->where('month', $filters['month']);
-        }
-
-        return $query->paginate($perPage);
+        return PayrollRun::query()
+            ->with('generatedByUser')
+            ->filter($filters)
+            ->latest()
+            ->paginate($perPage);
     }
 
+    /**
+     * Get payroll run options for dropdowns (id, month/year label).
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
     public function getOptions(): Collection
     {
         return PayrollRun::query()
@@ -45,6 +53,12 @@ class PayrollRunService
             ]);
     }
 
+    /**
+     * Create a newly registered payroll run.
+     *
+     * @param  array<string, mixed>  $data  The validated request data.
+     * @return PayrollRun The newly created PayrollRun model instance.
+     */
     public function create(array $data): PayrollRun
     {
         return DB::transaction(function () use ($data) {
@@ -54,6 +68,13 @@ class PayrollRunService
         });
     }
 
+    /**
+     * Update an existing payroll run.
+     *
+     * @param  PayrollRun  $payrollRun  The payroll run model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return PayrollRun The freshly updated PayrollRun model instance.
+     */
     public function update(PayrollRun $payrollRun, array $data): PayrollRun
     {
         $payrollRun->update($data);
@@ -61,6 +82,9 @@ class PayrollRunService
         return $payrollRun->fresh();
     }
 
+    /**
+     * Delete a payroll run and its entries and entry items.
+     */
     public function delete(PayrollRun $payrollRun): void
     {
         DB::transaction(function () use ($payrollRun) {
@@ -70,6 +94,12 @@ class PayrollRunService
         });
     }
 
+    /**
+     * Generate payroll entries for all active employees for the given run.
+     *
+     * @param  PayrollRun  $payrollRun  The payroll run to generate entries for.
+     * @return PayrollRun The payroll run with entries loaded.
+     */
     public function generateEntries(PayrollRun $payrollRun): PayrollRun
     {
         return DB::transaction(function () use ($payrollRun) {

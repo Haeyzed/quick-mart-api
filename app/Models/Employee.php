@@ -24,7 +24,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  *
  * @property int $id
  * @property string $name
- * @property string|null $image
+ * @property string|null $image_path
  * @property string|null $image_url
  * @property int $department_id
  * @property int $designation_id
@@ -52,6 +52,92 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
  * @method static Builder|Employee filter(array $filters)
+ *
+ * @property-read \App\Models\Country|null $country
+ * @property-read \App\Models\State|null $state
+ * @property-read \App\Models\City|null $city
+ * @property-read \App\Models\Department $department
+ * @property-read \App\Models\Designation $designation
+ * @property-read \App\Models\Shift $shift
+ * @property-read \App\Models\User|null $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payroll> $payrolls
+ * @property-read int|null $payrolls_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendance> $attendances
+ * @property-read int|null $attendances_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Leave> $leaves
+ * @property-read int|null $leaves_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Overtime> $overtimes
+ * @property-read int|null $overtimes_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeTransaction> $transactions
+ * @property-read int|null $transactions_count
+ * @property-read \App\Models\EmploymentType|null $employmentType
+ * @property-read Employee|null $reportingManager
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $subordinates
+ * @property-read int|null $subordinates_count
+ * @property-read \App\Models\Warehouse|null $warehouse
+ * @property-read \App\Models\WorkLocation|null $workLocation
+ * @property-read \App\Models\SalaryStructure|null $salaryStructure
+ * @property-read \App\Models\EmployeeProfile|null $profile
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeShiftAssignment> $shiftAssignments
+ * @property-read int|null $shift_assignments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeDocument> $documents
+ * @property-read int|null $documents_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PerformanceReview> $performanceReviews
+ * @property-read int|null $performance_reviews_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeOnboarding> $employeeOnboardings
+ * @property-read int|null $employee_onboardings_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ *
+ * @method static Builder<static>|Employee customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|Employee last30Days(string $column = 'created_at')
+ * @method static Builder<static>|Employee last7Days(string $column = 'created_at')
+ * @method static Builder<static>|Employee lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|Employee lastYear(string $column = 'created_at')
+ * @method static Builder<static>|Employee monthToDate(string $column = 'created_at')
+ * @method static Builder<static>|Employee onlyTrashed()
+ * @method static Builder<static>|Employee quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|Employee saleAgent()
+ * @method static Builder<static>|Employee today(string $column = 'created_at')
+ * @method static Builder<static>|Employee whereAddress($value)
+ * @method static Builder<static>|Employee whereBasicSalary($value)
+ * @method static Builder<static>|Employee whereCityId($value)
+ * @method static Builder<static>|Employee whereConfirmationDate($value)
+ * @method static Builder<static>|Employee whereCountryId($value)
+ * @method static Builder<static>|Employee whereCreatedAt($value)
+ * @method static Builder<static>|Employee whereDeletedAt($value)
+ * @method static Builder<static>|Employee whereDepartmentId($value)
+ * @method static Builder<static>|Employee whereDesignationId($value)
+ * @method static Builder<static>|Employee whereEmail($value)
+ * @method static Builder<static>|Employee whereEmployeeCode($value)
+ * @method static Builder<static>|Employee whereEmploymentStatus($value)
+ * @method static Builder<static>|Employee whereEmploymentTypeId($value)
+ * @method static Builder<static>|Employee whereId($value)
+ * @method static Builder<static>|Employee whereImage($value)
+ * @method static Builder<static>|Employee whereImageUrl($value)
+ * @method static Builder<static>|Employee whereIsActive($value)
+ * @method static Builder<static>|Employee whereIsSaleAgent($value)
+ * @method static Builder<static>|Employee whereJoiningDate($value)
+ * @method static Builder<static>|Employee whereName($value)
+ * @method static Builder<static>|Employee wherePhoneNumber($value)
+ * @method static Builder<static>|Employee whereProbationEndDate($value)
+ * @method static Builder<static>|Employee whereReportingManagerId($value)
+ * @method static Builder<static>|Employee whereSalaryStructureId($value)
+ * @method static Builder<static>|Employee whereSaleCommissionPercent($value)
+ * @method static Builder<static>|Employee whereSalesTarget($value)
+ * @method static Builder<static>|Employee whereShiftId($value)
+ * @method static Builder<static>|Employee whereStaffId($value)
+ * @method static Builder<static>|Employee whereStateId($value)
+ * @method static Builder<static>|Employee whereUpdatedAt($value)
+ * @method static Builder<static>|Employee whereUserId($value)
+ * @method static Builder<static>|Employee whereWarehouseId($value)
+ * @method static Builder<static>|Employee whereWorkLocationId($value)
+ * @method static Builder<static>|Employee withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|Employee withoutTrashed()
+ * @method static Builder<static>|Employee yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|Employee yesterday(string $column = 'current_at')
+ *
+ * @mixin \Eloquent
  */
 class Employee extends Model implements AuditableContract
 {
@@ -67,7 +153,7 @@ class Employee extends Model implements AuditableContract
         'name',
         'email',
         'phone_number',
-        'image',
+        'image_path',
         'image_url',
         'department_id',
         'designation_id',
@@ -126,7 +212,9 @@ class Employee extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {

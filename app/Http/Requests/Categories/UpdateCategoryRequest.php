@@ -99,7 +99,7 @@ class UpdateCategoryRequest extends FormRequest
             /**
              * The category's cover or banner image file.
              */
-            'image' => [
+            'image_path' => [
                 'nullable',
                 'image',
                 'mimes:jpeg,png,jpg,webp',

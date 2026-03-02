@@ -48,8 +48,6 @@ class BillerService
      * Get paginated billers based on filters.
      *
      * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
-     * @return LengthAwarePaginator
      */
     public function getPaginatedBillers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -101,17 +99,16 @@ class BillerService
      * Handle Image Upload via UploadService.
      *
      * @param  array<string, mixed>  $data
-     * @param  Biller|null  $biller
      * @return array<string, mixed>
      */
     private function handleUploads(array $data, ?Biller $biller = null): array
     {
-        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-            if ($biller?->image) {
-                $this->uploadService->delete($biller->image);
+        if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+            if ($biller?->image_path) {
+                $this->uploadService->delete($biller->image_path);
             }
-            $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-            $data['image'] = $path;
+            $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+            $data['image_path'] = $path;
             $data['image_url'] = $this->uploadService->url($path);
         }
 
@@ -138,8 +135,6 @@ class BillerService
     /**
      * Delete a biller.
      *
-     * @param  Biller  $biller
-     * @return void
      * @throws ConflictHttpException If the biller is linked to existing sales.
      */
     public function deleteBiller(Biller $biller): void
@@ -156,14 +151,11 @@ class BillerService
 
     /**
      * Remove associated files.
-     *
-     * @param  Biller  $biller
-     * @return void
      */
     private function cleanupFiles(Biller $biller): void
     {
-        if ($biller->image) {
-            $this->uploadService->delete($biller->image);
+        if ($biller->image_path) {
+            $this->uploadService->delete($biller->image_path);
         }
     }
 
@@ -209,7 +201,6 @@ class BillerService
      * Import multiple biller records from an uploaded file.
      *
      * @param  UploadedFile  $file  The uploaded spreadsheet file.
-     * @return void
      */
     public function importBillers(UploadedFile $file): void
     {
@@ -220,6 +211,7 @@ class BillerService
      * Download a billers CSV template.
      *
      * @return string The absolute path to the downloaded file.
+     *
      * @throws RuntimeException If the template file is missing.
      */
     public function download(): string

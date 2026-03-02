@@ -103,6 +103,11 @@ class EmployeeResource extends JsonResource
             'city_id' => $this->city_id,
 
             /**
+             * The storage path of the employee's image.
+             */
+            'image_path' => $this->image_path,
+
+            /**
              * The URL of the employee's image.
              *
              * @example "https://yourdomain.com/storage/images/employees/avatar.png"

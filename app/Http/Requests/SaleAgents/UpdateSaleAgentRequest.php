@@ -18,6 +18,7 @@ class UpdateSaleAgentRequest extends FormRequest
     {
         $employee = $this->route('sale_agent');
         $id = $employee?->id;
+
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)->where('is_sale_agent', true)],
@@ -33,7 +34,7 @@ class UpdateSaleAgentRequest extends FormRequest
             'basic_salary' => ['nullable', 'numeric', 'min:0'],
             'sale_commission_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sales_target' => ['nullable', 'array'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

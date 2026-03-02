@@ -30,13 +30,12 @@ class SaleAgentService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {
-    }
+    ) {}
 
     /**
      * Get paginated sale agents based on filters.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedSaleAgents(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -71,6 +70,7 @@ class SaleAgentService
     public function getSaleAgent(Employee $employee): Employee
     {
         $this->ensureIsSaleAgent($employee);
+
         return $employee->fresh(['department', 'designation', 'shift', 'user']);
     }
 
@@ -84,51 +84,55 @@ class SaleAgentService
     /**
      * Create a new sale agent.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createSaleAgent(array $data): Employee
     {
         return DB::transaction(function () use ($data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
                 $data = $this->handleImageUpload($data);
             }
             $data['is_active'] = $data['is_active'] ?? true;
             $data['is_sale_agent'] = true;
+
             return Employee::query()->create($data);
         });
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function handleImageUpload(array $data): array
     {
         $path = $this->uploadService->upload(
-            $data['image'],
+            $data['image_path'],
             config('storage.sale_agents.images', self::DEFAULT_SALE_AGENT_IMAGES_PATH)
         );
-        $data['image'] = $path;
+        $data['image_path'] = $path;
+
         return $data;
     }
 
     /**
      * Update an existing sale agent.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateSaleAgent(Employee $employee, array $data): Employee
     {
         $this->ensureIsSaleAgent($employee);
+
         return DB::transaction(function () use ($employee, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                if ($employee->image) {
-                    $this->uploadService->delete($employee->image);
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+                if ($employee->image_path) {
+                    $this->uploadService->delete($employee->image_path);
                 }
                 $data = $this->handleImageUpload($data);
             }
             $data['is_sale_agent'] = true;
             $employee->update($data);
+
             return $employee->fresh(['department', 'designation', 'shift', 'user']);
         });
     }
@@ -140,8 +144,8 @@ class SaleAgentService
     {
         $this->ensureIsSaleAgent($employee);
         DB::transaction(function () use ($employee) {
-            if ($employee->image) {
-                $this->uploadService->delete($employee->image);
+            if ($employee->image_path) {
+                $this->uploadService->delete($employee->image_path);
             }
             $employee->update(['is_active' => false]);
         });
@@ -150,7 +154,7 @@ class SaleAgentService
     /**
      * Bulk delete (deactivate) sale agents.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      * @return int Count of items processed.
      */
     public function bulkDeleteSaleAgents(array $ids): int
@@ -162,6 +166,7 @@ class SaleAgentService
                 $employee->update(['is_active' => false]);
                 $count++;
             }
+
             return $count;
         });
     }
@@ -169,7 +174,7 @@ class SaleAgentService
     /**
      * Bulk update status for sale agents.
      *
-     * @param array<int> $ids
+     * @param  array<int>  $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -209,15 +214,16 @@ class SaleAgentService
         if (! File::exists($path)) {
             throw new RuntimeException('Sale agents import template not found.');
         }
+
         return $path;
     }
 
     /**
      * Generate sale agents export file.
      *
-     * @param array<int> $ids
-     * @param array<string> $columns
-     * @param array<string, mixed> $filters
+     * @param  array<int>  $ids
+     * @param  array<string>  $columns
+     * @param  array<string, mixed>  $filters
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
@@ -230,6 +236,7 @@ class SaleAgentService
             'public',
             $writerType
         );
+
         return $relativePath;
     }
 }

@@ -10,8 +10,9 @@ use Nnjeim\World\Models\Country as WorldCountry;
 
 /**
  * Class Country
- * 
+ *
  * Represents a country from World reference data. Extends Nnjeim\World Country.
+ * Handles the underlying data structure, relationships, and specific query scopes for country entities.
  *
  * @property int $id
  * @property string $iso2
@@ -26,10 +27,12 @@ use Nnjeim\World\Models\Country as WorldCountry;
  * @property string|null $longitude
  * @property string|null $emoji
  * @property string|null $emojiU
+ *
  * @method static Builder|Country newModelQuery()
  * @method static Builder|Country newQuery()
  * @method static Builder|Country query()
  * @method static Builder|Country filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\City> $cities
  * @property-read int|null $cities_count
  * @property-read \App\Models\Currency|null $currency
@@ -37,6 +40,7 @@ use Nnjeim\World\Models\Country as WorldCountry;
  * @property-read int|null $states_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Timezone> $timezones
  * @property-read int|null $timezones_count
+ *
  * @method static Builder<static>|Country customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Country last30Days(string $column = 'created_at')
  * @method static Builder<static>|Country last7Days(string $column = 'created_at')
@@ -60,6 +64,7 @@ use Nnjeim\World\Models\Country as WorldCountry;
  * @method static Builder<static>|Country whereSubregion($value)
  * @method static Builder<static>|Country yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Country yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Country extends WorldCountry

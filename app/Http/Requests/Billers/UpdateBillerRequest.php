@@ -119,7 +119,7 @@ class UpdateBillerRequest extends FormRequest
             /**
              * The optional new image to replace the old one.
              */
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
             /**
              * Determines if the biller is active.

@@ -61,7 +61,7 @@ class UpdateBrandRequest extends FormRequest
             /**
              * The brand's logo or cover image file.
              */
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image_path' => ['nullable', 'image', 'max:2048'],
 
             /**
              * Indicates whether the brand is active.

@@ -14,12 +14,28 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
+/**
+ * Class PayrollRunController
+ *
+ * API Controller for Payroll Run CRUD and generate-entries operations.
+ * Handles authorization via permissions and delegates logic to PayrollRunService.
+ *
+ * @tags HRM Management
+ */
 class PayrollRunController extends Controller
 {
+    /**
+     * PayrollRunController constructor.
+     */
     public function __construct(
         private readonly PayrollRunService $service
     ) {}
 
+    /**
+     * List Payroll Runs
+     *
+     * Display a paginated listing of payroll runs. Supports filtering by status, year and month.
+     */
     public function index(Request $request): JsonResponse
     {
         if (auth()->user()->denies('view payroll runs')) {
@@ -28,10 +44,32 @@ class PayrollRunController extends Controller
 
         $items = $this->service->getPaginated(
             $request->validate([
+                /**
+                 * Filter by run status (draft, processing, completed).
+                 *
+                 * @example "draft"
+                 */
                 'status' => ['nullable', 'string', 'in:draft,processing,completed'],
+                /**
+                 * Filter by year.
+                 *
+                 * @example 2024
+                 */
                 'year' => ['nullable', 'integer'],
+                /**
+                 * Filter by month in YYYY-MM format.
+                 *
+                 * @example "2024-01"
+                 */
                 'month' => ['nullable', 'string', 'regex:/^\d{4}-\d{2}$/'],
             ]),
+            /**
+             * Amount of items per page.
+             *
+             * @example 50
+             *
+             * @default 10
+             */
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -41,6 +79,11 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Payroll Run Options
+     *
+     * Return a list of payroll run options (id and month/year label) for dropdowns.
+     */
     public function options(): JsonResponse
     {
         if (auth()->user()->denies('view payroll runs')) {
@@ -50,6 +93,11 @@ class PayrollRunController extends Controller
         return response()->success($this->service->getOptions(), 'Payroll run options retrieved successfully');
     }
 
+    /**
+     * Create Payroll Run
+     *
+     * Store a newly created payroll run in the system.
+     */
     public function store(StorePayrollRunRequest $request): JsonResponse
     {
         if (auth()->user()->denies('create payroll runs')) {
@@ -65,6 +113,11 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Show Payroll Run
+     *
+     * Retrieve the details of a specific payroll run by its ID.
+     */
     public function show(PayrollRun $payroll_run): JsonResponse
     {
         if (auth()->user()->denies('view payroll runs')) {
@@ -77,6 +130,11 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Update Payroll Run
+     *
+     * Update the specified payroll run's information.
+     */
     public function update(UpdatePayrollRunRequest $request, PayrollRun $payroll_run): JsonResponse
     {
         if (auth()->user()->denies('update payroll runs')) {
@@ -91,6 +149,11 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Delete Payroll Run
+     *
+     * Remove the specified payroll run and its entries from storage.
+     */
     public function destroy(PayrollRun $payroll_run): JsonResponse
     {
         if (auth()->user()->denies('delete payroll runs')) {
@@ -102,6 +165,11 @@ class PayrollRunController extends Controller
         return response()->success(null, 'Payroll run deleted successfully');
     }
 
+    /**
+     * Generate Payroll Entries
+     *
+     * Generate payroll entries for all active employees for the given payroll run.
+     */
     public function generateEntries(PayrollRun $payroll_run): JsonResponse
     {
         if (auth()->user()->denies('create payroll runs')) {

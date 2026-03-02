@@ -17,13 +17,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Supplier Model
- * 
+ *
  * Represents a supplier/vendor in the system.
  * Follows the same structure as Customer: country_id, state_id, city_id, scopeFilter, active scope.
  *
  * @property int $id
  * @property string $name
- * @property string|null $image
+ * @property string|null $image_path
  * @property string|null $image_url
  * @property string|null $company_name
  * @property string|null $vat_number
@@ -48,13 +48,16 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, ReturnPurchase> $returnPurchases
  * @property-read Collection<int, Product> $products
+ *
  * @method static Builder|Supplier active()
  * @method static Builder|Supplier filter(array $filters)
+ *
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $products_count
  * @property-read int|null $purchases_count
  * @property-read int|null $return_purchases_count
+ *
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
  * @method static Builder<static>|Supplier onlyTrashed()
@@ -82,6 +85,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Supplier whereWaNumber($value)
  * @method static Builder<static>|Supplier withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Supplier withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Supplier extends Model implements AuditableContract
@@ -95,7 +99,7 @@ class Supplier extends Model implements AuditableContract
      */
     protected $fillable = [
         'name',
-        'image',
+        'image_path',
         'image_url',
         'company_name',
         'vat_number',

@@ -132,7 +132,7 @@ class StoreEmployeeRequest extends BaseRequest
             /**
              * The optional image or avatar for the employee.
              */
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
             'employee_code' => ['nullable', 'string', 'max:50', Rule::unique('employees', 'employee_code')->withoutTrashed()],
             'employment_type_id' => ['nullable', 'integer', 'exists:employment_types,id'],
@@ -212,6 +212,25 @@ class StoreEmployeeRequest extends BaseRequest
              */
             'user.permissions' => ['nullable', 'array'],
             'user.permissions.*' => ['integer', 'exists:permissions,id'],
+
+            /**
+             * Optional documents to attach to the employee on creation.
+             * Each item may include document_type_id, name, file, issue_date, expiry_date, notes.
+             */
+            'documents' => ['nullable', 'array'],
+            'documents.*.document_type_id' => ['required_with:documents', 'integer', 'exists:document_types,id'],
+            'documents.*.name' => ['nullable', 'string', 'max:255'],
+            'documents.*.file' => ['nullable', 'file', 'mimes:pdf,jpeg,png,jpg,webp', 'max:5120'],
+            'documents.*.issue_date' => ['nullable', 'date'],
+            'documents.*.expiry_date' => ['nullable', 'date'],
+            'documents.*.notes' => ['nullable', 'string', 'max:1000'],
+
+            /**
+             * Optional onboarding checklist template to start onboarding for this employee.
+             *
+             * @example 1
+             */
+            'onboarding_checklist_template_id' => ['nullable', 'integer', 'exists:onboarding_checklist_templates,id'],
         ];
     }
 

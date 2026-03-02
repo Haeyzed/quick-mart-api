@@ -44,7 +44,7 @@ class StoreSupplierRequest extends FormRequest
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'pay_term_no' => ['nullable', 'integer', 'min:0'],
             'pay_term_period' => ['nullable', 'string', 'max:50'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

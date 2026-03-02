@@ -9,23 +9,33 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class JobOpeningService
+ *
+ * Handles all core business logic and database interactions for Job Openings.
+ * Acts as the intermediary between the controllers and the database layer.
+ */
 class JobOpeningService
 {
+    /**
+     * Get paginated job openings based on filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $query = JobOpening::query()->with(['department:id,name', 'designation:id,name'])->latest();
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
-            $query->where('title', 'like', $term);
-        }
-
-        return $query->paginate($perPage);
+        return JobOpening::query()
+            ->with(['department:id,name', 'designation:id,name'])
+            ->filter($filters)
+            ->latest()
+            ->paginate($perPage);
     }
 
+    /**
+     * Get job opening options for dropdowns (open status only).
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
     public function getOptions(): Collection
     {
         return JobOpening::query()
@@ -33,12 +43,18 @@ class JobOpeningService
             ->select('id', 'title')
             ->orderBy('title')
             ->get()
-            ->map(fn (JobOpening $job) => [
-                'value' => $job->id,
-                'label' => $job->title,
+            ->map(fn (JobOpening $jobOpening) => [
+                'value' => $jobOpening->id,
+                'label' => $jobOpening->title,
             ]);
     }
 
+    /**
+     * Create a newly registered job opening.
+     *
+     * @param  array<string, mixed>  $data  The validated request data.
+     * @return JobOpening The newly created JobOpening model instance.
+     */
     public function create(array $data): JobOpening
     {
         return DB::transaction(function () use ($data) {
@@ -48,6 +64,13 @@ class JobOpeningService
         });
     }
 
+    /**
+     * Update an existing job opening.
+     *
+     * @param  JobOpening  $jobOpening  The job opening model instance to update.
+     * @param  array<string, mixed>  $data  The validated update data.
+     * @return JobOpening The freshly updated JobOpening model instance.
+     */
     public function update(JobOpening $jobOpening, array $data): JobOpening
     {
         return DB::transaction(function () use ($jobOpening, $data) {
@@ -57,8 +80,24 @@ class JobOpeningService
         });
     }
 
+    /**
+     * Delete a job opening.
+     */
     public function delete(JobOpening $jobOpening): void
     {
         DB::transaction(fn () => $jobOpening->delete());
+    }
+
+    /**
+     * Bulk delete multiple job openings.
+     *
+     * @param  array<int>  $ids  Array of job opening IDs to be deleted.
+     * @return int The total count of successfully deleted job openings.
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return DB::transaction(function () use ($ids) {
+            return JobOpening::query()->whereIn('id', $ids)->delete();
+        });
     }
 }

@@ -42,8 +42,6 @@ class HolidayService
      * Get paginated holidays based on filters.
      *
      * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
-     * @return LengthAwarePaginator
      */
     public function getPaginatedHolidays(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -88,9 +86,6 @@ class HolidayService
 
     /**
      * Delete a holiday.
-     *
-     * @param  Holiday  $holiday
-     * @return void
      */
     public function deleteHoliday(Holiday $holiday): void
     {
@@ -121,14 +116,15 @@ class HolidayService
      */
     public function bulkUpdateApproval(array $ids, bool $isApproved): int
     {
-        return Holiday::query()->whereIn('id', $ids)->update(['is_approved' => $isApproved]);
+        return Holiday::query()
+            ->whereIn('id', $ids)
+            ->update(['is_approved' => $isApproved]);
     }
 
     /**
      * Import multiple holidays from an uploaded file.
      *
      * @param  UploadedFile  $file  The uploaded spreadsheet file.
-     * @return void
      */
     public function importHolidays(UploadedFile $file): void
     {
@@ -139,6 +135,7 @@ class HolidayService
      * Download a holidays CSV template.
      *
      * @return string The absolute path to the downloaded file.
+     *
      * @throws RuntimeException If the template file is missing.
      */
     public function download(): string

@@ -49,23 +49,21 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class ProductService extends BaseService
 {
-    use CheckPermissionsTrait;
     use CacheForget;
-    use TenantInfo;
+    use CheckPermissionsTrait;
     use GeneralSettingsTrait;
     use StorageProviderInfo;
+    use TenantInfo;
 
     public function __construct(
         private readonly UploadService $uploadService
-    )
-    {
-    }
+    ) {}
 
     /**
      * Get paginated list of products with optional filters.
      *
-     * @param array<string, mixed> $filters Available filters: warehouse_id, product_type, brand_id, category_id, unit_id, tax_id, is_imei, is_variant, stock_filter, is_recipe, search
-     * @param int $perPage Number of items per page (default: 10)
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, product_type, brand_id, category_id, unit_id, tax_id, is_imei, is_variant, stock_filter, is_recipe, search
+     * @param  int  $perPage  Number of items per page (default: 10)
      * @return LengthAwarePaginator<Product>
      */
     public function getProducts(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -127,7 +125,7 @@ class ProductService extends BaseService
         }
 
         // Search functionality - using standard Laravel query builder
-        if (!empty($filters['search'] ?? null)) {
+        if (! empty($filters['search'] ?? null)) {
             $search = $filters['search'];
 
             $query->where(function ($q) use ($search) {
@@ -155,8 +153,7 @@ class ProductService extends BaseService
     /**
      * Get a single product by ID with all relations.
      *
-     * @param int $id Product ID
-     * @return Product
+     * @param  int  $id  Product ID
      */
     public function getProduct(int $id): Product
     {
@@ -170,15 +167,14 @@ class ProductService extends BaseService
             'saleUnit:id,name,code',
             'tax:id,name,rate',
             'productVariants.variant:id,name',
-            'productWarehouses.warehouse:id,name'
+            'productWarehouses.warehouse:id,name',
         ])->findOrFail($id);
     }
 
     /**
      * Create a new product with all related data.
      *
-     * @param array<string, mixed> $data Validated product data
-     * @return Product
+     * @param  array<string, mixed>  $data  Validated product data
      */
     public function createProduct(array $data): Product
     {
@@ -189,12 +185,12 @@ class ProductService extends BaseService
             $data = $this->normalizeProductData($data, false);
 
             // Handle images
-            if (isset($data['image']) && is_array($data['image'])) {
-                $imagePaths = $this->handleImageUploads($data['image']);
-                $data['image'] = $imagePaths['paths'];
+            if (isset($data['image_path']) && is_array($data['image_path'])) {
+                $imagePaths = $this->handleImageUploads($data['image_path']);
+                $data['image_path'] = $imagePaths['paths'];
                 $data['image_url'] = $imagePaths['urls'];
             } else {
-                $data['image'] = ['placeholder.png'];
+                $data['image_path'] = ['placeholder.png'];
                 $data['image_url'] = null;
             }
 
@@ -210,12 +206,12 @@ class ProductService extends BaseService
 
             // Handle combo/recipe products
             if (($data['type'] == 'combo' || (isset($data['is_recipe']) && $data['is_recipe'] === true)) && isset($data['product_id'])) {
-                $data['product_list'] = is_array($data['product_id']) ? implode(",", $data['product_id']) : $data['product_id'];
-                $data['variant_list'] = isset($data['variant_id']) && is_array($data['variant_id']) ? implode(",", $data['variant_id']) : ($data['variant_id'] ?? null);
-                $data['qty_list'] = isset($data['product_qty']) && is_array($data['product_qty']) ? implode(",", $data['product_qty']) : ($data['product_qty'] ?? null);
-                $data['price_list'] = isset($data['unit_price']) && is_array($data['unit_price']) ? implode(",", $data['unit_price']) : ($data['unit_price'] ?? null);
-                $data['wastage_percent'] = isset($data['wastage_percent']) && is_array($data['wastage_percent']) ? implode(",", $data['wastage_percent']) : ($data['wastage_percent'] ?? null);
-                $data['combo_unit_id'] = isset($data['combo_unit_id']) && is_array($data['combo_unit_id']) ? implode(",", $data['combo_unit_id']) : ($data['combo_unit_id'] ?? null);
+                $data['product_list'] = is_array($data['product_id']) ? implode(',', $data['product_id']) : $data['product_id'];
+                $data['variant_list'] = isset($data['variant_id']) && is_array($data['variant_id']) ? implode(',', $data['variant_id']) : ($data['variant_id'] ?? null);
+                $data['qty_list'] = isset($data['product_qty']) && is_array($data['product_qty']) ? implode(',', $data['product_qty']) : ($data['product_qty'] ?? null);
+                $data['price_list'] = isset($data['unit_price']) && is_array($data['unit_price']) ? implode(',', $data['unit_price']) : ($data['unit_price'] ?? null);
+                $data['wastage_percent'] = isset($data['wastage_percent']) && is_array($data['wastage_percent']) ? implode(',', $data['wastage_percent']) : ($data['wastage_percent'] ?? null);
+                $data['combo_unit_id'] = isset($data['combo_unit_id']) && is_array($data['combo_unit_id']) ? implode(',', $data['combo_unit_id']) : ($data['combo_unit_id'] ?? null);
             } elseif ($data['type'] == 'digital' || $data['type'] == 'service') {
                 $data['cost'] = 0;
                 $data['unit_id'] = 0;
@@ -240,7 +236,7 @@ class ProductService extends BaseService
             $generalSetting = GeneralSetting::latest()->first();
             if ($generalSetting && in_array('restaurant', explode(',', $generalSetting->modules ?? ''))) {
                 if (isset($data['menu_type']) && is_array($data['menu_type'])) {
-                    $data['menu_type'] = implode(",", $data['menu_type']);
+                    $data['menu_type'] = implode(',', $data['menu_type']);
                 }
             }
 
@@ -265,16 +261,16 @@ class ProductService extends BaseService
 
             // Default values
             $data['is_active'] = true;
-            if (!isset($data['profit_margin'])) {
+            if (! isset($data['profit_margin'])) {
                 $data['profit_margin'] = 0;
             }
-            if (!isset($data['profit_margin_type'])) {
+            if (! isset($data['profit_margin_type'])) {
                 $data['profit_margin_type'] = 'percentage';
             }
-            if (!isset($data['is_batch'])) {
+            if (! isset($data['is_batch'])) {
                 $data['is_batch'] = null;
             }
-            if (!isset($data['is_sync_disable']) && Schema::hasColumn('products', 'is_sync_disable')) {
+            if (! isset($data['is_sync_disable']) && Schema::hasColumn('products', 'is_sync_disable')) {
                 $data['is_sync_disable'] = null;
             }
             // Create product
@@ -284,7 +280,7 @@ class ProductService extends BaseService
             $this->handleCustomFields($product, $data);
 
             // Handle initial stock and auto purchase
-            if (isset($data['is_initial_stock']) && !isset($data['is_variant']) && !isset($data['is_batch'])) {
+            if (isset($data['is_initial_stock']) && ! isset($data['is_variant']) && ! isset($data['is_batch'])) {
                 $initialStock = 0;
                 if (isset($data['stock_warehouse_id']) && is_array($data['stock_warehouse_id'])) {
                     foreach ($data['stock_warehouse_id'] as $key => $warehouseId) {
@@ -311,14 +307,14 @@ class ProductService extends BaseService
                 foreach ($data['diff_price'] as $key => $diffPrice) {
                     if ($diffPrice) {
                         ProductWarehouse::firstOrCreate([
-                            "product_id" => $product->id,
-                            "warehouse_id" => $data["warehouse_id"][$key] ?? null,
-                            "qty" => 0,
-                            "price" => $diffPrice
+                            'product_id' => $product->id,
+                            'warehouse_id' => $data['warehouse_id'][$key] ?? null,
+                            'qty' => 0,
+                            'price' => $diffPrice,
                         ]);
                     }
                 }
-            } elseif (!isset($data['is_initial_stock']) && !isset($data['is_batch']) && config('without_stock') == 'yes') {
+            } elseif (! isset($data['is_initial_stock']) && ! isset($data['is_batch']) && config('without_stock') == 'yes') {
                 // Create warehouse entries for variants if without_stock config is yes
                 $warehouseIds = Warehouse::where('is_active', true)->pluck('id');
                 $variantIds = [];
@@ -329,20 +325,20 @@ class ProductService extends BaseService
                 }
 
                 foreach ($warehouseIds as $warehouseId) {
-                    if (!empty($variantIds)) {
+                    if (! empty($variantIds)) {
                         foreach ($variantIds as $variantId) {
                             ProductWarehouse::firstOrCreate([
-                                "product_id" => $product->id,
-                                "variant_id" => $variantId,
-                                "warehouse_id" => $warehouseId,
-                                "qty" => 0,
+                                'product_id' => $product->id,
+                                'variant_id' => $variantId,
+                                'warehouse_id' => $warehouseId,
+                                'qty' => 0,
                             ]);
                         }
                     } else {
                         ProductWarehouse::firstOrCreate([
-                            "product_id" => $product->id,
-                            "warehouse_id" => $warehouseId,
-                            "qty" => 0,
+                            'product_id' => $product->id,
+                            'warehouse_id' => $warehouseId,
+                            'qty' => 0,
                         ]);
                     }
                 }
@@ -359,15 +355,15 @@ class ProductService extends BaseService
     /**
      * Normalize product data to match database schema requirements.
      *
-     * @param array<string, mixed> $data
-     * @param bool $isUpdate Whether this is an update operation
+     * @param  array<string, mixed>  $data
+     * @param  bool  $isUpdate  Whether this is an update operation
      * @return array<string, mixed>
      */
     private function normalizeProductData(array $data, bool $isUpdate = false): array
     {
         // Handle name
         if (isset($data['name'])) {
-            $data['name'] = preg_replace('/[\n\r]/', "<br>", htmlspecialchars(trim($data['name']), ENT_QUOTES));
+            $data['name'] = preg_replace('/[\n\r]/', '<br>', htmlspecialchars(trim($data['name']), ENT_QUOTES));
         }
 
         // Handle boolean fields (per model casts)
@@ -376,20 +372,20 @@ class ProductService extends BaseService
         $booleanFields = [
             'is_active', 'is_batch', 'is_variant', 'is_diff_price', 'is_imei',
             'featured', 'is_addon', 'is_online', 'in_stock', 'track_inventory',
-            'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion'
+            'is_sync_disable', 'is_recipe', 'is_embeded', 'promotion',
         ];
 
         foreach ($booleanFields as $field) {
             if (isset($data[$field])) {
                 // Only normalize if not already boolean (safeguard)
-                if (!is_bool($data[$field])) {
+                if (! is_bool($data[$field])) {
                     $data[$field] = filter_var(
                         $data[$field],
                         FILTER_VALIDATE_BOOLEAN,
                         FILTER_NULL_ON_FAILURE
                     );
                 }
-            } elseif (!$isUpdate && in_array($field, ['is_active', 'track_inventory'])) {
+            } elseif (! $isUpdate && in_array($field, ['is_active', 'track_inventory'])) {
                 $data[$field] = true;
             }
         }
@@ -397,12 +393,12 @@ class ProductService extends BaseService
         $numericFields = [
             'cost', 'profit_margin', 'price', 'wholesale_price', 'qty',
             'alert_quantity', 'daily_sale_objective', 'promotion_price',
-            'wastage_percent', 'production_cost'
+            'wastage_percent', 'production_cost',
         ];
 
         foreach ($numericFields as $field) {
-            if (isset($data[$field]) && !is_float($data[$field])) {
-                $data[$field] = is_numeric($data[$field]) ? (float)$data[$field] : null;
+            if (isset($data[$field]) && ! is_float($data[$field])) {
+                $data[$field] = is_numeric($data[$field]) ? (float) $data[$field] : null;
             }
         }
 
@@ -410,12 +406,12 @@ class ProductService extends BaseService
         $integerFields = [
             'brand_id', 'category_id', 'unit_id', 'purchase_unit_id', 'sale_unit_id',
             'tax_id', 'tax_method', 'kitchen_id', 'woocommerce_product_id',
-            'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee'
+            'woocommerce_media_id', 'combo_unit_id', 'warranty', 'guarantee',
         ];
 
         foreach ($integerFields as $field) {
-            if (isset($data[$field]) && !is_int($data[$field])) {
-                $data[$field] = is_numeric($data[$field]) ? (int)$data[$field] : null;
+            if (isset($data[$field]) && ! is_int($data[$field])) {
+                $data[$field] = is_numeric($data[$field]) ? (int) $data[$field] : null;
             }
         }
 
@@ -425,8 +421,8 @@ class ProductService extends BaseService
     /**
      * Handle image uploads and create multiple sizes.
      *
-     * @param array<UploadedFile> $images
-     * @param int $offset Offset for naming (used in updates)
+     * @param  array<UploadedFile>  $images
+     * @param  int  $offset  Offset for naming (used in updates)
      * @return array{paths: array<string>, urls: array<string>}
      */
     private function handleImageUploads(array $images, int $offset = 0): array
@@ -442,29 +438,29 @@ class ProductService extends BaseService
         $imageUrls = [];
 
         foreach ($images as $key => $image) {
-            if (!$image instanceof UploadedFile) {
+            if (! $image instanceof UploadedFile) {
                 continue;
             }
 
             $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis") . ($offset + $key + 1);
+            $imageName = date('Ymdhis').($offset + $key + 1);
 
             // Handle multi-tenant logic
             if (config('database.connections.saleprosaas_landlord', false)) {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
+                $imageName = $this->getTenantId().'_'.$imageName.'.'.$ext;
             } else {
-                $imageName = $imageName . '.' . $ext;
+                $imageName = $imageName.'.'.$ext;
             }
 
             // Ensure base directory exists
             Storage::disk($disk)->makeDirectory($baseDirectory);
 
             // Store original image
-            $originalPath = $baseDirectory . '/' . $imageName;
+            $originalPath = $baseDirectory.'/'.$imageName;
             Storage::disk($disk)->putFileAs($baseDirectory, $image, $imageName);
 
             // Create different sizes using Intervention Image
-            $manager = new ImageManager(new GdDriver());
+            $manager = new ImageManager(new GdDriver);
             $img = $manager->read($image->getRealPath());
 
             // Create size directories and save resized images
@@ -483,7 +479,7 @@ class ProductService extends BaseService
                 $resized->resize($width, $height);
 
                 // Save to temporary file first, then put to storage
-                $tempPath = sys_get_temp_dir() . '/' . uniqid() . '_' . $imageName;
+                $tempPath = sys_get_temp_dir().'/'.uniqid().'_'.$imageName;
                 $resized->save($tempPath);
 
                 if ($disk === 'cloudinary') {
@@ -499,7 +495,7 @@ class ProductService extends BaseService
                     Storage::disk($disk)->putFileAs($sizeDirectory, $tempFile, $imageName);
                 } else {
                     // For other storage providers, use put() with file contents
-                    Storage::disk($disk)->put($sizeDirectory . '/' . $imageName, file_get_contents($tempPath));
+                    Storage::disk($disk)->put($sizeDirectory.'/'.$imageName, file_get_contents($tempPath));
                 }
 
                 unlink($tempPath);
@@ -512,16 +508,14 @@ class ProductService extends BaseService
 
         return [
             'paths' => $imagePaths,
-            'urls' => $imageUrls
+            'urls' => $imageUrls,
         ];
     }
 
     /**
      * Handle custom fields for products.
      *
-     * @param Product $product
-     * @param array<string, mixed> $data
-     * @return void
+     * @param  array<string, mixed>  $data
      */
     private function handleCustomFields(Product $product, array $data): void
     {
@@ -533,7 +527,7 @@ class ProductService extends BaseService
             if (isset($data[$fieldName])) {
                 if ($customField->type == 'checkbox' || $customField->type == 'multi_select') {
                     $customFieldData[$fieldName] = is_array($data[$fieldName])
-                        ? implode(",", $data[$fieldName])
+                        ? implode(',', $data[$fieldName])
                         : $data[$fieldName];
                 } else {
                     $customFieldData[$fieldName] = $data[$fieldName];
@@ -541,7 +535,7 @@ class ProductService extends BaseService
             }
         }
 
-        if (!empty($customFieldData)) {
+        if (! empty($customFieldData)) {
             DB::table('products')->where('id', $product->id)->update($customFieldData);
         }
     }
@@ -551,11 +545,6 @@ class ProductService extends BaseService
      *
      * Creates a Purchase record with ProductPurchase pivot and Payment for initial stock.
      * This ensures proper accounting and inventory tracking.
-     *
-     * @param Product $product
-     * @param int $warehouseId
-     * @param float $stock
-     * @return void
      */
     private function autoPurchase(Product $product, int $warehouseId, float $stock): void
     {
@@ -563,7 +552,7 @@ class ProductService extends BaseService
         $userId = Auth::check() ? Auth::id() : 1; // Fallback to 1 if no authenticated user
         $purchasePrefix = config('references.purchase.prefix', 'pr');
         $purchaseData = [
-            'reference_no' => $purchasePrefix . '-' . date("Ymd") . '-' . date("his"),
+            'reference_no' => $purchasePrefix.'-'.date('Ymd').'-'.date('his'),
             'user_id' => $userId,
             'warehouse_id' => $warehouseId,
             'supplier_id' => 0, // No supplier for auto purchase
@@ -577,7 +566,7 @@ class ProductService extends BaseService
         // Calculate tax and costs based on tax method
         $taxRate = 0.00;
         $tax = 0.00;
-        $netUnitCost = number_format((float)$product->cost, 2, '.', '');
+        $netUnitCost = number_format((float) $product->cost, 2, '.', '');
 
         if ($product->tax_id) {
             $taxData = Tax::find($product->tax_id);
@@ -586,14 +575,14 @@ class ProductService extends BaseService
 
                 if ($product->tax_method == TaxMethodEnum::EXCLUSIVE->value) {
                     // Exclusive tax: tax is added on top
-                    $netUnitCost = number_format((float)$product->cost, 2, '.', '');
-                    $tax = number_format((float)$product->cost * $stock * ($taxRate / 100), 2, '.', '');
-                    $cost = number_format((float)$product->cost * $stock + $tax, 2, '.', '');
+                    $netUnitCost = number_format((float) $product->cost, 2, '.', '');
+                    $tax = number_format((float) $product->cost * $stock * ($taxRate / 100), 2, '.', '');
+                    $cost = number_format((float) $product->cost * $stock + $tax, 2, '.', '');
                 } else {
                     // Inclusive tax: tax is included in the cost
-                    $netUnitCost = number_format((100 / (100 + $taxRate)) * (float)$product->cost, 2, '.', '');
-                    $tax = number_format(((float)$product->cost - $netUnitCost) * $stock, 2, '.', '');
-                    $cost = number_format((float)$product->cost * $stock, 2, '.', '');
+                    $netUnitCost = number_format((100 / (100 + $taxRate)) * (float) $product->cost, 2, '.', '');
+                    $tax = number_format(((float) $product->cost - $netUnitCost) * $stock, 2, '.', '');
+                    $cost = number_format((float) $product->cost * $stock, 2, '.', '');
                 }
 
                 $purchaseData['total_tax'] = $tax;
@@ -602,14 +591,14 @@ class ProductService extends BaseService
         } else {
             // No tax
             $purchaseData['total_tax'] = 0.00;
-            $purchaseData['total_cost'] = number_format((float)$product->cost * $stock, 2, '.', '');
+            $purchaseData['total_cost'] = number_format((float) $product->cost * $stock, 2, '.', '');
             $cost = $purchaseData['total_cost'];
         }
 
         // Update or create ProductWarehouse entry
         $productWarehouse = ProductWarehouse::where([
             ['product_id', $product->id],
-            ['warehouse_id', $warehouseId]
+            ['warehouse_id', $warehouseId],
         ])->first();
 
         if ($productWarehouse) {
@@ -649,7 +638,7 @@ class ProductService extends BaseService
         // Create Payment record
         $paymentPrefix = config('references.payment.purchase', 'ppr');
         Payment::create([
-            'payment_reference' => $paymentPrefix . '-' . date("Ymd") . '-' . date("his"),
+            'payment_reference' => $paymentPrefix.'-'.date('Ymd').'-'.date('his'),
             'user_id' => $userId,
             'purchase_id' => $purchase->id,
             'account_id' => 0,
@@ -663,13 +652,11 @@ class ProductService extends BaseService
     /**
      * Handle product variants creation/update.
      *
-     * @param Product $product
-     * @param array<string, mixed> $data
-     * @return void
+     * @param  array<string, mixed>  $data
      */
     private function handleProductVariants(Product $product, array $data): void
     {
-        if (!isset($data['variant_name']) || !is_array($data['variant_name'])) {
+        if (! isset($data['variant_name']) || ! is_array($data['variant_name'])) {
             return;
         }
 
@@ -695,9 +682,8 @@ class ProductService extends BaseService
     /**
      * Update an existing product.
      *
-     * @param Product $product Product instance to update
-     * @param array<string, mixed> $data Validated product data
-     * @return Product
+     * @param  Product  $product  Product instance to update
+     * @param  array<string, mixed>  $data  Validated product data
      */
     public function updateProduct(Product $product, array $data): Product
     {
@@ -708,10 +694,10 @@ class ProductService extends BaseService
             $data = $this->normalizeProductData($data, true);
 
             // Handle images
-            // First, extract new uploaded files from $data['image'] BEFORE processing prev_img
+            // First, extract new uploaded files from $data['image_path'] BEFORE processing prev_img
             $newUploadedImages = [];
-            if (isset($data['image']) && is_array($data['image'])) {
-                foreach ($data['image'] as $image) {
+            if (isset($data['image_path']) && is_array($data['image_path'])) {
+                foreach ($data['image_path'] as $image) {
                     if ($image instanceof UploadedFile) {
                         $newUploadedImages[] = $image;
                     }
@@ -722,31 +708,31 @@ class ProductService extends BaseService
             $previousImages = [];
             if (isset($data['prev_img']) && is_array($data['prev_img'])) {
                 foreach ($data['prev_img'] as $prevImg) {
-                    if (!empty($prevImg) && !in_array($prevImg, $previousImages)) {
+                    if (! empty($prevImg) && ! in_array($prevImg, $previousImages)) {
                         $previousImages[] = $prevImg;
                     }
                 }
             }
 
             // Process new uploads if any
-            if (!empty($newUploadedImages)) {
+            if (! empty($newUploadedImages)) {
                 $imagePaths = $this->handleImageUploads($newUploadedImages, count($previousImages));
-                $data['image'] = array_merge($previousImages, $imagePaths['paths']);
+                $data['image_path'] = array_merge($previousImages, $imagePaths['paths']);
                 // Generate URLs for previous images and merge with new image URLs
                 $previousImageUrls = array_map(function ($img) {
-                    return $this->uploadService->url(config('storage.products.images.base') . '/' . $img);
+                    return $this->uploadService->url(config('storage.products.images.base').'/'.$img);
                 }, $previousImages);
                 $data['image_url'] = array_merge($previousImageUrls, $imagePaths['urls']);
-            } elseif (!empty($previousImages)) {
+            } elseif (! empty($previousImages)) {
                 // Only previous images, no new uploads
-                $data['image'] = $previousImages;
+                $data['image_path'] = $previousImages;
                 // Generate URLs for previous images
                 $data['image_url'] = array_map(function ($img) {
-                    return $this->uploadService->url(config('storage.products.images.base') . '/' . $img);
+                    return $this->uploadService->url(config('storage.products.images.base').'/'.$img);
                 }, $previousImages);
             } else {
                 // No images provided, keep existing product images
-                $data['image'] = $product->image ?? [];
+                $data['image_path'] = $product->image_path ?? [];
                 $data['image_url'] = $product->image_url ?? [];
             }
 
@@ -766,12 +752,12 @@ class ProductService extends BaseService
 
             // Handle combo/recipe products
             if ($data['type'] == 'combo' && isset($data['product_id'])) {
-                $data['product_list'] = is_array($data['product_id']) ? implode(",", $data['product_id']) : $data['product_id'];
-                $data['variant_list'] = isset($data['variant_id']) && is_array($data['variant_id']) ? implode(",", $data['variant_id']) : ($data['variant_id'] ?? null);
-                $data['qty_list'] = isset($data['product_qty']) && is_array($data['product_qty']) ? implode(",", $data['product_qty']) : ($data['product_qty'] ?? null);
-                $data['price_list'] = isset($data['unit_price']) && is_array($data['unit_price']) ? implode(",", $data['unit_price']) : ($data['unit_price'] ?? null);
-                $data['wastage_percent'] = isset($data['wastage_percent']) && is_array($data['wastage_percent']) ? implode(",", $data['wastage_percent']) : ($data['wastage_percent'] ?? null);
-                $data['combo_unit_id'] = isset($data['combo_unit_id']) && is_array($data['combo_unit_id']) ? implode(",", $data['combo_unit_id']) : ($data['combo_unit_id'] ?? null);
+                $data['product_list'] = is_array($data['product_id']) ? implode(',', $data['product_id']) : $data['product_id'];
+                $data['variant_list'] = isset($data['variant_id']) && is_array($data['variant_id']) ? implode(',', $data['variant_id']) : ($data['variant_id'] ?? null);
+                $data['qty_list'] = isset($data['product_qty']) && is_array($data['product_qty']) ? implode(',', $data['product_qty']) : ($data['product_qty'] ?? null);
+                $data['price_list'] = isset($data['unit_price']) && is_array($data['unit_price']) ? implode(',', $data['unit_price']) : ($data['unit_price'] ?? null);
+                $data['wastage_percent'] = isset($data['wastage_percent']) && is_array($data['wastage_percent']) ? implode(',', $data['wastage_percent']) : ($data['wastage_percent'] ?? null);
+                $data['combo_unit_id'] = isset($data['combo_unit_id']) && is_array($data['combo_unit_id']) ? implode(',', $data['combo_unit_id']) : ($data['combo_unit_id'] ?? null);
             } elseif ($data['type'] == 'digital' || $data['type'] == 'service') {
                 $data['cost'] = 0;
                 $data['unit_id'] = 0;
@@ -794,7 +780,7 @@ class ProductService extends BaseService
                         $variant = Variant::firstOrCreate(['name' => $variantName]);
                         $productVariant = ProductVariant::where([
                             ['product_id', $product->id],
-                            ['variant_id', $variant->id]
+                            ['variant_id', $variant->id],
                         ])->first();
 
                         if ($productVariant) {
@@ -802,7 +788,7 @@ class ProductService extends BaseService
                                 'position' => $key + 1,
                                 'item_code' => $data['item_code'][$key] ?? null,
                                 'additional_cost' => $data['additional_cost'][$key] ?? 0,
-                                'additional_price' => $data['additional_price'][$key] ?? 0
+                                'additional_price' => $data['additional_price'][$key] ?? 0,
                             ]);
                         } else {
                             $productVariant = ProductVariant::create([
@@ -821,17 +807,17 @@ class ProductService extends BaseService
                         // Ensure warehouse entries exist for this variant
                         $productWarehouses = ProductWarehouse::where([
                             'product_id' => $product->id,
-                            'variant_id' => $variant->id
+                            'variant_id' => $variant->id,
                         ])->get();
 
                         if ($productWarehouses->isEmpty()) {
                             $warehouseIds = Warehouse::pluck('id')->toArray();
                             foreach ($warehouseIds as $wId) {
                                 ProductWarehouse::firstOrCreate([
-                                    "product_id" => $product->id,
-                                    "variant_id" => $variant->id,
-                                    "warehouse_id" => $wId,
-                                    "qty" => 0,
+                                    'product_id' => $product->id,
+                                    'variant_id' => $variant->id,
+                                    'warehouse_id' => $wId,
+                                    'qty' => 0,
                                 ]);
                             }
                         }
@@ -845,7 +831,7 @@ class ProductService extends BaseService
 
             // Delete old product variants that are no longer in the list
             foreach ($oldProductVariantIds as $productVariantId) {
-                if (!in_array($productVariantId, $newProductVariantIds)) {
+                if (! in_array($productVariantId, $newProductVariantIds)) {
                     $productVariant = ProductVariant::find($productVariantId);
                     if ($productVariant && $productVariant->qty > 0) {
                         throw new HttpResponseException(
@@ -877,10 +863,10 @@ class ProductService extends BaseService
                             $productWarehouse->save();
                         } else {
                             ProductWarehouse::firstOrCreate([
-                                "product_id" => $product->id,
-                                "warehouse_id" => $data["warehouse_id"][$key] ?? null,
-                                "qty" => 0,
-                                "price" => $diffPrice
+                                'product_id' => $product->id,
+                                'warehouse_id' => $data['warehouse_id'][$key] ?? null,
+                                'qty' => 0,
+                                'price' => $diffPrice,
                             ]);
                         }
                     }
@@ -909,17 +895,17 @@ class ProductService extends BaseService
             $generalSetting = GeneralSetting::latest()->first();
             if ($generalSetting && in_array('ecommerce', explode(',', $generalSetting->modules ?? ''))) {
                 if (isset($data['related_products'])) {
-                    $data['related_products'] = is_array($data['related_products']) ? implode(",", $data['related_products']) : rtrim($data['related_products'], ",");
+                    $data['related_products'] = is_array($data['related_products']) ? implode(',', $data['related_products']) : rtrim($data['related_products'], ',');
                 }
 
                 if (isset($data['in_stock'])) {
-                    $data['in_stock'] = (bool)$data['in_stock'];
+                    $data['in_stock'] = (bool) $data['in_stock'];
                 } else {
                     $data['in_stock'] = false;
                 }
 
                 if (isset($data['is_online'])) {
-                    $data['is_online'] = (bool)$data['is_online'];
+                    $data['is_online'] = (bool) $data['is_online'];
                 } else {
                     $data['is_online'] = false;
                 }
@@ -928,20 +914,20 @@ class ProductService extends BaseService
             // Handle restaurant module fields
             if ($generalSetting && in_array('restaurant', explode(',', $generalSetting->modules ?? ''))) {
                 if (isset($data['related_products'])) {
-                    $data['related_products'] = is_array($data['related_products']) ? implode(",", $data['related_products']) : rtrim($data['related_products'], ",");
+                    $data['related_products'] = is_array($data['related_products']) ? implode(',', $data['related_products']) : rtrim($data['related_products'], ',');
                 }
                 if (isset($data['extras'])) {
-                    $data['extras'] = is_array($data['extras']) ? implode(",", $data['extras']) : rtrim($data['extras'], ",");
+                    $data['extras'] = is_array($data['extras']) ? implode(',', $data['extras']) : rtrim($data['extras'], ',');
                 }
 
                 if (isset($data['is_online'])) {
-                    $data['is_online'] = (bool)$data['is_online'];
+                    $data['is_online'] = (bool) $data['is_online'];
                 } else {
                     $data['is_online'] = false;
                 }
 
                 if (isset($data['is_addon'])) {
-                    $data['is_addon'] = (bool)$data['is_addon'];
+                    $data['is_addon'] = (bool) $data['is_addon'];
                 } else {
                     $data['is_addon'] = false;
                 }
@@ -951,7 +937,7 @@ class ProductService extends BaseService
                 }
 
                 if (isset($data['menu_type']) && is_array($data['menu_type'])) {
-                    $data['menu_type'] = implode(",", $data['menu_type']);
+                    $data['menu_type'] = implode(',', $data['menu_type']);
                 }
             }
 
@@ -977,37 +963,37 @@ class ProductService extends BaseService
             }
 
             // Handle default values
-            if (!isset($data['profit_margin_type'])) {
+            if (! isset($data['profit_margin_type'])) {
                 $data['profit_margin_type'] = 'percentage';
             }
-            if (!isset($data['profit_margin'])) {
+            if (! isset($data['profit_margin'])) {
                 $data['profit_margin'] = 0;
             }
-            if (!isset($data['featured'])) {
+            if (! isset($data['featured'])) {
                 $data['featured'] = false;
             }
-            if (!isset($data['is_embeded'])) {
+            if (! isset($data['is_embeded'])) {
                 $data['is_embeded'] = false;
             }
-            if (!isset($data['promotion'])) {
+            if (! isset($data['promotion'])) {
                 $data['promotion'] = null;
             }
-            if (!isset($data['is_batch'])) {
+            if (! isset($data['is_batch'])) {
                 $data['is_batch'] = null;
             }
-            if (!isset($data['is_imei'])) {
+            if (! isset($data['is_imei'])) {
                 $data['is_imei'] = null;
             }
-            if (!isset($data['is_sync_disable']) && Schema::hasColumn('products', 'is_sync_disable')) {
+            if (! isset($data['is_sync_disable']) && Schema::hasColumn('products', 'is_sync_disable')) {
                 $data['is_sync_disable'] = null;
             }
 
             // Handle warranty and guarantee
-            if (!isset($data['warranty'])) {
+            if (! isset($data['warranty'])) {
                 $data['warranty'] = null;
                 $data['warranty_type'] = null;
             }
-            if (!isset($data['guarantee'])) {
+            if (! isset($data['guarantee'])) {
                 $data['guarantee'] = null;
                 $data['guarantee_type'] = null;
             }
@@ -1029,7 +1015,7 @@ class ProductService extends BaseService
     /**
      * Bulk delete products.
      *
-     * @param array<int> $ids Array of product IDs to delete
+     * @param  array<int>  $ids  Array of product IDs to delete
      * @return int Number of products deleted
      */
     public function bulkDeleteProducts(array $ids): int
@@ -1045,7 +1031,7 @@ class ProductService extends BaseService
                 $this->deleteProduct($product);
                 $deletedCount++;
             } catch (Exception $e) {
-                $this->logError("Failed to delete product {$id}: " . $e->getMessage());
+                $this->logError("Failed to delete product {$id}: ".$e->getMessage());
             }
         }
 
@@ -1055,8 +1041,7 @@ class ProductService extends BaseService
     /**
      * Delete a product (soft delete by setting is_active to false).
      *
-     * @param Product $product Product instance to delete
-     * @return bool
+     * @param  Product  $product  Product instance to delete
      */
     public function deleteProduct(Product $product): bool
     {
@@ -1067,8 +1052,8 @@ class ProductService extends BaseService
             $product->is_active = false;
 
             // Delete images
-            if ($product->image && $product->image != 'placeholder.png') {
-                $images = is_array($product->image) ? $product->image : explode(",", $product->image);
+            if ($product->image_path && $product->image_path != 'placeholder.png') {
+                $images = is_array($product->image_path) ? $product->image_path : explode(',', $product->image_path);
                 foreach ($images as $image) {
                     $this->deleteImageFromStorage($image);
                 }
@@ -1086,9 +1071,6 @@ class ProductService extends BaseService
 
     /**
      * Delete image from storage (all sizes).
-     *
-     * @param string $imageName
-     * @return void
      */
     private function deleteImageFromStorage(string $imageName): void
     {
@@ -1109,7 +1091,7 @@ class ProductService extends BaseService
         ];
 
         foreach ($sizes as $sizeDirectory) {
-            $path = $sizeDirectory . '/' . $imageName;
+            $path = $sizeDirectory.'/'.$imageName;
             if (Storage::disk($disk)->exists($path)) {
                 Storage::disk($disk)->delete($path);
             }
@@ -1153,35 +1135,28 @@ class ProductService extends BaseService
 
     /**
      * Generate product code.
-     *
-     * @return string
      */
     public function generateCode(): string
     {
-        return (string)rand(10000000, 99999999);
+        return (string) rand(10000000, 99999999);
     }
 
     /**
      * Import products from a file.
-     *
-     * @param UploadedFile $file
-     * @return void
      */
     public function importProducts(UploadedFile $file): void
     {
         $this->requirePermission('products-create');
 
         $this->transaction(function () use ($file) {
-            Excel::import(new ProductsImport(), $file);
+            Excel::import(new ProductsImport, $file);
         });
     }
 
     /**
      * Reorder product images.
      *
-     * @param Product $product
-     * @param array<string> $imageUrls Array of image URLs in the new order
-     * @return Product
+     * @param  array<string>  $imageUrls  Array of image URLs in the new order
      */
     public function reorderImages(Product $product, array $imageUrls): Product
     {
@@ -1192,20 +1167,20 @@ class ProductService extends BaseService
         foreach ($imageUrls as $url) {
             // Extract filename from URL (e.g., "http://domain.com/images/product/filename.jpg" -> "filename.jpg")
             $filename = basename(parse_url($url, PHP_URL_PATH));
-            if ($filename && in_array($filename, $product->image ?? [])) {
+            if ($filename && in_array($filename, $product->image_path ?? [])) {
                 $imageFilenames[] = $filename;
             }
         }
 
         // Only update if we have valid filenames
-        if (count($imageFilenames) === count($product->image ?? [])) {
+        if (count($imageFilenames) === count($product->image_path ?? [])) {
             // Generate new image_url array in the new order
             $newImageUrls = [];
             foreach ($imageFilenames as $filename) {
-                $newImageUrls[] = $this->uploadService->url(config('storage.products.images.base') . '/' . $filename);
+                $newImageUrls[] = $this->uploadService->url(config('storage.products.images.base').'/'.$filename);
             }
 
-            $product->image = $imageFilenames;
+            $product->image_path = $imageFilenames;
             $product->image_url = $newImageUrls;
             $product->save();
         }
@@ -1216,7 +1191,7 @@ class ProductService extends BaseService
     /**
      * Search products by name or code (for related products and extras).
      *
-     * @param string $term Search term (minimum 3 characters)
+     * @param  string  $term  Search term (minimum 3 characters)
      * @return SupportCollection<int, array{id: int, name: string, code: string, image: string}>
      */
     public function searchProducts(string $term): SupportCollection
@@ -1252,7 +1227,7 @@ class ProductService extends BaseService
     /**
      * Get sale and purchase units based on base unit ID.
      *
-     * @param int $unitId Base unit ID
+     * @param  int  $unitId  Base unit ID
      * @return array<int, string>
      */
     public function getSaleUnits(int $unitId): array
@@ -1275,7 +1250,7 @@ class ProductService extends BaseService
      * Search product for combo products table.
      * Returns detailed product information including variant support.
      *
-     * @param string $searchTerm Product code or item code (may include variant info in format "code (name)")
+     * @param  string  $searchTerm  Product code or item code (may include variant info in format "code (name)")
      * @return array<string, mixed>|null
      */
     public function searchComboProduct(string $searchTerm): ?array
@@ -1296,7 +1271,7 @@ class ProductService extends BaseService
         $isVariantProduct = $product && $product->is_variant;
 
         // If not found or product has variants, check variants
-        if (!$product || $isVariantProduct) {
+        if (! $product || $isVariantProduct) {
             $productVariant = ProductVariant::join('products', 'product_variants.product_id', '=', 'products.id')
                 ->where(function ($query) use ($productCode, $productId) {
                     $query->where('product_variants.item_code', $productCode);
@@ -1330,7 +1305,7 @@ class ProductService extends BaseService
             $cost = $product->cost ?? 0;
         }
 
-        if (!$product) {
+        if (! $product) {
             return null;
         }
 
@@ -1378,8 +1353,7 @@ class ProductService extends BaseService
     /**
      * Get sale history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
      * @return array<string, mixed> History data with pagination metadata
      */
     public function getSaleHistory(int $productId, array $filters = []): array
@@ -1448,9 +1422,9 @@ class ProductService extends BaseService
 
         foreach ($sales as $key => $sale) {
             $unit = $sale->sale_unit_id ? Unit::find($sale->sale_unit_id) : null;
-            $qtyDisplay = number_format((float)$sale->qty, $decimal);
+            $qtyDisplay = number_format((float) $sale->qty, $decimal);
             if ($unit) {
-                $qtyDisplay .= ' ' . $unit->code;
+                $qtyDisplay .= ' '.$unit->code;
             }
 
             $data[] = [
@@ -1459,10 +1433,10 @@ class ProductService extends BaseService
                 'date' => date(config('date_format', 'Y-m-d'), strtotime($sale->created_at)),
                 'reference_no' => $sale->reference_no,
                 'warehouse' => $sale->warehouse_name,
-                'customer' => $sale->customer_name . ' [' . ($sale->customer_number ?? 'N/A') . ']',
+                'customer' => $sale->customer_name.' ['.($sale->customer_number ?? 'N/A').']',
                 'qty' => $qtyDisplay,
-                'unit_price' => number_format((float)$sale->total / (float)$sale->qty, $decimal),
-                'sub_total' => number_format((float)$sale->total, $decimal),
+                'unit_price' => number_format((float) $sale->total / (float) $sale->qty, $decimal),
+                'sub_total' => number_format((float) $sale->total, $decimal),
             ];
         }
 
@@ -1476,8 +1450,7 @@ class ProductService extends BaseService
     /**
      * Get purchase history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
      * @return array<string, mixed> History data with pagination metadata
      */
     public function getPurchaseHistory(int $productId, array $filters = []): array
@@ -1544,9 +1517,9 @@ class ProductService extends BaseService
 
         foreach ($purchases as $key => $purchase) {
             $unit = $purchase->purchase_unit_id ? Unit::find($purchase->purchase_unit_id) : null;
-            $qtyDisplay = number_format((float)$purchase->qty, $decimal);
+            $qtyDisplay = number_format((float) $purchase->qty, $decimal);
             if ($unit) {
-                $qtyDisplay .= ' ' . $unit->code;
+                $qtyDisplay .= ' '.$unit->code;
             }
 
             $data[] = [
@@ -1556,11 +1529,11 @@ class ProductService extends BaseService
                 'reference_no' => $purchase->reference_no,
                 'warehouse' => $purchase->warehouse_name,
                 'supplier' => $purchase->supplier_id
-                    ? ($purchase->supplier_name . ' [' . ($purchase->supplier_number ?? 'N/A') . ']')
+                    ? ($purchase->supplier_name.' ['.($purchase->supplier_number ?? 'N/A').']')
                     : 'N/A',
                 'qty' => $qtyDisplay,
-                'unit_cost' => number_format((float)$purchase->total / (float)$purchase->qty, $decimal),
-                'sub_total' => number_format((float)$purchase->total, $decimal),
+                'unit_cost' => number_format((float) $purchase->total / (float) $purchase->qty, $decimal),
+                'sub_total' => number_format((float) $purchase->total, $decimal),
             ];
         }
 
@@ -1574,8 +1547,7 @@ class ProductService extends BaseService
     /**
      * Get sale return history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
      * @return array<string, mixed> History data with pagination metadata
      */
     public function getSaleReturnHistory(int $productId, array $filters = []): array
@@ -1643,9 +1615,9 @@ class ProductService extends BaseService
 
         foreach ($returns as $key => $return) {
             $unit = $return->sale_unit_id ? Unit::find($return->sale_unit_id) : null;
-            $qtyDisplay = number_format((float)$return->qty, $decimal);
+            $qtyDisplay = number_format((float) $return->qty, $decimal);
             if ($unit) {
-                $qtyDisplay .= ' ' . $unit->code;
+                $qtyDisplay .= ' '.$unit->code;
             }
 
             $data[] = [
@@ -1654,10 +1626,10 @@ class ProductService extends BaseService
                 'date' => date(config('date_format', 'Y-m-d'), strtotime($return->created_at)),
                 'reference_no' => $return->reference_no,
                 'warehouse' => $return->warehouse_name,
-                'customer' => $return->customer_name . ' [' . ($return->customer_number ?? 'N/A') . ']',
+                'customer' => $return->customer_name.' ['.($return->customer_number ?? 'N/A').']',
                 'qty' => $qtyDisplay,
-                'unit_price' => number_format((float)$return->total / (float)$return->qty, $decimal),
-                'sub_total' => number_format((float)$return->total, $decimal),
+                'unit_price' => number_format((float) $return->total / (float) $return->qty, $decimal),
+                'sub_total' => number_format((float) $return->total, $decimal),
             ];
         }
 
@@ -1671,8 +1643,7 @@ class ProductService extends BaseService
     /**
      * Get purchase return history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date, search, limit, offset
      * @return array<string, mixed> History data with pagination metadata
      */
     public function getPurchaseReturnHistory(int $productId, array $filters = []): array
@@ -1741,9 +1712,9 @@ class ProductService extends BaseService
 
         foreach ($returnPurchases as $key => $returnPurchase) {
             $unit = $returnPurchase->purchase_unit_id ? Unit::find($returnPurchase->purchase_unit_id) : null;
-            $qtyDisplay = number_format((float)$returnPurchase->qty, $decimal);
+            $qtyDisplay = number_format((float) $returnPurchase->qty, $decimal);
             if ($unit) {
-                $qtyDisplay .= ' ' . $unit->code;
+                $qtyDisplay .= ' '.$unit->code;
             }
 
             $data[] = [
@@ -1753,11 +1724,11 @@ class ProductService extends BaseService
                 'reference_no' => $returnPurchase->reference_no,
                 'warehouse' => $returnPurchase->warehouse_name,
                 'supplier' => $returnPurchase->supplier_id
-                    ? ($returnPurchase->supplier_name . ' [' . ($returnPurchase->supplier_number ?? 'N/A') . ']')
+                    ? ($returnPurchase->supplier_name.' ['.($returnPurchase->supplier_number ?? 'N/A').']')
                     : 'N/A',
                 'qty' => $qtyDisplay,
-                'unit_cost' => number_format((float)$returnPurchase->total / (float)$returnPurchase->qty, $decimal),
-                'sub_total' => number_format((float)$returnPurchase->total, $decimal),
+                'unit_cost' => number_format((float) $returnPurchase->total / (float) $returnPurchase->qty, $decimal),
+                'sub_total' => number_format((float) $returnPurchase->total, $decimal),
             ];
         }
 
@@ -1771,8 +1742,7 @@ class ProductService extends BaseService
     /**
      * Get adjustment history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date
      * @return array<string, mixed> History data
      */
     public function getAdjustmentHistory(int $productId, array $filters = []): array
@@ -1817,7 +1787,7 @@ class ProductService extends BaseService
                 'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
                 'reference' => $row->reference_no,
                 'warehouse' => $warehouses[$row->warehouse_id] ?? '',
-                'qty' => number_format((float)$row->qty, $decimal),
+                'qty' => number_format((float) $row->qty, $decimal),
                 'type' => $row->action === 'addition' ? 'Adjustment +' : 'Adjustment -',
                 'note' => $row->note ?? 'N/A',
             ];
@@ -1833,8 +1803,7 @@ class ProductService extends BaseService
     /**
      * Get transfer history for a product.
      *
-     * @param int $productId
-     * @param array<string, mixed> $filters Available filters: warehouse_id, starting_date, ending_date
+     * @param  array<string, mixed>  $filters  Available filters: warehouse_id, starting_date, ending_date
      * @return array<string, mixed> History data
      */
     public function getTransferHistory(int $productId, array $filters = []): array
@@ -1878,26 +1847,26 @@ class ProductService extends BaseService
 
         foreach ($rows as $row) {
             // OUT transaction (from warehouse)
-            if (!$warehouseId || $row->from_warehouse_id == $warehouseId) {
+            if (! $warehouseId || $row->from_warehouse_id == $warehouseId) {
                 $data[] = [
                     'key' => $key++,
                     'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
                     'reference' => $row->reference_no,
                     'from' => $warehouses[$row->from_warehouse_id] ?? '',
                     'to' => $warehouses[$row->to_warehouse_id] ?? '',
-                    'qty' => number_format(-(float)$row->qty, $decimal),
+                    'qty' => number_format(-(float) $row->qty, $decimal),
                 ];
             }
 
             // IN transaction (to warehouse)
-            if (!$warehouseId || $row->to_warehouse_id == $warehouseId) {
+            if (! $warehouseId || $row->to_warehouse_id == $warehouseId) {
                 $data[] = [
                     'key' => $key++,
                     'date' => date(config('date_format', 'Y-m-d'), strtotime($row->created_at)),
                     'reference' => $row->reference_no,
                     'from' => $warehouses[$row->from_warehouse_id] ?? '',
                     'to' => $warehouses[$row->to_warehouse_id] ?? '',
-                    'qty' => number_format((float)$row->qty, $decimal),
+                    'qty' => number_format((float) $row->qty, $decimal),
                 ];
             }
         }

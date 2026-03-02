@@ -115,7 +115,7 @@ class StoreBillerRequest extends FormRequest
             /**
              * The optional image or avatar for the biller.
              */
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
             /**
              * Determines if the biller is active upon creation.

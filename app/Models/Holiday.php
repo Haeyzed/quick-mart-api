@@ -16,7 +16,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class Holiday
- * 
+ *
  * Represents a holiday request or record within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for holiday entities.
  *
@@ -31,14 +31,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Holiday newModelQuery()
  * @method static Builder|Holiday newQuery()
  * @method static Builder|Holiday query()
  * @method static Builder|Holiday approved()
  * @method static Builder|Holiday filter(array $filters)
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
  * @property-read \App\Models\User $user
+ *
  * @method static Builder<static>|Holiday customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Holiday last30Days(string $column = 'created_at')
  * @method static Builder<static>|Holiday last7Days(string $column = 'created_at')
@@ -63,6 +66,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Holiday withoutTrashed()
  * @method static Builder<static>|Holiday yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Holiday yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Holiday extends Model implements AuditableContract
@@ -88,7 +92,7 @@ class Holiday extends Model implements AuditableContract
         'note',
         'is_approved',
         'recurring',
-        'region'
+        'region',
     ];
 
     /**

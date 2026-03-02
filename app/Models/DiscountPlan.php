@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,9 +16,10 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
- * DiscountPlan Model
- * 
+ * Class DiscountPlan
+ *
  * Represents a discount plan that groups multiple discounts and can be assigned to customers.
+ * Handles the underlying data structure, relationships, and specific query scopes for discount plan entities.
  *
  * @property int $id
  * @property string $name
@@ -25,18 +27,30 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string $type
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Collection<int, Customer> $customers
- * @property-read Collection<int, Discount> $discounts
- * @method static Builder|DiscountPlan active()
  * @property Carbon|null $deleted_at
+ *
+ * @method static Builder|DiscountPlan newModelQuery()
+ * @method static Builder|DiscountPlan newQuery()
+ * @method static Builder|DiscountPlan query()
+ * @method static Builder|DiscountPlan active()
+ * @method static Builder|DiscountPlan filter(array $filters)
+ *
+ * @property-read Collection<int, Customer> $customers
+ * @property-read int|null $customers_count
+ * @property-read Collection<int, Discount> $discounts
+ * @property-read int|null $discounts_count
  * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
  * @property-read int|null $audits_count
- * @property-read int|null $customers_count
- * @property-read int|null $discounts_count
- * @method static Builder<static>|DiscountPlan newModelQuery()
- * @method static Builder<static>|DiscountPlan newQuery()
+ *
+ * @method static Builder<static>|DiscountPlan customRange($startDate = null, $endDate = null, string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan last30Days(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan last7Days(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan lastQuarter(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan lastYear(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan monthToDate(string $column = 'created_at')
  * @method static Builder<static>|DiscountPlan onlyTrashed()
- * @method static Builder<static>|DiscountPlan query()
+ * @method static Builder<static>|DiscountPlan quarterToDate(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan today(string $column = 'created_at')
  * @method static Builder<static>|DiscountPlan whereCreatedAt($value)
  * @method static Builder<static>|DiscountPlan whereDeletedAt($value)
  * @method static Builder<static>|DiscountPlan whereId($value)
@@ -46,11 +60,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|DiscountPlan whereUpdatedAt($value)
  * @method static Builder<static>|DiscountPlan withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|DiscountPlan withoutTrashed()
+ * @method static Builder<static>|DiscountPlan yearToDate(string $column = 'created_at')
+ * @method static Builder<static>|DiscountPlan yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class DiscountPlan extends Model implements AuditableContract
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -62,6 +79,50 @@ class DiscountPlan extends Model implements AuditableContract
         'is_active',
         'type',
     ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to apply dynamic filters.
+     *
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @return Builder The modified query builder instance.
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->active()
+            )
+            ->when(
+                ! empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where('name', 'like', $term);
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
+    /**
+     * Scope a query to only include active discount plans.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
 
     /**
      * Get the customers assigned to this discount plan.
@@ -83,25 +144,5 @@ class DiscountPlan extends Model implements AuditableContract
     {
         return $this->belongsToMany(Discount::class, 'discount_plan_discounts')
             ->withTimestamps();
-    }
-
-    /**
-     * Scope a query to only include active discount plans.
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
     }
 }

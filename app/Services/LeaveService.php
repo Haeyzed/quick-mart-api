@@ -8,6 +8,7 @@ use App\Enums\LeaveStatusEnum;
 use App\Exports\LeavesExport;
 use App\Imports\LeavesImport;
 use App\Models\Leave;
+use App\Models\LeaveApproval;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -44,7 +45,7 @@ class LeaveService
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getPaginatedLeaves(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Leave::query()
             ->with(['employee', 'leaveType', 'approver'])
@@ -59,11 +60,14 @@ class LeaveService
      * @param  array<string, mixed>  $data  The validated request data.
      * @return Leave The newly created Leave model instance.
      */
-    public function createLeave(array $data): Leave
+    public function create(array $data): Leave
     {
         return DB::transaction(function () use ($data) {
             $data['days'] = $this->calculateDays($data['start_date'], $data['end_date']);
             $data['status'] = LeaveStatusEnum::PENDING->value;
+            $data['approval_status'] = 'pending';
+            $data['current_approval_level'] = 0;
+            $data['max_approval_level'] = $data['max_approval_level'] ?? 2;
             $data['approver_id'] = Auth::id();
 
             return Leave::query()->create($data);
@@ -77,7 +81,7 @@ class LeaveService
      * @param  array<string, mixed>  $data  The validated update data.
      * @return Leave The freshly updated Leave model instance.
      */
-    public function updateLeave(Leave $leave, array $data): Leave
+    public function update(Leave $leave, array $data): Leave
     {
         return DB::transaction(function () use ($leave, $data) {
             if (isset($data['start_date']) && isset($data['end_date'])) {
@@ -96,7 +100,7 @@ class LeaveService
     /**
      * Delete a leave request.
      */
-    public function deleteLeave(Leave $leave): void
+    public function delete(Leave $leave): void
     {
         DB::transaction(function () use ($leave) {
             $leave->delete();
@@ -109,7 +113,7 @@ class LeaveService
      * @param  array<int>  $ids  Array of leave IDs to be deleted.
      * @return int The total count of successfully deleted leave requests.
      */
-    public function bulkDeleteLeaves(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $leaves = Leave::query()->whereIn('id', $ids)->get();
@@ -133,10 +137,61 @@ class LeaveService
      */
     public function bulkUpdateStatus(array $ids, string $status): int
     {
-        return Leave::query()->whereIn('id', $ids)->update([
-            'status' => $status,
-            'approver_id' => Auth::id()
-        ]);
+        $payload = ['status' => $status, 'approver_id' => Auth::id()];
+        if ($status === LeaveStatusEnum::APPROVED->value) {
+            $payload['approval_status'] = 'approved';
+        } elseif ($status === LeaveStatusEnum::REJECTED->value) {
+            $payload['approval_status'] = 'rejected';
+        }
+
+        return Leave::query()->whereIn('id', $ids)->update($payload);
+    }
+
+    /**
+     * Approve or reject a leave at a given approval level (multi-level approval).
+     *
+     * @param  Leave  $leave  The leave to approve or reject.
+     * @param  int  $level  The approval level (1-based).
+     * @param  string  $status  Either 'approved' or 'rejected'.
+     * @param  string|null  $notes  Optional notes from the approver.
+     * @return Leave The updated leave.
+     */
+    public function approve(Leave $leave, int $level, string $status, ?string $notes = null): Leave
+    {
+        return DB::transaction(function () use ($leave, $level, $status, $notes) {
+            LeaveApproval::query()->create([
+                'leave_id' => $leave->id,
+                'level' => $level,
+                'approver_id' => Auth::id(),
+                'status' => $status,
+                'notes' => $notes,
+                'approved_at' => now(),
+            ]);
+
+            $maxLevel = (int) $leave->max_approval_level;
+
+            if ($status === 'rejected') {
+                $leave->update([
+                    'approval_status' => 'rejected',
+                    'status' => LeaveStatusEnum::REJECTED->value,
+                    'approver_id' => Auth::id(),
+                ]);
+            } elseif ($level >= $maxLevel) {
+                $leave->update([
+                    'approval_status' => 'approved',
+                    'status' => LeaveStatusEnum::APPROVED->value,
+                    'current_approval_level' => $level,
+                    'approver_id' => Auth::id(),
+                ]);
+            } else {
+                $leave->update([
+                    'current_approval_level' => $level,
+                    'approver_id' => Auth::id(),
+                ]);
+            }
+
+            return $leave->fresh(['employee', 'leaveType', 'approver', 'leaveApprovals.approver']);
+        });
     }
 
     /**
@@ -144,7 +199,7 @@ class LeaveService
      *
      * @param  UploadedFile  $file  The uploaded spreadsheet file.
      */
-    public function importLeaves(UploadedFile $file): void
+    public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new LeavesImport, $file);
     }

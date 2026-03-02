@@ -10,19 +10,22 @@ use Nnjeim\World\Models\Language as WorldLanguage;
 
 /**
  * Class Language
- * 
+ *
  * Represents a language from World reference data. Extends Nnjeim\World Language.
+ * Handles the underlying data structure, relationships, and specific query scopes for language entities.
  *
  * @property int $id
  * @property string $code
  * @property string $name
  * @property string $name_native
  * @property string $dir
- * @method static \Illuminate\Database\Eloquent\Builder|Language newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Language newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Language query()
+ *
+ * @method static Builder|Language newModelQuery()
+ * @method static Builder|Language newQuery()
+ * @method static Builder|Language query()
+ * @method static Builder|Language filter(array $filters)
+ *
  * @method static Builder<static>|Language customRange($startDate = null, $endDate = null, string $column = 'created_at')
- * @method static Builder<static>|Language filter(array $filters)
  * @method static Builder<static>|Language last30Days(string $column = 'created_at')
  * @method static Builder<static>|Language last7Days(string $column = 'created_at')
  * @method static Builder<static>|Language lastQuarter(string $column = 'created_at')
@@ -37,6 +40,7 @@ use Nnjeim\World\Models\Language as WorldLanguage;
  * @method static Builder<static>|Language whereNameNative($value)
  * @method static Builder<static>|Language yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Language yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Language extends WorldLanguage

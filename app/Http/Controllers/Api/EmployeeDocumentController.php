@@ -14,12 +14,28 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
+/**
+ * Class EmployeeDocumentController
+ *
+ * API Controller for Employee Document CRUD. Handles authorization via permissions
+ * and delegates logic to EmployeeDocumentService.
+ *
+ * @tags HRM Management
+ */
 class EmployeeDocumentController extends Controller
 {
+    /**
+     * EmployeeDocumentController constructor.
+     */
     public function __construct(
         private readonly EmployeeDocumentService $service
     ) {}
 
+    /**
+     * List Employee Documents
+     *
+     * Display a paginated listing of employee documents. Supports filtering by employee, document type, and expiry.
+     */
     public function index(Request $request): JsonResponse
     {
         if (auth()->user()->denies('view employee documents')) {
@@ -28,10 +44,14 @@ class EmployeeDocumentController extends Controller
 
         $items = $this->service->getPaginated(
             $request->validate([
+                /** @example 5 */
                 'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
+                /** @example 1 */
                 'document_type_id' => ['nullable', 'integer', 'exists:document_types,id'],
+                /** @example true */
                 'expired' => ['nullable', 'boolean'],
             ]),
+            /** @default 10 */
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -41,6 +61,11 @@ class EmployeeDocumentController extends Controller
         );
     }
 
+    /**
+     * Create Employee Document
+     *
+     * Store a new document for an employee (file upload handled by service).
+     */
     public function store(StoreEmployeeDocumentRequest $request): JsonResponse
     {
         if (auth()->user()->denies('create employee documents')) {
@@ -56,6 +81,11 @@ class EmployeeDocumentController extends Controller
         );
     }
 
+    /**
+     * Show Employee Document
+     *
+     * Retrieve the details of a specific employee document by its ID.
+     */
     public function show(EmployeeDocument $employee_document): JsonResponse
     {
         if (auth()->user()->denies('view employee documents')) {
@@ -68,6 +98,11 @@ class EmployeeDocumentController extends Controller
         );
     }
 
+    /**
+     * Update Employee Document
+     *
+     * Update the specified employee document; file replacement handled by service.
+     */
     public function update(UpdateEmployeeDocumentRequest $request, EmployeeDocument $employee_document): JsonResponse
     {
         if (auth()->user()->denies('update employee documents')) {
@@ -82,6 +117,11 @@ class EmployeeDocumentController extends Controller
         );
     }
 
+    /**
+     * Delete Employee Document
+     *
+     * Remove the specified employee document from storage (and delete file from disk).
+     */
     public function destroy(EmployeeDocument $employee_document): JsonResponse
     {
         if (auth()->user()->denies('delete employee documents')) {

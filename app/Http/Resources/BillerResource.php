@@ -18,7 +18,6 @@ class BillerResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -134,7 +133,7 @@ class BillerResource extends JsonResource
              *
              * @example images/billers/avatar.png
              */
-            'image' => $this->image,
+            'image_path' => $this->image_path,
 
             /**
              * The absolute URL to the biller's image.

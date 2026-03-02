@@ -42,10 +42,14 @@ class EmployeeService
      *
      * @param  UploadService  $uploadService  Service responsible for handling file uploads.
      * @param  UserRolePermissionService  $userRolePermissionService  Service responsible for syncing roles and permissions.
+     * @param  EmployeeDocumentService  $employeeDocumentService  Service for creating employee documents.
+     * @param  EmployeeOnboardingService  $employeeOnboardingService  Service for starting onboarding.
      */
     public function __construct(
         private readonly UploadService $uploadService,
-        private readonly UserRolePermissionService $userRolePermissionService
+        private readonly UserRolePermissionService $userRolePermissionService,
+        private readonly EmployeeDocumentService $employeeDocumentService,
+        private readonly EmployeeOnboardingService $employeeOnboardingService
     ) {}
 
     /**
@@ -99,17 +103,24 @@ class EmployeeService
     }
 
     /**
-     * Create a newly registered employee and manage associated user account and files.
-     * Extracts the nested 'user' array to generate system access and sync roles/permissions.
+     * Create a newly registered employee and manage associated user account, files,
+     * optional documents, and optional onboarding. Extracts nested 'user', 'documents',
+     * and 'onboarding_checklist_template_id' before creating the employee.
      *
      * @param  array<string, mixed>  $data
      */
     public function createEmployee(array $data): Employee
     {
-        return DB::transaction(function () use ($data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-                $data['image'] = $path;
+        $documents = $data['documents'] ?? [];
+        $onboardingChecklistTemplateId = isset($data['onboarding_checklist_template_id'])
+            ? (int) $data['onboarding_checklist_template_id']
+            : null;
+        unset($data['documents'], $data['onboarding_checklist_template_id']);
+
+        return DB::transaction(function () use ($data, $documents, $onboardingChecklistTemplateId) {
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+                $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+                $data['image_path'] = $path;
                 $data['image_url'] = $this->uploadService->url($path);
             }
 
@@ -122,7 +133,7 @@ class EmployeeService
                     'phone_number' => $data['phone_number'] ?? null,
                     'username' => $userData['username'],
                     'password' => Hash::make($userData['password']),
-                    'image' => $data['image'] ?? null,
+                    'image_path' => $data['image_path'] ?? null,
                     'image_url' => $data['image_url'] ?? null,
                     'is_active' => true,
                 ]);
@@ -140,7 +151,25 @@ class EmployeeService
 
             unset($data['user']);
 
-            return Employee::query()->create($data);
+            $employee = Employee::query()->create($data);
+
+            foreach ($documents as $doc) {
+                $this->employeeDocumentService->create([
+                    'employee_id' => $employee->id,
+                    'document_type_id' => (int) $doc['document_type_id'],
+                    'name' => $doc['name'] ?? null,
+                    'file' => $doc['file'] ?? null,
+                    'issue_date' => $doc['issue_date'] ?? null,
+                    'expiry_date' => $doc['expiry_date'] ?? null,
+                    'notes' => $doc['notes'] ?? null,
+                ]);
+            }
+
+            if ($onboardingChecklistTemplateId !== null) {
+                $this->employeeOnboardingService->startOnboarding($employee->id, $onboardingChecklistTemplateId);
+            }
+
+            return $employee;
         });
     }
 
@@ -154,12 +183,12 @@ class EmployeeService
     public function updateEmployee(Employee $employee, array $data): Employee
     {
         return DB::transaction(function () use ($employee, $data) {
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                if ($employee->image) {
-                    $this->uploadService->delete($employee->image);
+            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+                if ($employee->image_path) {
+                    $this->uploadService->delete($employee->image_path);
                 }
-                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-                $data['image'] = $path;
+                $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+                $data['image_path'] = $path;
                 $data['image_url'] = $this->uploadService->url($path);
             }
 
@@ -173,7 +202,7 @@ class EmployeeService
                         'phone_number' => $data['phone_number'] ?? $employee->phone_number,
                         'username' => $userData['username'] ?? null,
                         'password' => Hash::make($userData['password']),
-                        'image' => $data['image'] ?? $employee->image,
+                        'image_path' => $data['image_path'] ?? $employee->image_path,
                         'image_url' => $data['image_url'] ?? $employee->image_url,
                         'is_active' => true,
                     ]);
@@ -200,8 +229,8 @@ class EmployeeService
                             $updatePayload['username'] = $userData['username'];
                         }
 
-                        if (array_key_exists('image', $data)) {
-                            $updatePayload['image'] = $data['image'];
+                        if (array_key_exists('image_path', $data)) {
+                            $updatePayload['image_path'] = $data['image_path'];
                             $updatePayload['image_url'] = $data['image_url'] ?? null;
                         }
 
@@ -243,8 +272,8 @@ class EmployeeService
                 }
             }
 
-            if ($employee->image) {
-                $this->uploadService->delete($employee->image);
+            if ($employee->image_path) {
+                $this->uploadService->delete($employee->image_path);
             }
 
             $employee->delete();

@@ -10,8 +10,9 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
 
 /**
  * Class Currency
- * 
+ *
  * Represents a currency from World reference data. Extends Nnjeim\World Currency.
+ * Handles the underlying data structure, relationships, and specific query scopes for currency entities.
  *
  * @property int $id
  * @property int $country_id
@@ -23,11 +24,14 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @property bool $symbol_first
  * @property string $decimal_mark
  * @property string $thousands_separator
+ *
  * @method static Builder|Currency newModelQuery()
  * @method static Builder|Currency newQuery()
  * @method static Builder|Currency query()
  * @method static Builder|Currency filter(array $filters)
+ *
  * @property-read \App\Models\Country|null $country
+ *
  * @method static Builder<static>|Currency customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Currency last30Days(string $column = 'created_at')
  * @method static Builder<static>|Currency last7Days(string $column = 'created_at')
@@ -48,6 +52,7 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @method static Builder<static>|Currency whereThousandsSeparator($value)
  * @method static Builder<static>|Currency yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Currency yesterday(string $column = 'current_at')
+ *
  * @mixin \Eloquent
  */
 class Currency extends WorldCurrencyBase

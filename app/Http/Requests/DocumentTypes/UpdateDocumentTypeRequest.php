@@ -7,13 +7,24 @@ namespace App\Http\Requests\DocumentTypes;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Class UpdateDocumentTypeRequest
+ *
+ * Handles validation and authorization for updating an existing document type.
+ */
 class UpdateDocumentTypeRequest extends BaseRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Prepare the data for validation.
+     */
     protected function prepareForValidation(): void
     {
         if ($this->has('requires_expiry')) {
@@ -24,12 +35,40 @@ class UpdateDocumentTypeRequest extends BaseRequest
         }
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
+            /**
+             * Display name of the document type.
+             *
+             * @example "National ID"
+             */
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+
+            /**
+             * Unique code for the document type.
+             *
+             * @example "national_id"
+             */
             'code' => ['sometimes', 'required', 'string', 'max:64', Rule::unique('document_types', 'code')->ignore($this->route('document_type'))->withoutTrashed()],
+
+            /**
+             * Whether documents of this type must have an expiry date.
+             *
+             * @example true
+             */
             'requires_expiry' => ['nullable', 'boolean'],
+
+            /**
+             * Whether the document type is active and available for use.
+             *
+             * @example true
+             */
             'is_active' => ['nullable', 'boolean'],
         ];
     }

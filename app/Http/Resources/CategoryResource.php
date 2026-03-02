@@ -68,7 +68,7 @@ class CategoryResource extends JsonResource
              *
              * @example images/categories/electronics.png
              */
-            'image' => $this->image,
+            'image_path' => $this->image_path,
 
             /**
              * The raw path to the category's icon.
