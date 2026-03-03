@@ -1,0 +1,6 @@
+name,code,requires_expiry,is_active
+National ID,NID,true,true
+Passport,PASSPORT,true,true
+Driver License,LICENSE,true,true
+Employment Contract,CONTRACT,false,true
+Birth Certificate,BCERT,false,true
