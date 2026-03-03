@@ -61,7 +61,7 @@ class EmployeeService
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        // $generalSetting = DB::table('general_settings')->latest()->first();
+        $generalSetting = DB::table('general_settings')->latest()->first();
 
         // if (Auth::check()
         //     && !Auth::user()->hasRole('Super Admin')

@@ -255,6 +255,7 @@ class EmployeeResource extends JsonResource
             'documents' => $this->whenLoaded('documents', fn () => $this->documents->map(fn ($doc) => [
                 'id' => $doc->id,
                 'document_type_id' => $doc->document_type_id,
+                'document_type' => $doc->documentType,
                 'name' => $doc->name,
                 'file_path' => $doc->file_path,
                 'file_url' => $doc->file_url,
