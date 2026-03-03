@@ -434,6 +434,14 @@ class TenantDatabaseSeeder extends Seeder
                 'update employee documents',
                 'delete employee documents',
             ],
+            'document types' => [
+                'view document types',
+                'create document types',
+                'update document types',
+                'delete document types',
+                'import document types',
+                'export document types'
+            ],
             'performance reviews' => [
                 'view performance reviews',
                 'create performance reviews',
