@@ -63,25 +63,25 @@ class EmployeeService
     {
         $generalSetting = DB::table('general_settings')->latest()->first();
 
-        if (Auth::check()
-            && !Auth::user()->hasRole('Super Admin')
-            && $generalSetting?->staff_access === 'own') {
-            $filters['user_id'] = Auth::id();
-        }
+        // if (Auth::check()
+        //     && !Auth::user()->hasRole('Super Admin')
+        //     && $generalSetting?->staff_access === 'own') {
+        //     $filters['user_id'] = Auth::id();
+        // }
 
         return Employee::query()
-            ->with([
-                'department:id,name',
-                'designation:id,name',
-                'shift',
-                'user.roles:id,name',
-                'user.permissions:id,name',
-                'profile',
-                'employmentType',
-                'warehouse:id,name',
-                'workLocation:id,name',
-                'salaryStructure',
-                'reportingManager'
+            ->with(['department:id,name',
+                    'designation:id,name',
+                    'shift',
+                    'user.roles:id,name',
+                    'user.permissions:id,name',
+                    'profile',
+                    'employmentType',
+                    'warehouse:id,name',
+                    'workLocation:id,name',
+                    'salaryStructure',
+                    'reportingManager',
+                    'documents'
             ])
             ->filter($filters)
             ->latest()
