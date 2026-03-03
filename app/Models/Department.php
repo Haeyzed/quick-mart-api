@@ -165,4 +165,14 @@ class Department extends Model implements AuditableContract
     {
         return $this->hasMany(Employee::class);
     }
+
+    /**
+     * Get the designations associated with this department.
+     *
+     * Defines a one-to-many relationship linking this department to its designations.
+     */
+    public function designations(): HasMany
+    {
+        return $this->hasMany(Designation::class);
+    }
 }

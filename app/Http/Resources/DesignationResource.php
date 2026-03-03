@@ -37,6 +37,14 @@ class DesignationResource extends JsonResource
             'name' => $this->name,
 
             /**
+             * The department associated with the employee.
+             */
+            'department' => $this->whenLoaded('department', fn () => [
+                'id' => $this->department->id,
+                'name' => $this->department->name,
+            ]),
+
+            /**
              * Indicates if the designation is active.
              *
              * @example true
