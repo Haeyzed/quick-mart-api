@@ -52,7 +52,7 @@ class UnitController extends Controller
             return response()->forbidden('Permission denied for viewing units list.');
         }
 
-        $units = $this->service->getPaginatedUnits(
+        $units = $this->service->getPaginated(
             $request->validate([
                 /**
                  * Search term to filter units by name or code.
@@ -134,7 +134,7 @@ class UnitController extends Controller
             return response()->forbidden('Permission denied for create unit.');
         }
 
-        $unit = $this->service->createUnit($request->validated());
+        $unit = $this->service->create($request->validated());
 
         return response()->success(
             new UnitResource($unit),
@@ -171,7 +171,7 @@ class UnitController extends Controller
             return response()->forbidden('Permission denied for update unit.');
         }
 
-        $updatedUnit = $this->service->updateUnit($unit, $request->validated());
+        $updatedUnit = $this->service->update($unit, $request->validated());
 
         return response()->success(
             new UnitResource($updatedUnit),
@@ -190,7 +190,7 @@ class UnitController extends Controller
             return response()->forbidden('Permission denied for delete unit.');
         }
 
-        $this->service->deleteUnit($unit);
+        $this->service->delete($unit);
 
         return response()->success(null, 'Unit deleted successfully');
     }
@@ -206,7 +206,7 @@ class UnitController extends Controller
             return response()->forbidden('Permission denied for bulk delete units.');
         }
 
-        $count = $this->service->bulkDeleteUnits($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],

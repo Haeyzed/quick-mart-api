@@ -12,13 +12,12 @@ use Illuminate\Validation\Rule;
  * Class UpdateEmployeeRequest
  *
  * Handles validation and authorization for updating an existing employee record.
+ * Supports updating associated User accounts, Profiles, and attaching/updating Documents.
  */
 class UpdateEmployeeRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool True if authorized, false otherwise.
      */
     public function authorize(): bool
     {
@@ -27,7 +26,6 @@ class UpdateEmployeeRequest extends BaseRequest
 
     /**
      * Prepare the data for validation.
-     * Formats the boolean flags before rules are applied.
      */
     protected function prepareForValidation(): void
     {
@@ -43,124 +41,39 @@ class UpdateEmployeeRequest extends BaseRequest
         }
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, array<int, mixed>>
-     */
     public function rules(): array
     {
         /** @var Employee|null $employee */
         $employee = $this->route('employee');
 
         return [
-            /**
-             * The full name of the employee.
-             *
-             * @example Jane Doe
-             */
+            // ==========================================
+            // ROOT EMPLOYEE DETAILS
+            // ==========================================
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-
-            /**
-             * The unique staff ID or employee code (excluding the current record).
-             *
-             * @example EMP-001
-             */
             'staff_id' => [
-                'sometimes',
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('employees', 'staff_id')->ignore($employee)->withoutTrashed(),
+                'sometimes', 'required', 'string', 'max:100',
+                Rule::unique('employees', 'staff_id')->ignore($employee)->withoutTrashed()
             ],
-
-            /**
-             * The email address for the employee (excluding the current record).
-             *
-             * @example janedoe@example.com
-             */
             'email' => [
-                'nullable',
-                'email',
-                'max:255',
-                Rule::unique('employees', 'email')->ignore($employee)->withoutTrashed(),
+                'nullable', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($employee?->user_id)->withoutTrashed()
             ],
-
-            /**
-             * The phone number of the employee.
-             *
-             * @example +1234567890
-             */
             'phone_number' => ['nullable', 'string', 'max:255'],
-
-            /**
-             * The ID of the associated department.
-             *
-             * @example 1
-             */
             'department_id' => ['sometimes', 'required', 'integer', 'exists:departments,id'],
-
-            /**
-             * The ID of the associated designation.
-             *
-             * @example 2
-             */
             'designation_id' => ['sometimes', 'required', 'integer', 'exists:designations,id'],
-
-            /**
-             * The ID of the associated shift.
-             *
-             * @example 1
-             */
             'shift_id' => ['sometimes', 'required', 'integer', 'exists:shifts,id'],
-
-            /**
-             * The basic salary amount for the employee.
-             *
-             * @example 5000.00
-             */
             'basic_salary' => ['sometimes', 'required', 'numeric', 'min:0'],
-
-            /**
-             * The optional street address.
-             *
-             * @example 123 Main Street
-             */
             'address' => ['nullable', 'string', 'max:255'],
-
-            /**
-             * The associated country ID.
-             *
-             * @example 1
-             */
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
-
-            /**
-             * The associated state ID.
-             *
-             * @example 12
-             */
             'state_id' => ['nullable', 'integer', 'exists:states,id'],
-
-            /**
-             * The associated city ID.
-             *
-             * @example 45
-             */
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'is_active' => ['nullable', 'boolean'],
 
-            /**
-             * The optional image or avatar for the employee.
-             */
-            'image_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-
-            'employee_code' => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('employees', 'employee_code')->ignore($employee)->withoutTrashed(),
-            ],
+            // ==========================================
+            // EMPLOYMENT STATUS & RELATIONS
+            // ==========================================
             'employment_type_id' => ['nullable', 'integer', 'exists:employment_types,id'],
             'joining_date' => ['nullable', 'date'],
             'confirmation_date' => ['nullable', 'date'],
@@ -169,84 +82,63 @@ class UpdateEmployeeRequest extends BaseRequest
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
             'work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
             'salary_structure_id' => ['nullable', 'integer', 'exists:salary_structures,id'],
-            'employment_status' => ['nullable', 'string', 'in:active,suspended,resigned,terminated'],
+            'employment_status' => ['nullable', 'string', 'max:50'],
 
-            /**
-             * Determines if the employee is active.
-             *
-             * @example true
-             */
-            'is_active' => ['nullable', 'boolean'],
-
-            /**
-             * Determines if the employee acts as a sales agent.
-             *
-             * @example false
-             */
+            // ==========================================
+            // SALES AGENT SETTINGS
+            // ==========================================
             'is_sale_agent' => ['nullable', 'boolean'],
-
-            /**
-             * Global commission percentage for the agent.
-             *
-             * @example 5.5
-             */
             'sale_commission_percent' => ['nullable', 'numeric', 'min:0'],
-
-            /**
-             * Tiered commission array for the agent.
-             */
             'sales_target' => ['nullable', 'array'],
             'sales_target.*.sales_from' => ['required_with:sales_target', 'numeric', 'min:0'],
             'sales_target.*.sales_to' => ['required_with:sales_target', 'numeric', 'gt:sales_target.*.sales_from'],
             'sales_target.*.percent' => ['required_with:sales_target', 'numeric', 'min:0', 'max:100'],
 
-            /**
-             * The existing user ID to link.
-             *
-             * @example 5
-             */
+            // ==========================================
+            // NESTED USER ACCOUNT SYNC VALIDATION
+            // ==========================================
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-
-            /**
-             * Nested user object for system account synchronization.
-             */
             'user' => ['nullable', 'array'],
-
-            /**
-             * The unique username for the system account.
-             * Ignores the current user's ID to allow updating without conflict.
-             *
-             * @example janedoe
-             */
             'user.username' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('users', 'username')
-                    ->ignore($employee?->user_id)
-                    ->withoutTrashed(),
+                'nullable', 'string', 'max:255',
+                Rule::unique('users', 'username')->ignore($employee?->user_id)->withoutTrashed()
             ],
-
             'user.password' => ['nullable', 'string', 'min:8'],
-
-            /**
-             * Roles array for Spatie permissions.
-             */
             'user.roles' => ['nullable', 'array'],
             'user.roles.*' => ['integer', 'exists:roles,id'],
-
-            /**
-             * Direct permissions array for Spatie permissions.
-             */
             'user.permissions' => ['nullable', 'array'],
             'user.permissions.*' => ['integer', 'exists:permissions,id'],
+
+            // ==========================================
+            // NESTED PROFILE VALIDATION (PII)
+            // ==========================================
+            'profile' => ['nullable', 'array'],
+            'profile.date_of_birth' => ['nullable', 'date'],
+            'profile.gender' => ['nullable', 'string', 'in:Male,Female,Other'],
+            'profile.marital_status' => ['nullable', 'string'],
+            'profile.national_id' => ['nullable', 'string', 'max:100'],
+            'profile.tax_number' => ['nullable', 'string', 'max:100'],
+            'profile.bank_name' => ['nullable', 'string', 'max:255'],
+            'profile.account_number' => ['nullable', 'string', 'max:100'],
+            'profile.emergency_contact' => ['nullable', 'array'],
+
+            // ==========================================
+            // NESTED DOCUMENTS UPDATE / ATTACHMENT
+            // ==========================================
+            'documents' => ['nullable', 'array'],
+            'documents.*.id' => ['nullable', 'integer', 'exists:employee_documents,id'], // ID determines Update vs Create
+            'documents.*.document_type_id' => ['required_with:documents', 'integer', 'exists:document_types,id'],
+            'documents.*.file' => ['nullable', 'file', 'mimes:pdf,jpeg,png,jpg,webp', 'max:5120'], // Nullable during update
+            'documents.*.name' => ['nullable', 'string', 'max:255'],
+            'documents.*.notes' => ['nullable', 'string'],
+            'documents.*.issue_date' => ['nullable', 'date'],
+            'documents.*.expiry_date' => ['nullable', 'date'],
         ];
     }
 
     /**
      * Configure the validator instance.
-     * Implements advanced cross-row validation for the sales_target array
-     * to ensure tiers do not overlap and progress sequentially.
+     * Implements advanced cross-row validation for the sales_target array.
      *
      * @param  \Illuminate\Validation\Validator  $validator
      */

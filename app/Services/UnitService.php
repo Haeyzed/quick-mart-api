@@ -48,7 +48,7 @@ class UnitService
      * @param  int  $perPage  The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Unit models.
      */
-    public function getPaginatedUnits(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Unit::query()
             ->with('baseUnitRelation')
@@ -105,7 +105,7 @@ class UnitService
      * @param  array<string, mixed>  $data  The validated request data for the new unit.
      * @return Unit The newly created Unit model instance.
      */
-    public function createUnit(array $data): Unit
+    public function create(array $data): Unit
     {
         return DB::transaction(function () use ($data) {
             if (empty($data['base_unit'])) {
@@ -128,7 +128,7 @@ class UnitService
      * @param  array<string, mixed>  $data  The validated update data.
      * @return Unit The freshly updated Unit model instance.
      */
-    public function updateUnit(Unit $unit, array $data): Unit
+    public function update(Unit $unit, array $data): Unit
     {
         return DB::transaction(function () use ($unit, $data) {
             if (empty($data['base_unit'])) {
@@ -151,7 +151,7 @@ class UnitService
      *
      * @throws ConflictHttpException If the unit has associated products or sub-units.
      */
-    public function deleteUnit(Unit $unit): void
+    public function delete(Unit $unit): void
     {
         if ($unit->products()->exists()) {
             throw new ConflictHttpException("Cannot delete unit '{$unit->name}' as it has associated products.");
@@ -173,7 +173,7 @@ class UnitService
      * @param  array<int>  $ids  Array of unit IDs to be deleted.
      * @return int The total count of successfully deleted units.
      */
-    public function bulkDeleteUnits(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $units = Unit::query()->whereIn('id', $ids)->withCount(['products', 'subUnits'])->get();

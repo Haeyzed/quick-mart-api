@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exports\EmployeesExport;
 use App\Imports\EmployeesImport;
 use App\Models\Employee;
+use App\Models\EmployeeDocument;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +15,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
 use RuntimeException;
@@ -40,14 +40,14 @@ class EmployeeService
     /**
      * EmployeeService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
-     * @param  UserRolePermissionService  $userRolePermissionService  Service responsible for syncing roles and permissions.
-     * @param  EmployeeDocumentService  $employeeDocumentService  Service for creating employee documents.
-     * @param  EmployeeOnboardingService  $employeeOnboardingService  Service for starting onboarding.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
+     * @param UserService $userService Service responsible for creating and syncing User accounts.
+     * @param EmployeeDocumentService $employeeDocumentService Service for creating employee documents.
+     * @param EmployeeOnboardingService $employeeOnboardingService Service for starting onboarding automatically.
      */
     public function __construct(
         private readonly UploadService $uploadService,
-        private readonly UserRolePermissionService $userRolePermissionService,
+        private readonly UserService $userService,
         private readonly EmployeeDocumentService $employeeDocumentService,
         private readonly EmployeeOnboardingService $employeeOnboardingService
     ) {}
@@ -55,47 +55,52 @@ class EmployeeService
     /**
      * Get paginated employees based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
      */
-    public function getPaginatedEmployees(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Employee::query()
+        $generalSetting = DB::table('general_settings')->latest()->first();
+
+        if (Auth::check()
+            && !Auth::user()->hasRole('Super Admin')
+            && $generalSetting?->staff_access === 'own') {
+            $filters['user_id'] = Auth::id();
+        }
+
+        return Employee::query()
             ->with([
                 'department:id,name',
                 'designation:id,name',
-                'shift:id,name,start_time,end_time',
-                'country:id,name',
-                'state:id,name',
-                'city:id,name',
-                'user',
+                'shift',
+                'user.roles:id,name',
+                'user.permissions:id,name',
+                'profile',
+                'employmentType',
+                'warehouse:id,name',
+                'workLocation:id,name',
+                'salaryStructure',
+                'reportingManager'
             ])
             ->filter($filters)
-            ->latest();
-
-        //        $generalSetting = DB::table('general_settings')->latest()->first();
-
-        //        if (Auth::check() && $generalSetting?->staff_access === 'own') {
-        //            $query->where('user_id', Auth::id());
-        //        }
-
-        return $query->paginate($perPage);
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**
-     * Get a lightweight list of active employee options.
+     * Get Employee Options for Dropdowns
      *
-     * @param  int|null  $warehouseId  Optional warehouse ID to filter employees (e.g. via user.warehouse_id when applicable).
-     * @return Collection A collection of arrays containing 'value' (id) and 'label' (name).
+     * @param int|null $warehouseId
+     * @return Collection
      */
     public function getOptions(?int $warehouseId = null): Collection
     {
-        $query = Employee::active()->select('id', 'name')->orderBy('name');
-
-        if ($warehouseId !== null) {
-            $query->whereHas('user', fn ($q) => $q->where('warehouse_id', $warehouseId));
-        }
-
-        return $query->get()
+        return Employee::active()
+            ->select('id', 'name')
+            ->when($warehouseId, fn ($q) => $q->whereHas('user', fn ($userQuery) => $userQuery->where('warehouse_id', $warehouseId)))
+            ->orderBy('name')
+            ->get()
             ->map(fn (Employee $employee) => [
                 'value' => $employee->id,
                 'label' => $employee->name,
@@ -103,172 +108,210 @@ class EmployeeService
     }
 
     /**
-     * Create a newly registered employee and manage associated user account, files,
-     * optional documents, and optional onboarding. Extracts nested 'user', 'documents',
-     * and 'onboarding_checklist_template_id' before creating the employee.
+     * Create a newly registered employee and manage associated accounts, profiles, documents, and onboarding.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
+     * @return Employee
      */
-    public function createEmployee(array $data): Employee
+    public function create(array $data): Employee
     {
-        $documents = $data['documents'] ?? [];
-        $onboardingChecklistTemplateId = isset($data['onboarding_checklist_template_id'])
-            ? (int) $data['onboarding_checklist_template_id']
-            : null;
-        unset($data['documents'], $data['onboarding_checklist_template_id']);
+        return DB::transaction(function () use ($data) {
+            // 1. Extract Nested Payloads
+            $userData = $data['user'] ?? [];
+            $profileData = $data['profile'] ?? [];
+            $documentsData = $data['documents'] ?? [];
+            $onboardingTemplateId = $data['onboarding_checklist_template_id'] ?? null;
 
-        return DB::transaction(function () use ($data, $documents, $onboardingChecklistTemplateId) {
-            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
-                $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+            unset($data['user'], $data['profile'], $data['documents'], $data['onboarding_checklist_template_id']);
+
+            // 2. Handle Image Upload First
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
                 $data['image_path'] = $path;
                 $data['image_url'] = $this->uploadService->url($path);
+                unset($data['image']);
             }
 
-            if (! empty($data['user']) && is_array($data['user'])) {
-                $userData = $data['user'];
-
-                $user = User::query()->create([
+            // 3. Create System User Account via UserService
+            if (!empty($userData) && !empty($userData['password'])) {
+                $userPayload = [
                     'name' => $data['name'],
-                    'email' => $data['email'],
-                    'phone_number' => $data['phone_number'] ?? null,
-                    'username' => $userData['username'],
-                    'password' => Hash::make($userData['password']),
+                    'email' => $data['email'] ?? null,
+                    'phone' => $data['phone_number'] ?? null,
+                    'username' => $userData['username'] ?? null,
+                    'password' => $userData['password'],
                     'image_path' => $data['image_path'] ?? null,
                     'image_url' => $data['image_url'] ?? null,
                     'is_active' => true,
-                ]);
+                    'roles' => $userData['roles'] ?? [],
+                    'permissions' => $userData['permissions'] ?? [],
+                ];
 
-                if (! empty($userData['roles']) || ! empty($userData['permissions'])) {
-                    $this->userRolePermissionService->assignRolesAndPermissions(
-                        $user,
-                        $userData['roles'] ?? [],
-                        $userData['permissions'] ?? []
-                    );
-                }
-
+                $user = $this->userService->create($userPayload);
                 $data['user_id'] = $user->id;
             }
 
-            unset($data['user']);
-
+            // 4. Create Root Employee Record
             $employee = Employee::query()->create($data);
 
-            foreach ($documents as $doc) {
-                $this->employeeDocumentService->create([
-                    'employee_id' => $employee->id,
-                    'document_type_id' => (int) $doc['document_type_id'],
-                    'name' => $doc['name'] ?? null,
-                    'file' => $doc['file'] ?? null,
-                    'issue_date' => $doc['issue_date'] ?? null,
-                    'expiry_date' => $doc['expiry_date'] ?? null,
-                    'notes' => $doc['notes'] ?? null,
-                ]);
+            // 5. Create Extended Employee Profile
+            if (!empty($profileData)) {
+                $employee->profile()->create($profileData);
             }
 
-            if ($onboardingChecklistTemplateId !== null) {
-                $this->employeeOnboardingService->startOnboarding($employee->id, $onboardingChecklistTemplateId);
+            // 6. Register Initial Documents
+            foreach ($documentsData as $docPayload) {
+                $docPayload['employee_id'] = $employee->id;
+                $this->employeeDocumentService->create($docPayload);
             }
 
-            return $employee;
+            // 7. Start Automated Onboarding
+            if ($onboardingTemplateId) {
+                $this->employeeOnboardingService->startOnboarding($employee->id, (int) $onboardingTemplateId);
+            }
+
+            return $employee->fresh([
+                'department', 'designation', 'shift', 'user.roles', 'user.permissions',
+                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
+            ]);
         });
     }
 
     /**
-     * Update an existing employee, their associated files, and their linked User account.
-     * Intelligently creates a user if added later, or updates the existing one.
-     * Synchronizes Spatie roles and permissions seamlessly.
+     * Update an existing employee, their associated user account, profile, and documents safely.
      *
-     * @param  array<string, mixed>  $data
+     * @param Employee $employee
+     * @param array<string, mixed> $data
+     * @return Employee
      */
-    public function updateEmployee(Employee $employee, array $data): Employee
+    public function update(Employee $employee, array $data): Employee
     {
         return DB::transaction(function () use ($employee, $data) {
-            if (isset($data['image_path']) && $data['image_path'] instanceof UploadedFile) {
+            // 1. Extract Nested Payloads
+            $userData = $data['user'] ?? null;
+            $profileData = $data['profile'] ?? null;
+            $documentsData = $data['documents'] ?? null;
+
+            unset($data['user'], $data['profile'], $data['documents']);
+
+            // 2. Handle Image Replacement
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 if ($employee->image_path) {
                     $this->uploadService->delete($employee->image_path);
                 }
-                $path = $this->uploadService->upload($data['image_path'], self::IMAGE_PATH);
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
                 $data['image_path'] = $path;
                 $data['image_url'] = $this->uploadService->url($path);
+                unset($data['image']);
             }
 
-            if (array_key_exists('user', $data) || $employee->user_id) {
-                $userData = $data['user'];
+            // 3. Manage/Sync Associated User Account via UserService
+            if ($userData !== null || $employee->user_id) {
+                $userData = $userData ?? [];
 
-                if (! $employee->user_id && ! empty($userData['password'])) {
-                    $user = User::query()->create([
+                if (!$employee->user_id && !empty($userData['password'])) {
+                    // Scenario A: User didn't exist before, but HR wants to create one now
+                    $userPayload = [
                         'name' => $data['name'] ?? $employee->name,
                         'email' => $data['email'] ?? $employee->email,
-                        'phone_number' => $data['phone_number'] ?? $employee->phone_number,
+                        'phone' => $data['phone_number'] ?? $employee->phone_number,
                         'username' => $userData['username'] ?? null,
-                        'password' => Hash::make($userData['password']),
+                        'password' => $userData['password'],
                         'image_path' => $data['image_path'] ?? $employee->image_path,
                         'image_url' => $data['image_url'] ?? $employee->image_url,
                         'is_active' => true,
-                    ]);
+                        'roles' => $userData['roles'] ?? [],
+                        'permissions' => $userData['permissions'] ?? [],
+                    ];
 
-                    if (! empty($userData['roles']) || ! empty($userData['permissions'])) {
-                        $this->userRolePermissionService->assignRolesAndPermissions(
-                            $user,
-                            $userData['roles'] ?? [],
-                            $userData['permissions'] ?? []
-                        );
-                    }
-
+                    $user = $this->userService->create($userPayload);
                     $data['user_id'] = $user->id;
                 } elseif ($employee->user_id) {
+                    // Scenario B: Employee already has an account, sync updates
                     $user = User::query()->find($employee->user_id);
+
                     if ($user) {
                         $updatePayload = [
-                            'name' => $data['name'] ?? $employee->name,
-                            'email' => $data['email'] ?? $employee->email,
-                            'phone_number' => $data['phone_number'] ?? $employee->phone_number,
+                            'name' => $data['name'] ?? $user->name,
+                            'email' => $data['email'] ?? $user->email,
+                            'phone_number' => $data['phone_number'] ?? $user->phone_number,
                         ];
 
-                        if (! empty($userData['username'])) {
+                        if (!empty($userData['username'])) {
                             $updatePayload['username'] = $userData['username'];
                         }
 
+                        // Sync updated image paths down to the user object
                         if (array_key_exists('image_path', $data)) {
                             $updatePayload['image_path'] = $data['image_path'];
                             $updatePayload['image_url'] = $data['image_url'] ?? null;
                         }
 
-                        if (! empty($userData['password'])) {
-                            $updatePayload['password'] = Hash::make($userData['password']);
+                        if (!empty($userData['password'])) {
+                            $updatePayload['password'] = $userData['password'];
                         }
 
-                        $user->update($updatePayload);
-
-                        if (isset($userData['roles']) || isset($userData['permissions'])) {
-                            $this->userRolePermissionService->assignRolesAndPermissions(
-                                $user,
-                                $userData['roles'] ?? [],
-                                $userData['permissions'] ?? []
-                            );
+                        if (isset($userData['roles'])) {
+                            $updatePayload['roles'] = $userData['roles'];
                         }
+
+                        if (isset($userData['permissions'])) {
+                            $updatePayload['permissions'] = $userData['permissions'];
+                        }
+
+                        $this->userService->update($user, $updatePayload);
                     }
                 }
             }
 
-            unset($data['user']);
-
+            // 4. Update Root Employee
             $employee->update($data);
 
-            return $employee->fresh(['department', 'designation', 'company', 'user']);
+            // 5. Update or Create Extended Profile
+            if ($profileData !== null) {
+                $employee->profile()->updateOrCreate(['employee_id' => $employee->id], $profileData);
+            }
+
+            // 6. Update or Create Documents
+            if ($documentsData !== null) {
+                foreach ($documentsData as $docPayload) {
+                    if (!empty($docPayload['id'])) {
+                        // Find and update existing document belonging to this employee
+                        $existingDoc = $employee->documents()->find($docPayload['id']);
+
+                        // Add the strict instanceof check to satisfy the IDE / Static Analyzer
+                        if ($existingDoc instanceof EmployeeDocument) {
+                            $this->employeeDocumentService->update($existingDoc, $docPayload);
+                        }
+                    } else {
+                        // Create a brand-new document
+                        $docPayload['employee_id'] = $employee->id;
+                        $this->employeeDocumentService->create($docPayload);
+                    }
+                }
+            }
+
+            return $employee->fresh([
+                'department', 'designation', 'shift', 'user.roles', 'user.permissions',
+                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
+            ]);
         });
     }
 
     /**
      * Delete an employee, their files, and soft-delete their user account.
+     *
+     * @param Employee $employee
+     * @return void
      */
-    public function deleteEmployee(Employee $employee): void
+    public function delete(Employee $employee): void
     {
         DB::transaction(function () use ($employee) {
+            // Soft delete user account via UserService, safeguarding Super Admins
             if ($employee->user_id) {
                 $user = User::query()->find($employee->user_id);
-                if ($user && $user->id > 2) {
-                    $user->update(['is_active' => false]);
+                if ($user && !$user->hasRole('Super Admin')) {
+                    $this->userService->delete($user);
                 }
             }
 
@@ -283,16 +326,17 @@ class EmployeeService
     /**
      * Bulk delete multiple employees safely.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
+     * @return int
      */
-    public function bulkDeleteEmployees(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $employees = Employee::query()->whereIn('id', $ids)->get();
             $count = 0;
 
             foreach ($employees as $employee) {
-                $this->deleteEmployee($employee);
+                $this->delete($employee);
                 $count++;
             }
 
@@ -301,9 +345,26 @@ class EmployeeService
     }
 
     /**
-     * Import multiple employees from an uploaded file.
+     * Update the active status for multiple employees.
+     *
+     * @param array<int> $ids
+     * @param bool $isActive
+     * @return int
      */
-    public function importEmployees(UploadedFile $file): void
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return DB::transaction(function () use ($ids, $isActive) {
+            return Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+        });
+    }
+
+    /**
+     * Import multiple employees from an uploaded file.
+     *
+     * @param UploadedFile $file
+     * @return void
+     */
+    public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new EmployeesImport, $file);
     }
@@ -311,14 +372,15 @@ class EmployeeService
     /**
      * Download an employees CSV template.
      *
+     * @return string
      * @throws RuntimeException
      */
     public function download(): string
     {
         $fileName = 'employees-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template employees not found.');
         }
 
@@ -328,14 +390,16 @@ class EmployeeService
     /**
      * Generate an export file containing employee data.
      *
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters
+     * @param array<int> $ids
+     * @param string $format
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters
+     * @return string
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'employees_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'employees_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

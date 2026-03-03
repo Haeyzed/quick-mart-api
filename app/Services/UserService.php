@@ -4,108 +4,251 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exports\UsersExport;
+use App\Imports\UsersImport;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 /**
- * UserService
+ * Class UserService
  *
- * Handles all business logic for user operations, including role and permission management.
- * Follows the same structure as CustomerService: no permission checks in service (controller handles auth).
+ * Handles all core business logic and database interactions for Users.
+ * Delegates role and permission assignments to the UserRolePermissionService.
+ * Supports pagination, importing, exporting, and bulk operations.
  */
 class UserService extends BaseService
 {
+    /**
+     * The application path where user images are stored.
+     */
+    private const IMAGE_PATH = 'images/users';
+
+    /**
+     * The application path where import template files are stored.
+     */
+    private const TEMPLATE_PATH = 'Imports/Templates';
+
+    /**
+     * UserService constructor.
+     *
+     * @param UserRolePermissionService $userRolePermissionService
+     */
     public function __construct(
         private readonly UserRolePermissionService $userRolePermissionService
     ) {}
 
     /**
-     * Get list of all active users (id, name, email).
+     * Get paginated users based on filters.
      *
-     * @return Collection<int, User>
+     * @param array<string, mixed> $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
      */
-    public function getUsers(): Collection
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
-        return User::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+        $query = User::query()
+            ->with(['roles', 'permissions', 'biller', 'warehouse'])
+            ->filter($filters)
+            ->latest();
+
+        return $query->paginate($perPage);
     }
 
     /**
-     * Retrieve a single user by instance.
+     * Get User Options for Dropdowns
+     *
+     * Retrieve a simplified list of active users.
+     *
+     * @param int|null $warehouseId
+     * @return SupportCollection
+     */
+    public function getOptions(?int $warehouseId = null): SupportCollection
+    {
+        return User::active()
+            ->select('id', 'name')
+            ->when($warehouseId, fn($q) => $q->where('warehouse_id', $warehouseId))
+            ->orderBy('name')
+            ->get()
+            ->map(fn(User $user) => [
+                'value' => $user->id,
+                'label' => $user->name,
+            ]);
+    }
+
+    /**
+     * Retrieve a single user instance with eager-loaded roles and permissions.
+     *
+     * @param User $user
+     * @return User
      */
     public function getUser(User $user): User
     {
-        return $user->fresh(['roles', 'permissions']);
+        return $user->fresh(['roles', 'permissions', 'biller', 'warehouse']);
     }
 
     /**
-     * Create a new user.
+     * Create a newly registered user, handle their image upload, and assign roles/permissions.
+     * Automatically handles password hashing.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
+     * @return User
      */
-    public function createUser(array $data): User
+    public function create(array $data): User
     {
-        $user = User::create($data);
+        return DB::transaction(function () use ($data) {
+            // Handle standalone User image uploads
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+                $data['image_path'] = $path;
+                $data['image_url'] = $this->uploadService->url($path);
+                unset($data['image']);
+            }
 
-        if (! empty($data['roles']) || ! empty($data['permissions'])) {
-            $this->userRolePermissionService->assignRolesAndPermissions(
-                $user,
-                $data['roles'] ?? null,
-                $data['permissions'] ?? null
-            );
-        }
+            // Hash the password automatically if provided
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
 
-        return $user->fresh(['roles', 'permissions']);
+            $user = User::create($data);
+
+            // Sync Roles and Permissions
+            if (isset($data['roles']) || isset($data['permissions'])) {
+                $this->userRolePermissionService->assignRolesAndPermissions(
+                    $user,
+                    $data['roles'] ?? [],
+                    $data['permissions'] ?? []
+                );
+            }
+
+            return $user->fresh(['roles', 'permissions']);
+        });
     }
 
     /**
-     * Update an existing user.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function updateUser(User $user, array $data): User
-    {
-        if (array_key_exists('password', $data) && empty($data['password'])) {
-            unset($data['password']);
-        }
-        $user->update($data);
-
-        if (array_key_exists('roles', $data) || array_key_exists('permissions', $data)) {
-            $this->userRolePermissionService->assignRolesAndPermissions(
-                $user,
-                $data['roles'] ?? null,
-                $data['permissions'] ?? null
-            );
-        }
-
-        return $user->fresh(['roles', 'permissions']);
-    }
-
-    /**
-     * Delete a user (soft delete or hard delete depending on User model).
-     */
-    public function deleteUser(User $user): void
-    {
-        $user->delete();
-    }
-
-    /**
-     * Assign roles and permissions to a user.
-     *
-     * This method handles:
-     * - Assigning multiple roles
-     * - Collecting permissions from roles
-     * - Adding direct permissions
-     * - Automatic deduplication
+     * Update an existing user, process replacement uploads, and sync their roles/permissions.
+     * Automatically hashes a new password if one is provided.
      *
      * @param User $user
-     * @param array<int|string|Role>|null $roles Array of role IDs, names, or Role model instances
-     * @param array<int|string|Permission>|null $directPermissions Array of permission IDs, names, or Permission model instances
+     * @param array<string, mixed> $data
+     * @return User
+     */
+    public function update(User $user, array $data): User
+    {
+        return DB::transaction(function () use ($user, $data) {
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                if ($user->image_path) {
+                    $this->uploadService->delete($user->image_path);
+                }
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+                $data['image_path'] = $path;
+                $data['image_url'] = $this->uploadService->url($path);
+                unset($data['image']);
+            }
+
+            // Hash the password if explicitly provided, otherwise remove it from payload
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+
+            $user->update($data);
+
+            // Sync updated Roles and Permissions
+            if (isset($data['roles']) || isset($data['permissions'])) {
+                $this->userRolePermissionService->assignRolesAndPermissions(
+                    $user,
+                    $data['roles'] ?? [],
+                    $data['permissions'] ?? []
+                );
+            }
+
+            return $user->fresh(['roles', 'permissions']);
+        });
+    }
+
+    /**
+     * Soft delete a user from the system.
+     *
+     * @param User $user
+     * @return void
+     */
+    public function delete(User $user): void
+    {
+        DB::transaction(fn () => $user->delete());
+    }
+
+    /**
+     * Import multiple users from an uploaded file.
+     *
+     * @param UploadedFile $file
+     * @return void
+     */
+    public function import(UploadedFile $file): void
+    {
+        ExcelFacade::import(new UsersImport, $file);
+    }
+
+    /**
+     * Download a users CSV template.
+     *
+     * @return string
+     * @throws RuntimeException
+     */
+    public function download(): string
+    {
+        $fileName = 'users-sample.csv';
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+
+        if (!File::exists($path)) {
+            throw new RuntimeException('Template users not found.');
+        }
+
+        return $path;
+    }
+
+    /**
+     * Generate an export file containing user data.
+     *
+     * @param array<int> $ids
+     * @param string $format
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters
+     * @return string
+     */
+    public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
+    {
+        $fileName = 'users_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
+
+        ExcelFacade::store(
+            new UsersExport($ids, $columns, $filters),
+            $relativePath,
+            'public',
+            $writerType
+        );
+
+        return $relativePath;
+    }
+
+    /**
+     * Assign specific roles and direct permissions to a user.
+     *
+     * @param User $user
+     * @param array<int|string|Role>|null $roles
+     * @param array<int|string|Permission>|null $directPermissions
      * @return void
      */
     public function assignRolesAndPermissions(
@@ -129,7 +272,7 @@ class UserService extends BaseService
     }
 
     /**
-     * Get all permissions for a user.
+     * Get all aggregated permissions for a user.
      *
      * @param User $user
      * @return SupportCollection<int, Permission>
@@ -140,7 +283,7 @@ class UserService extends BaseService
     }
 
     /**
-     * Get all roles for a user.
+     * Get all roles assigned to a user.
      *
      * @param User $user
      * @return Collection<int, Role>
@@ -162,4 +305,3 @@ class UserService extends BaseService
         return $this->userRolePermissionService->checkPermission($user, $permission);
     }
 }
-

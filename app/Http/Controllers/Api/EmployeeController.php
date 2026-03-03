@@ -52,7 +52,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for viewing employees list.');
         }
 
-        $employees = $this->service->getPaginatedEmployees(
+        $employees = $this->service->getPaginated(
             $request->validate([
                 /**
                  * Search term to filter employees by name, email, phone, or staff ID.
@@ -127,7 +127,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for create employee.');
         }
 
-        $employee = $this->service->createEmployee($request->validated());
+        $employee = $this->service->create($request->validated());
 
         return response()->success(
             new EmployeeResource($employee),
@@ -164,7 +164,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for update employee.');
         }
 
-        $updatedEmployee = $this->service->updateEmployee($employee, $request->validated());
+        $updatedEmployee = $this->service->update($employee, $request->validated());
 
         return response()->success(
             new EmployeeResource($updatedEmployee->load(['department', 'designation', 'shift', 'country', 'state', 'city'])),
@@ -183,7 +183,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for delete employee.');
         }
 
-        $this->service->deleteEmployee($employee);
+        $this->service->delete($employee);
 
         return response()->success(null, 'Employee deleted successfully');
     }
@@ -199,7 +199,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for bulk delete employees.');
         }
 
-        $count = $this->service->bulkDeleteEmployees($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
@@ -256,7 +256,7 @@ class EmployeeController extends Controller
             return response()->forbidden('Permission denied for import employees.');
         }
 
-        $this->service->importEmployees($request->file('file'));
+        $this->service->import($request->file('file'));
 
         return response()->success(null, 'Employees imported successfully');
     }
