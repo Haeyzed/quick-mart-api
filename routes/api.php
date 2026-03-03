@@ -289,6 +289,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('export', [DepartmentController::class, 'export'])->name('export');
         Route::get('download', [DepartmentController::class, 'download'])->name('download');
         Route::get('options', [DepartmentController::class, 'options'])->name('options');
+        Route::get('{department}/desgnations', [DepartmentController::class, 'designations'])->name('designations');
     });
     Route::apiResource('departments', DepartmentController::class);
 

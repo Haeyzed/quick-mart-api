@@ -109,6 +109,23 @@ class DepartmentController extends Controller
         return response()->success($this->service->getOptions(), 'Department options retrieved successfully');
     }
 
+    
+    /**
+     * Get designation options (value/label) for the specified department.
+     *
+     * @param  Department  $department  Department model (route binding).
+     */
+    public function designations(Department $department): JsonResponse
+    {
+        if (auth()->user()->denies('view designations')) {
+            return response()->forbidden('Permission denied for viewing designations by department.');
+        }
+
+        $options = $this->service->getDesignationOptionsByDepartment($department);
+
+        return response()->success($options, 'Designations retrieved successfully');
+    }
+
     /**
      * Create Department
      *

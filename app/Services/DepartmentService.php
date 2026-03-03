@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exports\DepartmentsExport;
 use App\Imports\DepartmentsImport;
 use App\Models\Department;
+use App\Models\Designation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -58,6 +59,23 @@ class DepartmentService
             ->map(fn (Department $department) => [
                 'value' => $department->id,
                 'label' => $department->name,
+            ]);
+    }
+
+    /**
+     * Get designation options (value/label) for a given department.
+     *
+     * @return Collection<int, array{value: int, label: string}>
+     */
+    public function getDesignationOptionsByDepartment(Department $department): Collection
+    {
+        return $department->designations()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Designation $designation) => [
+                'value' => $designation->id,
+                'label' => $designation->name,
             ]);
     }
 
