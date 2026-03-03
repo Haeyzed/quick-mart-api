@@ -437,6 +437,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('bulk-destroy', [DocumentTypeController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('bulk-activate', [DocumentTypeController::class, 'bulkActivate'])->name('bulk-activate');
         Route::post('bulk-deactivate', [DocumentTypeController::class, 'bulkDeactivate'])->name('bulk-deactivate');
+        Route::post('import', [DocumentTypeController::class, 'import'])->name('import');
+        Route::post('export', [DocumentTypeController::class, 'export'])->name('export');
+        Route::get('download', [DocumentTypeController::class, 'download'])->name('download');
         Route::get('options', [DocumentTypeController::class, 'options'])->name('options');
     });
     Route::apiResource('document-types', DocumentTypeController::class);
