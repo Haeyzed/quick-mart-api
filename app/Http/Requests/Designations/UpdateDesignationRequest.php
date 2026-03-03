@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Designations;
 
 use App\Models\Designation;
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for updating an existing designation.
  */
-class UpdateDesignationRequest extends FormRequest
+class UpdateDesignationRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -58,6 +58,8 @@ class UpdateDesignationRequest extends FormRequest
                 'max:255',
                 Rule::unique('designations', 'name')->ignore($designation)->withoutTrashed(),
             ],
+            
+            'department_id' => ['sometimes', 'required', 'integer', 'exists:departments,id'],
 
             /**
              * Indicates whether the designation is active.

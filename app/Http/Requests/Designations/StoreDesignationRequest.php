@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Designations;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for creating a new designation.
  */
-class StoreDesignationRequest extends FormRequest
+class StoreDesignationRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -53,6 +53,9 @@ class StoreDesignationRequest extends FormRequest
                 'max:255',
                 Rule::unique('designations', 'name')->withoutTrashed(),
             ],
+
+            
+            'department_id' => ['required', 'integer', 'exists:departments,id'],
 
             /**
              * Indicates whether the designation is active.
