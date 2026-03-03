@@ -18,6 +18,7 @@ class EmployeeResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -247,6 +248,21 @@ class EmployeeResource extends JsonResource
                 'bank_name' => $this->profile->bank_name,
                 'account_number' => $this->profile->account_number,
             ]),
+
+            /**
+             * The documents associated with the employee.
+             */
+            'documents' => $this->whenLoaded('documents', fn () => $this->documents->map(fn ($doc) => [
+                'id' => $doc->id,
+                'document_type_id' => $doc->document_type_id,
+                'name' => $doc->name,
+                'file_path' => $doc->file_path,
+                'file_url' => $doc->file_url,
+                'issue_date' => $doc->issue_date?->format('Y-m-d'),
+                'expiry_date' => $doc->expiry_date?->format('Y-m-d'),
+                'notes' => $doc->notes,
+                'is_expired' => $doc->isExpired(),
+            ])),
 
             /**
              * The date and time when the record was created.

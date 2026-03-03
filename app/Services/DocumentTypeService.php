@@ -35,6 +35,7 @@ class DocumentTypeService
             ->map(fn (DocumentType $type) => [
                 'value' => $type->id,
                 'label' => $type->name,
+                'requires_expiry' => $type->requires_expiry,
             ]);
     }
 

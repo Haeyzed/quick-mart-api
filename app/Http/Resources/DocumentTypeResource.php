@@ -57,6 +57,13 @@ class DocumentTypeResource extends JsonResource
             'is_active' => (bool) $this->is_active,
 
             /**
+             * The human-readable active status.
+             *
+             * @example active
+             */
+            'active_status' => $this->is_active ? 'active' : 'inactive',
+
+            /**
              * The date and time when the document type was created.
              *
              * @example 2024-01-01T12:00:00Z
