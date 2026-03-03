@@ -48,6 +48,7 @@ class DesignationService
     public function getPaginatedDesignations(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Designation::query()
+            ->with(['department'])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
