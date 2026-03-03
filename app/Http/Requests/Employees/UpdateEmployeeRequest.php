@@ -114,7 +114,7 @@ class UpdateEmployeeRequest extends BaseRequest
             // ==========================================
             'profile' => ['nullable', 'array'],
             'profile.date_of_birth' => ['nullable', 'date'],
-            'profile.gender' => ['nullable', 'string', 'in:Male,Female,Other'],
+            'profile.gender' => ['nullable', 'string', 'in:male,female,other'],
             'profile.marital_status' => ['nullable', 'string'],
             'profile.national_id' => ['nullable', 'string', 'max:100'],
             'profile.tax_number' => ['nullable', 'string', 'max:100'],
