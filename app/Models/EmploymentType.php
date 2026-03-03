@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class EmploymentType
@@ -56,7 +58,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class EmploymentType extends Model
+class EmploymentType extends Model implements AuditableContract
 {
     use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
