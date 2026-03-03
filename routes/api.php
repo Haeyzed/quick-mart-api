@@ -440,6 +440,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('options', [DocumentTypeController::class, 'options'])->name('options');
     });
     Route::apiResource('document-types', DocumentTypeController::class);
+
     Route::apiResource('employee-documents', EmployeeDocumentController::class);
 
     // Performance Reviews
