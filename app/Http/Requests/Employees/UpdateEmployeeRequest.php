@@ -126,7 +126,7 @@ class UpdateEmployeeRequest extends BaseRequest
      *
      * @param Validator $validator
      */
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             $salesTargets = $this->input('sales_target');

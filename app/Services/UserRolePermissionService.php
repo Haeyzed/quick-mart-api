@@ -113,12 +113,12 @@ class UserRolePermissionService extends BaseService
             if ($permission instanceof Permission) {
                 $normalized->push($permission);
             } elseif (is_numeric($permission)) {
-                $model = Permission::findById($permission);
+                $model = Permission::find($permission);
                 if ($model) {
                     $normalized->push($model);
                 }
             } elseif (is_string($permission)) {
-                $model = Permission::findByName($permission);
+                $model = Permission::where('name', $permission)->whereIn('guard_name', ['web', 'sanctum'])->first();
                 if ($model) {
                     $normalized->push($model);
                 }
