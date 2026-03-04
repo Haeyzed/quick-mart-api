@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * WhatsappSetting Model
@@ -23,18 +27,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string $permanent_access_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereBusinessAccountId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting wherePermanentAccessToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting wherePhoneNumberId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WhatsappSetting whereUpdatedAt($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|WhatsappSetting newModelQuery()
+ * @method static Builder<static>|WhatsappSetting newQuery()
+ * @method static Builder<static>|WhatsappSetting query()
+ * @method static Builder<static>|WhatsappSetting whereBusinessAccountId($value)
+ * @method static Builder<static>|WhatsappSetting whereCreatedAt($value)
+ * @method static Builder<static>|WhatsappSetting whereId($value)
+ * @method static Builder<static>|WhatsappSetting wherePermanentAccessToken($value)
+ * @method static Builder<static>|WhatsappSetting wherePhoneNumberId($value)
+ * @method static Builder<static>|WhatsappSetting whereUpdatedAt($value)
+ * @mixin Eloquent
  */
 class WhatsappSetting extends Model implements AuditableContract
 {

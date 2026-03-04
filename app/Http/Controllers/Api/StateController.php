@@ -37,11 +37,13 @@ class StateController extends Controller
     /**
      * StateController constructor.
      *
-     * @param  StateService  $service  Service handling state business logic.
+     * @param StateService $service Service handling state business logic.
      */
     public function __construct(
         private readonly StateService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List States
@@ -110,7 +112,7 @@ class StateController extends Controller
     /**
      * Get city options (value/label) for the specified state.
      *
-     * @param  State  $state  State model (route binding).
+     * @param State $state State model (route binding).
      */
     public function cities(State $state): JsonResponse
     {
@@ -234,13 +236,13 @@ class StateController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -250,7 +252,7 @@ class StateController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'states_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'states_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your State Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -259,7 +261,7 @@ class StateController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

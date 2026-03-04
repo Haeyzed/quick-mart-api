@@ -26,21 +26,6 @@ class UpdateUnitRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     *
-     * This method is called before the validation rules are evaluated.
-     * Useful for casting types or manipulating the request payload before validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge([
-                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -109,5 +94,20 @@ class UpdateUnitRequest extends FormRequest
              */
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     *
+     * This method is called before the validation rules are evaluated.
+     * Useful for casting types or manipulating the request payload before validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

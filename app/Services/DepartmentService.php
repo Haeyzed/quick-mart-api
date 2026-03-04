@@ -33,8 +33,8 @@ class DepartmentService
     /**
      * Get paginated departments based on filters.
      *
-     * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
+     * @param array<string, mixed> $filters
+     * @param int $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginatedDepartments(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -56,7 +56,7 @@ class DepartmentService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Department $department) => [
+            ->map(fn(Department $department) => [
                 'value' => $department->id,
                 'label' => $department->name,
             ]);
@@ -73,7 +73,7 @@ class DepartmentService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Designation $designation) => [
+            ->map(fn(Designation $designation) => [
                 'value' => $designation->id,
                 'label' => $designation->name,
             ]);
@@ -82,7 +82,7 @@ class DepartmentService
     /**
      * Create a newly registered department.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Department The newly created Department model instance.
      */
     public function createDepartment(array $data): Department
@@ -95,8 +95,8 @@ class DepartmentService
     /**
      * Update an existing department's information.
      *
-     * @param  Department  $department  The department model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Department $department The department model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Department The freshly updated Department model instance.
      */
     public function updateDepartment(Department $department, array $data): Department
@@ -111,7 +111,7 @@ class DepartmentService
     /**
      * Delete a department.
      *
-     * @param  Department  $department
+     * @param Department $department
      * @return void
      */
     public function deleteDepartment(Department $department): void
@@ -124,7 +124,7 @@ class DepartmentService
     /**
      * Bulk delete multiple departments.
      *
-     * @param  array<int>  $ids  Array of department IDs to be deleted.
+     * @param array<int> $ids Array of department IDs to be deleted.
      * @return int The total count of successfully deleted departments.
      */
     public function bulkDeleteDepartments(array $ids): int
@@ -137,8 +137,8 @@ class DepartmentService
     /**
      * Update the active status for multiple departments.
      *
-     * @param  array<int>  $ids  Array of department IDs to update.
-     * @param  bool  $isActive  The new active status.
+     * @param array<int> $ids Array of department IDs to update.
+     * @param bool $isActive The new active status.
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -149,7 +149,7 @@ class DepartmentService
     /**
      * Import multiple departments from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      * @return void
      */
     public function importDepartments(UploadedFile $file): void
@@ -166,9 +166,9 @@ class DepartmentService
     public function download(): string
     {
         $fileName = 'departments-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template departments not found.');
         }
 
@@ -178,16 +178,16 @@ class DepartmentService
     /**
      * Generate an export file containing department data.
      *
-     * @param  array<int>  $ids  Specific department IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific department IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'departments_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'departments_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

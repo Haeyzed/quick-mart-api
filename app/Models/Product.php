@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Carbon\Carbon;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,10 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Product Model
- *
+ * 
  * Represents a product in the inventory system with support for variants, batches, and multiple pricing.
  *
  * @property int $id
@@ -103,15 +105,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, ProductBatch> $batches
  * @property-read Collection<int, ProductVariant> $productVariants
  * @property-read Collection<int, ProductWarehouse> $productWarehouses
- *
  * @method static Builder|Product active()
  * @method static Builder|Product activeStandard()
  * @method static Builder|Product activeFeatured()
  * @method static Builder|Product featured()
  * @method static Builder|Product online()
- *
  * @property string|null $deleted_at
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $batches_count
  * @property-read int|null $product_variants_count
@@ -120,7 +120,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read int|null $sales_count
  * @property-read int|null $variants_count
  * @property-read int|null $warehouses_count
- *
  * @method static Builder<static>|Product newModelQuery()
  * @method static Builder<static>|Product newQuery()
  * @method static Builder<static>|Product query()
@@ -190,8 +189,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Product whereWholesalePrice($value)
  * @method static Builder<static>|Product whereWoocommerceMediaId($value)
  * @method static Builder<static>|Product whereWoocommerceProductId($value)
- *
- * @mixin \Eloquent
+ * @method static Builder<static>|Product whereImagePath($value)
+ * @mixin Eloquent
  */
 class Product extends Model implements AuditableContract
 {
@@ -294,12 +293,12 @@ class Product extends Model implements AuditableContract
         $hasEcommerce = in_array('ecommerce', $modules);
         $hasRestaurant = in_array('restaurant', $modules);
 
-        if (! $hasEcommerce && ! $hasRestaurant) {
+        if (!$hasEcommerce && !$hasRestaurant) {
             return;
         }
 
         // Generate slug if name exists and slug is missing
-        if ($this->name && ! $this->slug) {
+        if ($this->name && !$this->slug) {
             $this->slug = Str::slug($this->name, '-');
         }
 
@@ -454,7 +453,7 @@ class Product extends Model implements AuditableContract
     public function getEffectivePrice(): float
     {
         return $this->isOnPromotion() && $this->promotion_price
-            ? (float) $this->promotion_price
+            ? (float)$this->promotion_price
             : $this->price;
     }
 
@@ -463,7 +462,7 @@ class Product extends Model implements AuditableContract
      */
     public function isOnPromotion(): bool
     {
-        if (! $this->promotion) {
+        if (!$this->promotion) {
             return false;
         }
 
@@ -487,7 +486,7 @@ class Product extends Model implements AuditableContract
      */
     public function isLowStock(): bool
     {
-        if (! $this->alert_quantity || ! $this->track_inventory) {
+        if (!$this->alert_quantity || !$this->track_inventory) {
             return false;
         }
 

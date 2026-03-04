@@ -20,13 +20,6 @@ class UpdateEmploymentTypeRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -45,5 +38,12 @@ class UpdateEmploymentTypeRequest extends BaseRequest
             ],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

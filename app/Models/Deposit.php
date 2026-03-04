@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Deposit
- *
+ * 
  * Represents a customer deposit transaction. Handles the underlying data
  * structure, relationships, and specific query scopes for deposit entities.
  *
@@ -26,17 +29,14 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|Deposit newModelQuery()
  * @method static Builder|Deposit newQuery()
  * @method static Builder|Deposit query()
  * @method static Builder|Deposit filter(array $filters)
- *
- * @property-read \App\Models\Customer $customer
- * @property-read \App\Models\User $user
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Customer $customer
+ * @property-read User $user
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|Deposit customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Deposit last30Days(string $column = 'created_at')
  * @method static Builder<static>|Deposit last7Days(string $column = 'created_at')
@@ -54,8 +54,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Deposit whereUserId($value)
  * @method static Builder<static>|Deposit yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Deposit yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Deposit extends Model implements AuditableContract
 {
@@ -87,23 +86,23 @@ class Deposit extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                ! empty($filters['customer_id']),
-                fn (Builder $q) => $q->where('customer_id', $filters['customer_id'])
+                !empty($filters['customer_id']),
+                fn(Builder $q) => $q->where('customer_id', $filters['customer_id'])
             )
             ->when(
-                ! empty($filters['user_id']),
-                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
+                !empty($filters['user_id']),
+                fn(Builder $q) => $q->where('user_id', $filters['user_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('note', 'like', $term)
@@ -113,8 +112,8 @@ class Deposit extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

@@ -48,7 +48,9 @@ class EmployeesExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {}
+    )
+    {
+    }
 
     /**
      * Prepare the query for the export.

@@ -19,19 +19,19 @@ class CandidateService
     /**
      * Get paginated candidates based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = Candidate::query()->with(['jobOpening:id,title,status'])->latest();
-        if (! empty($filters['job_opening_id'])) {
-            $query->where('job_opening_id', (int) $filters['job_opening_id']);
+        if (!empty($filters['job_opening_id'])) {
+            $query->where('job_opening_id', (int)$filters['job_opening_id']);
         }
-        if (! empty($filters['stage'])) {
+        if (!empty($filters['stage'])) {
             $query->where('stage', $filters['stage']);
         }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
+        if (!empty($filters['search'])) {
+            $term = '%' . $filters['search'] . '%';
             $query->where('name', 'like', $term)->orWhere('email', 'like', $term);
         }
 
@@ -41,7 +41,7 @@ class CandidateService
     /**
      * Create a newly registered candidate.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Candidate The newly created Candidate model instance.
      */
     public function create(array $data): Candidate
@@ -56,8 +56,8 @@ class CandidateService
     /**
      * Update an existing candidate.
      *
-     * @param  Candidate  $candidate  The candidate model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Candidate $candidate The candidate model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Candidate The freshly updated Candidate model instance.
      */
     public function update(Candidate $candidate, array $data): Candidate
@@ -77,6 +77,6 @@ class CandidateService
      */
     public function delete(Candidate $candidate): void
     {
-        DB::transaction(fn () => $candidate->delete());
+        DB::transaction(fn() => $candidate->delete());
     }
 }

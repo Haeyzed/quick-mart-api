@@ -36,7 +36,9 @@ class PermissionController extends Controller
 {
     public function __construct(
         private readonly PermissionService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Permissions
@@ -271,14 +273,14 @@ class PermissionController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'permissions_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'permissions_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Permissions Export Is Ready',
                     $generalSetting,
                     $mailSetting
                 )
             );
 
-            return response()->success(null, 'Export is being processed and will be sent to email: '.$user->email);
+            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
         }
 
         return response()->error('Invalid export method provided.');

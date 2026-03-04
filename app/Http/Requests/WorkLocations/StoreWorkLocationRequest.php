@@ -14,13 +14,6 @@ class StoreWorkLocationRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     public function rules(): array
     {
         return [
@@ -28,5 +21,12 @@ class StoreWorkLocationRequest extends BaseRequest
             'code' => ['nullable', 'string', 'max:50', Rule::unique('work_locations', 'code')->withoutTrashed()],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

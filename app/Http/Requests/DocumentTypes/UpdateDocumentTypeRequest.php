@@ -23,19 +23,6 @@ class UpdateDocumentTypeRequest extends BaseRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('requires_expiry')) {
-            $this->merge(['requires_expiry' => filter_var($this->requires_expiry, FILTER_VALIDATE_BOOLEAN)]);
-        }
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -71,5 +58,18 @@ class UpdateDocumentTypeRequest extends BaseRequest
              */
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('requires_expiry')) {
+            $this->merge(['requires_expiry' => filter_var($this->requires_expiry, FILTER_VALIDATE_BOOLEAN)]);
+        }
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

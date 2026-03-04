@@ -22,22 +22,6 @@ class StoreHolidayRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        $mergeData = [];
-
-        if ($this->has('recurring')) {
-            $mergeData['recurring'] = filter_var($this->recurring, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if (!empty($mergeData)) {
-            $this->merge($mergeData);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -80,5 +64,21 @@ class StoreHolidayRequest extends FormRequest
              */
             'region' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $mergeData = [];
+
+        if ($this->has('recurring')) {
+            $mergeData['recurring'] = filter_var($this->recurring, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (!empty($mergeData)) {
+            $this->merge($mergeData);
+        }
     }
 }

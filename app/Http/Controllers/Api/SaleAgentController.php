@@ -36,7 +36,8 @@ class SaleAgentController extends Controller
 {
     public function __construct(
         private readonly SaleAgentService $service
-    ) {
+    )
+    {
     }
 
     public function index(Request $request): JsonResponse
@@ -44,7 +45,7 @@ class SaleAgentController extends Controller
         if (Auth::user()->denies('view sale agents')) {
             return response()->forbidden('Permission denied for viewing sale agents list.');
         }
-        $saleAgents = $this->service->getPaginatedSaleAgents($request->all(), (int) $request->input('per_page', 10));
+        $saleAgents = $this->service->getPaginatedSaleAgents($request->all(), (int)$request->input('per_page', 10));
         return response()->success(SaleAgentResource::collection($saleAgents), 'Sale agents retrieved successfully');
     }
 
@@ -160,16 +161,16 @@ class SaleAgentController extends Controller
         }
         if ($validated['method'] === 'email') {
             $user = User::query()->find($validated['user_id'] ?? Auth::id());
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
             $mailSetting = MailSetting::default()->first();
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
             $generalSetting = GeneralSetting::query()->latest()->first();
-            Mail::to($user)->queue(new ExportMail($user, $path, 'sale_agents_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'), 'Your Sale Agents Export Is Ready', $generalSetting, $mailSetting));
-            return response()->success(null, 'Export is being processed and will be sent to email: '.$user->email);
+            Mail::to($user)->queue(new ExportMail($user, $path, 'sale_agents_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'), 'Your Sale Agents Export Is Ready', $generalSetting, $mailSetting));
+            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
         }
         return response()->error('Invalid export method provided.');
     }

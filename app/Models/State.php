@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Nnjeim\World\Models\State as WorldState;
 
 /**
@@ -26,9 +28,9 @@ use Nnjeim\World\Models\State as WorldState;
  * @method static Builder|State newQuery()
  * @method static Builder|State query()
  * @method static Builder|State filter(array $filters)
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\City> $cities
+ * @property-read Collection<int, City> $cities
  * @property-read int|null $cities_count
- * @property-read \App\Models\Country|null $country
+ * @property-read Country|null $country
  * @method static Builder<static>|State customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|State last30Days(string $column = 'created_at')
  * @method static Builder<static>|State last7Days(string $column = 'created_at')
@@ -47,7 +49,7 @@ use Nnjeim\World\Models\State as WorldState;
  * @method static Builder<static>|State whereType($value)
  * @method static Builder<static>|State yearToDate(string $column = 'created_at')
  * @method static Builder<static>|State yesterday(string $column = 'current_at')
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class State extends WorldState
 {
@@ -78,17 +80,17 @@ class State extends WorldState
     {
         return $query
             ->when(
-                ! empty($filters['search']),
-                fn ($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
-                    ->orWhere('state_code', 'like', '%'.$filters['search'].'%')
+                !empty($filters['search']),
+                fn($q) => $q->where('name', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('state_code', 'like', '%' . $filters['search'] . '%')
             )
             ->when(
-                ! empty($filters['country_id']),
-                fn ($q) => $q->where('country_id', $filters['country_id'])
+                !empty($filters['country_id']),
+                fn($q) => $q->where('country_id', $filters['country_id'])
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

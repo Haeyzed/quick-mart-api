@@ -53,7 +53,7 @@ class RoleService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Role $role) => [
+            ->map(fn(Role $role) => [
                 'value' => $role->id,
                 'label' => $role->name,
             ]);
@@ -157,7 +157,7 @@ class RoleService
     public function download(): string
     {
         $fileName = 'roles-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
         if (!File::exists($path)) {
             throw new RuntimeException('Roles import template not found.');
@@ -177,8 +177,8 @@ class RoleService
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'roles_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'roles_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

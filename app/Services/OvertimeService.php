@@ -33,17 +33,19 @@ class OvertimeService
     /**
      * OvertimeService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated overtimes based on filters.
      *
-     * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
+     * @param array<string, mixed> $filters
+     * @param int $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginatedOvertimes(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -58,7 +60,7 @@ class OvertimeService
     /**
      * Create a newly registered overtime request.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Overtime The newly created Overtime model instance.
      */
     public function createOvertime(array $data): Overtime
@@ -74,8 +76,8 @@ class OvertimeService
     /**
      * Update an existing overtime request.
      *
-     * @param  Overtime  $overtime  The overtime model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Overtime $overtime The overtime model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Overtime The freshly updated Overtime model instance.
      */
     public function updateOvertime(Overtime $overtime, array $data): Overtime
@@ -94,7 +96,7 @@ class OvertimeService
     /**
      * Delete an overtime request.
      *
-     * @param  Overtime  $overtime
+     * @param Overtime $overtime
      * @return void
      */
     public function deleteOvertime(Overtime $overtime): void
@@ -107,7 +109,7 @@ class OvertimeService
     /**
      * Bulk delete multiple overtime requests.
      *
-     * @param  array<int>  $ids  Array of overtime IDs to be deleted.
+     * @param array<int> $ids Array of overtime IDs to be deleted.
      * @return int The total count of successfully deleted overtime requests.
      */
     public function bulkDeleteOvertimes(array $ids): int
@@ -120,8 +122,8 @@ class OvertimeService
     /**
      * Update the status for multiple overtime requests.
      *
-     * @param  array<int>  $ids  Array of overtime IDs to update.
-     * @param  string  $status  The new status (Approved/Rejected/Pending).
+     * @param array<int> $ids Array of overtime IDs to update.
+     * @param string $status The new status (Approved/Rejected/Pending).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, string $status): int
@@ -135,7 +137,7 @@ class OvertimeService
     /**
      * Import multiple overtime requests from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      * @return void
      */
     public function importOvertimes(UploadedFile $file): void
@@ -152,9 +154,9 @@ class OvertimeService
     public function download(): string
     {
         $fileName = 'overtimes-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template overtimes not found.');
         }
 
@@ -164,16 +166,16 @@ class OvertimeService
     /**
      * Generate an export file containing overtime data.
      *
-     * @param  array<int>  $ids  Specific overtime IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific overtime IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'overtimes_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'overtimes_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

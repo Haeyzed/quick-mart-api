@@ -27,9 +27,9 @@ class EmployeeOnboardingResource extends JsonResource
             'status' => $this->status,
             'started_at' => $this->started_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),
-            'employee' => $this->whenLoaded('employee', fn () => ['id' => $this->employee->id, 'name' => $this->employee->name, 'employee_code' => $this->employee->employee_code]),
-            'template' => $this->whenLoaded('template', fn () => ['id' => $this->template->id, 'name' => $this->template->name]),
-            'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($i) => [
+            'employee' => $this->whenLoaded('employee', fn() => ['id' => $this->employee->id, 'name' => $this->employee->name, 'employee_code' => $this->employee->employee_code]),
+            'template' => $this->whenLoaded('template', fn() => ['id' => $this->template->id, 'name' => $this->template->name]),
+            'items' => $this->whenLoaded('items', fn() => $this->items->map(fn($i) => [
                 'id' => $i->id,
                 'onboarding_checklist_item_id' => $i->onboarding_checklist_item_id,
                 'completed_at' => $i->completed_at?->toIso8601String(),

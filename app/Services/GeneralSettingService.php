@@ -20,11 +20,13 @@ class GeneralSettingService extends BaseService
     /**
      * GeneralSettingService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Retrieve the general setting (singleton).
@@ -41,18 +43,19 @@ class GeneralSettingService extends BaseService
      *
      * Updates the general setting record and handles file management within a database transaction.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
-     * @param  UploadedFile|null  $siteLogo  Optional logo file.
-     * @param  UploadedFile|null  $favicon  Optional favicon file.
-     * @param  string|null  $clientIp  Optional client IP for maintenance list.
+     * @param array<string, mixed> $data The validated request data.
+     * @param UploadedFile|null $siteLogo Optional logo file.
+     * @param UploadedFile|null $favicon Optional favicon file.
+     * @param string|null $clientIp Optional client IP for maintenance list.
      * @return GeneralSetting The freshly updated GeneralSetting model instance.
      */
     public function updateGeneralSetting(
-        array $data,
+        array         $data,
         ?UploadedFile $siteLogo = null,
         ?UploadedFile $favicon = null,
-        ?string $clientIp = null
-    ): GeneralSetting {
+        ?string       $clientIp = null
+    ): GeneralSetting
+    {
         return DB::transaction(function () use ($data, $siteLogo, $favicon, $clientIp) {
             $setting = GeneralSetting::latest()->firstOrFail();
             $data = $this->normalizeData($data, $clientIp);
@@ -83,8 +86,8 @@ class GeneralSettingService extends BaseService
     /**
      * Normalize general setting data.
      *
-     * @param  array<string, mixed>  $data
-     * @param  string|null  $clientIp
+     * @param array<string, mixed> $data
+     * @param string|null $clientIp
      * @return array<string, mixed>
      */
     private function normalizeData(array $data, ?string $clientIp): array

@@ -26,21 +26,21 @@ class CitiesImport implements
 {
     public function model(array $row): ?City
     {
-        $name = trim((string) ($row['name'] ?? ''));
-        $countryCode = trim((string) ($row['country_code'] ?? ''));
-        $stateCode = trim((string) ($row['state_code'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        $countryCode = trim((string)($row['country_code'] ?? ''));
+        $stateCode = trim((string)($row['state_code'] ?? ''));
 
         if ($name === '' || $countryCode === '' || $stateCode === '') {
             return null;
         }
 
         $country = Country::where('iso2', $countryCode)->first();
-        if (! $country) {
+        if (!$country) {
             return null;
         }
 
         $state = State::where('country_id', $country->id)->where('state_code', $stateCode)->first();
-        if (! $state) {
+        if (!$state) {
             return null;
         }
 

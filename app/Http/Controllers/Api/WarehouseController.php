@@ -39,7 +39,9 @@ class WarehouseController extends Controller
      */
     public function __construct(
         private readonly WarehouseService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Warehouses
@@ -287,13 +289,13 @@ class WarehouseController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -303,7 +305,7 @@ class WarehouseController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'warehouses_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'warehouses_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Warehouse Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -312,7 +314,7 @@ class WarehouseController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

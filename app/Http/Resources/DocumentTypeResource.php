@@ -47,14 +47,14 @@ class DocumentTypeResource extends JsonResource
              *
              * @example true
              */
-            'requires_expiry' => (bool) $this->requires_expiry,
+            'requires_expiry' => (bool)$this->requires_expiry,
 
             /**
              * Indicates if the document type is active.
              *
              * @example true
              */
-            'is_active' => (bool) $this->is_active,
+            'is_active' => (bool)$this->is_active,
 
             /**
              * The human-readable active status.

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * ReturnPurchase Model
@@ -47,35 +50,35 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Account|null $account
  * @property-read Currency|null $currency
  * @property-read Collection<int, PurchaseProductReturn> $purchaseProductReturns
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $purchase_product_returns_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereAccountId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereCurrencyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereDocument($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereExchangeRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereGrandTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereItem($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereOrderTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereOrderTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase wherePurchaseId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereReferenceNo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereReturnNote($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereStaffNote($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereSupplierId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereTotalCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereTotalDiscount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereTotalQty($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereTotalTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ReturnPurchase whereWarehouseId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|ReturnPurchase newModelQuery()
+ * @method static Builder<static>|ReturnPurchase newQuery()
+ * @method static Builder<static>|ReturnPurchase query()
+ * @method static Builder<static>|ReturnPurchase whereAccountId($value)
+ * @method static Builder<static>|ReturnPurchase whereCreatedAt($value)
+ * @method static Builder<static>|ReturnPurchase whereCurrencyId($value)
+ * @method static Builder<static>|ReturnPurchase whereDocument($value)
+ * @method static Builder<static>|ReturnPurchase whereExchangeRate($value)
+ * @method static Builder<static>|ReturnPurchase whereGrandTotal($value)
+ * @method static Builder<static>|ReturnPurchase whereId($value)
+ * @method static Builder<static>|ReturnPurchase whereItem($value)
+ * @method static Builder<static>|ReturnPurchase whereOrderTax($value)
+ * @method static Builder<static>|ReturnPurchase whereOrderTaxRate($value)
+ * @method static Builder<static>|ReturnPurchase wherePurchaseId($value)
+ * @method static Builder<static>|ReturnPurchase whereReferenceNo($value)
+ * @method static Builder<static>|ReturnPurchase whereReturnNote($value)
+ * @method static Builder<static>|ReturnPurchase whereStaffNote($value)
+ * @method static Builder<static>|ReturnPurchase whereSupplierId($value)
+ * @method static Builder<static>|ReturnPurchase whereTotalCost($value)
+ * @method static Builder<static>|ReturnPurchase whereTotalDiscount($value)
+ * @method static Builder<static>|ReturnPurchase whereTotalQty($value)
+ * @method static Builder<static>|ReturnPurchase whereTotalTax($value)
+ * @method static Builder<static>|ReturnPurchase whereUpdatedAt($value)
+ * @method static Builder<static>|ReturnPurchase whereUserId($value)
+ * @method static Builder<static>|ReturnPurchase whereWarehouseId($value)
+ * @mixin Eloquent
  */
 class ReturnPurchase extends Model implements AuditableContract
 {

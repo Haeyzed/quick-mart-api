@@ -66,7 +66,7 @@ class EmployeeResource extends JsonResource
              *
              * @example 5000.00
              */
-            'basic_salary' => (float) $this->basic_salary,
+            'basic_salary' => (float)$this->basic_salary,
 
             /**
              * The physical address of the employee.
@@ -118,18 +118,18 @@ class EmployeeResource extends JsonResource
             /**
              * Details regarding the user account associated with the employee.
              */
-            'user' => $this->whenLoaded('user', fn () => [
+            'user' => $this->whenLoaded('user', fn() => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,
                 'username' => $this->user->username,
                 'phone_number' => $this->user->phone_number,
                 'is_active' => $this->user->is_active,
-                'roles' => $this->user->roles->map(fn ($role) => [
+                'roles' => $this->user->roles->map(fn($role) => [
                     'id' => $role->id,
                     'name' => $role->name,
                 ]),
-                'permissions' => $this->user->permissions->map(fn ($permission) => [
+                'permissions' => $this->user->permissions->map(fn($permission) => [
                     'id' => $permission->id,
                     'name' => $permission->name,
                 ]),
@@ -138,7 +138,7 @@ class EmployeeResource extends JsonResource
             /**
              * The department associated with the employee.
              */
-            'department' => $this->whenLoaded('department', fn () => [
+            'department' => $this->whenLoaded('department', fn() => [
                 'id' => $this->department->id,
                 'name' => $this->department->name,
             ]),
@@ -146,7 +146,7 @@ class EmployeeResource extends JsonResource
             /**
              * The designation associated with the employee.
              */
-            'designation' => $this->whenLoaded('designation', fn () => [
+            'designation' => $this->whenLoaded('designation', fn() => [
                 'id' => $this->designation->id,
                 'name' => $this->designation->name,
             ]),
@@ -154,7 +154,7 @@ class EmployeeResource extends JsonResource
             /**
              * The shift associated with the employee.
              */
-            'shift' => $this->whenLoaded('shift', fn () => [
+            'shift' => $this->whenLoaded('shift', fn() => [
                 'id' => $this->shift->id,
                 'name' => $this->shift->name,
                 'start_time' => $this->shift->start_time,
@@ -166,21 +166,21 @@ class EmployeeResource extends JsonResource
              *
              * @example true
              */
-            'is_active' => (bool) $this->is_active,
+            'is_active' => (bool)$this->is_active,
 
             /**
              * Indicates if the employee is a sales agent.
              *
              * @example false
              */
-            'is_sale_agent' => (bool) $this->is_sale_agent,
+            'is_sale_agent' => (bool)$this->is_sale_agent,
 
             /**
              * The commission percentage for the sale agent.
              *
              * @example 5.5
              */
-            'sale_commission_percent' => $this->sale_commission_percent ? (float) $this->sale_commission_percent : null,
+            'sale_commission_percent' => $this->sale_commission_percent ? (float)$this->sale_commission_percent : null,
 
             /**
              * The structured array defining sales targets and tier percentages.
@@ -188,10 +188,10 @@ class EmployeeResource extends JsonResource
              *
              * @example [{"sales_from": 0, "sales_to": 1000, "percent": 5}]
              */
-            'sales_target' => is_array($this->sales_target) ? collect($this->sales_target)->map(fn ($target) => [
-                'sales_from' => isset($target['sales_from']) ? (float) $target['sales_from'] : 0.0,
-                'sales_to' => isset($target['sales_to']) ? (float) $target['sales_to'] : 0.0,
-                'percent' => isset($target['percent']) ? (float) $target['percent'] : 0.0,
+            'sales_target' => is_array($this->sales_target) ? collect($this->sales_target)->map(fn($target) => [
+                'sales_from' => isset($target['sales_from']) ? (float)$target['sales_from'] : 0.0,
+                'sales_to' => isset($target['sales_to']) ? (float)$target['sales_to'] : 0.0,
+                'percent' => isset($target['percent']) ? (float)$target['percent'] : 0.0,
             ])->toArray() : [],
 
             /**
@@ -218,28 +218,28 @@ class EmployeeResource extends JsonResource
             'salary_structure_id' => $this->salary_structure_id,
             'employment_status' => $this->employment_status ?? 'active',
 
-            'employment_type' => $this->whenLoaded('employmentType', fn () => [
+            'employment_type' => $this->whenLoaded('employmentType', fn() => [
                 'id' => $this->employmentType->id,
                 'name' => $this->employmentType->name,
             ]),
-            'warehouse' => $this->whenLoaded('warehouse', fn () => [
+            'warehouse' => $this->whenLoaded('warehouse', fn() => [
                 'id' => $this->warehouse->id,
                 'name' => $this->warehouse->name,
             ]),
-            'work_location' => $this->whenLoaded('workLocation', fn () => [
+            'work_location' => $this->whenLoaded('workLocation', fn() => [
                 'id' => $this->workLocation->id,
                 'name' => $this->workLocation->name,
             ]),
-            'salary_structure' => $this->whenLoaded('salaryStructure', fn () => [
+            'salary_structure' => $this->whenLoaded('salaryStructure', fn() => [
                 'id' => $this->salaryStructure->id,
                 'name' => $this->salaryStructure->name,
             ]),
-            'reporting_manager' => $this->whenLoaded('reportingManager', fn () => [
+            'reporting_manager' => $this->whenLoaded('reportingManager', fn() => [
                 'id' => $this->reportingManager->id,
                 'name' => $this->reportingManager->name,
                 'employee_code' => $this->reportingManager->employee_code,
             ]),
-            'profile' => $this->whenLoaded('profile', fn () => [
+            'profile' => $this->whenLoaded('profile', fn() => [
                 'date_of_birth' => $this->profile->date_of_birth?->format('Y-m-d'),
                 'gender' => $this->profile->gender,
                 'marital_status' => $this->profile->marital_status,
@@ -252,7 +252,7 @@ class EmployeeResource extends JsonResource
             /**
              * The documents associated with the employee.
              */
-            'documents' => $this->whenLoaded('documents', fn () => $this->documents->map(fn ($doc) => [
+            'documents' => $this->whenLoaded('documents', fn() => $this->documents->map(fn($doc) => [
                 'id' => $doc->id,
                 'document_type_id' => $doc->document_type_id,
                 'document_type' => $doc->documentType,

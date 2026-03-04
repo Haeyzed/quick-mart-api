@@ -32,7 +32,9 @@ class AttendancesExport implements FromQuery, WithHeadings, WithMapping
         public array $ids = [],
         public array $columns = [],
         public array $filters = []
-    ) {}
+    )
+    {
+    }
 
     /**
      * Prepare the query for the export.
@@ -43,29 +45,9 @@ class AttendancesExport implements FromQuery, WithHeadings, WithMapping
     {
         return Attendance::query()
             ->with(['employee', 'user'])
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->filter($this->filters)
             ->latest('date');
-    }
-
-    /**
-     * Define the headings for the exported file.
-     *
-     * @return array<string>
-     */
-    public function headings(): array
-    {
-        return ! empty($this->columns) ? $this->columns : [
-            'ID',
-            'Date',
-            'Employee Name',
-            'Recorded By',
-            'Check-In',
-            'Check-Out',
-            'Status',
-            'Note',
-            'Created At',
-        ];
     }
 
     /**
@@ -90,5 +72,25 @@ class AttendancesExport implements FromQuery, WithHeadings, WithMapping
         if (in_array('Created At', $columns)) $mapped[] = $row->created_at?->format('Y-m-d H:i:s');
 
         return $mapped;
+    }
+
+    /**
+     * Define the headings for the exported file.
+     *
+     * @return array<string>
+     */
+    public function headings(): array
+    {
+        return !empty($this->columns) ? $this->columns : [
+            'ID',
+            'Date',
+            'Employee Name',
+            'Recorded By',
+            'Check-In',
+            'Check-Out',
+            'Status',
+            'Note',
+            'Created At',
+        ];
     }
 }

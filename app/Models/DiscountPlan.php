@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class DiscountPlan
- *
+ * 
  * Represents a discount plan that groups multiple discounts and can be assigned to customers.
  * Handles the underlying data structure, relationships, and specific query scopes for discount plan entities.
  *
@@ -28,20 +30,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|DiscountPlan newModelQuery()
  * @method static Builder|DiscountPlan newQuery()
  * @method static Builder|DiscountPlan query()
  * @method static Builder|DiscountPlan active()
  * @method static Builder|DiscountPlan filter(array $filters)
- *
  * @property-read Collection<int, Customer> $customers
  * @property-read int|null $customers_count
  * @property-read Collection<int, Discount> $discounts
  * @property-read int|null $discounts_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|DiscountPlan customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|DiscountPlan last30Days(string $column = 'created_at')
  * @method static Builder<static>|DiscountPlan last7Days(string $column = 'created_at')
@@ -62,8 +61,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|DiscountPlan withoutTrashed()
  * @method static Builder<static>|DiscountPlan yearToDate(string $column = 'created_at')
  * @method static Builder<static>|DiscountPlan yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class DiscountPlan extends Model implements AuditableContract
 {
@@ -92,8 +90,8 @@ class DiscountPlan extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -101,18 +99,18 @@ class DiscountPlan extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

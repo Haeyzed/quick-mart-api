@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Discount
- *
+ * 
  * Represents a discount rule that can be applied to products. Handles the underlying data
  * structure, relationships, and specific query scopes for discount entities.
  *
@@ -36,19 +38,16 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Discount newModelQuery()
  * @method static Builder|Discount newQuery()
  * @method static Builder|Discount query()
  * @method static Builder|Discount active()
  * @method static Builder|Discount valid()
  * @method static Builder|Discount filter(array $filters)
- *
  * @property-read Collection<int, DiscountPlan> $discountPlans
  * @property-read int|null $discount_plans_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|Discount customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Discount last30Days(string $column = 'created_at')
  * @method static Builder<static>|Discount last7Days(string $column = 'created_at')
@@ -77,8 +76,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Discount withoutTrashed()
  * @method static Builder<static>|Discount yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Discount yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Discount extends Model implements AuditableContract
 {
@@ -120,8 +118,8 @@ class Discount extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -129,22 +127,22 @@ class Discount extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
                 isset($filters['valid']),
-                fn (Builder $q) => $q->valid()
+                fn(Builder $q) => $q->valid()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
@@ -164,7 +162,7 @@ class Discount extends Model implements AuditableContract
      */
     public function calculateDiscount(float $price, int $quantity = 1): float
     {
-        if (! $this->isValid()) {
+        if (!$this->isValid()) {
             return 0;
         }
 
@@ -188,7 +186,7 @@ class Discount extends Model implements AuditableContract
      */
     public function isValid(): bool
     {
-        if (! $this->is_active) {
+        if (!$this->is_active) {
             return false;
         }
 
@@ -246,13 +244,13 @@ class Discount extends Model implements AuditableContract
     /**
      * Set the product list from an array or string.
      *
-     * @param  array<int>|string|null  $value
+     * @param array<int>|string|null $value
      */
     protected function setProductListAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['product_list'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && ! empty($value)) {
+        } elseif (is_string($value) && !empty($value)) {
             $this->attributes['product_list'] = $value;
         } else {
             $this->attributes['product_list'] = null;
@@ -276,13 +274,13 @@ class Discount extends Model implements AuditableContract
     /**
      * Set the days from an array or string.
      *
-     * @param  array<string>|string|null  $value
+     * @param array<string>|string|null $value
      */
     protected function setDaysAttribute(array|string|null $value): void
     {
         if (is_array($value)) {
             $this->attributes['days'] = implode(',', array_filter($value));
-        } elseif (is_string($value) && ! empty($value)) {
+        } elseif (is_string($value) && !empty($value)) {
             $this->attributes['days'] = $value;
         } else {
             $this->attributes['days'] = null;

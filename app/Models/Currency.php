@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Currency as WorldCurrencyBase;
 
 /**
  * Class Currency
- *
+ * 
  * Represents a currency from World reference data. Extends Nnjeim\World Currency.
  * Handles the underlying data structure, relationships, and specific query scopes for currency entities.
  *
@@ -24,14 +25,11 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @property bool $symbol_first
  * @property string $decimal_mark
  * @property string $thousands_separator
- *
  * @method static Builder|Currency newModelQuery()
  * @method static Builder|Currency newQuery()
  * @method static Builder|Currency query()
  * @method static Builder|Currency filter(array $filters)
- *
- * @property-read \App\Models\Country|null $country
- *
+ * @property-read Country|null $country
  * @method static Builder<static>|Currency customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Currency last30Days(string $column = 'created_at')
  * @method static Builder<static>|Currency last7Days(string $column = 'created_at')
@@ -52,8 +50,7 @@ use Nnjeim\World\Models\Currency as WorldCurrencyBase;
  * @method static Builder<static>|Currency whereThousandsSeparator($value)
  * @method static Builder<static>|Currency yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Currency yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Currency extends WorldCurrencyBase
 {
@@ -79,26 +76,26 @@ class Currency extends WorldCurrencyBase
     /**
      * Scope a query to apply filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                ! empty($filters['search'] ?? null),
-                fn ($query) => $query->where(function ($q) use ($filters) {
-                    $q->where('name', 'like', '%'.$filters['search'].'%')
-                        ->orWhere('code', 'like', '%'.$filters['search'].'%')
-                        ->orWhere('symbol', 'like', '%'.$filters['search'].'%');
+                !empty($filters['search'] ?? null),
+                fn($query) => $query->where(function ($q) use ($filters) {
+                    $q->where('name', 'like', '%' . $filters['search'] . '%')
+                        ->orWhere('code', 'like', '%' . $filters['search'] . '%')
+                        ->orWhere('symbol', 'like', '%' . $filters['search'] . '%');
                 })
             )
             ->when(
-                ! empty($filters['country_id'] ?? null),
-                fn (Builder $q) => $q->where('country_id', $filters['country_id'])
+                !empty($filters['country_id'] ?? null),
+                fn(Builder $q) => $q->where('country_id', $filters['country_id'])
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

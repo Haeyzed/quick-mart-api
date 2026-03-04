@@ -61,14 +61,14 @@ class ChangePasswordRequest extends BaseRequest
      *
      * Adds an after hook to verify the current password matches the authenticated user's password.
      *
-     * @param  Validator  $validator  The validator instance.
+     * @param Validator $validator The validator instance.
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             $user = $this->user();
 
-            if ($user && ! Hash::check($this->current_password, $user->password)) {
+            if ($user && !Hash::check($this->current_password, $user->password)) {
                 $validator->errors()->add('current_password', 'The current password is incorrect.');
             }
         });

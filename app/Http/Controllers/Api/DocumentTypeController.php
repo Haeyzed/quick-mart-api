@@ -39,7 +39,9 @@ class DocumentTypeController extends Controller
      */
     public function __construct(
         private readonly DocumentTypeService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Document Types

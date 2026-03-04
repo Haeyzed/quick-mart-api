@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class LeaveType
- *
+ * 
  * Represents a leave type within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for leave type entities.
  *
@@ -29,18 +32,15 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|LeaveType newModelQuery()
  * @method static Builder|LeaveType newQuery()
  * @method static Builder|LeaveType query()
  * @method static Builder|LeaveType active()
  * @method static Builder|LeaveType filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Leave> $leaves
+ * @property-read Collection<int, Leave> $leaves
  * @property-read int|null $leaves_count
- *
  * @method static Builder<static>|LeaveType customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|LeaveType last30Days(string $column = 'created_at')
  * @method static Builder<static>|LeaveType last7Days(string $column = 'created_at')
@@ -62,8 +62,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|LeaveType withoutTrashed()
  * @method static Builder<static>|LeaveType yearToDate(string $column = 'created_at')
  * @method static Builder<static>|LeaveType yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @method static Builder<static>|LeaveType whereDeletedAt($value)
+ * @mixin Eloquent
  */
 class LeaveType extends Model implements AuditableContract
 {
@@ -97,8 +97,8 @@ class LeaveType extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -106,25 +106,25 @@ class LeaveType extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active leave types.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder

@@ -39,7 +39,9 @@ class BillerController extends Controller
      */
     public function __construct(
         private readonly BillerService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Billers

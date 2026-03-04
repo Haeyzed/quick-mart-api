@@ -30,7 +30,9 @@ class InterviewController extends Controller
      */
     public function __construct(
         private readonly InterviewService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Interviews

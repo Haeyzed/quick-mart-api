@@ -30,7 +30,9 @@ class JobOpeningController extends Controller
      */
     public function __construct(
         private readonly JobOpeningService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Job Openings

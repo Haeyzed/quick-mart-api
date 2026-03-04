@@ -22,7 +22,7 @@ class WorkLocationResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
-            'is_active' => (bool) $this->is_active,
+            'is_active' => (bool)$this->is_active,
             'active_status' => $this->is_active ? 'active' : 'inactive',
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

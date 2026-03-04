@@ -36,7 +36,9 @@ class AuthController extends Controller
      */
     public function __construct(
         private readonly AuthService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Login

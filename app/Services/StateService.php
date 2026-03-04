@@ -28,7 +28,7 @@ class StateService
     /**
      * Get paginated states.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedStates(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -48,7 +48,7 @@ class StateService
             ->select('id', 'name', 'state_code', 'country_id')
             ->orderBy('name')
             ->get()
-            ->map(fn (State $state) => [
+            ->map(fn(State $state) => [
                 'value' => $state->id,
                 'label' => $state->name,
                 'state_code' => $state->state_code,
@@ -67,7 +67,7 @@ class StateService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (City $city) => [
+            ->map(fn(City $city) => [
                 'value' => $city->id,
                 'label' => $city->name,
             ]);
@@ -111,9 +111,9 @@ class StateService
     public function download(): string
     {
         $fileName = 'states-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template states not found.');
         }
 
@@ -122,8 +122,8 @@ class StateService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'states_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'states_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

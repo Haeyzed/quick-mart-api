@@ -32,11 +32,13 @@ class TaxService
     /**
      * TaxService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated taxes based on provided filters.
@@ -44,8 +46,8 @@ class TaxService
      * Retrieves a paginated list of taxes, applying scopes for searching,
      * status filtering, and date ranges.
      *
-     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
-     * @param  int  $perPage  The number of records to return per page.
+     * @param array<string, mixed> $filters An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
+     * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Tax models.
      */
     public function getPaginatedTaxes(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -69,7 +71,7 @@ class TaxService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Tax $tax) => [
+            ->map(fn(Tax $tax) => [
                 'value' => $tax->id,
                 'label' => $tax->name,
             ]);
@@ -80,7 +82,7 @@ class TaxService
      *
      * Stores the new tax record within a database transaction to ensure data integrity.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new tax.
+     * @param array<string, mixed> $data The validated request data for the new tax.
      * @return Tax The newly created Tax model instance.
      */
     public function createTax(array $data): Tax
@@ -95,8 +97,8 @@ class TaxService
      *
      * Updates the tax record within a database transaction.
      *
-     * @param  Tax  $tax  The tax model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Tax $tax The tax model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Tax The freshly updated Tax model instance.
      */
     public function updateTax(Tax $tax, array $data): Tax
@@ -113,7 +115,7 @@ class TaxService
      *
      * Will abort if the tax is currently linked to any existing products.
      *
-     * @param  Tax  $tax  The tax model instance to delete.
+     * @param Tax $tax The tax model instance to delete.
      *
      * @throws ConflictHttpException If the tax has associated products.
      */
@@ -134,7 +136,7 @@ class TaxService
      * Iterates over an array of tax IDs and attempts to delete them.
      * Skips any taxes that have associated products to prevent database relationship errors.
      *
-     * @param  array<int>  $ids  Array of tax IDs to be deleted.
+     * @param array<int> $ids Array of tax IDs to be deleted.
      * @return int The total count of successfully deleted taxes.
      */
     public function bulkDeleteTaxes(array $ids): int
@@ -158,8 +160,8 @@ class TaxService
     /**
      * Update the active status for multiple taxes.
      *
-     * @param  array<int>  $ids  Array of tax IDs to update.
-     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @param array<int> $ids Array of tax IDs to update.
+     * @param bool $isActive The new active status (true for active, false for inactive).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -172,7 +174,7 @@ class TaxService
      *
      * Uses Maatwebsite Excel to process the file in batches and chunks.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file containing tax data.
+     * @param UploadedFile $file The uploaded spreadsheet file containing tax data.
      */
     public function importTaxes(UploadedFile $file): void
     {
@@ -190,9 +192,9 @@ class TaxService
     {
         $fileName = 'taxes-sample.csv';
 
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template taxes not found.');
         }
 
@@ -205,16 +207,16 @@ class TaxService
      * Compiles the requested tax data into a file stored on the public disk.
      * Supports column selection, ID filtering, and date range filtering.
      *
-     * @param  array<int>  $ids  Specific tax IDs to export (leave empty to export all based on filters).
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include in the export.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific tax IDs to export (leave empty to export all based on filters).
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include in the export.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'taxes_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'taxes_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

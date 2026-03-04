@@ -6,8 +6,8 @@ namespace App\Services;
 
 use App\Models\MailSetting;
 use App\Traits\MailInfo;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
 /**
@@ -23,7 +23,9 @@ class MailSettingService extends BaseService
     /**
      * MailSettingService constructor.
      */
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     /**
      * Retrieve the mail setting (latest).
@@ -40,8 +42,8 @@ class MailSettingService extends BaseService
      *
      * Updates the mail setting record within a database transaction.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
-     * @param  bool  $sendTest  If true, sends test email to from_address.
+     * @param array<string, mixed> $data The validated request data.
+     * @param bool $sendTest If true, sends test email to from_address.
      * @return MailSetting The freshly updated MailSetting model instance.
      */
     public function updateMailSetting(array $data, bool $sendTest = false): MailSetting
@@ -66,6 +68,19 @@ class MailSettingService extends BaseService
     }
 
     /**
+     * Internal helper to dispatch test email.
+     *
+     * @param MailSetting $setting
+     */
+    private function sendTestTo(MailSetting $setting): void
+    {
+        $this->setMailInfo($setting);
+        Mail::raw('SMTP configuration test successful.', function ($message) use ($setting) {
+            $message->to($setting->from_address)->subject('Test Mail');
+        });
+    }
+
+    /**
      * Send a test email using current mail settings.
      */
     public function sendTestEmail(): void
@@ -77,18 +92,5 @@ class MailSettingService extends BaseService
         }
 
         $this->sendTestTo($mailSetting);
-    }
-
-    /**
-     * Internal helper to dispatch test email.
-     *
-     * @param  MailSetting  $setting
-     */
-    private function sendTestTo(MailSetting $setting): void
-    {
-        $this->setMailInfo($setting);
-        Mail::raw('SMTP configuration test successful.', function ($message) use ($setting) {
-            $message->to($setting->from_address)->subject('Test Mail');
-        });
     }
 }

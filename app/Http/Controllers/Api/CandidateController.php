@@ -27,7 +27,9 @@ class CandidateController extends Controller
      */
     public function __construct(
         private readonly CandidateService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Candidates

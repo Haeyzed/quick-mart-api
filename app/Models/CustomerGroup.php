@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class CustomerGroup
- *
+ * 
  * Represents a customer group within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for customer group entities.
  *
@@ -28,18 +30,15 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|CustomerGroup newModelQuery()
  * @method static Builder|CustomerGroup newQuery()
  * @method static Builder|CustomerGroup query()
  * @method static Builder|CustomerGroup active()
  * @method static Builder|CustomerGroup filter(array $filters)
- *
  * @property-read Collection<int, Customer> $customers
  * @property-read int|null $customers_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|CustomerGroup customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|CustomerGroup last30Days(string $column = 'created_at')
  * @method static Builder<static>|CustomerGroup last7Days(string $column = 'created_at')
@@ -60,8 +59,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|CustomerGroup withoutTrashed()
  * @method static Builder<static>|CustomerGroup yearToDate(string $column = 'created_at')
  * @method static Builder<static>|CustomerGroup yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class CustomerGroup extends Model implements AuditableContract
 {
@@ -91,8 +89,8 @@ class CustomerGroup extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -100,18 +98,18 @@ class CustomerGroup extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
+                    $term = '%' . $filters['search'] . '%';
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

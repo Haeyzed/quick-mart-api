@@ -44,7 +44,7 @@ class UpdateCustomerRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'type' => ['nullable', 'string', 'in:'.implode(',', CustomerTypeEnum::toArray())],
+            'type' => ['nullable', 'string', 'in:' . implode(',', CustomerTypeEnum::toArray())],
             'phone_number' => [
                 'nullable',
                 'string',
@@ -79,7 +79,7 @@ class UpdateCustomerRequest extends FormRequest
             ];
             $emailRules = ['required', 'email', 'max:255', Rule::unique('suppliers', 'email')->ignore($supplierIdToIgnore)->where('is_active', true)];
             if ($isUser) {
-                $emailRules[] = Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
+                $emailRules[] = Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
             }
             $rules['email'] = $emailRules;
             $rules['address'] = ['required', 'string', 'max:500'];
@@ -89,14 +89,14 @@ class UpdateCustomerRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'username')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                Rule::unique('users', 'username')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
             ];
-            if (! $isBoth) {
+            if (!$isBoth) {
                 $rules['email'] = [
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                    Rule::unique('users', 'email')->ignore($userIdToIgnore)->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
                 ];
             }
             $rules['password'] = ['required', 'string', 'min:8', 'max:255'];

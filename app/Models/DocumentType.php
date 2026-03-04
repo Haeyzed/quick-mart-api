@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +16,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Class DocumentType
- *
+ * 
  * Represents a type of document that can be attached to employees (e.g. ID, contract).
  * Handles the underlying data structure, relationships, and specific query scopes for document type entities.
  *
@@ -26,16 +28,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|DocumentType newModelQuery()
  * @method static Builder|DocumentType newQuery()
  * @method static Builder|DocumentType query()
  * @method static Builder|DocumentType active()
  * @method static Builder|DocumentType filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EmployeeDocument> $employeeDocuments
+ * @property-read Collection<int, EmployeeDocument> $employeeDocuments
  * @property-read int|null $employee_documents_count
- *
  * @method static Builder<static>|DocumentType customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|DocumentType last30Days(string $column = 'created_at')
  * @method static Builder<static>|DocumentType last7Days(string $column = 'created_at')
@@ -57,8 +56,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|DocumentType withoutTrashed()
  * @method static Builder<static>|DocumentType yearToDate(string $column = 'created_at')
  * @method static Builder<static>|DocumentType yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class DocumentType extends Model
 {
@@ -89,8 +87,8 @@ class DocumentType extends Model
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -98,25 +96,25 @@ class DocumentType extends Model
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
+                    $term = '%' . $filters['search'] . '%';
                     $q->where('name', 'like', $term)->orWhere('code', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active document types.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder

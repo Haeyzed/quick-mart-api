@@ -27,7 +27,7 @@ class LanguageService
     /**
      * Get paginated languages.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedLanguages(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -46,7 +46,7 @@ class LanguageService
             ->select('id', 'code', 'name', 'name_native', 'dir')
             ->orderBy('name')
             ->get()
-            ->map(fn (Language $language) => [
+            ->map(fn(Language $language) => [
                 'value' => $language->id,
                 'label' => $language->name,
                 'code' => $language->code,
@@ -93,9 +93,9 @@ class LanguageService
     public function download(): string
     {
         $fileName = 'languages-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template languages not found.');
         }
 
@@ -104,8 +104,8 @@ class LanguageService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'languages_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'languages_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

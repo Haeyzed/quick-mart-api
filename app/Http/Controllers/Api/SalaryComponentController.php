@@ -19,7 +19,9 @@ class SalaryComponentController extends Controller
 {
     public function __construct(
         private readonly SalaryComponentService $service
-    ) {}
+    )
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {

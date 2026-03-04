@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Supplier Model
- *
+ * 
  * Represents a supplier/vendor in the system.
  * Follows the same structure as Customer: country_id, state_id, city_id, scopeFilter, active scope.
  *
@@ -48,16 +50,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, ReturnPurchase> $returnPurchases
  * @property-read Collection<int, Product> $products
- *
  * @method static Builder|Supplier active()
  * @method static Builder|Supplier filter(array $filters)
- *
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $products_count
  * @property-read int|null $purchases_count
  * @property-read int|null $return_purchases_count
- *
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
  * @method static Builder<static>|Supplier onlyTrashed()
@@ -85,8 +84,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Supplier whereWaNumber($value)
  * @method static Builder<static>|Supplier withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Supplier withoutTrashed()
- *
- * @mixin \Eloquent
+ * @method static Builder<static>|Supplier whereImagePath($value)
+ * @mixin Eloquent
  */
 class Supplier extends Model implements AuditableContract
 {
@@ -168,16 +167,6 @@ class Supplier extends Model implements AuditableContract
     }
 
     /**
-     * Get the purchases from this supplier.
-     *
-     * @return HasMany<Purchase>
-     */
-    public function purchases(): HasMany
-    {
-        return $this->hasMany(Purchase::class);
-    }
-
-    /**
      * Calculate the total due amount for this supplier.
      */
     public function getTotalDue(): float
@@ -186,6 +175,16 @@ class Supplier extends Model implements AuditableContract
         $totalPaid = $this->purchases()->sum('paid_amount');
 
         return max(0, $totalPurchases - $totalPaid);
+    }
+
+    /**
+     * Get the purchases from this supplier.
+     *
+     * @return HasMany<Purchase>
+     */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
     }
 
     /**
@@ -199,7 +198,7 @@ class Supplier extends Model implements AuditableContract
     /**
      * Scope a query to apply filters (status, search). Same pattern as Customer::scopeFilter.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
@@ -215,10 +214,10 @@ class Supplier extends Model implements AuditableContract
                 }
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $term = '%' . $filters['search'] . '%';
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('company_name', 'like', $term)
                         ->orWhere('email', 'like', $term)

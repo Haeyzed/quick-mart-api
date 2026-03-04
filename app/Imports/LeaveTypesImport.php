@@ -47,9 +47,9 @@ class LeaveTypesImport implements
 
         return new LeaveType([
             'name' => $name,
-            'annual_quota' => (float) ($row['annual_quota'] ?? 0),
+            'annual_quota' => (float)($row['annual_quota'] ?? 0),
             'encashable' => filter_var($row['encashable'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'carry_forward_limit' => (float) ($row['carry_forward_limit'] ?? 0),
+            'carry_forward_limit' => (float)($row['carry_forward_limit'] ?? 0),
             'is_active' => filter_var($row['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'deleted_at' => null,
         ]);

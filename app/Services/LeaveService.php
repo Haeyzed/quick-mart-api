@@ -34,16 +34,18 @@ class LeaveService
     /**
      * LeaveService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated leaves based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -55,30 +57,60 @@ class LeaveService
     }
 
     /**
-     * Create a newly registered leave request.
+     * Bulk delete multiple leave requests.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
-     * @return Leave The newly created Leave model instance.
+     * @param array<int> $ids Array of leave IDs to be deleted.
+     * @return int The total count of successfully deleted leave requests.
      */
-    public function create(array $data): Leave
+    public function bulkDelete(array $ids): int
     {
-        return DB::transaction(function () use ($data) {
-            $data['days'] = $this->calculateDays($data['start_date'], $data['end_date']);
-            $data['status'] = LeaveStatusEnum::PENDING->value;
-            $data['approval_status'] = 'pending';
-            $data['current_approval_level'] = 0;
-            $data['max_approval_level'] = $data['max_approval_level'] ?? 2;
-            $data['approver_id'] = Auth::id();
+        return DB::transaction(function () use ($ids) {
+            $leaves = Leave::query()->whereIn('id', $ids)->get();
+            $count = 0;
 
-            return Leave::query()->create($data);
+            foreach ($leaves as $leave) {
+                $leave->delete();
+                $count++;
+            }
+
+            return $count;
         });
+    }
+
+    /**
+     * Delete a leave request.
+     */
+    public function delete(Leave $leave): void
+    {
+        DB::transaction(function () use ($leave) {
+            $leave->delete();
+        });
+    }
+
+    /**
+     * Update the status for multiple leave requests.
+     *
+     * @param array<int> $ids Array of leave IDs to update.
+     * @param string $status The new status (Approved/Rejected/Pending).
+     * @return int The number of records updated.
+     */
+    public function bulkUpdateStatus(array $ids, string $status): int
+    {
+        $payload = ['status' => $status, 'approver_id' => Auth::id()];
+        if ($status === LeaveStatusEnum::APPROVED->value) {
+            $payload['approval_status'] = 'approved';
+        } elseif ($status === LeaveStatusEnum::REJECTED->value) {
+            $payload['approval_status'] = 'rejected';
+        }
+
+        return Leave::query()->whereIn('id', $ids)->update($payload);
     }
 
     /**
      * Update an existing leave request.
      *
-     * @param  Leave  $leave  The leave model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Leave $leave The leave model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Leave The freshly updated Leave model instance.
      */
     public function update(Leave $leave, array $data): Leave
@@ -98,62 +130,20 @@ class LeaveService
     }
 
     /**
-     * Delete a leave request.
+     * Calculate the number of days between two dates inclusive.
      */
-    public function delete(Leave $leave): void
+    private function calculateDays(string $start, string $end): float
     {
-        DB::transaction(function () use ($leave) {
-            $leave->delete();
-        });
-    }
-
-    /**
-     * Bulk delete multiple leave requests.
-     *
-     * @param  array<int>  $ids  Array of leave IDs to be deleted.
-     * @return int The total count of successfully deleted leave requests.
-     */
-    public function bulkDelete(array $ids): int
-    {
-        return DB::transaction(function () use ($ids) {
-            $leaves = Leave::query()->whereIn('id', $ids)->get();
-            $count = 0;
-
-            foreach ($leaves as $leave) {
-                $leave->delete();
-                $count++;
-            }
-
-            return $count;
-        });
-    }
-
-    /**
-     * Update the status for multiple leave requests.
-     *
-     * @param  array<int>  $ids  Array of leave IDs to update.
-     * @param  string  $status  The new status (Approved/Rejected/Pending).
-     * @return int The number of records updated.
-     */
-    public function bulkUpdateStatus(array $ids, string $status): int
-    {
-        $payload = ['status' => $status, 'approver_id' => Auth::id()];
-        if ($status === LeaveStatusEnum::APPROVED->value) {
-            $payload['approval_status'] = 'approved';
-        } elseif ($status === LeaveStatusEnum::REJECTED->value) {
-            $payload['approval_status'] = 'rejected';
-        }
-
-        return Leave::query()->whereIn('id', $ids)->update($payload);
+        return (strtotime($end) - strtotime($start)) / 86400 + 1;
     }
 
     /**
      * Approve or reject a leave at a given approval level (multi-level approval).
      *
-     * @param  Leave  $leave  The leave to approve or reject.
-     * @param  int  $level  The approval level (1-based).
-     * @param  string  $status  Either 'approved' or 'rejected'.
-     * @param  string|null  $notes  Optional notes from the approver.
+     * @param Leave $leave The leave to approve or reject.
+     * @param int $level The approval level (1-based).
+     * @param string $status Either 'approved' or 'rejected'.
+     * @param string|null $notes Optional notes from the approver.
      * @return Leave The updated leave.
      */
     public function approve(Leave $leave, int $level, string $status, ?string $notes = null): Leave
@@ -168,7 +158,7 @@ class LeaveService
                 'approved_at' => now(),
             ]);
 
-            $maxLevel = (int) $leave->max_approval_level;
+            $maxLevel = (int)$leave->max_approval_level;
 
             if ($status === 'rejected') {
                 $leave->update([
@@ -195,9 +185,29 @@ class LeaveService
     }
 
     /**
+     * Create a newly registered leave request.
+     *
+     * @param array<string, mixed> $data The validated request data.
+     * @return Leave The newly created Leave model instance.
+     */
+    public function create(array $data): Leave
+    {
+        return DB::transaction(function () use ($data) {
+            $data['days'] = $this->calculateDays($data['start_date'], $data['end_date']);
+            $data['status'] = LeaveStatusEnum::PENDING->value;
+            $data['approval_status'] = 'pending';
+            $data['current_approval_level'] = 0;
+            $data['max_approval_level'] = $data['max_approval_level'] ?? 2;
+            $data['approver_id'] = Auth::id();
+
+            return Leave::query()->create($data);
+        });
+    }
+
+    /**
      * Import multiple leave requests from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      */
     public function import(UploadedFile $file): void
     {
@@ -210,9 +220,9 @@ class LeaveService
     public function download(): string
     {
         $fileName = 'leaves-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template leaves not found.');
         }
 
@@ -222,16 +232,16 @@ class LeaveService
     /**
      * Generate an export file containing leave data.
      *
-     * @param  array<int>  $ids  Specific leave IDs to export.
-     * @param  string  $format  The file format requested.
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific leave IDs to export.
+     * @param string $format The file format requested.
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'leaves_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'leaves_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(
@@ -242,13 +252,5 @@ class LeaveService
         );
 
         return $relativePath;
-    }
-
-    /**
-     * Calculate the number of days between two dates inclusive.
-     */
-    private function calculateDays(string $start, string $end): float
-    {
-        return (strtotime($end) - strtotime($start)) / 86400 + 1;
     }
 }

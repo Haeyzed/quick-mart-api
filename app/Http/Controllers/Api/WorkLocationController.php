@@ -26,7 +26,9 @@ class WorkLocationController extends Controller
 {
     public function __construct(
         private readonly WorkLocationService $service
-    ) {}
+    )
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {

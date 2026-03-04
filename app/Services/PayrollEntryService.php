@@ -19,8 +19,8 @@ class PayrollEntryService
     /**
      * Get paginated payroll entries for a given payroll run.
      *
-     * @param  int  $payrollRunId  The payroll run ID to list entries for.
-     * @param  int  $perPage  Number of items per page.
+     * @param int $payrollRunId The payroll run ID to list entries for.
+     * @param int $perPage Number of items per page.
      * @return LengthAwarePaginator<PayrollEntry>
      */
     public function getPaginatedByRun(int $payrollRunId, int $perPage = 15): LengthAwarePaginator
@@ -35,8 +35,8 @@ class PayrollEntryService
     /**
      * Update an existing payroll entry.
      *
-     * @param  PayrollEntry  $payrollEntry  The payroll entry model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param PayrollEntry $payrollEntry The payroll entry model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return PayrollEntry The freshly updated PayrollEntry model instance.
      */
     public function update(PayrollEntry $payrollEntry, array $data): PayrollEntry

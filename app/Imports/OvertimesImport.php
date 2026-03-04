@@ -6,6 +6,7 @@ namespace App\Imports;
 
 use App\Models\Employee;
 use App\Models\Overtime;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
@@ -31,12 +32,12 @@ class OvertimesImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     {
         // Calculate the overtime amount dynamically during import
         $employee = Employee::query()->find($row['employee_id']);
-        $amount = $employee ? ($employee->monthly_salary / 30 / 8) * (float) $row['hours'] : 0;
+        $amount = $employee ? ($employee->monthly_salary / 30 / 8) * (float)$row['hours'] : 0;
 
         return new Overtime([
             'employee_id' => $row['employee_id'],
-            'date' => \Carbon\Carbon::parse($row['date'])->format('Y-m-d'),
-            'hours' => (float) $row['hours'],
+            'date' => Carbon::parse($row['date'])->format('Y-m-d'),
+            'hours' => (float)$row['hours'],
             'amount' => $amount,
             'status' => $row['status'] ?? 'Pending',
             'approved_by' => Auth::id(),

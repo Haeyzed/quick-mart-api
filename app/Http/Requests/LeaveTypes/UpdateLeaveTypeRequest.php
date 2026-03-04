@@ -24,26 +24,6 @@ class UpdateLeaveTypeRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        $mergeData = [];
-
-        if ($this->has('is_active')) {
-            $mergeData['is_active'] = filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if ($this->has('encashable')) {
-            $mergeData['encashable'] = filter_var($this->encashable, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if (!empty($mergeData)) {
-            $this->merge($mergeData);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -95,5 +75,25 @@ class UpdateLeaveTypeRequest extends FormRequest
              */
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $mergeData = [];
+
+        if ($this->has('is_active')) {
+            $mergeData['is_active'] = filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if ($this->has('encashable')) {
+            $mergeData['encashable'] = filter_var($this->encashable, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (!empty($mergeData)) {
+            $this->merge($mergeData);
+        }
     }
 }

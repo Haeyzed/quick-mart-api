@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +15,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Class OnboardingChecklistItem
- *
+ * 
  * Represents a single checklist item within an onboarding checklist template.
  * Handles the underlying data structure, relationships, and specific query scopes for checklist item entities.
  *
@@ -24,14 +26,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read OnboardingChecklistTemplate $template
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EmployeeOnboardingItem> $employeeOnboardingItems
+ * @property-read Collection<int, EmployeeOnboardingItem> $employeeOnboardingItems
  * @property-read int|null $employee_onboarding_items_count
- *
  * @method static Builder|OnboardingChecklistItem newModelQuery()
  * @method static Builder|OnboardingChecklistItem newQuery()
  * @method static Builder|OnboardingChecklistItem query()
  * @method static Builder|OnboardingChecklistItem filter(array $filters)
- *
  * @method static Builder<static>|OnboardingChecklistItem customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|OnboardingChecklistItem last30Days(string $column = 'created_at')
  * @method static Builder<static>|OnboardingChecklistItem last7Days(string $column = 'created_at')
@@ -48,8 +48,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|OnboardingChecklistItem whereUpdatedAt($value)
  * @method static Builder<static>|OnboardingChecklistItem yearToDate(string $column = 'created_at')
  * @method static Builder<static>|OnboardingChecklistItem yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class OnboardingChecklistItem extends Model
 {
@@ -78,27 +77,27 @@ class OnboardingChecklistItem extends Model
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                ! empty($filters['onboarding_checklist_template_id']),
-                fn (Builder $q) => $q->where('onboarding_checklist_template_id', (int) $filters['onboarding_checklist_template_id'])
+                !empty($filters['onboarding_checklist_template_id']),
+                fn(Builder $q) => $q->where('onboarding_checklist_template_id', (int)$filters['onboarding_checklist_template_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('title', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

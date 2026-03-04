@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Attendances;
 
-use App\Enums\AttendanceStatusEnum;
 use App\Http\Requests\BaseRequest;
 use App\Models\Attendance;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 
 /**
  * Class UpdateAttendanceRequest

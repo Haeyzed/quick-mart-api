@@ -46,7 +46,9 @@ class RolesExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {}
+    )
+    {
+    }
 
     /**
      * Prepare the query for the export.
@@ -57,8 +59,8 @@ class RolesExport implements FromQuery, WithHeadings, WithMapping
     {
         return Role::query()
             ->withCount('permissions')
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
-            ->when(! empty($this->filters), fn (Builder $q) => $q->filter($this->filters))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->filters), fn(Builder $q) => $q->filter($this->filters))
             ->filter($this->filters)
             ->orderBy('name');
     }
@@ -72,7 +74,7 @@ class RolesExport implements FromQuery, WithHeadings, WithMapping
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        return array_map(fn (string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
+        return array_map(fn(string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
     }
 
     /**

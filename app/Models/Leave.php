@@ -6,7 +6,9 @@ namespace App\Models;
 
 use App\Enums\LeaveStatusEnum;
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,10 +17,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Leave
- *
+ * 
  * Represents a leave request within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for leave entities.
  *
@@ -36,20 +39,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Leave newModelQuery()
  * @method static Builder|Leave newQuery()
  * @method static Builder|Leave query()
  * @method static Builder|Leave filter(array $filters)
- *
- * @property-read \App\Models\User|null $approver
- * @property-read \Illuminate\Database\Eloquent\Collection<int, LeaveApproval> $leaveApprovals
+ * @property-read User|null $approver
+ * @property-read Collection<int, LeaveApproval> $leaveApprovals
  * @property-read int|null $leave_approvals_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \App\Models\Employee $employee
- * @property-read \App\Models\LeaveType $leaveType
- *
+ * @property-read Employee $employee
+ * @property-read LeaveType $leaveType
  * @method static Builder<static>|Leave customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Leave last30Days(string $column = 'created_at')
  * @method static Builder<static>|Leave last7Days(string $column = 'created_at')
@@ -73,8 +73,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Leave withoutTrashed()
  * @method static Builder<static>|Leave yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Leave yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @property int $leave_type_id
+ * @property string|null $reason
+ * @property string|null $attachment
+ * @method static Builder<static>|Leave whereApprovalStatus($value)
+ * @method static Builder<static>|Leave whereAttachment($value)
+ * @method static Builder<static>|Leave whereCurrentApprovalLevel($value)
+ * @method static Builder<static>|Leave whereDeletedAt($value)
+ * @method static Builder<static>|Leave whereLeaveTypeId($value)
+ * @method static Builder<static>|Leave whereMaxApprovalLevel($value)
+ * @method static Builder<static>|Leave whereReason($value)
+ * @mixin Eloquent
  */
 class Leave extends Model implements AuditableContract
 {
@@ -117,8 +126,8 @@ class Leave extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -126,14 +135,14 @@ class Leave extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->where('status', $filters['status'])
+                fn(Builder $q) => $q->where('status', $filters['status'])
             )
             ->when(
-                ! empty($filters['approval_status']),
-                fn (Builder $q) => $q->where('approval_status', $filters['approval_status'])
+                !empty($filters['approval_status']),
+                fn(Builder $q) => $q->where('approval_status', $filters['approval_status'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->whereHas('employee', function (Builder $subQ) use ($term) {
@@ -142,8 +151,8 @@ class Leave extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

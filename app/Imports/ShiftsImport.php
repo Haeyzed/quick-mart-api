@@ -50,8 +50,8 @@ class ShiftsImport implements
             'name' => $name,
             'start_time' => Carbon::parse($row['start_time'])->format('H:i'),
             'end_time' => Carbon::parse($row['end_time'])->format('H:i'),
-            'grace_in' => (int) ($row['grace_in'] ?? 0),
-            'grace_out' => (int) ($row['grace_out'] ?? 0),
+            'grace_in' => (int)($row['grace_in'] ?? 0),
+            'grace_out' => (int)($row['grace_out'] ?? 0),
             'is_active' => filter_var($row['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'deleted_at' => null,
         ]);

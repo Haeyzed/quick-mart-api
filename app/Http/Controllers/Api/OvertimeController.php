@@ -7,15 +7,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Overtimes\OvertimeBulkActionRequest;
 use App\Http\Requests\Overtimes\StoreOvertimeRequest;
 use App\Http\Requests\Overtimes\UpdateOvertimeRequest;
-use App\Http\Requests\Overtimes\OvertimeBulkActionRequest;
 use App\Http\Resources\OvertimeResource;
 use App\Mail\ExportMail;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
-use App\Models\User;
 use App\Models\Overtime;
+use App\Models\User;
 use App\Services\OvertimeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +39,9 @@ class OvertimeController extends Controller
      */
     public function __construct(
         private readonly OvertimeService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Overtimes
@@ -273,13 +275,13 @@ class OvertimeController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -289,7 +291,7 @@ class OvertimeController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'overtimes_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'overtimes_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Overtimes Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -298,7 +300,7 @@ class OvertimeController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

@@ -13,16 +13,6 @@ class UpdateSalaryComponentRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_taxable')) {
-            $this->merge(['is_taxable' => filter_var($this->is_taxable, FILTER_VALIDATE_BOOLEAN)]);
-        }
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     public function rules(): array
     {
         return [
@@ -32,5 +22,15 @@ class UpdateSalaryComponentRequest extends BaseRequest
             'calculation_type' => ['nullable', 'string', 'in:fixed,percentage,formula'],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_taxable')) {
+            $this->merge(['is_taxable' => filter_var($this->is_taxable, FILTER_VALIDATE_BOOLEAN)]);
+        }
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

@@ -37,7 +37,9 @@ class UserController extends Controller
      */
     public function __construct(
         private readonly UserService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Users
@@ -110,7 +112,7 @@ class UserController extends Controller
             return response()->forbidden('Permission denied for viewing user options.');
         }
 
-        $warehouseId = $request->filled('warehouse_id') ? (int) $request->input('warehouse_id') : null;
+        $warehouseId = $request->filled('warehouse_id') ? (int)$request->input('warehouse_id') : null;
 
         return response()->success(
             $this->service->getOptions($warehouseId),
@@ -241,13 +243,13 @@ class UserController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -257,7 +259,7 @@ class UserController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'users_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'users_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your User Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -266,7 +268,7 @@ class UserController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

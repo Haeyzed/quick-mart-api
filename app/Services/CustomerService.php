@@ -364,16 +364,6 @@ class CustomerService
     }
 
     /**
-     * Update status for multiple customers.
-     *
-     * @param array<int> $ids
-     */
-    public function bulkUpdateStatus(array $ids, bool $isActive): int
-    {
-        return Customer::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
-    }
-
-    /**
      * Delete a customer (soft: is_active = false, remove generic discount plan links).
      */
     public function deleteCustomer(Customer $customer): void
@@ -390,6 +380,16 @@ class CustomerService
 
             $customer->update(['is_active' => false]);
         });
+    }
+
+    /**
+     * Update status for multiple customers.
+     *
+     * @param array<int> $ids
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return Customer::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 
     /**

@@ -25,8 +25,8 @@ class StatesImport implements
 {
     public function model(array $row): ?State
     {
-        $name = trim((string) ($row['name'] ?? ''));
-        $countryCode = trim((string) ($row['country_code'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        $countryCode = trim((string)($row['country_code'] ?? ''));
 
         if ($name === '' || $countryCode === '') {
             return null;
@@ -34,7 +34,7 @@ class StatesImport implements
 
         $country = Country::where('iso2', $countryCode)->first();
 
-        if (! $country) {
+        if (!$country) {
             return null;
         }
 

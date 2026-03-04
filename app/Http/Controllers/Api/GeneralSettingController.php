@@ -25,7 +25,9 @@ class GeneralSettingController extends Controller
      */
     public function __construct(
         private readonly GeneralSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display the general setting.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\SalaryComponents;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 
 class StoreSalaryComponentRequest extends BaseRequest
 {
@@ -16,20 +17,10 @@ class StoreSalaryComponentRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_taxable')) {
-            $this->merge(['is_taxable' => filter_var($this->is_taxable, FILTER_VALIDATE_BOOLEAN)]);
-        }
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -40,5 +31,15 @@ class StoreSalaryComponentRequest extends BaseRequest
             'calculation_type' => ['nullable', 'string', 'in:fixed,percentage,formula'],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_taxable')) {
+            $this->merge(['is_taxable' => filter_var($this->is_taxable, FILTER_VALIDATE_BOOLEAN)]);
+        }
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

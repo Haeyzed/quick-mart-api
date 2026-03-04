@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,10 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class GiftCard
- *
+ * 
  * Represents a gift card that can be used for payments. Handles the underlying data
  * structure, relationships, and specific query scopes for gift card entities.
  *
@@ -34,7 +36,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|GiftCard newModelQuery()
  * @method static Builder|GiftCard newQuery()
  * @method static Builder|GiftCard query()
@@ -42,15 +43,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|GiftCard expired()
  * @method static Builder|GiftCard notExpired()
  * @method static Builder|GiftCard filter(array $filters)
- *
- * @property-read \App\Models\Customer|null $customer
- * @property-read \App\Models\User|null $user
- * @property-read \App\Models\User|null $creator
+ * @property-read Customer|null $customer
+ * @property-read User|null $user
+ * @property-read User|null $creator
  * @property-read Collection<int, PaymentWithGiftCard> $payments
  * @property-read int|null $payments_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|GiftCard customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|GiftCard last30Days(string $column = 'created_at')
  * @method static Builder<static>|GiftCard last7Days(string $column = 'created_at')
@@ -76,8 +75,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|GiftCard withoutTrashed()
  * @method static Builder<static>|GiftCard yearToDate(string $column = 'created_at')
  * @method static Builder<static>|GiftCard yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class GiftCard extends Model implements AuditableContract
 {
@@ -115,10 +113,22 @@ class GiftCard extends Model implements AuditableContract
     ];
 
     /**
+     * Generate a unique 16-digit numeric gift card code.
+     */
+    public static function generateCode(): string
+    {
+        do {
+            $code = str_pad((string)random_int(0, 9999999999999999), 16, '0', STR_PAD_LEFT);
+        } while (self::where('card_no', $code)->where('is_active', true)->exists());
+
+        return $code;
+    }
+
+    /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -126,31 +136,19 @@ class GiftCard extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('card_no', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
-    }
-
-    /**
-     * Generate a unique 16-digit numeric gift card code.
-     */
-    public static function generateCode(): string
-    {
-        do {
-            $code = str_pad((string) random_int(0, 9999999999999999), 16, '0', STR_PAD_LEFT);
-        } while (self::where('card_no', $code)->where('is_active', true)->exists());
-
-        return $code;
     }
 
     /**
@@ -220,7 +218,7 @@ class GiftCard extends Model implements AuditableContract
     /**
      * Scope a query to only include active gift cards.
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeActive($query)

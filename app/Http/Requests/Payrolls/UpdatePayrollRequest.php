@@ -28,21 +28,6 @@ class UpdatePayrollRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     * * Formats the 'is_agent' flag into a proper boolean before rules are applied.
-     *
-     * @return void
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_agent')) {
-            $this->merge([
-                'is_agent' => filter_var($this->is_agent, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -157,5 +142,20 @@ class UpdatePayrollRequest extends FormRequest
              */
             'commission_percent' => ['nullable', 'numeric', 'min:0'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     * * Formats the 'is_agent' flag into a proper boolean before rules are applied.
+     *
+     * @return void
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_agent')) {
+            $this->merge([
+                'is_agent' => filter_var($this->is_agent, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

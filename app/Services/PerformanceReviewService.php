@@ -19,7 +19,7 @@ class PerformanceReviewService
     /**
      * Get paginated performance reviews based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
     {
@@ -33,19 +33,19 @@ class PerformanceReviewService
     /**
      * Create a newly registered performance review.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return PerformanceReview The newly created PerformanceReview model instance.
      */
     public function create(array $data): PerformanceReview
     {
-        return DB::transaction(fn () => PerformanceReview::query()->create($data));
+        return DB::transaction(fn() => PerformanceReview::query()->create($data));
     }
 
     /**
      * Update an existing performance review.
      *
-     * @param  PerformanceReview  $performanceReview  The performance review model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param PerformanceReview $performanceReview The performance review model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return PerformanceReview The freshly updated PerformanceReview model instance.
      */
     public function update(PerformanceReview $performanceReview, array $data): PerformanceReview
@@ -58,17 +58,9 @@ class PerformanceReviewService
     }
 
     /**
-     * Delete a performance review.
-     */
-    public function delete(PerformanceReview $performanceReview): void
-    {
-        DB::transaction(fn () => $performanceReview->delete());
-    }
-
-    /**
      * Bulk delete multiple performance reviews.
      *
-     * @param  array<int>  $ids  Array of performance review IDs to be deleted.
+     * @param array<int> $ids Array of performance review IDs to be deleted.
      * @return int The total count of successfully deleted performance reviews.
      */
     public function bulkDelete(array $ids): int
@@ -76,5 +68,13 @@ class PerformanceReviewService
         return DB::transaction(function () use ($ids) {
             return PerformanceReview::query()->whereIn('id', $ids)->delete();
         });
+    }
+
+    /**
+     * Delete a performance review.
+     */
+    public function delete(PerformanceReview $performanceReview): void
+    {
+        DB::transaction(fn() => $performanceReview->delete());
     }
 }

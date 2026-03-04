@@ -26,7 +26,9 @@ class IdCardTemplateController extends Controller
 {
     public function __construct(
         private readonly IdCardTemplateService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List all templates.

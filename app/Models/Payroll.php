@@ -6,7 +6,9 @@ namespace App\Models;
 
 use App\Enums\PayrollStatusEnum;
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,10 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Payroll
- *
+ * 
  * Represents an employee's payroll record within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for payroll entities.
  *
@@ -39,11 +42,11 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Payroll newQuery()
  * @method static Builder|Payroll query()
  * @method static Builder|Payroll filter(array $filters)
- * @property-read \App\Models\Account $account
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Account $account
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \App\Models\Employee $employee
- * @property-read \App\Models\User $user
+ * @property-read Employee $employee
+ * @property-read User $user
  * @method static Builder<static>|Payroll customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Payroll last30Days(string $column = 'created_at')
  * @method static Builder<static>|Payroll last7Days(string $column = 'created_at')
@@ -70,7 +73,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Payroll withoutTrashed()
  * @method static Builder<static>|Payroll yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Payroll yesterday(string $column = 'current_at')
- * @mixin \Eloquent
+ * @method static Builder<static>|Payroll whereDeletedAt($value)
+ * @mixin Eloquent
  */
 class Payroll extends Model implements AuditableContract
 {
@@ -108,8 +112,8 @@ class Payroll extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query
-     * @param  array<string, mixed>  $filters
+     * @param Builder $query
+     * @param array<string, mixed> $filters
      * @return Builder
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -117,26 +121,26 @@ class Payroll extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->where('status', $filters['status'])
+                fn(Builder $q) => $q->where('status', $filters['status'])
             )
             ->when(
-                ! empty($filters['employee_id']),
-                fn (Builder $q) => $q->where('employee_id', $filters['employee_id'])
+                !empty($filters['employee_id']),
+                fn(Builder $q) => $q->where('employee_id', $filters['employee_id'])
             )
             ->when(
-                ! empty($filters['account_id']),
-                fn (Builder $q) => $q->where('account_id', $filters['account_id'])
+                !empty($filters['account_id']),
+                fn(Builder $q) => $q->where('account_id', $filters['account_id'])
             )
             ->when(
-                ! empty($filters['user_id']),
-                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
+                !empty($filters['user_id']),
+                fn(Builder $q) => $q->where('user_id', $filters['user_id'])
             )
             ->when(
-                ! empty($filters['month']),
-                fn (Builder $q) => $q->where('month', $filters['month'])
+                !empty($filters['month']),
+                fn(Builder $q) => $q->where('month', $filters['month'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('reference_no', 'like', $term)
@@ -146,8 +150,8 @@ class Payroll extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

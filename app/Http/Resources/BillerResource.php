@@ -105,21 +105,21 @@ class BillerResource extends JsonResource
              *
              * @example {"id": 1, "name": "United States"}
              */
-            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
+            'country' => $this->whenLoaded('country', fn() => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
 
             /**
              * The loaded state relationship data.
              *
              * @example {"id": 12, "name": "California"}
              */
-            'state' => $this->whenLoaded('state', fn () => $this->state ? ['id' => $this->state->id, 'name' => $this->state->name] : null),
+            'state' => $this->whenLoaded('state', fn() => $this->state ? ['id' => $this->state->id, 'name' => $this->state->name] : null),
 
             /**
              * The loaded city relationship data.
              *
              * @example {"id": 45, "name": "Los Angeles"}
              */
-            'city' => $this->whenLoaded('city', fn () => $this->city ? ['id' => $this->city->id, 'name' => $this->city->name] : null),
+            'city' => $this->whenLoaded('city', fn() => $this->city ? ['id' => $this->city->id, 'name' => $this->city->name] : null),
 
             /**
              * The postal or zip code.

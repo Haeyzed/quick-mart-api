@@ -154,7 +154,7 @@ class RegisterRequest extends BaseRequest
                 Rule::requiredIf(function () {
                     $customerRole = Role::query()->where('name', 'Customer')->where('is_active', true)->first();
 
-                    return $customerRole && (int) $this->role_id === (int) $customerRole->id;
+                    return $customerRole && (int)$this->role_id === (int)$customerRole->id;
                 }),
             ],
         ];

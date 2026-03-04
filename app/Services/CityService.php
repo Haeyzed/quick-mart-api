@@ -27,7 +27,7 @@ class CityService
     /**
      * Get paginated cities.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedCities(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -47,7 +47,7 @@ class CityService
             ->select('id', 'name', 'state_id', 'country_id')
             ->orderBy('name')
             ->get()
-            ->map(fn (City $city) => [
+            ->map(fn(City $city) => [
                 'value' => $city->id,
                 'label' => $city->name,
                 'state_id' => $city->state_id,
@@ -93,9 +93,9 @@ class CityService
     public function download(): string
     {
         $fileName = 'cities-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template cities not found.');
         }
 
@@ -104,8 +104,8 @@ class CityService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'cities_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'cities_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

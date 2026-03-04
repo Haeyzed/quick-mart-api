@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Account
- *
+ * 
  * Represents a financial account in the accounting system.
  *
  * @property int $id
@@ -35,14 +37,12 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string|null $deleted_at
- *
  * @method static Builder|Account newModelQuery()
  * @method static Builder|Account newQuery()
  * @method static Builder|Account query()
  * @method static Builder|Account active()
  * @method static Builder|Account default()
  * @method static Builder|Account filter(array $filters)
- *
  * @property-read Account|null $parent
  * @property-read Collection<int, Account> $children
  * @property-read int|null $children_count
@@ -52,9 +52,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read int|null $from_transfers_count
  * @property-read Collection<int, MoneyTransfer> $toTransfers
  * @property-read int|null $to_transfers_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|Account customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Account last30Days(string $column = 'created_at')
  * @method static Builder<static>|Account last7Days(string $column = 'created_at')
@@ -80,8 +79,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Account whereUpdatedAt($value)
  * @method static Builder<static>|Account yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Account yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Account extends Model implements AuditableContract
 {
@@ -123,8 +121,8 @@ class Account extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -132,13 +130,13 @@ class Account extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('account_no', 'like', $term)
                         ->orWhere('code', 'like', $term)
@@ -146,8 +144,8 @@ class Account extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

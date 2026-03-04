@@ -25,12 +25,13 @@ class UserRolePermissionService extends BaseService
      * @param array<int|string|Permission>|null $directPermissions
      */
     public function assignRolesAndPermissions(
-        User $user,
+        User   $user,
         ?array $roles = null,
         ?array $directPermissions = null
-    ): void {
+    ): void
+    {
         $this->transaction(function () use ($user, $roles, $directPermissions) {
-            if ($roles !== null && ! empty($roles)) {
+            if ($roles !== null && !empty($roles)) {
                 $this->assignRoles($user, $roles);
             }
             $this->syncUserPermissions($user, $directPermissions);
@@ -81,7 +82,7 @@ class UserRolePermissionService extends BaseService
     public function syncUserPermissions(User $user, ?array $directPermissions = null): void
     {
         $rolePermissions = $this->getPermissionsFromRoles($user->roles);
-        $directPermissionModels = $directPermissions !== null && ! empty($directPermissions)
+        $directPermissionModels = $directPermissions !== null && !empty($directPermissions)
             ? $this->normalizePermissions($directPermissions)
             : collect([]);
         $allPermissions = $rolePermissions->merge($directPermissionModels)->unique('id')->values();

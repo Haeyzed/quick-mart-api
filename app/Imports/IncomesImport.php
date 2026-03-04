@@ -16,21 +16,21 @@ class IncomesImport implements ToModel, WithHeadingRow, WithValidation, WithBatc
 {
     public function model(array $row): ?Income
     {
-        $amount = isset($row['amount']) ? (float) $row['amount'] : 0;
+        $amount = isset($row['amount']) ? (float)$row['amount'] : 0;
         if ($amount <= 0) {
             return null;
         }
-        $ref = trim((string) ($row['reference_no'] ?? ''));
+        $ref = trim((string)($row['reference_no'] ?? ''));
         if ($ref === '') {
-            $ref = 'ir-'.date('Ymd').'-'.date('His');
+            $ref = 'ir-' . date('Ymd') . '-' . date('His');
         }
-        $userId = isset($row['user_id']) ? (int) $row['user_id'] : 1;
-        $warehouseId = (int) ($row['warehouse_id'] ?? 1);
+        $userId = isset($row['user_id']) ? (int)$row['user_id'] : 1;
+        $warehouseId = (int)($row['warehouse_id'] ?? 1);
         return new Income([
             'reference_no' => $ref,
-            'income_category_id' => (int) ($row['income_category_id'] ?? 1),
+            'income_category_id' => (int)($row['income_category_id'] ?? 1),
             'warehouse_id' => $warehouseId,
-            'account_id' => isset($row['account_id']) ? (int) $row['account_id'] : null,
+            'account_id' => isset($row['account_id']) ? (int)$row['account_id'] : null,
             'user_id' => $userId,
             'cash_register_id' => null,
             'amount' => $amount,

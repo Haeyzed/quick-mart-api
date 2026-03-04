@@ -60,12 +60,12 @@ class BrandController extends Controller
                  * Search term to filter brands by name or slug.
                  * @example "Apple"
                  */
-                'search'     => ['nullable', 'string'],
+                'search' => ['nullable', 'string'],
                 /**
                  * Filter by active status.
                  * @example true
                  */
-                'is_active'  => ['nullable', 'boolean'],
+                'is_active' => ['nullable', 'boolean'],
                 /**
                  * Filter brands starting from this date.
                  * @example "2024-01-01"
@@ -75,7 +75,7 @@ class BrandController extends Controller
                  * Filter brands up to this date.
                  * @example "2024-12-31"
                  */
-                'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
+                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             ]),
             /**
              * Amount of items per page.

@@ -28,21 +28,22 @@ class CustomerGroupsExport implements FromQuery, WithHeadings, WithMapping
     ];
 
     /**
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
-     * @param  array<string, string>  $filters
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array<string, string> $filters
      */
     public function __construct(
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {
+    )
+    {
     }
 
     public function query(): Builder
     {
         return CustomerGroup::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->filter($this->filters)
             ->orderBy('name');
     }
@@ -52,13 +53,13 @@ class CustomerGroupsExport implements FromQuery, WithHeadings, WithMapping
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => ucfirst(str_replace('_', ' ', $col)),
             $columns
         );
     }
 
     /**
-     * @param  CustomerGroup  $row
+     * @param CustomerGroup $row
      * @return array<int, mixed>
      */
     public function map($row): array

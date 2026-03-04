@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * RewardPointSetting Model
@@ -27,24 +31,24 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int $max_redeem_point
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereDuration($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereIsActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereMaxRedeemPoint($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereMinOrderTotalForRedeem($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereMinRedeemPoint($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereMinimumAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting wherePerPointAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereRedeemAmountPerUnitRp($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereType($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RewardPointSetting whereUpdatedAt($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|RewardPointSetting newModelQuery()
+ * @method static Builder<static>|RewardPointSetting newQuery()
+ * @method static Builder<static>|RewardPointSetting query()
+ * @method static Builder<static>|RewardPointSetting whereCreatedAt($value)
+ * @method static Builder<static>|RewardPointSetting whereDuration($value)
+ * @method static Builder<static>|RewardPointSetting whereId($value)
+ * @method static Builder<static>|RewardPointSetting whereIsActive($value)
+ * @method static Builder<static>|RewardPointSetting whereMaxRedeemPoint($value)
+ * @method static Builder<static>|RewardPointSetting whereMinOrderTotalForRedeem($value)
+ * @method static Builder<static>|RewardPointSetting whereMinRedeemPoint($value)
+ * @method static Builder<static>|RewardPointSetting whereMinimumAmount($value)
+ * @method static Builder<static>|RewardPointSetting wherePerPointAmount($value)
+ * @method static Builder<static>|RewardPointSetting whereRedeemAmountPerUnitRp($value)
+ * @method static Builder<static>|RewardPointSetting whereType($value)
+ * @method static Builder<static>|RewardPointSetting whereUpdatedAt($value)
+ * @mixin Eloquent
  */
 class RewardPointSetting extends Model implements AuditableContract
 {

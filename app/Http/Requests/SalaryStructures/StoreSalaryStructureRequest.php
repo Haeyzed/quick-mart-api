@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\SalaryStructures;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 
 class StoreSalaryStructureRequest extends BaseRequest
 {
@@ -13,17 +14,10 @@ class StoreSalaryStructureRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -36,5 +30,12 @@ class StoreSalaryStructureRequest extends BaseRequest
             'items.*.amount' => ['nullable', 'numeric', 'min:0'],
             'items.*.percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

@@ -28,7 +28,9 @@ class PayrollEntryController extends Controller
      */
     public function __construct(
         private readonly PayrollEntryService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Payroll Entries

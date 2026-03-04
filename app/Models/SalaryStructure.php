@@ -9,19 +9,41 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Class SalaryStructure
- *
+ * 
  * Represents a salary structure template (e.g. monthly pay) with linked components.
  *
  * @property int $id
  * @property string $name
  * @property string $pay_frequency
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SalaryComponent> $components
+ * @property-read int|null $components_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
+ * @property-read int|null $employees_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SalaryStructureItem> $structureItems
+ * @property-read int|null $structure_items_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure wherePayFrequency($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructure withoutTrashed()
+ * @mixin \Eloquent
  */
 class SalaryStructure extends Model
 {
@@ -32,13 +54,6 @@ class SalaryStructure extends Model
         'pay_frequency',
         'is_active',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
 
     public function scopeActive($query)
     {
@@ -75,5 +90,12 @@ class SalaryStructure extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'salary_structure_id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
     }
 }

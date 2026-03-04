@@ -27,7 +27,7 @@ class TimezoneService
     /**
      * Get paginated timezones.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedTimezones(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -61,7 +61,7 @@ class TimezoneService
         return $grouped->map(function (Collection $items, string $region): array {
             return [
                 'region' => $region,
-                'options' => $items->map(fn (Timezone $tz) => [
+                'options' => $items->map(fn(Timezone $tz) => [
                     'value' => $tz->id,
                     'label' => $tz->name,
                     'country_id' => $tz->country_id,
@@ -108,9 +108,9 @@ class TimezoneService
     public function download(): string
     {
         $fileName = 'timezones-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template timezones not found.');
         }
 
@@ -119,8 +119,8 @@ class TimezoneService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'timezones_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'timezones_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

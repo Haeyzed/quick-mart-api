@@ -34,7 +34,7 @@ class PayrollsImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'employee_id' => $row['employee_id'],
             'account_id' => $row['account_id'],
             'user_id' => Auth::id(), // Assigned to the user uploading the file
-            'amount' => (float) $row['amount'],
+            'amount' => (float)$row['amount'],
             'paying_method' => $row['paying_method'],
             'note' => $row['note'] ?? null,
             'status' => $row['status'] ?? 'draft',

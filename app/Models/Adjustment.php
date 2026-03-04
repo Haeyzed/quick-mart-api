@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Adjustment
- *
+ * 
  * Represents a stock quantity adjustment for a warehouse. Handles the underlying data
  * structure, relationships, and specific query scopes for adjustment entities.
  *
@@ -30,18 +32,15 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $note
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|Adjustment newModelQuery()
  * @method static Builder|Adjustment newQuery()
  * @method static Builder|Adjustment query()
  * @method static Builder|Adjustment filter(array $filters)
- *
- * @property-read \App\Models\Warehouse $warehouse
+ * @property-read Warehouse $warehouse
  * @property-read Collection<int, ProductAdjustment> $productAdjustments
  * @property-read int|null $product_adjustments_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|Adjustment customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Adjustment last30Days(string $column = 'created_at')
  * @method static Builder<static>|Adjustment last7Days(string $column = 'created_at')
@@ -61,8 +60,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Adjustment whereWarehouseId($value)
  * @method static Builder<static>|Adjustment yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Adjustment yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Adjustment extends Model implements AuditableContract
 {
@@ -96,30 +94,30 @@ class Adjustment extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                ! empty($filters['warehouse_id']),
-                fn (Builder $q) => $q->where('warehouse_id', $filters['warehouse_id'])
+                !empty($filters['warehouse_id']),
+                fn(Builder $q) => $q->where('warehouse_id', $filters['warehouse_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('reference_no', 'like', $term)
                         ->orWhere('note', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

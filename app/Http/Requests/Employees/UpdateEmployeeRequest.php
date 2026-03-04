@@ -7,6 +7,7 @@ namespace App\Http\Requests\Employees;
 use App\Http\Requests\BaseRequest;
 use App\Models\Employee;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Class UpdateEmployeeRequest
@@ -22,23 +23,6 @@ class UpdateEmployeeRequest extends BaseRequest
     public function authorize(): bool
     {
         return true;
-    }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        $merge = [];
-        if ($this->has('is_active')) {
-            $merge['is_active'] = filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN);
-        }
-        if ($this->has('is_sale_agent')) {
-            $merge['is_sale_agent'] = filter_var($this->is_sale_agent, FILTER_VALIDATE_BOOLEAN);
-        }
-        if (! empty($merge)) {
-            $this->merge($merge);
-        }
     }
 
     public function rules(): array
@@ -140,7 +124,7 @@ class UpdateEmployeeRequest extends BaseRequest
      * Configure the validator instance.
      * Implements advanced cross-row validation for the sales_target array.
      *
-     * @param  \Illuminate\Validation\Validator  $validator
+     * @param Validator $validator
      */
     public function withValidator($validator): void
     {
@@ -151,8 +135,8 @@ class UpdateEmployeeRequest extends BaseRequest
                 $previousTo = null;
 
                 foreach ($salesTargets as $index => $target) {
-                    $from = (float) ($target['sales_from'] ?? 0);
-                    $to = (float) ($target['sales_to'] ?? 0);
+                    $from = (float)($target['sales_from'] ?? 0);
+                    $to = (float)($target['sales_to'] ?? 0);
 
                     if ($previousTo !== null && $from <= $previousTo) {
                         $validator->errors()->add(
@@ -165,5 +149,22 @@ class UpdateEmployeeRequest extends BaseRequest
                 }
             }
         });
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('is_active')) {
+            $merge['is_active'] = filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($this->has('is_sale_agent')) {
+            $merge['is_sale_agent'] = filter_var($this->is_sale_agent, FILTER_VALIDATE_BOOLEAN);
+        }
+        if (!empty($merge)) {
+            $this->merge($merge);
+        }
     }
 }

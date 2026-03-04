@@ -30,12 +30,14 @@ class SaleAgentService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated sale agents based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedSaleAgents(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -58,7 +60,7 @@ class SaleAgentService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Employee $e) => [
+            ->map(fn(Employee $e) => [
                 'value' => $e->id,
                 'label' => $e->name,
             ]);
@@ -76,7 +78,7 @@ class SaleAgentService
 
     private function ensureIsSaleAgent(Employee $employee): void
     {
-        if (! $employee->is_sale_agent) {
+        if (!$employee->is_sale_agent) {
             abort(404, 'Employee is not a sale agent.');
         }
     }
@@ -84,7 +86,7 @@ class SaleAgentService
     /**
      * Create a new sale agent.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createSaleAgent(array $data): Employee
     {
@@ -100,7 +102,7 @@ class SaleAgentService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
     private function handleImageUpload(array $data): array
@@ -117,7 +119,7 @@ class SaleAgentService
     /**
      * Update an existing sale agent.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function updateSaleAgent(Employee $employee, array $data): Employee
     {
@@ -154,7 +156,7 @@ class SaleAgentService
     /**
      * Bulk delete (deactivate) sale agents.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      * @return int Count of items processed.
      */
     public function bulkDeleteSaleAgents(array $ids): int
@@ -174,7 +176,7 @@ class SaleAgentService
     /**
      * Bulk update status for sale agents.
      *
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
@@ -210,8 +212,8 @@ class SaleAgentService
     public function download(): string
     {
         $fileName = 'sale-agents-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
-        if (! File::exists($path)) {
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+        if (!File::exists($path)) {
             throw new RuntimeException('Sale agents import template not found.');
         }
 
@@ -221,14 +223,14 @@ class SaleAgentService
     /**
      * Generate sale agents export file.
      *
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
-     * @param  array<string, mixed>  $filters
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array<string, mixed> $filters
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'sale_agents_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'sale_agents_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
         ExcelFacade::store(
             new SaleAgentsExport($ids, $columns, $filters),

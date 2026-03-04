@@ -40,7 +40,7 @@ class CandidateResource extends JsonResource
             /** @example "Strong profile" */
             'notes' => $this->notes,
             /** @example {"id": 5, "title": "Senior Developer"} */
-            'job_opening' => $this->whenLoaded('jobOpening', fn () => ['id' => $this->jobOpening->id, 'title' => $this->jobOpening->title]),
+            'job_opening' => $this->whenLoaded('jobOpening', fn() => ['id' => $this->jobOpening->id, 'title' => $this->jobOpening->title]),
             /** @example "2024-01-10T08:00:00Z" */
             'created_at' => $this->created_at?->toIso8601String(),
             /** @example "2024-01-15T10:00:00Z" */

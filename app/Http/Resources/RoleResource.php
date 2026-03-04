@@ -64,13 +64,13 @@ class RoleResource extends JsonResource
              * The total count of permissions assigned to this role.
              * @example 15
              */
-            'permissions_count' => $this->when(isset($this->permissions_count), fn () => $this->permissions_count),
+            'permissions_count' => $this->when(isset($this->permissions_count), fn() => $this->permissions_count),
 
             /**
              * The associated permissions mapping.
              * @example [{"id": 1, "name": "view employees"}]
              */
-            'permissions' => $this->whenLoaded('permissions', fn () => $this->permissions->map(fn ($p) => [
+            'permissions' => $this->whenLoaded('permissions', fn() => $this->permissions->map(fn($p) => [
                 'id' => $p->id,
                 'name' => $p->name
             ])),

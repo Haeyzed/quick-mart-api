@@ -32,16 +32,18 @@ class LeaveTypeService
     /**
      * LeaveTypeService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated leave types based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedLeaveTypes(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -62,7 +64,7 @@ class LeaveTypeService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (LeaveType $leaveType) => [
+            ->map(fn(LeaveType $leaveType) => [
                 'value' => $leaveType->id,
                 'label' => $leaveType->name,
             ]);
@@ -71,7 +73,7 @@ class LeaveTypeService
     /**
      * Create a newly registered leave type.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new leave type.
+     * @param array<string, mixed> $data The validated request data for the new leave type.
      * @return LeaveType The newly created LeaveType model instance.
      */
     public function createLeaveType(array $data): LeaveType
@@ -84,8 +86,8 @@ class LeaveTypeService
     /**
      * Update an existing leave type's information.
      *
-     * @param  LeaveType  $leaveType  The leave type model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param LeaveType $leaveType The leave type model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return LeaveType The freshly updated LeaveType model instance.
      */
     public function updateLeaveType(LeaveType $leaveType, array $data): LeaveType
@@ -110,7 +112,7 @@ class LeaveTypeService
     /**
      * Bulk delete multiple leave types.
      *
-     * @param  array<int>  $ids  Array of leave type IDs to be deleted.
+     * @param array<int> $ids Array of leave type IDs to be deleted.
      * @return int The total count of successfully deleted leave types.
      */
     public function bulkDeleteLeaveTypes(array $ids): int
@@ -131,8 +133,8 @@ class LeaveTypeService
     /**
      * Update the active status for multiple leave types.
      *
-     * @param  array<int>  $ids  Array of leave type IDs to update.
-     * @param  bool  $isActive  The new active status.
+     * @param array<int> $ids Array of leave type IDs to update.
+     * @param bool $isActive The new active status.
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -143,7 +145,7 @@ class LeaveTypeService
     /**
      * Import multiple leave types from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      */
     public function importLeaveTypes(UploadedFile $file): void
     {
@@ -156,9 +158,9 @@ class LeaveTypeService
     public function download(): string
     {
         $fileName = 'leave-types-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template leave-types not found.');
         }
 
@@ -168,16 +170,16 @@ class LeaveTypeService
     /**
      * Generate an export file (Excel or PDF) containing leave type data.
      *
-     * @param  array<int>  $ids  Specific leave type IDs to export.
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific leave type IDs to export.
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'leave_types_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'leave_types_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

@@ -6,7 +6,9 @@ namespace App\Models;
 
 use App\Enums\OvertimeStatusEnum;
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Overtime
@@ -36,10 +39,10 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Overtime newQuery()
  * @method static Builder|Overtime query()
  * @method static Builder|Overtime filter(array $filters)
- * @property-read \App\Models\User|null $approver
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read User|null $approver
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \App\Models\Employee $employee
+ * @property-read Employee $employee
  * @method static Builder<static>|Overtime customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Overtime last30Days(string $column = 'created_at')
  * @method static Builder<static>|Overtime last7Days(string $column = 'created_at')
@@ -62,7 +65,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Overtime withoutTrashed()
  * @method static Builder<static>|Overtime yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Overtime yesterday(string $column = 'current_at')
- * @mixin \Eloquent
+ * @method static Builder<static>|Overtime whereDeletedAt($value)
+ * @mixin Eloquent
  */
 class Overtime extends Model implements AuditableContract
 {
@@ -114,15 +118,15 @@ class Overtime extends Model implements AuditableContract
         parent::boot();
 
         static::saving(function (Overtime $overtime) {
-            $overtime->amount = (float) $overtime->hours * (float) $overtime->rate;
+            $overtime->amount = (float)$overtime->hours * (float)$overtime->rate;
         });
     }
 
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -130,10 +134,10 @@ class Overtime extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->where('status', $filters['status'])
+                fn(Builder $q) => $q->where('status', $filters['status'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->whereHas('employee', function (Builder $subQ) use ($term) {
@@ -142,8 +146,8 @@ class Overtime extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

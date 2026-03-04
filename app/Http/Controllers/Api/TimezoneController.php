@@ -37,11 +37,13 @@ class TimezoneController extends Controller
     /**
      * TimezoneController constructor.
      *
-     * @param  TimezoneService  $service  Service handling timezone business logic.
+     * @param TimezoneService $service Service handling timezone business logic.
      */
     public function __construct(
         private readonly TimezoneService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Timezones
@@ -218,13 +220,13 @@ class TimezoneController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -234,7 +236,7 @@ class TimezoneController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'timezones_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'timezones_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Timezone Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -243,7 +245,7 @@ class TimezoneController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

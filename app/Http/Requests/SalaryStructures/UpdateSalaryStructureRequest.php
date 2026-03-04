@@ -13,13 +13,6 @@ class UpdateSalaryStructureRequest extends BaseRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
-        }
-    }
-
     public function rules(): array
     {
         return [
@@ -31,5 +24,12 @@ class UpdateSalaryStructureRequest extends BaseRequest
             'items.*.amount' => ['nullable', 'numeric', 'min:0'],
             'items.*.percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 }

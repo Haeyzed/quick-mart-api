@@ -36,7 +36,9 @@ class RoleController extends Controller
 {
     public function __construct(
         private readonly RoleService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Roles
@@ -269,14 +271,14 @@ class RoleController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'roles_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'roles_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Roles Export Is Ready',
                     $generalSetting,
                     $mailSetting
                 )
             );
 
-            return response()->success(null, 'Export is being processed and will be sent to email: '.$user->email);
+            return response()->success(null, 'Export is being processed and will be sent to email: ' . $user->email);
         }
 
         return response()->error('Invalid export method provided.');

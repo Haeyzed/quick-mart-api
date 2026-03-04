@@ -25,7 +25,9 @@ class MailSettingController extends Controller
      */
     public function __construct(
         private readonly MailSettingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display the mail setting.

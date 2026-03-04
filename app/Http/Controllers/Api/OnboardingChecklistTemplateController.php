@@ -28,7 +28,9 @@ class OnboardingChecklistTemplateController extends Controller
      */
     public function __construct(
         private readonly OnboardingChecklistTemplateService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Onboarding Checklist Templates

@@ -40,7 +40,7 @@ class LeaveResource extends JsonResource
              *
              * @example John Doe
              */
-            'employee' => $this->whenLoaded('employee', fn () => [
+            'employee' => $this->whenLoaded('employee', fn() => [
                 'id' => $this->employee->id,
                 'name' => $this->employee->name,
             ]),
@@ -57,7 +57,7 @@ class LeaveResource extends JsonResource
              *
              * @example Annual Leave
              */
-            'leave_type' => $this->whenLoaded('leaveType', fn () => [
+            'leave_type' => $this->whenLoaded('leaveType', fn() => [
                 'id' => $this->leaveType->id,
                 'name' => $this->leaveType->name,
             ]),
@@ -81,7 +81,7 @@ class LeaveResource extends JsonResource
              *
              * @example 5.0
              */
-            'days' => (float) $this->days,
+            'days' => (float)$this->days,
 
             /**
              * The current status of the leave request.
@@ -102,19 +102,19 @@ class LeaveResource extends JsonResource
              *
              * @example 0
              */
-            'current_approval_level' => (int) ($this->current_approval_level ?? 0),
+            'current_approval_level' => (int)($this->current_approval_level ?? 0),
 
             /**
              * Maximum approval levels required.
              *
              * @example 2
              */
-            'max_approval_level' => (int) ($this->max_approval_level ?? 2),
+            'max_approval_level' => (int)($this->max_approval_level ?? 2),
 
             /**
              * Approval history when loaded (multi-level).
              */
-            'leave_approvals' => $this->whenLoaded('leaveApprovals', fn () => $this->leaveApprovals->map(fn ($a) => [
+            'leave_approvals' => $this->whenLoaded('leaveApprovals', fn() => $this->leaveApprovals->map(fn($a) => [
                 'level' => $a->level,
                 'approver_id' => $a->approver_id,
                 'status' => $a->status,
@@ -134,7 +134,7 @@ class LeaveResource extends JsonResource
              *
              * @example Admin User
              */
-            'approver_name' => $this->whenLoaded('approver', fn () => $this->approver->name),
+            'approver_name' => $this->whenLoaded('approver', fn() => $this->approver->name),
 
             /**
              * The date and time when the leave request was created.

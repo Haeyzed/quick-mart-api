@@ -39,7 +39,9 @@ class LeaveController extends Controller
      */
     public function __construct(
         private readonly LeaveService $leaveService
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Leaves
@@ -246,7 +248,7 @@ class LeaveController extends Controller
 
         $updatedLeave = $this->leaveService->approve(
             $leave,
-            (int) $validated['level'],
+            (int)$validated['level'],
             $validated['status'],
             $validated['notes'] ?? null
         );
@@ -306,13 +308,13 @@ class LeaveController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -322,7 +324,7 @@ class LeaveController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'leaves_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'leaves_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Leaves Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -331,7 +333,7 @@ class LeaveController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

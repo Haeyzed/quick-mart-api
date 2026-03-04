@@ -21,6 +21,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Throwable;
 
 /**
  * Exports Brand data with PDF-optimized styling and external image support.
@@ -57,20 +58,8 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {
-    }
-
-    /**
-     * Prepare the query for the export.
-     *
-     * @return Builder
-     */
-    public function query(): Builder
+    )
     {
-        return Brand::query()
-            ->when(!empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
-            ->filter($this->filters)
-            ->orderBy('name');
     }
 
     /**
@@ -83,7 +72,7 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => ucfirst(str_replace('_', ' ', $col)),
             $columns
         );
     }
@@ -143,8 +132,8 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
                 file_put_contents($tempImage, $imageContent);
 
                 $drawing = new Drawing();
-                $drawing->setName((string) $brand->name);
-                $drawing->setDescription((string) $brand->name);
+                $drawing->setName((string)$brand->name);
+                $drawing->setDescription((string)$brand->name);
                 $drawing->setPath($tempImage);
                 $drawing->setHeight(50);
                 $drawing->setCoordinates($colLetter . ($index + 2));
@@ -153,12 +142,25 @@ class BrandsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, 
 
                 $drawings[] = $drawing;
 
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 continue;
             }
         }
 
         return $drawings;
+    }
+
+    /**
+     * Prepare the query for the export.
+     *
+     * @return Builder
+     */
+    public function query(): Builder
+    {
+        return Brand::query()
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->filter($this->filters)
+            ->orderBy('name');
     }
 
     /**

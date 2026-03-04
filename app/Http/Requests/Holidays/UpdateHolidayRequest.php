@@ -22,26 +22,6 @@ class UpdateHolidayRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        $mergeData = [];
-
-        if ($this->has('recurring')) {
-            $mergeData['recurring'] = filter_var($this->recurring, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if ($this->has('is_approved')) {
-            $mergeData['is_approved'] = filter_var($this->is_approved, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if (!empty($mergeData)) {
-            $this->merge($mergeData);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -91,5 +71,25 @@ class UpdateHolidayRequest extends FormRequest
              */
             'is_approved' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $mergeData = [];
+
+        if ($this->has('recurring')) {
+            $mergeData['recurring'] = filter_var($this->recurring, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if ($this->has('is_approved')) {
+            $mergeData['is_approved'] = filter_var($this->is_approved, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (!empty($mergeData)) {
+            $this->merge($mergeData);
+        }
     }
 }

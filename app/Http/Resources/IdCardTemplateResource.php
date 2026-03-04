@@ -50,7 +50,7 @@ class IdCardTemplateResource extends JsonResource
              *
              * @example true
              */
-            'is_active' => (bool) $this->is_active,
+            'is_active' => (bool)$this->is_active,
 
             /**
              * Creation timestamp.

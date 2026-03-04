@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class CashRegister
- *
+ * 
  * Represents a cash register session for a user in a warehouse. Handles the underlying data
  * structure, relationships, and specific query scopes for cash register entities.
  *
@@ -30,23 +32,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property float|null $actual_cash
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|CashRegister newModelQuery()
  * @method static Builder|CashRegister newQuery()
  * @method static Builder|CashRegister query()
  * @method static Builder|CashRegister open()
  * @method static Builder|CashRegister closed()
  * @method static Builder|CashRegister filter(array $filters)
- *
- * @property-read \App\Models\User $user
- * @property-read \App\Models\Warehouse $warehouse
+ * @property-read User $user
+ * @property-read Warehouse $warehouse
  * @property-read Collection<int, Sale> $sales
  * @property-read int|null $sales_count
  * @property-read Collection<int, Payment> $payments
  * @property-read int|null $payments_count
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|CashRegister customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|CashRegister last30Days(string $column = 'created_at')
  * @method static Builder<static>|CashRegister last7Days(string $column = 'created_at')
@@ -66,8 +65,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|CashRegister whereWarehouseId($value)
  * @method static Builder<static>|CashRegister yearToDate(string $column = 'created_at')
  * @method static Builder<static>|CashRegister yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class CashRegister extends Model implements AuditableContract
 {
@@ -99,8 +97,8 @@ class CashRegister extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -108,19 +106,19 @@ class CashRegister extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['status']),
-                fn (Builder $q) => $q->where('status', $filters['status'])
+                fn(Builder $q) => $q->where('status', $filters['status'])
             )
             ->when(
-                ! empty($filters['warehouse_id']),
-                fn (Builder $q) => $q->where('warehouse_id', $filters['warehouse_id'])
+                !empty($filters['warehouse_id']),
+                fn(Builder $q) => $q->where('warehouse_id', $filters['warehouse_id'])
             )
             ->when(
-                ! empty($filters['user_id']),
-                fn (Builder $q) => $q->where('user_id', $filters['user_id'])
+                !empty($filters['user_id']),
+                fn(Builder $q) => $q->where('user_id', $filters['user_id'])
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

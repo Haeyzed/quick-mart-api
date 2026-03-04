@@ -55,12 +55,12 @@ class IncomeService
     {
         return DB::transaction(function () use ($data) {
             if (empty($data['reference_no'])) {
-                $data['reference_no'] = 'ir-'.date('Ymd').'-'.date('His');
+                $data['reference_no'] = 'ir-' . date('Ymd') . '-' . date('His');
             }
-            if (! isset($data['created_at'])) {
+            if (!isset($data['created_at'])) {
                 $data['created_at'] = now();
             }
-            if (! isset($data['user_id'])) {
+            if (!isset($data['user_id'])) {
                 $data['user_id'] = Auth::id();
             }
             if (isset($data['user_id'], $data['warehouse_id'])) {
@@ -133,8 +133,8 @@ class IncomeService
     public function download(): string
     {
         $fileName = 'incomes-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
-        if (! File::exists($path)) {
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
+        if (!File::exists($path)) {
             throw new RuntimeException('Incomes import template not found.');
         }
         return $path;
@@ -149,8 +149,8 @@ class IncomeService
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'incomes_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'incomes_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
         ExcelFacade::store(
             new IncomesExport($ids, $columns, $filters),

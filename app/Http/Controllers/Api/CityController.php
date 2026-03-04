@@ -37,11 +37,13 @@ class CityController extends Controller
     /**
      * CityController constructor.
      *
-     * @param  CityService  $service  Service handling city business logic.
+     * @param CityService $service Service handling city business logic.
      */
     public function __construct(
         private readonly CityService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Cities
@@ -224,13 +226,13 @@ class CityController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -240,7 +242,7 @@ class CityController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'cities_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'cities_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your City Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -249,7 +251,7 @@ class CityController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

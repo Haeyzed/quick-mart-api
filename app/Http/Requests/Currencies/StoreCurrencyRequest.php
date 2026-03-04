@@ -25,18 +25,6 @@ class StoreCurrencyRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('symbol_first')) {
-            $this->merge([
-                'symbol_first' => filter_var($this->symbol_first, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -54,5 +42,17 @@ class StoreCurrencyRequest extends FormRequest
             'decimal_mark' => ['nullable', 'string', 'max:1'],
             'thousands_separator' => ['nullable', 'string', 'max:1'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('symbol_first')) {
+            $this->merge([
+                'symbol_first' => filter_var($this->symbol_first, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

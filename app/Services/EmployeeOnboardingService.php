@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class EmployeeOnboardingService
 {
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<EmployeeOnboarding>
      */
     public function getPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
@@ -51,18 +51,6 @@ class EmployeeOnboardingService
         });
     }
 
-    public function update(EmployeeOnboarding $onboarding, array $data): EmployeeOnboarding
-    {
-        return DB::transaction(function () use ($onboarding, $data) {
-            $onboarding->update($data);
-            if (isset($data['status']) && $data['status'] === 'completed') {
-                $onboarding->update(['completed_at' => now()]);
-            }
-
-            return $onboarding->fresh(['employee', 'template', 'items.checklistItem']);
-        });
-    }
-
     public function completeItem(EmployeeOnboardingItem $item, ?string $notes = null): EmployeeOnboardingItem
     {
         return DB::transaction(function () use ($item, $notes) {
@@ -77,8 +65,20 @@ class EmployeeOnboardingService
         });
     }
 
+    public function update(EmployeeOnboarding $onboarding, array $data): EmployeeOnboarding
+    {
+        return DB::transaction(function () use ($onboarding, $data) {
+            $onboarding->update($data);
+            if (isset($data['status']) && $data['status'] === 'completed') {
+                $onboarding->update(['completed_at' => now()]);
+            }
+
+            return $onboarding->fresh(['employee', 'template', 'items.checklistItem']);
+        });
+    }
+
     public function delete(EmployeeOnboarding $onboarding): void
     {
-        DB::transaction(fn () => $onboarding->delete());
+        DB::transaction(fn() => $onboarding->delete());
     }
 }

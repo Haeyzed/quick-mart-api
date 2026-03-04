@@ -6,10 +6,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Class SalaryStructureItem
- *
+ * 
  * Pivot model linking a salary structure to a component with amount/percentage.
  *
  * @property int $id
@@ -17,8 +18,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $salary_component_id
  * @property float $amount
  * @property float|null $percentage
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read \App\Models\SalaryComponent $salaryComponent
+ * @property-read \App\Models\SalaryStructure $salaryStructure
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem wherePercentage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereSalaryComponentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereSalaryStructureId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalaryStructureItem whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 class SalaryStructureItem extends Model
 {
@@ -28,14 +42,6 @@ class SalaryStructureItem extends Model
         'amount',
         'percentage',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-            'percentage' => 'decimal:2',
-        ];
-    }
 
     /**
      * @return BelongsTo<SalaryStructure, self>
@@ -51,5 +57,13 @@ class SalaryStructureItem extends Model
     public function salaryComponent(): BelongsTo
     {
         return $this->belongsTo(SalaryComponent::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'percentage' => 'decimal:2',
+        ];
     }
 }

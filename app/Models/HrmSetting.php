@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class HrmSetting
- *
+ * 
  * Represents HRM (Human Resource Management) system settings. Handles the underlying data
  * structure, relationships, and specific query scopes for HRM setting entities.
  *
@@ -23,15 +26,12 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string $checkout
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|HrmSetting newModelQuery()
  * @method static Builder|HrmSetting newQuery()
  * @method static Builder|HrmSetting query()
  * @method static Builder|HrmSetting filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|HrmSetting customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|HrmSetting last30Days(string $column = 'created_at')
  * @method static Builder<static>|HrmSetting last7Days(string $column = 'created_at')
@@ -47,8 +47,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|HrmSetting whereUpdatedAt($value)
  * @method static Builder<static>|HrmSetting yearToDate(string $column = 'created_at')
  * @method static Builder<static>|HrmSetting yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class HrmSetting extends Model implements AuditableContract
 {
@@ -67,15 +66,15 @@ class HrmSetting extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query->customRange(
-            ! empty($filters['start_date']) ? $filters['start_date'] : null,
-            ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            !empty($filters['start_date']) ? $filters['start_date'] : null,
+            !empty($filters['end_date']) ? $filters['end_date'] : null,
         );
     }
 }

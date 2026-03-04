@@ -22,13 +22,13 @@ class SalaryStructureResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'pay_frequency' => $this->pay_frequency,
-            'is_active' => (bool) $this->is_active,
-            'structure_items' => $this->whenLoaded('structureItems', fn () => $this->structureItems->map(fn ($item) => [
+            'is_active' => (bool)$this->is_active,
+            'structure_items' => $this->whenLoaded('structureItems', fn() => $this->structureItems->map(fn($item) => [
                 'id' => $item->id,
                 'salary_component_id' => $item->salary_component_id,
-                'amount' => (float) $item->amount,
-                'percentage' => $item->percentage ? (float) $item->percentage : null,
-                'salary_component' => $this->when($item->relationLoaded('salaryComponent'), fn () => [
+                'amount' => (float)$item->amount,
+                'percentage' => $item->percentage ? (float)$item->percentage : null,
+                'salary_component' => $this->when($item->relationLoaded('salaryComponent'), fn() => [
                     'id' => $item->salaryComponent->id,
                     'name' => $item->salaryComponent->name,
                     'type' => $item->salaryComponent->type,

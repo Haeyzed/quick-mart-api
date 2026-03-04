@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * ProductBatch Model
@@ -31,7 +33,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Collection<int, ProductPurchase> $productPurchases
  * @method static Builder|ProductBatch expired()
  * @method static Builder|ProductBatch expiringSoon(int $days = 30)
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $product_purchases_count
  * @property-read int|null $product_sales_count
@@ -45,7 +47,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|ProductBatch whereProductId($value)
  * @method static Builder<static>|ProductBatch whereQty($value)
  * @method static Builder<static>|ProductBatch whereUpdatedAt($value)
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class ProductBatch extends Model implements AuditableContract
 {

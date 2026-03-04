@@ -39,7 +39,9 @@ class HolidayController extends Controller
      */
     public function __construct(
         private readonly HolidayService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Holidays
@@ -277,13 +279,13 @@ class HolidayController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -293,7 +295,7 @@ class HolidayController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'holidays_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'holidays_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Holiday Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -302,7 +304,7 @@ class HolidayController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

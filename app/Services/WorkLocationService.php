@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 class WorkLocationService
 {
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<WorkLocation>
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -27,12 +27,12 @@ class WorkLocationService
         if (isset($filters['is_active'])) {
             $query->when(
                 $filters['is_active'],
-                fn ($q) => $q->active(),
-                fn ($q) => $q->where('is_active', false)
+                fn($q) => $q->active(),
+                fn($q) => $q->where('is_active', false)
             );
         }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
+        if (!empty($filters['search'])) {
+            $term = '%' . $filters['search'] . '%';
             $query->where('name', 'like', $term)->orWhere('code', 'like', $term);
         }
 
@@ -48,7 +48,7 @@ class WorkLocationService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (WorkLocation $loc) => [
+            ->map(fn(WorkLocation $loc) => [
                 'value' => $loc->id,
                 'label' => $loc->name,
             ]);
@@ -56,7 +56,28 @@ class WorkLocationService
 
     public function create(array $data): WorkLocation
     {
-        return DB::transaction(fn () => WorkLocation::query()->create($data));
+        return DB::transaction(fn() => WorkLocation::query()->create($data));
+    }
+
+    /**
+     * @param array<int> $ids
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return DB::transaction(fn() => WorkLocation::query()->whereIn('id', $ids)->delete());
+    }
+
+    public function delete(WorkLocation $workLocation): void
+    {
+        DB::transaction(fn() => $workLocation->delete());
+    }
+
+    /**
+     * @param array<int> $ids
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return WorkLocation::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 
     public function update(WorkLocation $workLocation, array $data): WorkLocation
@@ -66,26 +87,5 @@ class WorkLocationService
 
             return $workLocation->fresh();
         });
-    }
-
-    public function delete(WorkLocation $workLocation): void
-    {
-        DB::transaction(fn () => $workLocation->delete());
-    }
-
-    /**
-     * @param  array<int>  $ids
-     */
-    public function bulkDelete(array $ids): int
-    {
-        return DB::transaction(fn () => WorkLocation::query()->whereIn('id', $ids)->delete());
-    }
-
-    /**
-     * @param  array<int>  $ids
-     */
-    public function bulkUpdateStatus(array $ids, bool $isActive): int
-    {
-        return WorkLocation::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
     }
 }

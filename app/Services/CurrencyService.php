@@ -27,7 +27,7 @@ class CurrencyService
     /**
      * Get paginated currencies.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedCurrencies(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -47,7 +47,7 @@ class CurrencyService
             ->select('id', 'name', 'country_id')
             ->orderBy('name')
             ->get()
-            ->map(fn (Currency $currency) => [
+            ->map(fn(Currency $currency) => [
                 'value' => $currency->id,
                 'label' => $currency->name,
                 'country_id' => $currency->country_id,
@@ -92,9 +92,9 @@ class CurrencyService
     public function download(): string
     {
         $fileName = 'currencies-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template currencies not found.');
         }
 
@@ -103,8 +103,8 @@ class CurrencyService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'currencies_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'currencies_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

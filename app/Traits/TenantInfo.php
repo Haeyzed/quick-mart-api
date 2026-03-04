@@ -13,6 +13,7 @@ use App\Models\landlord\Package;
 use App\Models\landlord\Tenant;
 use App\Models\landlord\TenantPayment;
 use App\Models\Product;
+use App\Models\Role;
 use Database\Seeders\Tenant\TenantDatabaseSeeder;
 use Exception;
 use Illuminate\Http\Client\Response;
@@ -713,7 +714,7 @@ trait TenantInfo
         $permissionIdsArray = json_decode($permissionIds ?? '[]', true) ?? [];
 
         $tenant->run(function () use ($abandonedPermissionIdsArray, $permissionIdsArray, $packageId, $modules, $expiryDate, $subscriptionType) {
-            $adminRoleId = \App\Models\Role::query()->where('name', 'Admin')->value('id') ?? 1;
+            $adminRoleId = Role::query()->where('name', 'Admin')->value('id') ?? 1;
 
             // Remove abandoned permissions
             if (count($abandonedPermissionIdsArray) > 0) {

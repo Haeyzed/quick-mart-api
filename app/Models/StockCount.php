@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * StockCount Model
@@ -36,7 +39,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read User $user
  * @method static Builder|StockCount adjusted()
  * @method static Builder|StockCount notAdjusted()
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @method static Builder<static>|StockCount newModelQuery()
  * @method static Builder<static>|StockCount newQuery()
@@ -54,7 +57,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|StockCount whereUpdatedAt($value)
  * @method static Builder<static>|StockCount whereUserId($value)
  * @method static Builder<static>|StockCount whereWarehouseId($value)
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class StockCount extends Model implements AuditableContract
 {

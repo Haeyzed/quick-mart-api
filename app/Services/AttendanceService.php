@@ -9,7 +9,6 @@ use App\Exports\AttendancesExport;
 use App\Imports\AttendancesImport;
 use App\Models\Attendance;
 use App\Models\Employee;
-use App\Models\GeneralSetting;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -176,33 +175,6 @@ class AttendanceService
     }
 
     /**
-     * Handle a manual clock-in/out punch from the Web Dashboard.
-     *
-     * @param int $userId The ID of the authenticated user pushing the button.
-     * @param string|null $ipAddress The IP address of the user for auditing.
-     * @return array{attendance: Attendance, type: string}|null
-     * @throws Exception If the user does not have an attached employee profile.
-     */
-    public function handleWebPunch(int $userId, ?string $ipAddress = null): ?array
-    {
-        return DB::transaction(function () use ($userId, $ipAddress) {
-            $employee = Employee::query()->where('user_id', $userId)->first();
-
-            if (!$employee) {
-                throw new Exception("No employee profile is associated with your account. Unable to log attendance.");
-            }
-
-            $source = 'Web Portal' . ($ipAddress ? " (IP: {$ipAddress})" : '');
-
-            return $this->processPunch(
-                $employee,
-                now(),
-                $source
-            );
-        });
-    }
-
-    /**
      * Core shared logic to process a punch (check-in/check-out) for a specific employee.
      * Tracks check-ins, early check-outs, and handles double-punch debouncing.
      *
@@ -261,6 +233,33 @@ class AttendanceService
         ]);
 
         return ['attendance' => $attendance->fresh(['employee']), 'type' => 'Check-out'];
+    }
+
+    /**
+     * Handle a manual clock-in/out punch from the Web Dashboard.
+     *
+     * @param int $userId The ID of the authenticated user pushing the button.
+     * @param string|null $ipAddress The IP address of the user for auditing.
+     * @return array{attendance: Attendance, type: string}|null
+     * @throws Exception If the user does not have an attached employee profile.
+     */
+    public function handleWebPunch(int $userId, ?string $ipAddress = null): ?array
+    {
+        return DB::transaction(function () use ($userId, $ipAddress) {
+            $employee = Employee::query()->where('user_id', $userId)->first();
+
+            if (!$employee) {
+                throw new Exception("No employee profile is associated with your account. Unable to log attendance.");
+            }
+
+            $source = 'Web Portal' . ($ipAddress ? " (IP: {$ipAddress})" : '');
+
+            return $this->processPunch(
+                $employee,
+                now(),
+                $source
+            );
+        });
     }
 
     /**

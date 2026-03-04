@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,10 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Biller
- *
+ * 
  * Represents a biller entity within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for biller entities.
  *
@@ -38,23 +41,20 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Biller newModelQuery()
  * @method static Builder|Biller newQuery()
  * @method static Builder|Biller query()
  * @method static Builder|Biller active()
  * @method static Builder|Biller filter(array $filters)
- *
- * @property-read \App\Models\Country|null $country
- * @property-read \App\Models\State|null $state
- * @property-read \App\Models\City|null $city
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read Country|null $country
+ * @property-read State|null $state
+ * @property-read City|null $city
+ * @property-read Collection<int, User> $users
  * @property-read int|null $users_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sale> $sales
+ * @property-read Collection<int, Sale> $sales
  * @property-read int|null $sales_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|Biller customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Biller last30Days(string $column = 'created_at')
  * @method static Builder<static>|Biller last7Days(string $column = 'created_at')
@@ -85,8 +85,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Biller withoutTrashed()
  * @method static Builder<static>|Biller yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Biller yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @method static Builder<static>|Biller whereImagePath($value)
+ * @mixin Eloquent
  */
 class Biller extends Model implements AuditableContract
 {
@@ -125,8 +125,8 @@ class Biller extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -134,13 +134,13 @@ class Biller extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone_number', 'like', $term)
@@ -150,8 +150,8 @@ class Biller extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

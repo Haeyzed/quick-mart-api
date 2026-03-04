@@ -32,11 +32,13 @@ class UnitService
     /**
      * UnitService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated units based on provided filters.
@@ -44,8 +46,8 @@ class UnitService
      * Retrieves a paginated list of units, applying scopes for searching,
      * status filtering, and date ranges.
      *
-     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
-     * @param  int  $perPage  The number of records to return per page.
+     * @param array<string, mixed> $filters An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
+     * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Unit models.
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -70,7 +72,7 @@ class UnitService
             ->select('id', 'name', 'code')
             ->orderBy('name')
             ->get()
-            ->map(fn (Unit $unit) => [
+            ->map(fn(Unit $unit) => [
                 'value' => $unit->id,
                 'label' => "{$unit->name} ({$unit->code})",
             ]);
@@ -90,7 +92,7 @@ class UnitService
             ->whereNull('base_unit')
             ->orderBy('name')
             ->get()
-            ->map(fn (Unit $unit) => [
+            ->map(fn(Unit $unit) => [
                 'value' => $unit->id,
                 'label' => "{$unit->name} ({$unit->code})",
             ]);
@@ -102,7 +104,7 @@ class UnitService
      * Normalizes base_unit, operator, and operation_value when no base unit is provided.
      * Stores the new unit record within a database transaction to ensure data integrity.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new unit.
+     * @param array<string, mixed> $data The validated request data for the new unit.
      * @return Unit The newly created Unit model instance.
      */
     public function create(array $data): Unit
@@ -119,58 +121,12 @@ class UnitService
     }
 
     /**
-     * Update an existing unit's information.
-     *
-     * Normalizes base_unit, operator, and operation_value when no base unit is provided.
-     * Updates the unit record within a database transaction.
-     *
-     * @param  Unit  $unit  The unit model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
-     * @return Unit The freshly updated Unit model instance.
-     */
-    public function update(Unit $unit, array $data): Unit
-    {
-        return DB::transaction(function () use ($unit, $data) {
-            if (empty($data['base_unit'])) {
-                $data['operator'] = '*';
-                $data['operation_value'] = 1;
-                $data['base_unit'] = null;
-            }
-            $unit->update($data);
-
-            return $unit->fresh();
-        });
-    }
-
-    /**
-     * Delete a specific unit.
-     *
-     * Will abort if the unit is currently linked to any existing products or has sub-units.
-     *
-     * @param  Unit  $unit  The unit model instance to delete.
-     *
-     * @throws ConflictHttpException If the unit has associated products or sub-units.
-     */
-    public function delete(Unit $unit): void
-    {
-        if ($unit->products()->exists()) {
-            throw new ConflictHttpException("Cannot delete unit '{$unit->name}' as it has associated products.");
-        }
-
-        if ($unit->subUnits()->exists()) {
-            throw new ConflictHttpException("Cannot delete unit '{$unit->name}' as it has associated sub-units.");
-        }
-
-        DB::transaction(fn () => $unit->delete());
-    }
-
-    /**
      * Bulk delete multiple units.
      *
      * Iterates over an array of unit IDs and attempts to delete them.
      * Skips any units that have associated products or sub-units to prevent database relationship errors.
      *
-     * @param  array<int>  $ids  Array of unit IDs to be deleted.
+     * @param array<int> $ids Array of unit IDs to be deleted.
      * @return int The total count of successfully deleted units.
      */
     public function bulkDelete(array $ids): int
@@ -192,10 +148,32 @@ class UnitService
     }
 
     /**
+     * Delete a specific unit.
+     *
+     * Will abort if the unit is currently linked to any existing products or has sub-units.
+     *
+     * @param Unit $unit The unit model instance to delete.
+     *
+     * @throws ConflictHttpException If the unit has associated products or sub-units.
+     */
+    public function delete(Unit $unit): void
+    {
+        if ($unit->products()->exists()) {
+            throw new ConflictHttpException("Cannot delete unit '{$unit->name}' as it has associated products.");
+        }
+
+        if ($unit->subUnits()->exists()) {
+            throw new ConflictHttpException("Cannot delete unit '{$unit->name}' as it has associated sub-units.");
+        }
+
+        DB::transaction(fn() => $unit->delete());
+    }
+
+    /**
      * Update the active status for multiple units.
      *
-     * @param  array<int>  $ids  Array of unit IDs to update.
-     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @param array<int> $ids Array of unit IDs to update.
+     * @param bool $isActive The new active status (true for active, false for inactive).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -204,11 +182,35 @@ class UnitService
     }
 
     /**
+     * Update an existing unit's information.
+     *
+     * Normalizes base_unit, operator, and operation_value when no base unit is provided.
+     * Updates the unit record within a database transaction.
+     *
+     * @param Unit $unit The unit model instance to update.
+     * @param array<string, mixed> $data The validated update data.
+     * @return Unit The freshly updated Unit model instance.
+     */
+    public function update(Unit $unit, array $data): Unit
+    {
+        return DB::transaction(function () use ($unit, $data) {
+            if (empty($data['base_unit'])) {
+                $data['operator'] = '*';
+                $data['operation_value'] = 1;
+                $data['base_unit'] = null;
+            }
+            $unit->update($data);
+
+            return $unit->fresh();
+        });
+    }
+
+    /**
      * Import multiple units from an uploaded Excel or CSV file.
      *
      * Uses Maatwebsite Excel to process the file in batches and chunks.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file containing unit data.
+     * @param UploadedFile $file The uploaded spreadsheet file containing unit data.
      */
     public function importUnits(UploadedFile $file): void
     {
@@ -225,9 +227,9 @@ class UnitService
     public function download(): string
     {
         $fileName = 'units-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template units not found.');
         }
 
@@ -240,16 +242,16 @@ class UnitService
      * Compiles the requested unit data into a file stored on the public disk.
      * Supports column selection, ID filtering, and date range filtering.
      *
-     * @param  array<int>  $ids  Specific unit IDs to export (leave empty to export all based on filters).
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include in the export.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific unit IDs to export (leave empty to export all based on filters).
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include in the export.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'units_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'units_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

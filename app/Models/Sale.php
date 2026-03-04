@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Sale Model
@@ -99,7 +101,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Sale unpaid()
  * @property int $steadfast
  * @property string|null $payment_mode
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $payments_count
  * @property-read int|null $product_sales_count
@@ -165,7 +167,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Sale whereWoocommerceOrderId($value)
  * @method static Builder<static>|Sale withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Sale withoutTrashed()
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Sale extends Model implements AuditableContract
 {

@@ -28,7 +28,7 @@ class StoreCustomerRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'type' => ['nullable', 'string', 'in:'.implode(',', CustomerTypeEnum::toArray())],
+            'type' => ['nullable', 'string', 'in:' . implode(',', CustomerTypeEnum::toArray())],
             'phone_number' => [
                 'nullable',
                 'string',
@@ -63,7 +63,7 @@ class StoreCustomerRequest extends FormRequest
             ];
             $emailRules = ['required', 'email', 'max:255', Rule::unique('suppliers', 'email')->where('is_active', true)];
             if ($isUser) {
-                $emailRules[] = Rule::unique('users', 'email')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
+                $emailRules[] = Rule::unique('users', 'email')->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted'));
             }
             $rules['email'] = $emailRules;
             $rules['address'] = ['required', 'string', 'max:500'];
@@ -73,14 +73,14 @@ class StoreCustomerRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'username')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                Rule::unique('users', 'username')->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
             ];
-            if (! $isBoth) {
+            if (!$isBoth) {
                 $rules['email'] = [
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('users', 'email')->where(fn ($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
+                    Rule::unique('users', 'email')->where(fn($q) => $q->where('is_deleted', false)->orWhereNull('is_deleted')),
                 ];
             }
             $rules['password'] = ['required', 'string', 'min:8', 'max:255'];

@@ -40,7 +40,7 @@ class LeaveTypeResource extends JsonResource
              *
              * @example 21.5
              */
-            'annual_quota' => (float) $this->annual_quota,
+            'annual_quota' => (float)$this->annual_quota,
 
             /**
              * Whether the leave type can be converted to monetary value.
@@ -54,7 +54,7 @@ class LeaveTypeResource extends JsonResource
              *
              * @example 5
              */
-            'carry_forward_limit' => (float) $this->carry_forward_limit,
+            'carry_forward_limit' => (float)$this->carry_forward_limit,
 
             /**
              * Indicates if the leave type is active.

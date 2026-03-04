@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * ProductPurchase Model (Pivot)
@@ -42,7 +45,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
  * @method static Builder|ProductPurchase received()
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @method static Builder<static>|ProductPurchase newModelQuery()
  * @method static Builder<static>|ProductPurchase newQuery()
@@ -67,7 +70,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|ProductPurchase whereTotal($value)
  * @method static Builder<static>|ProductPurchase whereUpdatedAt($value)
  * @method static Builder<static>|ProductPurchase whereVariantId($value)
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class ProductPurchase extends Model implements AuditableContract
 {

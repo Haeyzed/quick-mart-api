@@ -46,7 +46,9 @@ class UserService extends BaseService
      */
     public function __construct(
         private readonly UserRolePermissionService $userRolePermissionService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated users based on filters.
@@ -136,6 +138,23 @@ class UserService extends BaseService
     }
 
     /**
+     * Assign specific roles and direct permissions to a user.
+     *
+     * @param User $user
+     * @param array<int|string|Role>|null $roles
+     * @param array<int|string|Permission>|null $directPermissions
+     * @return void
+     */
+    public function assignRolesAndPermissions(
+        User   $user,
+        ?array $roles = null,
+        ?array $directPermissions = null
+    ): void
+    {
+        $this->userRolePermissionService->assignRolesAndPermissions($user, $roles, $directPermissions);
+    }
+
+    /**
      * Update an existing user, process replacement uploads, and sync their roles/permissions.
      * Automatically hashes a new password if one is provided.
      *
@@ -186,7 +205,7 @@ class UserService extends BaseService
      */
     public function delete(User $user): void
     {
-        DB::transaction(fn () => $user->delete());
+        DB::transaction(fn() => $user->delete());
     }
 
     /**
@@ -241,22 +260,6 @@ class UserService extends BaseService
         );
 
         return $relativePath;
-    }
-
-    /**
-     * Assign specific roles and direct permissions to a user.
-     *
-     * @param User $user
-     * @param array<int|string|Role>|null $roles
-     * @param array<int|string|Permission>|null $directPermissions
-     * @return void
-     */
-    public function assignRolesAndPermissions(
-        User $user,
-        ?array $roles = null,
-        ?array $directPermissions = null
-    ): void {
-        $this->userRolePermissionService->assignRolesAndPermissions($user, $roles, $directPermissions);
     }
 
     /**

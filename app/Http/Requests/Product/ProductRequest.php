@@ -876,7 +876,7 @@ class ProductRequest extends BaseRequest
             $this->normalizeFloats()
         );
 
-        if (! empty($mergeData)) {
+        if (!empty($mergeData)) {
             $this->merge($mergeData);
         }
     }
@@ -912,7 +912,7 @@ class ProductRequest extends BaseRequest
         $normalized = [];
 
         foreach ($booleanFields as $field) {
-            if (! $this->has($field)) {
+            if (!$this->has($field)) {
                 continue;
             }
 
@@ -962,7 +962,7 @@ class ProductRequest extends BaseRequest
         $normalized = [];
 
         foreach ($integerFields as $field) {
-            if (! $this->has($field)) {
+            if (!$this->has($field)) {
                 continue;
             }
 
@@ -972,7 +972,7 @@ class ProductRequest extends BaseRequest
                 continue;
             }
 
-            $normalized[$field] = is_numeric($value) ? (int) $value : null;
+            $normalized[$field] = is_numeric($value) ? (int)$value : null;
         }
 
         return $normalized;
@@ -1003,7 +1003,7 @@ class ProductRequest extends BaseRequest
         $normalized = [];
 
         foreach ($floatFields as $field) {
-            if (! $this->has($field)) {
+            if (!$this->has($field)) {
                 continue;
             }
 
@@ -1013,7 +1013,7 @@ class ProductRequest extends BaseRequest
                 continue;
             }
 
-            $normalized[$field] = is_numeric($value) ? (float) $value : null;
+            $normalized[$field] = is_numeric($value) ? (float)$value : null;
         }
 
         return $normalized;

@@ -36,7 +36,9 @@ class SupplierController extends Controller
 {
     public function __construct(
         private readonly SupplierService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of suppliers.
@@ -49,10 +51,10 @@ class SupplierController extends Controller
 
         $suppliers = $this->service->getSuppliers(
             $request->validated(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
-        $suppliers->through(fn (Supplier $supplier) => new SupplierResource($supplier));
+        $suppliers->through(fn(Supplier $supplier) => new SupplierResource($supplier));
 
         return response()->success($suppliers, 'Suppliers retrieved successfully');
     }
@@ -239,13 +241,13 @@ class SupplierController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -255,7 +257,7 @@ class SupplierController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'suppliers_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'suppliers_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Supplier Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -264,7 +266,7 @@ class SupplierController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
@@ -343,9 +345,9 @@ class SupplierController extends Controller
         $validated = $request->validated();
         $this->service->clearDue(
             $supplier->id,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null,
-            isset($validated['cash_register_id']) ? (int) $validated['cash_register_id'] : null
+            isset($validated['cash_register_id']) ? (int)$validated['cash_register_id'] : null
         );
 
         return response()->success(null, 'Payment recorded successfully');

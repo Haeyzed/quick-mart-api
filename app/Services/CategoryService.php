@@ -43,11 +43,13 @@ class CategoryService
     /**
      * CategoryService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated categories based on provided filters.
@@ -55,8 +57,8 @@ class CategoryService
      * Retrieves a paginated list of categories, applying scopes for searching,
      * status, featured, and date ranges. Includes parent and nested children as a tree.
      *
-     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'status', 'featured', 'parent_id', 'start_date', 'end_date').
-     * @param  int  $perPage  The number of records to return per page.
+     * @param array<string, mixed> $filters An associative array of filters (e.g., 'search', 'status', 'featured', 'parent_id', 'start_date', 'end_date').
+     * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Category models.
      */
     public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -74,8 +76,8 @@ class CategoryService
     /**
      * Recursive eager loader for children (up to max depth).
      *
-     * @param  int  $depth  Current depth in the tree.
-     * @param  int  $maxDepth  Maximum depth to load (default 10).
+     * @param int $depth Current depth in the tree.
+     * @param int $maxDepth Maximum depth to load (default 10).
      * @return Closure Closure to pass to with() for nested children.
      */
     private function childrenTreeLoader(int $depth, int $maxDepth = 10): Closure
@@ -125,7 +127,7 @@ class CategoryService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Category $category) => [
+            ->map(fn(Category $category) => [
                 'value' => $category->id,
                 'label' => $category->name,
             ]);
@@ -137,7 +139,7 @@ class CategoryService
      * Processes file uploads if image or icon are provided and stores the new category record
      * within a database transaction to ensure data integrity.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new category.
+     * @param array<string, mixed> $data The validated request data for the new category.
      * @return Category The newly created Category model instance.
      */
     public function createCategory(array $data): Category
@@ -155,8 +157,8 @@ class CategoryService
      * Checks if an image or icon file is present in the data array. If so, it deletes the
      * old file (if updating) and uploads the new one, injecting the paths into the data array.
      *
-     * @param  array<string, mixed>  $data  The input data potentially containing 'image' and/or 'icon' files.
-     * @param  Category|null  $category  The existing category model if performing an update.
+     * @param array<string, mixed> $data The input data potentially containing 'image' and/or 'icon' files.
+     * @param Category|null $category The existing category model if performing an update.
      * @return array<string, mixed> The modified data array with uploaded file paths.
      */
     private function handleUploads(array $data, ?Category $category = null): array
@@ -187,8 +189,8 @@ class CategoryService
      *
      * Prevents moving to self or to a descendant (would create a cycle).
      *
-     * @param  Category  $category  The category model instance to reparent.
-     * @param  int|null  $parentId  The new parent category ID, or null for root.
+     * @param Category $category The category model instance to reparent.
+     * @param int|null $parentId The new parent category ID, or null for root.
      * @return Category The freshly updated Category model instance.
      *
      * @throws ConflictHttpException If moving to self or to a descendant.
@@ -211,8 +213,8 @@ class CategoryService
     /**
      * Check if $descendantId is a descendant of $ancestorId in the category tree.
      *
-     * @param  int  $ancestorId  The potential ancestor category ID.
-     * @param  int  $descendantId  The potential descendant category ID.
+     * @param int $ancestorId The potential ancestor category ID.
+     * @param int $descendantId The potential descendant category ID.
      * @return bool True if descendantId is under ancestorId in the tree.
      */
     private function isDescendantOf(int $ancestorId, int $descendantId): bool
@@ -235,8 +237,8 @@ class CategoryService
      * Processes potential new image/icon uploads and updates the category record within
      * a database transaction.
      *
-     * @param  Category  $category  The category model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Category $category The category model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Category The freshly updated Category model instance.
      */
     public function updateCategory(Category $category, array $data): Category
@@ -255,7 +257,7 @@ class CategoryService
      * Deletes the category and its associated image/icon files. Will abort if the category
      * has child categories or is linked to any existing products.
      *
-     * @param  Category  $category  The category model instance to delete.
+     * @param Category $category The category model instance to delete.
      *
      * @throws ConflictHttpException If the category has children or associated products.
      */
@@ -278,7 +280,7 @@ class CategoryService
     /**
      * Remove files associated with a category.
      *
-     * @param  Category  $category  The category model whose files should be removed from storage.
+     * @param Category $category The category model whose files should be removed from storage.
      */
     private function cleanupFiles(Category $category): void
     {
@@ -296,7 +298,7 @@ class CategoryService
      * Iterates over an array of category IDs and attempts to delete them.
      * Skips any categories that have child categories or associated products to prevent database relationship errors.
      *
-     * @param  array<int>  $ids  Array of category IDs to be deleted.
+     * @param array<int> $ids Array of category IDs to be deleted.
      * @return int The total count of successfully deleted categories.
      */
     public function bulkDeleteCategories(array $ids): int
@@ -322,8 +324,8 @@ class CategoryService
     /**
      * Update the active status for multiple categories.
      *
-     * @param  array<int>  $ids  Array of category IDs to update.
-     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @param array<int> $ids Array of category IDs to update.
+     * @param bool $isActive The new active status (true for active, false for inactive).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -334,8 +336,8 @@ class CategoryService
     /**
      * Update the featured status for multiple categories.
      *
-     * @param  array<int>  $ids  Array of category IDs to update.
-     * @param  bool  $isFeatured  The new featured status (true for featured, false for not featured).
+     * @param array<int> $ids Array of category IDs to update.
+     * @param bool $isFeatured The new featured status (true for featured, false for not featured).
      * @return int The number of records updated.
      */
     public function bulkUpdateFeatured(array $ids, bool $isFeatured): int
@@ -346,8 +348,8 @@ class CategoryService
     /**
      * Update the sync-disabled status for multiple categories.
      *
-     * @param  array<int>  $ids  Array of category IDs to update.
-     * @param  bool  $isSyncDisabled  The new sync-disabled status (true to disable sync, false to enable).
+     * @param array<int> $ids Array of category IDs to update.
+     * @param bool $isSyncDisabled The new sync-disabled status (true to disable sync, false to enable).
      * @return int The number of records updated.
      */
     public function bulkUpdateSync(array $ids, bool $isSyncDisabled): int
@@ -360,7 +362,7 @@ class CategoryService
      *
      * Uses Maatwebsite Excel to process the file in batches and chunks.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file containing category data.
+     * @param UploadedFile $file The uploaded spreadsheet file containing category data.
      */
     public function importCategories(UploadedFile $file): void
     {
@@ -378,9 +380,9 @@ class CategoryService
     {
         $fileName = 'categories-sample.csv';
 
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template categories not found.');
         }
 
@@ -393,16 +395,16 @@ class CategoryService
      * Compiles the requested category data into a file stored on the public disk.
      * Supports column selection, ID filtering, and date range filtering.
      *
-     * @param  array<int>  $ids  Specific category IDs to export (leave empty to export all based on filters).
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include in the export.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific category IDs to export (leave empty to export all based on filters).
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include in the export.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'categories_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'categories_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

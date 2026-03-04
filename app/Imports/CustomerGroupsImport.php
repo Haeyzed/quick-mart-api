@@ -26,17 +26,17 @@ class CustomerGroupsImport implements
     SkipsEmptyRows
 {
     /**
-     * @param  array<string, mixed>  $row
+     * @param array<string, mixed> $row
      */
     public function model(array $row): ?CustomerGroup
     {
-        $name = trim((string) ($row['name'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
 
         if ($name === '') {
             return null;
         }
 
-        $percentage = isset($row['percentage']) ? (float) $row['percentage'] : 0.0;
+        $percentage = isset($row['percentage']) ? (float)$row['percentage'] : 0.0;
         $isActive = isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true;
 
         return new CustomerGroup([

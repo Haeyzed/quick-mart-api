@@ -19,27 +19,16 @@ class LeaveTypesExport implements FromQuery, WithHeadings, WithMapping
         public array $ids = [],
         public array $columns = [],
         public array $filters = []
-    ) {}
+    )
+    {
+    }
 
     public function query(): Builder
     {
         return LeaveType::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->filter($this->filters)
             ->latest();
-    }
-
-    public function headings(): array
-    {
-        return ! empty($this->columns) ? $this->columns : [
-            'ID',
-            'Name',
-            'Annual Quota',
-            'Encashable',
-            'Carry Forward Limit',
-            'Status',
-            'Created At',
-        ];
     }
 
     /**
@@ -59,5 +48,18 @@ class LeaveTypesExport implements FromQuery, WithHeadings, WithMapping
         if (in_array('Created At', $columns)) $mapped[] = $leaveType->created_at?->format('Y-m-d H:i:s');
 
         return $mapped;
+    }
+
+    public function headings(): array
+    {
+        return !empty($this->columns) ? $this->columns : [
+            'ID',
+            'Name',
+            'Annual Quota',
+            'Encashable',
+            'Carry Forward Limit',
+            'Status',
+            'Created At',
+        ];
     }
 }

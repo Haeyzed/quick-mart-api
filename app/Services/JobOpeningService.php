@@ -20,7 +20,7 @@ class JobOpeningService
     /**
      * Get paginated job openings based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -43,7 +43,7 @@ class JobOpeningService
             ->select('id', 'title')
             ->orderBy('title')
             ->get()
-            ->map(fn (JobOpening $jobOpening) => [
+            ->map(fn(JobOpening $jobOpening) => [
                 'value' => $jobOpening->id,
                 'label' => $jobOpening->title,
             ]);
@@ -52,7 +52,7 @@ class JobOpeningService
     /**
      * Create a newly registered job opening.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return JobOpening The newly created JobOpening model instance.
      */
     public function create(array $data): JobOpening
@@ -67,8 +67,8 @@ class JobOpeningService
     /**
      * Update an existing job opening.
      *
-     * @param  JobOpening  $jobOpening  The job opening model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param JobOpening $jobOpening The job opening model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return JobOpening The freshly updated JobOpening model instance.
      */
     public function update(JobOpening $jobOpening, array $data): JobOpening
@@ -81,17 +81,9 @@ class JobOpeningService
     }
 
     /**
-     * Delete a job opening.
-     */
-    public function delete(JobOpening $jobOpening): void
-    {
-        DB::transaction(fn () => $jobOpening->delete());
-    }
-
-    /**
      * Bulk delete multiple job openings.
      *
-     * @param  array<int>  $ids  Array of job opening IDs to be deleted.
+     * @param array<int> $ids Array of job opening IDs to be deleted.
      * @return int The total count of successfully deleted job openings.
      */
     public function bulkDelete(array $ids): int
@@ -99,5 +91,13 @@ class JobOpeningService
         return DB::transaction(function () use ($ids) {
             return JobOpening::query()->whereIn('id', $ids)->delete();
         });
+    }
+
+    /**
+     * Delete a job opening.
+     */
+    public function delete(JobOpening $jobOpening): void
+    {
+        DB::transaction(fn() => $jobOpening->delete());
     }
 }

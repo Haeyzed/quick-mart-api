@@ -51,7 +51,7 @@ class PermissionService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Permission $permission) => [
+            ->map(fn(Permission $permission) => [
                 'value' => $permission->id,
                 'label' => $permission->name,
             ]);
@@ -144,7 +144,7 @@ class PermissionService
     public function download(): string
     {
         $fileName = 'permissions-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
         if (!File::exists($path)) {
             throw new RuntimeException('Permissions import template not found.');
@@ -164,8 +164,8 @@ class PermissionService
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'permissions_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'permissions_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

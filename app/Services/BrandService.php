@@ -37,11 +37,13 @@ class BrandService
     /**
      * BrandService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads and deletions.
+     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated brands based on provided filters.
@@ -49,8 +51,8 @@ class BrandService
      * Retrieves a paginated list of brands, applying scopes for searching,
      * status filtering, and date ranges.
      *
-     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'is_active', 'start_date', 'end_date').
-     * @param  int  $perPage  The number of records to return per page.
+     * @param array<string, mixed> $filters An associative array of filters (e.g., 'search', 'is_active', 'start_date', 'end_date').
+     * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Brand models.
      */
     public function getPaginatedBrands(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -74,7 +76,7 @@ class BrandService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Brand $brand) => [
+            ->map(fn(Brand $brand) => [
                 'value' => $brand->id,
                 'label' => $brand->name,
             ]);
@@ -86,7 +88,7 @@ class BrandService
      * Processes file uploads if an image is provided and stores the new brand record
      * within a database transaction to ensure data integrity.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new brand.
+     * @param array<string, mixed> $data The validated request data for the new brand.
      * @return Brand The newly created Brand model instance.
      */
     public function createBrand(array $data): Brand
@@ -104,8 +106,8 @@ class BrandService
      * Checks if an image file is present in the data array. If so, it deletes the
      * old image (if updating) and uploads the new one, injecting the paths into the data array.
      *
-     * @param  array<string, mixed>  $data  The input data potentially containing an 'image' file.
-     * @param  Brand|null  $brand  The existing brand model if performing an update.
+     * @param array<string, mixed> $data The input data potentially containing an 'image' file.
+     * @param Brand|null $brand The existing brand model if performing an update.
      * @return array<string, mixed> The modified data array with uploaded file paths.
      */
     private function handleUploads(array $data, ?Brand $brand = null): array
@@ -128,8 +130,8 @@ class BrandService
      * Processes potential new image uploads and updates the brand record within
      * a database transaction.
      *
-     * @param  Brand  $brand  The brand model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Brand $brand The brand model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Brand The freshly updated Brand model instance.
      */
     public function updateBrand(Brand $brand, array $data): Brand
@@ -148,7 +150,7 @@ class BrandService
      * Deletes the brand and its associated image file. Will abort if the brand
      * is currently linked to any existing products.
      *
-     * @param  Brand  $brand  The brand model instance to delete.
+     * @param Brand $brand The brand model instance to delete.
      *
      * @throws ConflictHttpException If the brand has associated products.
      */
@@ -167,7 +169,7 @@ class BrandService
     /**
      * Remove files associated with a brand.
      *
-     * @param  Brand  $brand  The brand model whose files should be removed from storage.
+     * @param Brand $brand The brand model whose files should be removed from storage.
      */
     private function cleanupFiles(Brand $brand): void
     {
@@ -182,7 +184,7 @@ class BrandService
      * Iterates over an array of brand IDs and attempts to delete them.
      * Skips any brands that have associated products to prevent database relationship errors.
      *
-     * @param  array<int>  $ids  Array of brand IDs to be deleted.
+     * @param array<int> $ids Array of brand IDs to be deleted.
      * @return int The total count of successfully deleted brands.
      */
     public function bulkDeleteBrands(array $ids): int
@@ -208,8 +210,8 @@ class BrandService
     /**
      * Update the active status for multiple brands.
      *
-     * @param  array<int>  $ids  Array of brand IDs to update.
-     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @param array<int> $ids Array of brand IDs to update.
+     * @param bool $isActive The new active status (true for active, false for inactive).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -222,7 +224,7 @@ class BrandService
      *
      * Uses Maatwebsite Excel to process the file in batches and chunks.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file containing brand data.
+     * @param UploadedFile $file The uploaded spreadsheet file containing brand data.
      */
     public function importBrands(UploadedFile $file): void
     {
@@ -240,9 +242,9 @@ class BrandService
     {
         $fileName = 'brands-sample.csv';
 
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template brands not found.');
         }
 
@@ -255,16 +257,16 @@ class BrandService
      * Compiles the requested brand data into a file stored on the public disk.
      * Supports column selection, ID filtering, and date range filtering.
      *
-     * @param  array<int>  $ids  Specific brand IDs to export (leave empty to export all based on filters).
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include in the export.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific brand IDs to export (leave empty to export all based on filters).
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include in the export.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'brands_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'brands_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

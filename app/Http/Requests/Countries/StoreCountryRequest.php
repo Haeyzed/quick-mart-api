@@ -25,18 +25,6 @@ class StoreCountryRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('status')) {
-            $this->merge([
-                'status' => filter_var($this->status, FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
-            ]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -57,5 +45,17 @@ class StoreCountryRequest extends FormRequest
             'emoji' => ['nullable', 'string', 'max:191'],
             'emojiU' => ['nullable', 'string', 'max:191'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('status')) {
+            $this->merge([
+                'status' => filter_var($this->status, FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
+            ]);
+        }
     }
 }

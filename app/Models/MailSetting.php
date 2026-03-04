@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class MailSetting
- *
+ * 
  * Represents email/mail server configuration settings. Handles the underlying data
  * structure, relationships, and specific query scopes for mail setting entities.
  *
@@ -30,16 +33,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property bool $is_default
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
  * @method static Builder|MailSetting newModelQuery()
  * @method static Builder|MailSetting newQuery()
  * @method static Builder|MailSetting query()
  * @method static Builder|MailSetting default()
  * @method static Builder|MailSetting filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- *
  * @method static Builder<static>|MailSetting customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|MailSetting last30Days(string $column = 'created_at')
  * @method static Builder<static>|MailSetting last7Days(string $column = 'created_at')
@@ -62,8 +62,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|MailSetting whereUsername($value)
  * @method static Builder<static>|MailSetting yearToDate(string $column = 'created_at')
  * @method static Builder<static>|MailSetting yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class MailSetting extends Model implements AuditableContract
 {
@@ -115,8 +114,8 @@ class MailSetting extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -124,10 +123,10 @@ class MailSetting extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_default']),
-                fn (Builder $q) => $q->default()
+                fn(Builder $q) => $q->default()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('from_name', 'like', $term)
@@ -136,8 +135,8 @@ class MailSetting extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

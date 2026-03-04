@@ -24,25 +24,25 @@ class SuppliersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
     {
         $data = $row->toArray();
 
-        $companyName = trim((string) ($data['company_name'] ?? $data['companyname'] ?? ''));
+        $companyName = trim((string)($data['company_name'] ?? $data['companyname'] ?? ''));
         if ($companyName === '') {
             return;
         }
 
-        $countryId = isset($data['country_id']) && (string) $data['country_id'] !== ''
-            ? (int) $data['country_id']
+        $countryId = isset($data['country_id']) && (string)$data['country_id'] !== ''
+            ? (int)$data['country_id']
             : null;
-        $stateId = isset($data['state_id']) && (string) $data['state_id'] !== ''
-            ? (int) $data['state_id']
+        $stateId = isset($data['state_id']) && (string)$data['state_id'] !== ''
+            ? (int)$data['state_id']
             : null;
-        $cityId = isset($data['city_id']) && (string) $data['city_id'] !== ''
-            ? (int) $data['city_id']
+        $cityId = isset($data['city_id']) && (string)$data['city_id'] !== ''
+            ? (int)$data['city_id']
             : null;
 
         if ($countryId === null || $stateId === null || $cityId === null) {
-            $countryName = trim((string) ($data['country'] ?? ''));
-            $stateName = trim((string) ($data['state'] ?? ''));
-            $cityName = trim((string) ($data['city'] ?? ''));
+            $countryName = trim((string)($data['country'] ?? ''));
+            $stateName = trim((string)($data['state'] ?? ''));
+            $cityName = trim((string)($data['city'] ?? ''));
             if ($countryId === null && $countryName !== '') {
                 $countryId = Country::query()->where('name', $countryName)->value('id');
             }
@@ -62,15 +62,15 @@ class SuppliersImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow, With
 
         $attributes = [
             'company_name' => $companyName,
-            'name' => trim((string) ($data['name'] ?? '')) ?: $companyName,
-            'vat_number' => trim((string) ($data['vat_number'] ?? $data['vatnumber'] ?? '')) ?: null,
-            'email' => trim((string) ($data['email'] ?? '')) ?: null,
-            'phone_number' => trim((string) ($data['phone_number'] ?? $data['phonenumber'] ?? '')) ?: null,
-            'address' => trim((string) ($data['address'] ?? '')) ?: null,
+            'name' => trim((string)($data['name'] ?? '')) ?: $companyName,
+            'vat_number' => trim((string)($data['vat_number'] ?? $data['vatnumber'] ?? '')) ?: null,
+            'email' => trim((string)($data['email'] ?? '')) ?: null,
+            'phone_number' => trim((string)($data['phone_number'] ?? $data['phonenumber'] ?? '')) ?: null,
+            'address' => trim((string)($data['address'] ?? '')) ?: null,
             'country_id' => $countryId,
             'state_id' => $stateId,
             'city_id' => $cityId,
-            'postal_code' => trim((string) ($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
+            'postal_code' => trim((string)($data['postal_code'] ?? $data['postalcode'] ?? '')) ?: null,
             'is_active' => true,
         ];
 

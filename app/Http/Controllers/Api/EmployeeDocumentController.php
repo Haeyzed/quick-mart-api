@@ -29,7 +29,9 @@ class EmployeeDocumentController extends Controller
      */
     public function __construct(
         private readonly EmployeeDocumentService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Employee Documents

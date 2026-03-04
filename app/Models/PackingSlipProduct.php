@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * PackingSlipProduct Model (Pivot)
@@ -25,18 +29,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read PackingSlip $packingSlip
  * @property-read Product $product
  * @property-read Variant|null $variant
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct wherePackingSlipId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereProductId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PackingSlipProduct whereVariantId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|PackingSlipProduct newModelQuery()
+ * @method static Builder<static>|PackingSlipProduct newQuery()
+ * @method static Builder<static>|PackingSlipProduct query()
+ * @method static Builder<static>|PackingSlipProduct whereCreatedAt($value)
+ * @method static Builder<static>|PackingSlipProduct whereId($value)
+ * @method static Builder<static>|PackingSlipProduct wherePackingSlipId($value)
+ * @method static Builder<static>|PackingSlipProduct whereProductId($value)
+ * @method static Builder<static>|PackingSlipProduct whereUpdatedAt($value)
+ * @method static Builder<static>|PackingSlipProduct whereVariantId($value)
+ * @mixin Eloquent
  */
 class PackingSlipProduct extends Model implements AuditableContract
 {

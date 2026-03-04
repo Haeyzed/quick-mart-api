@@ -6,7 +6,6 @@ namespace App\Http\Requests\Departments;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Department;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -22,18 +21,6 @@ class UpdateDepartmentRequest extends BaseRequest
     public function authorize(): bool
     {
         return true;
-    }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge([
-                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
     }
 
     /**
@@ -67,5 +54,17 @@ class UpdateDepartmentRequest extends BaseRequest
              */
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

@@ -28,7 +28,9 @@ class PerformanceReviewController extends Controller
      */
     public function __construct(
         private readonly PerformanceReviewService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Performance Reviews

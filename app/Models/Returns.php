@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Returns Model (Sale Return)
@@ -50,37 +53,37 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Account|null $account
  * @property-read Currency|null $currency
  * @property-read Collection<int, ProductReturn> $productReturns
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $product_returns_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereAccountId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereBillerId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCashRegisterId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCurrencyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereCustomerId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereDocument($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereExchangeRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereGrandTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereItem($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereOrderTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereOrderTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereReferenceNo($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereReturnNote($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereSaleId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereStaffNote($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalDiscount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalPrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalQty($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereTotalTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Returns whereWarehouseId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|Returns newModelQuery()
+ * @method static Builder<static>|Returns newQuery()
+ * @method static Builder<static>|Returns query()
+ * @method static Builder<static>|Returns whereAccountId($value)
+ * @method static Builder<static>|Returns whereBillerId($value)
+ * @method static Builder<static>|Returns whereCashRegisterId($value)
+ * @method static Builder<static>|Returns whereCreatedAt($value)
+ * @method static Builder<static>|Returns whereCurrencyId($value)
+ * @method static Builder<static>|Returns whereCustomerId($value)
+ * @method static Builder<static>|Returns whereDocument($value)
+ * @method static Builder<static>|Returns whereExchangeRate($value)
+ * @method static Builder<static>|Returns whereGrandTotal($value)
+ * @method static Builder<static>|Returns whereId($value)
+ * @method static Builder<static>|Returns whereItem($value)
+ * @method static Builder<static>|Returns whereOrderTax($value)
+ * @method static Builder<static>|Returns whereOrderTaxRate($value)
+ * @method static Builder<static>|Returns whereReferenceNo($value)
+ * @method static Builder<static>|Returns whereReturnNote($value)
+ * @method static Builder<static>|Returns whereSaleId($value)
+ * @method static Builder<static>|Returns whereStaffNote($value)
+ * @method static Builder<static>|Returns whereTotalDiscount($value)
+ * @method static Builder<static>|Returns whereTotalPrice($value)
+ * @method static Builder<static>|Returns whereTotalQty($value)
+ * @method static Builder<static>|Returns whereTotalTax($value)
+ * @method static Builder<static>|Returns whereUpdatedAt($value)
+ * @method static Builder<static>|Returns whereUserId($value)
+ * @method static Builder<static>|Returns whereWarehouseId($value)
+ * @mixin Eloquent
  */
 class Returns extends Model implements AuditableContract
 {

@@ -22,21 +22,21 @@ class IncomeResource extends JsonResource
         return [
             'id' => $this->id,
             'reference_no' => $this->reference_no,
-            'income_category' => $this->whenLoaded('incomeCategory', fn () => $this->incomeCategory ? [
+            'income_category' => $this->whenLoaded('incomeCategory', fn() => $this->incomeCategory ? [
                 'id' => $this->incomeCategory->id,
                 'code' => $this->incomeCategory->code,
                 'name' => $this->incomeCategory->name,
             ] : null),
-            'warehouse' => $this->whenLoaded('warehouse', fn () => $this->warehouse ? [
+            'warehouse' => $this->whenLoaded('warehouse', fn() => $this->warehouse ? [
                 'id' => $this->warehouse->id,
                 'name' => $this->warehouse->name,
             ] : null),
-            'account' => $this->whenLoaded('account', fn () => $this->account ? [
+            'account' => $this->whenLoaded('account', fn() => $this->account ? [
                 'id' => $this->account->id,
                 'name' => $this->account->name,
                 'account_no' => $this->account->account_no,
             ] : null),
-            'user' => $this->whenLoaded('user', fn () => $this->user ? [
+            'user' => $this->whenLoaded('user', fn() => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,

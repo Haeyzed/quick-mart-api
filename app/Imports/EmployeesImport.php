@@ -47,14 +47,14 @@ class EmployeesImport implements
             'department_id' => $row['department_id'] ?? null,
             'designation_id' => $row['designation_id'] ?? null,
             'shift_id' => $row['shift_id'] ?? null,
-            'basic_salary' => (float) ($row['basic_salary'] ?? 0),
+            'basic_salary' => (float)($row['basic_salary'] ?? 0),
             'address' => $row['address'] ?? null,
             'city_id' => $row['city_id'] ?? null,
             'state_id' => $row['state_id'] ?? null,
             'country_id' => $row['country_id'] ?? null,
             'is_active' => isset($row['is_active']) ? filter_var($row['is_active'], FILTER_VALIDATE_BOOLEAN) : true,
             'is_sale_agent' => isset($row['is_sale_agent']) ? filter_var($row['is_sale_agent'], FILTER_VALIDATE_BOOLEAN) : false,
-            'sale_commission_percent' => isset($row['sale_commission_percent']) ? (float) $row['sale_commission_percent'] : null,
+            'sale_commission_percent' => isset($row['sale_commission_percent']) ? (float)$row['sale_commission_percent'] : null,
             'image_url' => $row['image_url'] ?? null,
         ]);
     }

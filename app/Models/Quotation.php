@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Quotation Model
@@ -50,7 +52,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Quotation pending()
  * @method static Builder|Quotation accepted()
  * @method static Builder|Quotation rejected()
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $product_quotations_count
  * @method static Builder<static>|Quotation newModelQuery()
@@ -78,7 +80,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Quotation whereUpdatedAt($value)
  * @method static Builder<static>|Quotation whereUserId($value)
  * @method static Builder<static>|Quotation whereWarehouseId($value)
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Quotation extends Model implements AuditableContract
 {

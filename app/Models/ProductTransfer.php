@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * ProductTransfer Model (Pivot)
@@ -35,26 +39,26 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
  * @property-read Unit $unit
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereImeiNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereNetUnitCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereProductBatchId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereProductId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer wherePurchaseUnitId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereQty($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereTransferId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductTransfer whereVariantId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|ProductTransfer newModelQuery()
+ * @method static Builder<static>|ProductTransfer newQuery()
+ * @method static Builder<static>|ProductTransfer query()
+ * @method static Builder<static>|ProductTransfer whereCreatedAt($value)
+ * @method static Builder<static>|ProductTransfer whereId($value)
+ * @method static Builder<static>|ProductTransfer whereImeiNumber($value)
+ * @method static Builder<static>|ProductTransfer whereNetUnitCost($value)
+ * @method static Builder<static>|ProductTransfer whereProductBatchId($value)
+ * @method static Builder<static>|ProductTransfer whereProductId($value)
+ * @method static Builder<static>|ProductTransfer wherePurchaseUnitId($value)
+ * @method static Builder<static>|ProductTransfer whereQty($value)
+ * @method static Builder<static>|ProductTransfer whereTax($value)
+ * @method static Builder<static>|ProductTransfer whereTaxRate($value)
+ * @method static Builder<static>|ProductTransfer whereTotal($value)
+ * @method static Builder<static>|ProductTransfer whereTransferId($value)
+ * @method static Builder<static>|ProductTransfer whereUpdatedAt($value)
+ * @method static Builder<static>|ProductTransfer whereVariantId($value)
+ * @mixin Eloquent
  */
 class ProductTransfer extends Model implements AuditableContract
 {

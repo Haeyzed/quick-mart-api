@@ -21,6 +21,7 @@ use App\Models\Payment;
 use App\Models\Payroll;
 use App\Models\Sale;
 use App\Traits\MailInfo;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -51,8 +52,8 @@ class PayrollService
     /**
      * Get paginated payrolls based on filters.
      *
-     * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
+     * @param array<string, mixed> $filters
+     * @param int $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginatedPayrolls(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -192,13 +193,13 @@ class PayrollService
             // Total Sales for Agents
             $totalSalesOutput = 0;
             if ($employee->is_sale_agent && $employee->user_id) {
-                $totalSalesOutput = (float) $salesOutputs->get($employee->user_id, 0);
+                $totalSalesOutput = (float)$salesOutputs->get($employee->user_id, 0);
             }
 
             // Commission Logic (Sales Target Based)
             $commission = 0;
             if ($employee->is_sale_agent == 1 && $employee->user_id) {
-                $totalSalesForComm = (float) $salesForCommission->get($employee->user_id, 0);
+                $totalSalesForComm = (float)$salesForCommission->get($employee->user_id, 0);
                 $targets = is_string($employee->sales_target) ? json_decode($employee->sales_target, true) : $employee->sales_target;
 
                 if (is_array($targets)) {
@@ -220,10 +221,10 @@ class PayrollService
             }
 
             // Expenses & Overtime Pre-Fetched Extractions
-            $empExpense = (float) $expenses->get($employee->id, 0);
+            $empExpense = (float)$expenses->get($employee->id, 0);
             $empOvertime = $overtimes->get($employee->id);
-            $overtimeAmount = $empOvertime ? (float) $empOvertime->total_amount : 0;
-            $overtimeHours = $empOvertime ? (float) $empOvertime->total_hours : 0;
+            $overtimeAmount = $empOvertime ? (float)$empOvertime->total_amount : 0;
+            $overtimeHours = $empOvertime ? (float)$empOvertime->total_hours : 0;
 
             $baseData = [
                 'employee' => clone $employee,
@@ -356,7 +357,7 @@ class PayrollService
                             'email' => $employee->email,
                             'currency' => config('currency'),
                         ]));
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::error('Mail send failed: ' . $e->getMessage());
                     }
                 }
@@ -367,7 +368,7 @@ class PayrollService
     /**
      * Create a newly registered individual payroll record.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Payroll The newly created Payroll model instance.
      */
     public function createPayroll(array $data): Payroll
@@ -382,11 +383,11 @@ class PayrollService
                 $data['created_at'] = now();
             }
 
-            $salary = (float) ($data['salary_amount'] ?? 0);
-            $previous = (float) ($data['expense'] ?? 0);
-            $commissionInput = (float) ($data['commission'] ?? 0);
+            $salary = (float)($data['salary_amount'] ?? 0);
+            $previous = (float)($data['expense'] ?? 0);
+            $commissionInput = (float)($data['commission'] ?? 0);
             $isAgent = $data['is_agent'] ?? false;
-            $percent = (float) ($data['commission_percent'] ?? 0);
+            $percent = (float)($data['commission_percent'] ?? 0);
 
             $commission = $commissionInput;
             if ($isAgent && $percent > 0) {
@@ -397,7 +398,7 @@ class PayrollService
                 'salary' => $salary,
                 'commission' => $commission,
                 'previous' => $previous,
-                'total' => (float) ($data['amount'] ?? 0),
+                'total' => (float)($data['amount'] ?? 0),
             ];
 
             // Safely retrieve status value
@@ -418,7 +419,7 @@ class PayrollService
                             'email' => $employee->email,
                             'currency' => config('currency', 'USD'),
                         ]));
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::error('Payroll creation mail send failed: ' . $e->getMessage());
                     }
                 }
@@ -431,8 +432,8 @@ class PayrollService
     /**
      * Update an existing payroll record.
      *
-     * @param  Payroll  $payroll  The payroll model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Payroll $payroll The payroll model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Payroll The freshly updated Payroll model instance.
      */
     public function updatePayroll(Payroll $payroll, array $data): Payroll
@@ -444,18 +445,18 @@ class PayrollService
 
             $amountArray = $payroll->amount_array ?? [];
 
-            $salary = (float) ($data['salary_amount'] ?? ($amountArray['salary'] ?? 0));
-            $previous = (float) ($data['expense'] ?? ($amountArray['previous'] ?? $amountArray['expense'] ?? 0));
-            $commissionInput = (float) ($data['commission'] ?? ($amountArray['commission'] ?? 0));
+            $salary = (float)($data['salary_amount'] ?? ($amountArray['salary'] ?? 0));
+            $previous = (float)($data['expense'] ?? ($amountArray['previous'] ?? $amountArray['expense'] ?? 0));
+            $commissionInput = (float)($data['commission'] ?? ($amountArray['commission'] ?? 0));
             $isAgent = $data['is_agent'] ?? false;
-            $percent = (float) ($data['commission_percent'] ?? 0);
+            $percent = (float)($data['commission_percent'] ?? 0);
 
             $commission = $commissionInput;
             if ($isAgent && $percent > 0) {
                 $commission = ($salary * $percent) / 100;
             }
 
-            $total = (float) ($data['amount'] ?? $payroll->amount);
+            $total = (float)($data['amount'] ?? $payroll->amount);
 
             $data['amount_array'] = [
                 'salary' => $salary,
@@ -480,7 +481,7 @@ class PayrollService
     /**
      * Delete a payroll record.
      *
-     * @param  Payroll  $payroll
+     * @param Payroll $payroll
      * @return void
      */
     public function deletePayroll(Payroll $payroll): void
@@ -493,7 +494,7 @@ class PayrollService
     /**
      * Bulk delete multiple payroll records.
      *
-     * @param  array<int>  $ids  Array of payroll IDs to be deleted.
+     * @param array<int> $ids Array of payroll IDs to be deleted.
      * @return int The total count of successfully deleted payroll records.
      */
     public function bulkDeletePayrolls(array $ids): int
@@ -506,8 +507,8 @@ class PayrollService
     /**
      * Update the status for multiple payroll records.
      *
-     * @param  array<int>  $ids  Array of payroll IDs to update.
-     * @param  string  $status  The new status value.
+     * @param array<int> $ids Array of payroll IDs to update.
+     * @param string $status The new status value.
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, string $status): int
@@ -518,7 +519,7 @@ class PayrollService
     /**
      * Import multiple payroll records from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      * @return void
      */
     public function importPayrolls(UploadedFile $file): void
@@ -535,9 +536,9 @@ class PayrollService
     public function download(): string
     {
         $fileName = 'payrolls-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template payrolls not found.');
         }
         return $path;
@@ -546,16 +547,16 @@ class PayrollService
     /**
      * Generate an export file containing payroll data.
      *
-     * @param  array<int>  $ids  Specific payroll IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific payroll IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'payrolls_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'payrolls_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

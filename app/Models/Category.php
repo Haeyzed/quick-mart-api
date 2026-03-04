@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,10 +17,11 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Category
- *
+ * 
  * Represents a product category within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for category entities.
  *
@@ -39,7 +42,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Category newModelQuery()
  * @method static Builder|Category newQuery()
  * @method static Builder|Category query()
@@ -47,17 +49,15 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder|Category featured()
  * @method static Builder|Category syncDisabled()
  * @method static Builder|Category filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $children
+ * @property-read Collection<int, Category> $children
  * @property-read int|null $children_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $childrenRecursive
+ * @property-read Collection<int, Category> $childrenRecursive
  * @property-read int|null $children_recursive_count
  * @property-read Category|null $parent
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
+ * @property-read Collection<int, Product> $products
  * @property-read int|null $products_count
- *
  * @method static Builder<static>|Category customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Category last30Days(string $column = 'created_at')
  * @method static Builder<static>|Category last7Days(string $column = 'created_at')
@@ -88,8 +88,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Category withoutTrashed()
  * @method static Builder<static>|Category yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Category yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @method static Builder<static>|Category whereImagePath($value)
+ * @mixin Eloquent
  */
 class Category extends Model implements AuditableContract
 {
@@ -149,15 +149,15 @@ class Category extends Model implements AuditableContract
      * the database, it appends a numeric counter (e.g., category-name-1, category-name-2)
      * until it finds a unique value.
      *
-     * @param  string  $name  The original category name to convert.
-     * @param  string|null  $existingSlug  An optional manually provided slug to check.
+     * @param string $name The original category name to convert.
+     * @param string|null $existingSlug An optional manually provided slug to check.
      * @return string A guaranteed unique slug string.
      */
     public function generateUniqueSlug(string $name, ?string $existingSlug = null): string
     {
         $slug = $existingSlug ?: Str::slug($name);
 
-        if (! $this->slugExists($slug)) {
+        if (!$this->slugExists($slug)) {
             return $slug;
         }
 
@@ -177,14 +177,14 @@ class Category extends Model implements AuditableContract
      * * Ensures that when updating an existing model, its own current slug
      * doesn't trigger a false positive for duplication.
      *
-     * @param  string  $slug  The slug to check for uniqueness.
+     * @param string $slug The slug to check for uniqueness.
      * @return bool True if the slug exists, false if it is available.
      */
     protected function slugExists(string $slug): bool
     {
         return static::query()
             ->where('slug', $slug)
-            ->when($this->exists, fn (Builder $query) => $query->whereKeyNot($this->getKey()))
+            ->when($this->exists, fn(Builder $query) => $query->whereKeyNot($this->getKey()))
             ->exists();
     }
 
@@ -193,8 +193,8 @@ class Category extends Model implements AuditableContract
      * * Applies filters for status (active), featured, sync-disabled, parent_id,
      * search terms (checking name and slug), and date ranges via the FilterableByDates trait.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -202,40 +202,40 @@ class Category extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
                 isset($filters['featured']),
-                fn (Builder $q) => $q->featured()
+                fn(Builder $q) => $q->featured()
             )
             ->when(
                 isset($filters['is_sync_disable']),
-                fn (Builder $q) => $q->syncDisabled()
+                fn(Builder $q) => $q->syncDisabled()
             )
             ->when(
                 isset($filters['parent_id']),
-                fn (Builder $q) => $q->where('parent_id', $filters['parent_id'])
+                fn(Builder $q) => $q->where('parent_id', $filters['parent_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('slug', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active categories.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder
@@ -246,7 +246,7 @@ class Category extends Model implements AuditableContract
     /**
      * Scope a query to only include featured categories.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeFeatured(Builder $query): Builder
@@ -257,7 +257,7 @@ class Category extends Model implements AuditableContract
     /**
      * Scope a query to only include categories with sync disabled.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeSyncDisabled(Builder $query): Builder

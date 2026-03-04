@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,10 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Designation
- *
+ * 
  * Represents an employee job designation/title within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for designation entities.
  *
@@ -28,19 +31,16 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Designation newModelQuery()
  * @method static Builder|Designation newQuery()
  * @method static Builder|Designation query()
  * @method static Builder|Designation active()
  * @method static Builder|Designation filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
+ * @property-read Collection<int, Employee> $employees
  * @property-read int|null $employees_count
- * @property-read \App\Models\Department $department
- *
+ * @property-read Department $department
  * @method static Builder<static>|Designation customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Designation last30Days(string $column = 'created_at')
  * @method static Builder<static>|Designation last7Days(string $column = 'created_at')
@@ -61,8 +61,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Designation withoutTrashed()
  * @method static Builder<static>|Designation yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Designation yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Designation extends Model implements AuditableContract
 {
@@ -92,8 +91,8 @@ class Designation extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -101,29 +100,29 @@ class Designation extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['department_id']),
-                fn (Builder $q) => $q->where('department_id', $filters['department_id'])
+                !empty($filters['department_id']),
+                fn(Builder $q) => $q->where('department_id', $filters['department_id'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active designations.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder

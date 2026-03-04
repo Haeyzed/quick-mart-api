@@ -20,7 +20,7 @@ class PerformanceReviewResource extends JsonResource
             'review_period_start' => $this->review_period_start?->toDateString(),
             'review_period_end' => $this->review_period_end?->toDateString(),
             'reviewer_id' => $this->reviewer_id,
-            'overall_rating' => $this->overall_rating ? (float) $this->overall_rating : null,
+            'overall_rating' => $this->overall_rating ? (float)$this->overall_rating : null,
             'status' => $this->status,
             'notes' => $this->notes,
             'promotion_effective_date' => $this->promotion_effective_date?->toDateString(),

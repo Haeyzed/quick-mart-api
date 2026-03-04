@@ -24,7 +24,7 @@ class TimezoneResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'country_id' => $this->country_id,
-            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
+            'country' => $this->whenLoaded('country', fn() => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
         ];
     }
 }

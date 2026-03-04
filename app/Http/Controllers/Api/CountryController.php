@@ -37,11 +37,13 @@ class CountryController extends Controller
     /**
      * CountryController constructor.
      *
-     * @param  CountryService  $service  Service handling country business logic.
+     * @param CountryService $service Service handling country business logic.
      */
     public function __construct(
         private readonly CountryService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Countries
@@ -104,7 +106,7 @@ class CountryController extends Controller
     /**
      * Get state options (value/label) for the specified country.
      *
-     * @param  Country  $country  Country model (route binding).
+     * @param Country $country Country model (route binding).
      */
     public function states(Country $country): JsonResponse
     {
@@ -262,13 +264,13 @@ class CountryController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -278,7 +280,7 @@ class CountryController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'countries_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'countries_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Country Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -287,7 +289,7 @@ class CountryController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

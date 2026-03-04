@@ -17,8 +17,8 @@ class OnboardingChecklistTemplateResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'is_default' => (bool) $this->is_default,
-            'items_count' => $this->when(isset($this->items_count), fn () => $this->items_count),
+            'is_default' => (bool)$this->is_default,
+            'items_count' => $this->when(isset($this->items_count), fn() => $this->items_count),
             'items' => $this->whenLoaded('items'),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

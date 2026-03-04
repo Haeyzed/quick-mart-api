@@ -7,15 +7,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Shifts\ShiftBulkActionRequest;
 use App\Http\Requests\Shifts\StoreShiftRequest;
 use App\Http\Requests\Shifts\UpdateShiftRequest;
-use App\Http\Requests\Shifts\ShiftBulkActionRequest;
 use App\Http\Resources\ShiftResource;
 use App\Mail\ExportMail;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
-use App\Models\User;
 use App\Models\Shift;
+use App\Models\User;
 use App\Services\ShiftService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +39,9 @@ class ShiftController extends Controller
      */
     public function __construct(
         private readonly ShiftService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Shifts
@@ -287,13 +289,13 @@ class ShiftController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -303,7 +305,7 @@ class ShiftController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'shifts_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'shifts_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Shift Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -312,7 +314,7 @@ class ShiftController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

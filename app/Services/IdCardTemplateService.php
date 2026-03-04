@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Models\IdCardTemplate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Class IdCardTemplateService
@@ -72,6 +71,16 @@ class IdCardTemplateService
     }
 
     /**
+     * Deactivate all templates in the system.
+     *
+     * @return void
+     */
+    private function deactivateAllTemplates(): void
+    {
+        IdCardTemplate::query()->update(['is_active' => false]);
+    }
+
+    /**
      * Update an existing ID Card Template.
      *
      * @param IdCardTemplate $template
@@ -103,16 +112,6 @@ class IdCardTemplateService
             $template->update(['is_active' => true]);
             return $template;
         });
-    }
-
-    /**
-     * Deactivate all templates in the system.
-     *
-     * @return void
-     */
-    private function deactivateAllTemplates(): void
-    {
-        IdCardTemplate::query()->update(['is_active' => false]);
     }
 
     /**

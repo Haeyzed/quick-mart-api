@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ExportRequest;
-use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Designations\DesignationBulkActionRequest;
 use App\Http\Requests\Designations\StoreDesignationRequest;
 use App\Http\Requests\Designations\UpdateDesignationRequest;
-use App\Http\Requests\Designations\DesignationBulkActionRequest;
+use App\Http\Requests\ExportRequest;
+use App\Http\Requests\ImportRequest;
 use App\Http\Resources\DesignationResource;
 use App\Mail\ExportMail;
+use App\Models\Designation;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
-use App\Models\Designation;
 use App\Services\DesignationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +39,9 @@ class DesignationController extends Controller
      */
     public function __construct(
         private readonly DesignationService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Designations
@@ -287,13 +289,13 @@ class DesignationController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -303,7 +305,7 @@ class DesignationController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'designations_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'designations_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Designation Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -312,7 +314,7 @@ class DesignationController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

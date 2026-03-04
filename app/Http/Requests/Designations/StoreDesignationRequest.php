@@ -23,18 +23,6 @@ class StoreDesignationRequest extends BaseRequest
     }
 
     /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('is_active')) {
-            $this->merge([
-                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -54,7 +42,7 @@ class StoreDesignationRequest extends BaseRequest
                 Rule::unique('designations', 'name')->withoutTrashed(),
             ],
 
-            
+
             'department_id' => ['required', 'integer', 'exists:departments,id'],
 
             /**
@@ -64,5 +52,17 @@ class StoreDesignationRequest extends BaseRequest
              */
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

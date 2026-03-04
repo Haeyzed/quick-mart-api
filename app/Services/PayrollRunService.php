@@ -23,7 +23,7 @@ class PayrollRunService
     /**
      * Get paginated payroll runs based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -47,32 +47,17 @@ class PayrollRunService
             ->orderByDesc('month')
             ->limit(24)
             ->get()
-            ->map(fn (PayrollRun $run) => [
+            ->map(fn(PayrollRun $run) => [
                 'value' => $run->id,
-                'label' => $run->month.' / '.$run->year,
+                'label' => $run->month . ' / ' . $run->year,
             ]);
-    }
-
-    /**
-     * Create a newly registered payroll run.
-     *
-     * @param  array<string, mixed>  $data  The validated request data.
-     * @return PayrollRun The newly created PayrollRun model instance.
-     */
-    public function create(array $data): PayrollRun
-    {
-        return DB::transaction(function () use ($data) {
-            $data['generated_by'] = Auth::id();
-
-            return PayrollRun::query()->create($data);
-        });
     }
 
     /**
      * Update an existing payroll run.
      *
-     * @param  PayrollRun  $payrollRun  The payroll run model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param PayrollRun $payrollRun The payroll run model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return PayrollRun The freshly updated PayrollRun model instance.
      */
     public function update(PayrollRun $payrollRun, array $data): PayrollRun
@@ -83,21 +68,9 @@ class PayrollRunService
     }
 
     /**
-     * Delete a payroll run and its entries and entry items.
-     */
-    public function delete(PayrollRun $payrollRun): void
-    {
-        DB::transaction(function () use ($payrollRun) {
-            $payrollRun->entries()->each(fn (PayrollEntry $e) => $e->items()->delete());
-            $payrollRun->entries()->delete();
-            $payrollRun->delete();
-        });
-    }
-
-    /**
      * Generate payroll entries for all active employees for the given run.
      *
-     * @param  PayrollRun  $payrollRun  The payroll run to generate entries for.
+     * @param PayrollRun $payrollRun The payroll run to generate entries for.
      * @return PayrollRun The payroll run with entries loaded.
      */
     public function generateEntries(PayrollRun $payrollRun): PayrollRun
@@ -114,20 +87,20 @@ class PayrollRunService
                 ->get();
 
             foreach ($employees as $employee) {
-                $gross = (float) $employee->basic_salary;
+                $gross = (float)$employee->basic_salary;
                 $deductions = 0.0;
 
                 if ($employee->salaryStructure && $employee->salaryStructure->structureItems->isNotEmpty()) {
                     $gross = 0.0;
                     foreach ($employee->salaryStructure->structureItems as $item) {
                         $comp = $item->salaryComponent;
-                        if (! $comp) {
+                        if (!$comp) {
                             continue;
                         }
                         if ($comp->type === 'earning') {
-                            $gross += (float) $item->amount;
+                            $gross += (float)$item->amount;
                         } else {
-                            $deductions += (float) $item->amount;
+                            $deductions += (float)$item->amount;
                         }
                     }
                 }
@@ -143,6 +116,33 @@ class PayrollRunService
             }
 
             return $payrollRun->fresh(['entries.employee']);
+        });
+    }
+
+    /**
+     * Delete a payroll run and its entries and entry items.
+     */
+    public function delete(PayrollRun $payrollRun): void
+    {
+        DB::transaction(function () use ($payrollRun) {
+            $payrollRun->entries()->each(fn(PayrollEntry $e) => $e->items()->delete());
+            $payrollRun->entries()->delete();
+            $payrollRun->delete();
+        });
+    }
+
+    /**
+     * Create a newly registered payroll run.
+     *
+     * @param array<string, mixed> $data The validated request data.
+     * @return PayrollRun The newly created PayrollRun model instance.
+     */
+    public function create(array $data): PayrollRun
+    {
+        return DB::transaction(function () use ($data) {
+            $data['generated_by'] = Auth::id();
+
+            return PayrollRun::query()->create($data);
         });
     }
 }

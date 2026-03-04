@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Nnjeim\World\Models\Language as WorldLanguage;
 
 /**
  * Class Language
- *
+ * 
  * Represents a language from World reference data. Extends Nnjeim\World Language.
  * Handles the underlying data structure, relationships, and specific query scopes for language entities.
  *
@@ -19,12 +20,10 @@ use Nnjeim\World\Models\Language as WorldLanguage;
  * @property string $name
  * @property string $name_native
  * @property string $dir
- *
  * @method static Builder|Language newModelQuery()
  * @method static Builder|Language newQuery()
  * @method static Builder|Language query()
  * @method static Builder|Language filter(array $filters)
- *
  * @method static Builder<static>|Language customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Language last30Days(string $column = 'created_at')
  * @method static Builder<static>|Language last7Days(string $column = 'created_at')
@@ -40,8 +39,7 @@ use Nnjeim\World\Models\Language as WorldLanguage;
  * @method static Builder<static>|Language whereNameNative($value)
  * @method static Builder<static>|Language yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Language yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Language extends WorldLanguage
 {
@@ -73,8 +71,8 @@ class Language extends WorldLanguage
                     ->orWhere('code', 'like', '%' . $filters['search'] . '%')
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 }

@@ -45,7 +45,9 @@ class CustomerController extends Controller
      */
     public function __construct(
         private readonly CustomerService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * Display a paginated listing of customers.
@@ -58,7 +60,7 @@ class CustomerController extends Controller
 
         $customers = $this->service->getPaginatedCustomers(
             $request->all(),
-            (int) $request->input('per_page', 10)
+            (int)$request->input('per_page', 10)
         );
 
         $customers->through(function (Customer $customer) {
@@ -253,13 +255,13 @@ class CustomerController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -269,7 +271,7 @@ class CustomerController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'customers_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'customers_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Customer Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -278,7 +280,7 @@ class CustomerController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
@@ -360,7 +362,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $deposit = $this->service->addDeposit(
             $customer,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null
         );
 
@@ -387,7 +389,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $deposit = $this->service->updateDeposit(
             $deposit,
-            (float) $validated['amount'],
+            (float)$validated['amount'],
             $validated['note'] ?? null
         );
 
@@ -441,7 +443,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $point = $this->service->addPoint(
             $customer,
-            (float) $validated['points'],
+            (float)$validated['points'],
             $validated['note'] ?? null
         );
 
@@ -468,7 +470,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $point = $this->service->updatePoint(
             $point,
-            (float) $validated['points'],
+            (float)$validated['points'],
             $validated['note'] ?? null
         );
 
@@ -503,11 +505,11 @@ class CustomerController extends Controller
         }
 
         $payments = $this->service->getCustomerPayments($customer);
-        $data = $payments->map(fn ($p) => [
+        $data = $payments->map(fn($p) => [
             'id' => $p->id,
             'created_at' => $p->created_at?->format('Y-m-d'),
             'payment_reference' => $p->payment_reference ?? '-',
-            'amount' => number_format((float) $p->amount, 2),
+            'amount' => number_format((float)$p->amount, 2),
             'paying_method' => ucfirst($p->paying_method ?? '-'),
             'payment_at' => $p->payment_at
                 ? $p->payment_at->format('Y-m-d H:i')

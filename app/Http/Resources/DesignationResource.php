@@ -39,7 +39,7 @@ class DesignationResource extends JsonResource
             /**
              * The department associated with the employee.
              */
-            'department' => $this->whenLoaded('department', fn () => [
+            'department' => $this->whenLoaded('department', fn() => [
                 'id' => $this->department->id,
                 'name' => $this->department->name,
             ]),

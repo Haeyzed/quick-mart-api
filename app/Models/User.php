@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Eloquent;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -13,18 +14,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\PersonalAccessToken;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
  * User Model
- *
+ * 
  * Represents a user in the system with authentication, roles, and permissions.
  *
  * @property int $id
@@ -52,27 +57,24 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Sale> $sales
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, Payment> $payments
- *
  * @method static Builder|User active()
  * @method static Builder|User notDeleted()
  * @method static Builder|User filter(array $filters)
- *
- * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @property-read int|null $holidays_count
- * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read DatabaseNotificationCollection<int, DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read int|null $payments_count
- * @property-read Collection<int, \App\Models\Permission> $permissions
+ * @property-read Collection<int, Permission> $permissions
  * @property-read int|null $permissions_count
  * @property-read int|null $purchases_count
- * @property-read Collection<int, \App\Models\Role> $roles
+ * @property-read Collection<int, Role> $roles
  * @property-read int|null $roles_count
  * @property-read int|null $sales_count
- * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
+ * @property-read Collection<int, PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
- *
- * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static UserFactory factory($count = null, $state = [])
  * @method static Builder<static>|User newModelQuery()
  * @method static Builder<static>|User newQuery()
  * @method static Builder<static>|User permission($permissions, $without = false)
@@ -99,8 +101,18 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static Builder<static>|User whereWarehouseId($value)
  * @method static Builder<static>|User withoutPermission($permissions)
  * @method static Builder<static>|User withoutRole($roles, $guard = null)
- *
- * @mixin \Eloquent
+ * @property string|null $phone_number
+ * @property string|null $image_path
+ * @property string|null $image_url
+ * @property Carbon|null $deleted_at
+ * @method static Builder<static>|User onlyTrashed()
+ * @method static Builder<static>|User whereDeletedAt($value)
+ * @method static Builder<static>|User whereImagePath($value)
+ * @method static Builder<static>|User whereImageUrl($value)
+ * @method static Builder<static>|User wherePhoneNumber($value)
+ * @method static Builder<static>|User withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|User withoutTrashed()
+ * @mixin Eloquent
  */
 class User extends Authenticatable implements AuditableContract, MustVerifyEmail
 {
@@ -233,7 +245,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
             return false;
         }
 
-        return ! $this->hasAnyRole($fullAccessRoles);
+        return !$this->hasAnyRole($fullAccessRoles);
     }
 
     /**
@@ -255,20 +267,20 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Scope a query to apply filters (search, is_active). Same pattern as Customer::scopeFilter.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->where('is_active', (bool) $filters['is_active'])
+                fn(Builder $q) => $q->where('is_active', (bool)$filters['is_active'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
-                    $term = '%'.$filters['search'].'%';
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $term = '%' . $filters['search'] . '%';
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('username', 'like', $term)
@@ -281,7 +293,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user has a specific permission.
      * This is a convenience wrapper around Spatie's hasPermissionTo method.
      *
-     * @param  string  $permission  Permission name
+     * @param string $permission Permission name
      */
     public function canPerform(string $permission): bool
     {
@@ -292,12 +304,12 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
      * Check if the user denies (lacks) a specific permission.
      * Treats non-existent permissions as denied (avoids 500 when permission name is invalid).
      *
-     * @param  string  $permission  Permission name
+     * @param string $permission Permission name
      */
     public function denies(string $permission): bool
     {
         try {
-            return ! $this->hasPermissionTo($permission);
+            return !$this->hasPermissionTo($permission);
         } catch (PermissionDoesNotExist) {
             return true;
         }
@@ -306,7 +318,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has any of the given permissions.
      *
-     * @param  array<string>  $permissions  Array of permission names
+     * @param array<string> $permissions Array of permission names
      */
     public function canPerformAny(array $permissions): bool
     {
@@ -316,7 +328,7 @@ class User extends Authenticatable implements AuditableContract, MustVerifyEmail
     /**
      * Check if the user has all of the given permissions.
      *
-     * @param  array<string>  $permissions  Array of permission names
+     * @param array<string> $permissions Array of permission names
      */
     public function canPerformAll(array $permissions): bool
     {

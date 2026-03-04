@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,10 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Shift
- *
+ * 
  * Represents an employee work shift within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for shift entities.
  *
@@ -28,20 +31,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Shift newModelQuery()
  * @method static Builder|Shift newQuery()
  * @method static Builder|Shift query()
  * @method static Builder|Shift active()
  * @method static Builder|Shift filter(array $filters)
- *
  * @property int $grace_in Grace period (minutes) before marking late
  * @property int $grace_out Grace period (minutes) before marking early leave
  * @property numeric|null $total_hours Total working hours for the shift
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @property-read \App\Models\Employee|null $employee
- *
+ * @property-read Employee|null $employee
  * @method static Builder<static>|Shift customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Shift last30Days(string $column = 'created_at')
  * @method static Builder<static>|Shift last7Days(string $column = 'created_at')
@@ -65,8 +65,18 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|Shift withoutTrashed()
  * @method static Builder<static>|Shift yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Shift yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @property int $break_duration Break duration in minutes
+ * @property bool $is_rotational
+ * @property bool $overtime_allowed
+ * @property-read Collection<int, \App\Models\Employee> $employees
+ * @property-read int|null $employees_count
+ * @property-read Collection<int, \App\Models\EmployeeShiftAssignment> $shiftAssignments
+ * @property-read int|null $shift_assignments_count
+ * @method static Builder<static>|Shift whereBreakDuration($value)
+ * @method static Builder<static>|Shift whereDeletedAt($value)
+ * @method static Builder<static>|Shift whereIsRotational($value)
+ * @method static Builder<static>|Shift whereOvertimeAllowed($value)
+ * @mixin Eloquent
  */
 class Shift extends Model implements AuditableContract
 {
@@ -105,8 +115,8 @@ class Shift extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -114,18 +124,18 @@ class Shift extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
@@ -152,7 +162,7 @@ class Shift extends Model implements AuditableContract
     /**
      * Scope a query to only include active shifts.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder

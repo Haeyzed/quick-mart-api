@@ -28,7 +28,7 @@ class CountryService
     /**
      * Get paginated countries.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedCountries(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -47,7 +47,7 @@ class CountryService
             ->select('id', 'name', 'iso2')
             ->orderBy('name')
             ->get()
-            ->map(fn (Country $country) => [
+            ->map(fn(Country $country) => [
                 'value' => $country->id,
                 'label' => $country->name,
                 'iso2' => $country->iso2,
@@ -65,7 +65,7 @@ class CountryService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (State $state) => [
+            ->map(fn(State $state) => [
                 'value' => $state->id,
                 'label' => $state->name,
             ]);
@@ -114,9 +114,9 @@ class CountryService
     public function download(): string
     {
         $fileName = 'countries-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template countries not found.');
         }
 
@@ -125,8 +125,8 @@ class CountryService
 
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'countries_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'countries_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

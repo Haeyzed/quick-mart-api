@@ -29,8 +29,8 @@ class CityResource extends JsonResource
             'state_code' => $this->state_code,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'country' => $this->whenLoaded('country', fn () => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
-            'state' => $this->whenLoaded('state', fn () => $this->state ? ['id' => $this->state->id, 'name' => $this->state->name] : null),
+            'country' => $this->whenLoaded('country', fn() => $this->country ? ['id' => $this->country->id, 'name' => $this->country->name] : null),
+            'state' => $this->whenLoaded('state', fn() => $this->state ? ['id' => $this->state->id, 'name' => $this->state->name] : null),
         ];
     }
 }

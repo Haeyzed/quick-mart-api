@@ -39,7 +39,9 @@ class TaxController extends Controller
      */
     public function __construct(
         private readonly TaxService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Taxes
@@ -288,13 +290,13 @@ class TaxController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -304,7 +306,7 @@ class TaxController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'taxes_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'taxes_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Tax Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -313,7 +315,7 @@ class TaxController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

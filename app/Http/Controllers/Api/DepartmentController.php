@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ExportRequest;
-use App\Http\Requests\ImportRequest;
+use App\Http\Requests\Departments\DepartmentBulkActionRequest;
 use App\Http\Requests\Departments\StoreDepartmentRequest;
 use App\Http\Requests\Departments\UpdateDepartmentRequest;
-use App\Http\Requests\Departments\DepartmentBulkActionRequest;
+use App\Http\Requests\ExportRequest;
+use App\Http\Requests\ImportRequest;
 use App\Http\Resources\DepartmentResource;
 use App\Mail\ExportMail;
+use App\Models\Department;
 use App\Models\GeneralSetting;
 use App\Models\MailSetting;
 use App\Models\User;
-use App\Models\Department;
 use App\Services\DepartmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +39,9 @@ class DepartmentController extends Controller
      */
     public function __construct(
         private readonly DepartmentService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Departments
@@ -109,11 +111,11 @@ class DepartmentController extends Controller
         return response()->success($this->service->getOptions(), 'Department options retrieved successfully');
     }
 
-    
+
     /**
      * Get designation options (value/label) for the specified department.
      *
-     * @param  Department  $department  Department model (route binding).
+     * @param Department $department Department model (route binding).
      */
     public function designations(Department $department): JsonResponse
     {
@@ -304,13 +306,13 @@ class DepartmentController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -320,7 +322,7 @@ class DepartmentController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'departments_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'departments_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Department Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -329,7 +331,7 @@ class DepartmentController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 

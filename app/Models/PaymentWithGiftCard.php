@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * PaymentWithGiftCard Model
@@ -23,17 +27,17 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $updated_at
  * @property-read Payment $payment
  * @property-read GiftCard $giftCard
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereGiftCardId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard wherePaymentId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentWithGiftCard whereUpdatedAt($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|PaymentWithGiftCard newModelQuery()
+ * @method static Builder<static>|PaymentWithGiftCard newQuery()
+ * @method static Builder<static>|PaymentWithGiftCard query()
+ * @method static Builder<static>|PaymentWithGiftCard whereCreatedAt($value)
+ * @method static Builder<static>|PaymentWithGiftCard whereGiftCardId($value)
+ * @method static Builder<static>|PaymentWithGiftCard whereId($value)
+ * @method static Builder<static>|PaymentWithGiftCard wherePaymentId($value)
+ * @method static Builder<static>|PaymentWithGiftCard whereUpdatedAt($value)
+ * @mixin Eloquent
  */
 class PaymentWithGiftCard extends Model implements AuditableContract
 {

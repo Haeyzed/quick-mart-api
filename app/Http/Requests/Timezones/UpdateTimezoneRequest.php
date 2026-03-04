@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Timezones;
 
-use App\Models\Timezone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 

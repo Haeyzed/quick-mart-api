@@ -32,12 +32,14 @@ class CurrenciesExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {}
+    )
+    {
+    }
 
     public function query(): Builder
     {
         return Currency::query()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->filter($this->filters)
             ->orderBy('name');
     }
@@ -47,7 +49,7 @@ class CurrenciesExport implements FromQuery, WithHeadings, WithMapping
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
         return array_map(
-            fn (string $col) => ucfirst(str_replace('_', ' ', $col)),
+            fn(string $col) => ucfirst(str_replace('_', ' ', $col)),
             $columns
         );
     }

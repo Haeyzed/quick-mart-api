@@ -17,11 +17,11 @@ class PayrollRunResource extends JsonResource
             'year' => $this->year,
             'status' => $this->status,
             'generated_by' => $this->generated_by,
-            'generated_by_user' => $this->whenLoaded('generatedByUser', fn () => [
+            'generated_by_user' => $this->whenLoaded('generatedByUser', fn() => [
                 'id' => $this->generatedByUser->id,
                 'name' => $this->generatedByUser->name,
             ]),
-            'entries_count' => $this->when(isset($this->entries_count), fn () => $this->entries_count),
+            'entries_count' => $this->when(isset($this->entries_count), fn() => $this->entries_count),
             'entries' => PayrollEntryResource::collection($this->whenLoaded('entries')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

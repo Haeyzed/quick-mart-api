@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * PurchaseProductReturn Model (Pivot)
@@ -35,27 +39,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read ProductBatch|null $batch
  * @property-read Variant|null $variant
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereDiscount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereImeiNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereNetUnitCost($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereProductBatchId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereProductId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn wherePurchaseUnitId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereQty($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereReturnId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PurchaseProductReturn whereVariantId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|PurchaseProductReturn newModelQuery()
+ * @method static Builder<static>|PurchaseProductReturn newQuery()
+ * @method static Builder<static>|PurchaseProductReturn query()
+ * @method static Builder<static>|PurchaseProductReturn whereCreatedAt($value)
+ * @method static Builder<static>|PurchaseProductReturn whereDiscount($value)
+ * @method static Builder<static>|PurchaseProductReturn whereId($value)
+ * @method static Builder<static>|PurchaseProductReturn whereImeiNumber($value)
+ * @method static Builder<static>|PurchaseProductReturn whereNetUnitCost($value)
+ * @method static Builder<static>|PurchaseProductReturn whereProductBatchId($value)
+ * @method static Builder<static>|PurchaseProductReturn whereProductId($value)
+ * @method static Builder<static>|PurchaseProductReturn wherePurchaseUnitId($value)
+ * @method static Builder<static>|PurchaseProductReturn whereQty($value)
+ * @method static Builder<static>|PurchaseProductReturn whereReturnId($value)
+ * @method static Builder<static>|PurchaseProductReturn whereTax($value)
+ * @method static Builder<static>|PurchaseProductReturn whereTaxRate($value)
+ * @method static Builder<static>|PurchaseProductReturn whereTotal($value)
+ * @method static Builder<static>|PurchaseProductReturn whereUpdatedAt($value)
+ * @method static Builder<static>|PurchaseProductReturn whereVariantId($value)
+ * @mixin Eloquent
  */
 class PurchaseProductReturn extends Model implements AuditableContract
 {

@@ -38,16 +38,18 @@ class BillerService
     /**
      * BillerService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated billers based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedBillers(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -74,7 +76,7 @@ class BillerService
             ->select('id', 'name', 'company_name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Biller $biller) => [
+            ->map(fn(Biller $biller) => [
                 'value' => $biller->id,
                 'label' => $biller->company_name ? "{$biller->name} ({$biller->company_name})" : $biller->name,
             ]);
@@ -83,7 +85,7 @@ class BillerService
     /**
      * Create a newly registered biller.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      * @return Biller The newly created Biller model instance.
      */
     public function createBiller(array $data): Biller
@@ -98,7 +100,7 @@ class BillerService
     /**
      * Handle Image Upload via UploadService.
      *
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
     private function handleUploads(array $data, ?Biller $biller = null): array
@@ -118,8 +120,8 @@ class BillerService
     /**
      * Update an existing biller.
      *
-     * @param  Biller  $biller  The biller model instance to update.
-     * @param  array<string, mixed>  $data
+     * @param Biller $biller The biller model instance to update.
+     * @param array<string, mixed> $data
      * @return Biller The freshly updated Biller model instance.
      */
     public function updateBiller(Biller $biller, array $data): Biller
@@ -162,7 +164,7 @@ class BillerService
     /**
      * Bulk delete multiple biller records.
      *
-     * @param  array<int>  $ids  Array of biller IDs to be deleted.
+     * @param array<int> $ids Array of biller IDs to be deleted.
      * @return int The total count of successfully deleted biller records.
      */
     public function bulkDeleteBillers(array $ids): int
@@ -188,8 +190,8 @@ class BillerService
     /**
      * Update the status for multiple biller records.
      *
-     * @param  array<int>  $ids  Array of biller IDs to update.
-     * @param  bool  $isActive  The new status value.
+     * @param array<int> $ids Array of biller IDs to update.
+     * @param bool $isActive The new status value.
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -200,7 +202,7 @@ class BillerService
     /**
      * Import multiple biller records from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      */
     public function importBillers(UploadedFile $file): void
     {
@@ -217,9 +219,9 @@ class BillerService
     public function download(): string
     {
         $fileName = 'billers-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template billers not found.');
         }
 
@@ -229,16 +231,16 @@ class BillerService
     /**
      * Generate an export file containing biller data.
      *
-     * @param  array<int>  $ids  Specific biller IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific biller IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'billers_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'billers_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

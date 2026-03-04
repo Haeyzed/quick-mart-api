@@ -26,7 +26,7 @@ class SuppliersExport implements FromQuery, WithHeadings, WithMapping
     {
         return Supplier::query()
             ->with(['country:id,name', 'state:id,name', 'city:id,name'])
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
             ->orderBy('company_name');
     }
 

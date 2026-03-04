@@ -55,7 +55,7 @@ class DocumentTypeService
             ->select('id', 'name', 'code', 'requires_expiry')
             ->orderBy('name')
             ->get()
-            ->map(fn (DocumentType $type) => [
+            ->map(fn(DocumentType $type) => [
                 'value' => $type->id,
                 'label' => $type->name,
                 'requires_expiry' => $type->requires_expiry,
@@ -70,7 +70,41 @@ class DocumentTypeService
      */
     public function create(array $data): DocumentType
     {
-        return DB::transaction(fn () => DocumentType::query()->create($data));
+        return DB::transaction(fn() => DocumentType::query()->create($data));
+    }
+
+    /**
+     * Bulk delete multiple document types.
+     *
+     * @param array<int> $ids
+     * @return int
+     */
+    public function bulkDelete(array $ids): int
+    {
+        return DB::transaction(fn() => DocumentType::query()->whereIn('id', $ids)->delete());
+    }
+
+    /**
+     * Delete a document type.
+     *
+     * @param DocumentType $documentType
+     * @return void
+     */
+    public function delete(DocumentType $documentType): void
+    {
+        DB::transaction(fn() => $documentType->delete());
+    }
+
+    /**
+     * Bulk update active status for document types.
+     *
+     * @param array<int> $ids
+     * @param bool $isActive
+     * @return int
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return DB::transaction(fn() => DocumentType::query()->whereIn('id', $ids)->update(['is_active' => $isActive]));
     }
 
     /**
@@ -87,40 +121,6 @@ class DocumentTypeService
 
             return $documentType->fresh();
         });
-    }
-
-    /**
-     * Delete a document type.
-     *
-     * @param DocumentType $documentType
-     * @return void
-     */
-    public function delete(DocumentType $documentType): void
-    {
-        DB::transaction(fn () => $documentType->delete());
-    }
-
-    /**
-     * Bulk delete multiple document types.
-     *
-     * @param array<int> $ids
-     * @return int
-     */
-    public function bulkDelete(array $ids): int
-    {
-        return DB::transaction(fn () => DocumentType::query()->whereIn('id', $ids)->delete());
-    }
-
-    /**
-     * Bulk update active status for document types.
-     *
-     * @param array<int> $ids
-     * @param bool $isActive
-     * @return int
-     */
-    public function bulkUpdateStatus(array $ids, bool $isActive): int
-    {
-        return DB::transaction(fn () => DocumentType::query()->whereIn('id', $ids)->update(['is_active' => $isActive]));
     }
 
     /**

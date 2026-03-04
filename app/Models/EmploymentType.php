@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +18,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * Class EmploymentType
- *
+ * 
  * Represents a type of employment (e.g. full-time, contract, intern). Handles the underlying data
  * structure, relationships, and specific query scopes for employment type entities.
  *
@@ -26,16 +28,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|EmploymentType newModelQuery()
  * @method static Builder|EmploymentType newQuery()
  * @method static Builder|EmploymentType query()
  * @method static Builder|EmploymentType active()
  * @method static Builder|EmploymentType filter(array $filters)
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees
+ * @property-read Collection<int, Employee> $employees
  * @property-read int|null $employees_count
- *
  * @method static Builder<static>|EmploymentType customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|EmploymentType last30Days(string $column = 'created_at')
  * @method static Builder<static>|EmploymentType last7Days(string $column = 'created_at')
@@ -55,8 +54,9 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|EmploymentType withoutTrashed()
  * @method static Builder<static>|EmploymentType yearToDate(string $column = 'created_at')
  * @method static Builder<static>|EmploymentType yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @property-read Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @mixin Eloquent
  */
 class EmploymentType extends Model implements AuditableContract
 {
@@ -84,8 +84,8 @@ class EmploymentType extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
@@ -93,25 +93,25 @@ class EmploymentType extends Model implements AuditableContract
         return $query
             ->when(
                 isset($filters['is_active']),
-                fn (Builder $q) => $q->active()
+                fn(Builder $q) => $q->active()
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
                     $q->where('name', 'like', $term);
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 
     /**
      * Scope a query to only include active employment types.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param Builder $query The Eloquent query builder instance.
      * @return Builder The modified query builder instance.
      */
     public function scopeActive(Builder $query): Builder

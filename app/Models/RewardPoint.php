@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * RewardPoint Model
@@ -34,7 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Sale|null $sale
  * @method static Builder|RewardPoint expired()
  * @method static Builder|RewardPoint notExpired()
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
  * @method static Builder<static>|RewardPoint newModelQuery()
  * @method static Builder<static>|RewardPoint newQuery()
@@ -51,7 +54,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @method static Builder<static>|RewardPoint whereSaleId($value)
  * @method static Builder<static>|RewardPoint whereUpdatedAt($value)
  * @method static Builder<static>|RewardPoint whereUpdatedBy($value)
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class RewardPoint extends Model implements AuditableContract
 {

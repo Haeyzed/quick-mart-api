@@ -22,19 +22,19 @@ class PayrollEntryResource extends JsonResource
             'id' => $this->id,
             'payroll_run_id' => $this->payroll_run_id,
             'employee_id' => $this->employee_id,
-            'gross_salary' => (float) $this->gross_salary,
-            'total_deductions' => (float) $this->total_deductions,
-            'net_salary' => (float) $this->net_salary,
+            'gross_salary' => (float)$this->gross_salary,
+            'total_deductions' => (float)$this->total_deductions,
+            'net_salary' => (float)$this->net_salary,
             'status' => $this->status,
-            'employee' => $this->whenLoaded('employee', fn () => [
+            'employee' => $this->whenLoaded('employee', fn() => [
                 'id' => $this->employee->id,
                 'name' => $this->employee->name,
                 'employee_code' => $this->employee->employee_code,
             ]),
-            'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($i) => [
+            'items' => $this->whenLoaded('items', fn() => $this->items->map(fn($i) => [
                 'id' => $i->id,
                 'salary_component_id' => $i->salary_component_id,
-                'amount' => (float) $i->amount,
+                'amount' => (float)$i->amount,
                 'salary_component' => $i->relationLoaded('salaryComponent') ? [
                     'id' => $i->salaryComponent->id,
                     'name' => $i->salaryComponent->name,

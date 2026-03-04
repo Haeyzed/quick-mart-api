@@ -19,12 +19,12 @@ class SalaryStructureService
         if (isset($filters['is_active'])) {
             $query->when(
                 $filters['is_active'],
-                fn ($q) => $q->active(),
-                fn ($q) => $q->where('is_active', false)
+                fn($q) => $q->active(),
+                fn($q) => $q->where('is_active', false)
             );
         }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
+        if (!empty($filters['search'])) {
+            $term = '%' . $filters['search'] . '%';
             $query->where('name', 'like', $term);
         }
 
@@ -37,31 +37,10 @@ class SalaryStructureService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (SalaryStructure $s) => [
+            ->map(fn(SalaryStructure $s) => [
                 'value' => $s->id,
                 'label' => $s->name,
             ]);
-    }
-
-    public function create(array $data): SalaryStructure
-    {
-        return DB::transaction(function () use ($data) {
-            $items = $data['items'] ?? [];
-            unset($data['items']);
-
-            $structure = SalaryStructure::query()->create($data);
-
-            foreach ($items as $item) {
-                SalaryStructureItem::query()->create([
-                    'salary_structure_id' => $structure->id,
-                    'salary_component_id' => $item['salary_component_id'],
-                    'amount' => $item['amount'] ?? 0,
-                    'percentage' => $item['percentage'] ?? null,
-                ]);
-            }
-
-            return $structure->fresh(['structureItems.salaryComponent']);
-        });
     }
 
     public function update(SalaryStructure $salaryStructure, array $data): SalaryStructure
@@ -90,11 +69,32 @@ class SalaryStructureService
 
     public function delete(SalaryStructure $salaryStructure): void
     {
-        DB::transaction(fn () => $salaryStructure->delete());
+        DB::transaction(fn() => $salaryStructure->delete());
+    }
+
+    public function create(array $data): SalaryStructure
+    {
+        return DB::transaction(function () use ($data) {
+            $items = $data['items'] ?? [];
+            unset($data['items']);
+
+            $structure = SalaryStructure::query()->create($data);
+
+            foreach ($items as $item) {
+                SalaryStructureItem::query()->create([
+                    'salary_structure_id' => $structure->id,
+                    'salary_component_id' => $item['salary_component_id'],
+                    'amount' => $item['amount'] ?? 0,
+                    'percentage' => $item['percentage'] ?? null,
+                ]);
+            }
+
+            return $structure->fresh(['structureItems.salaryComponent']);
+        });
     }
 
     public function bulkDelete(array $ids): int
     {
-        return DB::transaction(fn () => SalaryStructure::query()->whereIn('id', $ids)->delete());
+        return DB::transaction(fn() => SalaryStructure::query()->whereIn('id', $ids)->delete());
     }
 }

@@ -113,7 +113,7 @@ class AutoPurchase extends Command
         $posSetting = PosSetting::latest()->first();
         $adminUser = User::query()
             ->where('is_active', true)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
+            ->whereHas('roles', fn($q) => $q->where('name', 'Admin'))
             ->first();
 
         if (!$posSetting || !$adminUser) {

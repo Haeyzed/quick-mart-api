@@ -24,6 +24,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
@@ -46,7 +47,9 @@ class SupplierService extends BaseService
 
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     public function getSupplier(Supplier $supplier): Supplier
     {
@@ -58,7 +61,7 @@ class SupplierService extends BaseService
      * Uses country_id, state_id, city_id directly like Supplier model (same pattern as Customer).
      * Does not check permissions; caller (e.g. CustomerService) is responsible for authorization.
      *
-     * @param  array<string, mixed>  $data  Customer-style attributes (country_id, state_id, city_id)
+     * @param array<string, mixed> $data Customer-style attributes (country_id, state_id, city_id)
      */
     public function createFromCustomerData(array $data): Supplier
     {
@@ -80,11 +83,11 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<Supplier>
      */
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<Supplier>
      */
     public function getSuppliers(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -101,7 +104,7 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     /**
      * Get list of supplier options for select/combobox.
@@ -115,14 +118,14 @@ class SupplierService extends BaseService
             ->select('id', 'name', 'company_name')
             ->orderBy('name')
             ->get()
-            ->map(fn (Supplier $s) => [
+            ->map(fn(Supplier $s) => [
                 'value' => $s->id,
                 'label' => $s->company_name ? "{$s->name} ({$s->company_name})" : $s->name,
             ]);
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function createSupplier(array $data): Supplier
     {
@@ -134,7 +137,7 @@ class SupplierService extends BaseService
 
             $supplier = Supplier::create($data);
 
-            $openingBalance = (float) ($data['opening_balance'] ?? 0);
+            $openingBalance = (float)($data['opening_balance'] ?? 0);
             if ($openingBalance > 0) {
                 $this->createOpeningBalancePurchase($supplier, $openingBalance);
             }
@@ -146,7 +149,7 @@ class SupplierService extends BaseService
     /**
      * Process image upload and merge path into supplier data.
      *
-     * @param  array<string, mixed>  $data  Input data containing 'image' as UploadedFile.
+     * @param array<string, mixed> $data Input data containing 'image' as UploadedFile.
      * @return array<string, mixed> Data with 'image' (path) set.
      */
     private function handleImageUpload(array $data): array
@@ -167,12 +170,12 @@ class SupplierService extends BaseService
     private function createOpeningBalancePurchase(Supplier $supplier, float $amount): Purchase
     {
         $warehouse = Warehouse::query()->first();
-        if (! $warehouse) {
+        if (!$warehouse) {
             throw new RuntimeException('No warehouse found. Please create a warehouse first.');
         }
 
         return Purchase::create([
-            'reference_no' => 'sob-'.now()->format('Ymd').'-'.now()->format('his'),
+            'reference_no' => 'sob-' . now()->format('Ymd') . '-' . now()->format('his'),
             'supplier_id' => $supplier->id,
             'user_id' => auth()->id(),
             'warehouse_id' => $warehouse->id,
@@ -190,10 +193,10 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function updateSupplier(Supplier $supplier, array $data): Supplier
     {
@@ -223,7 +226,7 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkDeleteSuppliers(array $ids): int
     {
@@ -270,9 +273,9 @@ class SupplierService extends BaseService
     public function download(): string
     {
         $fileName = 'suppliers-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! \Illuminate\Support\Facades\File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Supplier import template not found.');
         }
 
@@ -282,19 +285,19 @@ class SupplierService extends BaseService
     /**
      * Generate export file and return relative path.
      *
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
-     * @param  array{start_date?: string, end_date?: string}  $filters
+     * @param array<int> $ids
+     * @param array<string> $columns
+     * @param array{start_date?: string, end_date?: string} $filters
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'suppliers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'suppliers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'pdf') {
             $suppliers = Supplier::query()
                 ->with(['country:id,name', 'state:id,name', 'city:id,name'])
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('company_name')
                 ->get();
             $pdf = PDF::loadView('exports.suppliers-pdf', compact('suppliers', 'columns'));
@@ -307,21 +310,21 @@ class SupplierService extends BaseService
     }
 
     /**
-     * @param  array<int>  $ids
-     * @param  array<string>  $columns
+     * @param array<int> $ids
+     * @param array<string> $columns
      *
      * @deprecated Use generateExportFile() and handle email in controller
      */
     public function exportSuppliers(array $ids, string $format, ?User $user, array $columns, string $method): string
     {
-        $fileName = 'suppliers_'.now()->timestamp.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
-        $relativePath = 'exports/'.$fileName;
+        $fileName = 'suppliers_' . now()->timestamp . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+        $relativePath = 'exports/' . $fileName;
 
         if ($format === 'excel') {
             Excel::store(new SuppliersExport($ids, $columns), $relativePath, 'public');
         } else {
             $suppliers = Supplier::query()
-                ->when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+                ->when(!empty($ids), fn($q) => $q->whereIn('id', $ids))
                 ->orderBy('company_name')
                 ->get();
 
@@ -339,7 +342,7 @@ class SupplierService extends BaseService
     private function sendExportEmail(User $user, string $path, string $fileName): void
     {
         $mailSetting = MailSetting::default()->firstOr(
-            fn () => throw new RuntimeException('Mail settings are not configured.')
+            fn() => throw new RuntimeException('Mail settings are not configured.')
         );
         $generalSetting = GeneralSetting::latest()->first();
         $this->setMailInfo($mailSetting);
@@ -361,12 +364,12 @@ class SupplierService extends BaseService
         $purchases = Purchase::query()
             ->where('supplier_id', $supplier->id)
             ->get()
-            ->map(fn (Purchase $p) => [
+            ->map(fn(Purchase $p) => [
                 'id' => $p->id,
                 'date' => $p->created_at?->format('Y-m-d'),
                 'type' => 'Purchase',
                 'reference' => $p->reference_no,
-                'debit' => (float) $p->grand_total,
+                'debit' => (float)$p->grand_total,
                 'credit' => 0.0,
             ]);
 
@@ -379,20 +382,20 @@ class SupplierService extends BaseService
                     'type' => 'Payment',
                     'reference' => $payment->payment_reference ?? '-',
                     'debit' => 0.0,
-                    'credit' => (float) $payment->amount,
+                    'credit' => (float)$payment->amount,
                 ]);
             }
         }
 
         $returns = ReturnPurchase::where('supplier_id', $supplier->id)
             ->get()
-            ->map(fn ($r) => [
+            ->map(fn($r) => [
                 'id' => $r->id,
                 'date' => $r->created_at?->format('Y-m-d'),
                 'type' => 'Purchase Return',
                 'reference' => $r->reference_no,
                 'debit' => 0.0,
-                'credit' => (float) $r->grand_total,
+                'credit' => (float)$r->grand_total,
             ]);
 
         $ledger = $purchases->merge($payments)->merge($returns)
@@ -414,14 +417,14 @@ class SupplierService extends BaseService
      */
     public function getBalanceDue(Supplier $supplier): float
     {
-        $openingBalance = (float) ($supplier->opening_balance ?? 0);
-        $totalPurchases = (float) Purchase::where('supplier_id', $supplier->id)->sum('grand_total');
-        $totalPaid = (float) DB::table('payments')
+        $openingBalance = (float)($supplier->opening_balance ?? 0);
+        $totalPurchases = (float)Purchase::where('supplier_id', $supplier->id)->sum('grand_total');
+        $totalPaid = (float)DB::table('payments')
             ->join('purchases', 'payments.purchase_id', '=', 'purchases.id')
             ->where('purchases.supplier_id', $supplier->id)
             ->whereNull('purchases.deleted_at')
             ->sum('payments.amount');
-        $totalReturns = (float) ReturnPurchase::where('supplier_id', $supplier->id)->sum('grand_total');
+        $totalReturns = (float)ReturnPurchase::where('supplier_id', $supplier->id)->sum('grand_total');
 
         return max(0, $openingBalance + $totalPurchases - $totalReturns - $totalPaid);
     }
@@ -450,11 +453,11 @@ class SupplierService extends BaseService
             )
             ->orderByDesc('payments.created_at')
             ->get()
-            ->map(fn ($p) => [
+            ->map(fn($p) => [
                 'id' => $p->id,
                 'created_at' => $p->created_at ? date('Y-m-d', strtotime($p->created_at)) : '-',
                 'payment_reference' => $p->payment_reference ?? '-',
-                'amount' => number_format((float) $p->amount, 2),
+                'amount' => number_format((float)$p->amount, 2),
                 'paying_method' => ucfirst($p->paying_method ?? '-'),
                 'payment_at' => $p->payment_at
                     ? date('Y-m-d H:i', strtotime($p->payment_at))
@@ -477,7 +480,7 @@ class SupplierService extends BaseService
             ->get();
 
         $account = Account::query()->where('is_default', true)->first();
-        if (! $account) {
+        if (!$account) {
             throw new RuntimeException('No default account found. Please configure accounting.');
         }
 
@@ -500,7 +503,7 @@ class SupplierService extends BaseService
                 }
 
                 Payment::create([
-                    'payment_reference' => 'ppr-'.now()->format('Ymd').'-'.now()->format('his'),
+                    'payment_reference' => 'ppr-' . now()->format('Ymd') . '-' . now()->format('his'),
                     'purchase_id' => $purchase->id,
                     'user_id' => auth()->id(),
                     'cash_register_id' => $cashRegisterId,

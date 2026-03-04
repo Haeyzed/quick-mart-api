@@ -58,21 +58,21 @@ class OvertimeResource extends JsonResource
              *
              * @example 4.5
              */
-            'hours' => (float) $this->hours,
+            'hours' => (float)$this->hours,
 
             /**
              * The hourly rate for the overtime.
              *
              * @example 15.50
              */
-            'rate' => (float) $this->rate,
+            'rate' => (float)$this->rate,
 
             /**
              * The calculated monetary value of the overtime (Hours * Rate).
              *
              * @example 69.75
              */
-            'amount' => (float) $this->amount,
+            'amount' => (float)$this->amount,
 
             /**
              * The current status of the overtime request.

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 class SalaryComponentService
 {
     /**
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      * @return LengthAwarePaginator<SalaryComponent>
      */
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -27,15 +27,15 @@ class SalaryComponentService
         if (isset($filters['is_active'])) {
             $query->when(
                 $filters['is_active'],
-                fn ($q) => $q->active(),
-                fn ($q) => $q->where('is_active', false)
+                fn($q) => $q->active(),
+                fn($q) => $q->where('is_active', false)
             );
         }
-        if (! empty($filters['type'])) {
+        if (!empty($filters['type'])) {
             $query->where('type', $filters['type']);
         }
-        if (! empty($filters['search'])) {
-            $term = '%'.$filters['search'].'%';
+        if (!empty($filters['search'])) {
+            $term = '%' . $filters['search'] . '%';
             $query->where('name', 'like', $term);
         }
 
@@ -52,7 +52,7 @@ class SalaryComponentService
             ->orderBy('type')
             ->orderBy('name')
             ->get()
-            ->map(fn (SalaryComponent $c) => [
+            ->map(fn(SalaryComponent $c) => [
                 'value' => $c->id,
                 'label' => $c->name,
                 'type' => $c->type,
@@ -61,7 +61,7 @@ class SalaryComponentService
 
     public function create(array $data): SalaryComponent
     {
-        return DB::transaction(fn () => SalaryComponent::query()->create($data));
+        return DB::transaction(fn() => SalaryComponent::query()->create($data));
     }
 
     public function update(SalaryComponent $salaryComponent, array $data): SalaryComponent
@@ -73,16 +73,16 @@ class SalaryComponentService
         });
     }
 
-    public function delete(SalaryComponent $salaryComponent): void
-    {
-        DB::transaction(fn () => $salaryComponent->delete());
-    }
-
     /**
-     * @param  array<int>  $ids
+     * @param array<int> $ids
      */
     public function bulkDelete(array $ids): int
     {
-        return DB::transaction(fn () => SalaryComponent::query()->whereIn('id', $ids)->delete());
+        return DB::transaction(fn() => SalaryComponent::query()->whereIn('id', $ids)->delete());
+    }
+
+    public function delete(SalaryComponent $salaryComponent): void
+    {
+        DB::transaction(fn() => $salaryComponent->delete());
     }
 }

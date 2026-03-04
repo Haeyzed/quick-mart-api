@@ -94,7 +94,7 @@ class PayrollResource extends JsonResource
              *
              * @example 1500.50
              */
-            'amount' => (float) $this->amount,
+            'amount' => (float)$this->amount,
 
             /**
              * Detailed array breakdown of the payroll amount.
@@ -135,7 +135,7 @@ class PayrollResource extends JsonResource
              * Dynamically calculated statistics for the specific employee.
              */
             'statistics' => [
-                'approved_leaves' => (float) $leavesCount,
+                'approved_leaves' => (float)$leavesCount,
                 'attendance_days' => $attendanceDays,
                 'work_duration_hours' => $workDurationHours,
             ],

@@ -25,15 +25,15 @@ class TimezonesImport implements
 {
     public function model(array $row): ?Timezone
     {
-        $name = trim((string) ($row['name'] ?? ''));
-        $countryCode = trim((string) ($row['country_code'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        $countryCode = trim((string)($row['country_code'] ?? ''));
 
         if ($name === '' || $countryCode === '') {
             return null;
         }
 
         $country = Country::where('iso2', $countryCode)->first();
-        if (! $country) {
+        if (!$country) {
             return null;
         }
 

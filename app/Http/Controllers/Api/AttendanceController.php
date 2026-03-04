@@ -44,7 +44,9 @@ class AttendanceController extends Controller
      */
     public function __construct(
         private readonly AttendanceService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Attendances
@@ -285,13 +287,13 @@ class AttendanceController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (! $user) {
+            if (!$user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (! $mailSetting) {
+            if (!$mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -301,7 +303,7 @@ class AttendanceController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'attendances_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'attendances_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Attendance Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -310,7 +312,7 @@ class AttendanceController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: '.$user->email
+                'Export is being processed and will be sent to email: ' . $user->email
             );
         }
 
@@ -362,7 +364,7 @@ class AttendanceController extends Controller
 
             if (count($parts) >= 3) {
                 $staffId = $parts[0];
-                $timestamp = $parts[1].' '.$parts[2]; // Combine Date and Time
+                $timestamp = $parts[1] . ' ' . $parts[2]; // Combine Date and Time
 
                 try {
                     $result = $this->service->handleDevicePunch([
@@ -377,7 +379,7 @@ class AttendanceController extends Controller
                     }
 
                 } catch (Exception $e) {
-                    Log::error("Device ADMS sync failed for {$staffId}: ".$e->getMessage());
+                    Log::error("Device ADMS sync failed for {$staffId}: " . $e->getMessage());
                 }
             }
         }
@@ -402,7 +404,7 @@ class AttendanceController extends Controller
             // Calls the new web punch logic, passing the auth ID and IP Address
             $result = $this->service->handleWebPunch(auth()->id(), $request->ip());
 
-            if (! $result) {
+            if (!$result) {
                 return response()->error(
                     'Punch ignored. You either recently punched in, or attempted an early checkout before the official closing time.'
                 );

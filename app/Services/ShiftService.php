@@ -33,17 +33,19 @@ class ShiftService
     /**
      * ShiftService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated shifts based on filters.
      *
-     * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
+     * @param array<string, mixed> $filters
+     * @param int $perPage
      * @return LengthAwarePaginator
      */
     public function getPaginatedShifts(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -65,7 +67,7 @@ class ShiftService
             ->select('id', 'name', 'start_time', 'end_time')
             ->orderBy('name')
             ->get()
-            ->map(fn (Shift $shift) => [
+            ->map(fn(Shift $shift) => [
                 'value' => $shift->id,
                 'label' => "{$shift->name} ({$shift->start_time} - {$shift->end_time})",
             ]);
@@ -74,14 +76,14 @@ class ShiftService
     /**
      * Create a newly registered shift.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Shift The newly created Shift model instance.
      */
     public function createShift(array $data): Shift
     {
         return DB::transaction(function () use ($data) {
             $data['start_time'] = Carbon::parse($data['start_time'])->format('H:i:s');
-            $data['end_time']   = Carbon::parse($data['end_time'])->format('H:i:s');
+            $data['end_time'] = Carbon::parse($data['end_time'])->format('H:i:s');
             return Shift::query()->create($data);
         });
     }
@@ -89,15 +91,15 @@ class ShiftService
     /**
      * Update an existing shift's information.
      *
-     * @param  Shift  $shift  The shift model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Shift $shift The shift model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Shift The freshly updated Shift model instance.
      */
     public function updateShift(Shift $shift, array $data): Shift
     {
         return DB::transaction(function () use ($shift, $data) {
             $data['start_time'] = Carbon::parse($data['start_time'])->format('H:i:s');
-            $data['end_time']   = Carbon::parse($data['end_time'])->format('H:i:s');
+            $data['end_time'] = Carbon::parse($data['end_time'])->format('H:i:s');
             $shift->update($data);
 
             return $shift->fresh();
@@ -107,7 +109,7 @@ class ShiftService
     /**
      * Delete a shift.
      *
-     * @param  Shift  $shift
+     * @param Shift $shift
      * @return void
      */
     public function deleteShift(Shift $shift): void
@@ -120,7 +122,7 @@ class ShiftService
     /**
      * Bulk delete multiple shifts.
      *
-     * @param  array<int>  $ids  Array of shift IDs to be deleted.
+     * @param array<int> $ids Array of shift IDs to be deleted.
      * @return int The total count of successfully deleted shifts.
      */
     public function bulkDeleteShifts(array $ids): int
@@ -133,8 +135,8 @@ class ShiftService
     /**
      * Update the active status for multiple shifts.
      *
-     * @param  array<int>  $ids  Array of shift IDs to update.
-     * @param  bool  $isActive  The new active status.
+     * @param array<int> $ids Array of shift IDs to update.
+     * @param bool $isActive The new active status.
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -145,7 +147,7 @@ class ShiftService
     /**
      * Import multiple shifts from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      * @return void
      */
     public function importShifts(UploadedFile $file): void
@@ -162,9 +164,9 @@ class ShiftService
     public function download(): string
     {
         $fileName = 'shifts-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template shifts not found.');
         }
 
@@ -174,16 +176,16 @@ class ShiftService
     /**
      * Generate an export file containing shift data.
      *
-     * @param  array<int>  $ids  Specific shift IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific shift IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'shifts_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'shifts_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

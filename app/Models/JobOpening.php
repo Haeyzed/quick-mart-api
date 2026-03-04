@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +17,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Class JobOpening
- *
+ * 
  * Represents a job opening within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for job opening entities.
  *
@@ -30,18 +32,15 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|JobOpening newModelQuery()
  * @method static Builder|JobOpening newQuery()
  * @method static Builder|JobOpening query()
  * @method static Builder|JobOpening filter(array $filters)
- *
- * @property-read \App\Models\User|null $createdByUser
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Candidate> $candidates
+ * @property-read User|null $createdByUser
+ * @property-read Collection<int, Candidate> $candidates
  * @property-read int|null $candidates_count
- * @property-read \App\Models\Department|null $department
- * @property-read \App\Models\Designation|null $designation
- *
+ * @property-read Department|null $department
+ * @property-read Designation|null $designation
  * @method static Builder<static>|JobOpening customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|JobOpening last30Days(string $column = 'created_at')
  * @method static Builder<static>|JobOpening last7Days(string $column = 'created_at')
@@ -66,8 +65,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|JobOpening withoutTrashed()
  * @method static Builder<static>|JobOpening yearToDate(string $column = 'created_at')
  * @method static Builder<static>|JobOpening yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class JobOpening extends Model
 {
@@ -91,21 +89,21 @@ class JobOpening extends Model
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when(! empty($filters['status']), fn (Builder $q) => $q->where('status', $filters['status']))
+            ->when(!empty($filters['status']), fn(Builder $q) => $q->where('status', $filters['status']))
             ->when(
-                ! empty($filters['search']),
-                fn (Builder $q) => $q->where('title', 'like', '%'.$filters['search'].'%')
+                !empty($filters['search']),
+                fn(Builder $q) => $q->where('title', 'like', '%' . $filters['search'] . '%')
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

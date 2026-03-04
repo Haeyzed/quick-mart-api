@@ -44,7 +44,7 @@ class JobOpeningResource extends JsonResource
              *
              * @example {"id": 2, "name": "Engineering"}
              */
-            'department' => $this->whenLoaded('department', fn () => [
+            'department' => $this->whenLoaded('department', fn() => [
                 'id' => $this->department->id,
                 'name' => $this->department->name,
             ]),
@@ -59,7 +59,7 @@ class JobOpeningResource extends JsonResource
              *
              * @example {"id": 3, "name": "Senior Developer"}
              */
-            'designation' => $this->whenLoaded('designation', fn () => [
+            'designation' => $this->whenLoaded('designation', fn() => [
                 'id' => $this->designation->id,
                 'name' => $this->designation->name,
             ]),
@@ -92,7 +92,7 @@ class JobOpeningResource extends JsonResource
              *
              * @example {"id": 1, "name": "John Doe"}
              */
-            'created_by' => $this->whenLoaded('createdBy', fn () => [
+            'created_by' => $this->whenLoaded('createdBy', fn() => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
                 'email' => $this->createdBy->email,

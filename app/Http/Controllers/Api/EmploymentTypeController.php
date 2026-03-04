@@ -26,7 +26,9 @@ class EmploymentTypeController extends Controller
 {
     public function __construct(
         private readonly EmploymentTypeService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Employment Types

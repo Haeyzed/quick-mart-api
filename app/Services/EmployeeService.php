@@ -12,7 +12,6 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
@@ -46,11 +45,13 @@ class EmployeeService
      * @param EmployeeOnboardingService $employeeOnboardingService Service for starting onboarding automatically.
      */
     public function __construct(
-        private readonly UploadService $uploadService,
-        private readonly UserService $userService,
-        private readonly EmployeeDocumentService $employeeDocumentService,
+        private readonly UploadService             $uploadService,
+        private readonly UserService               $userService,
+        private readonly EmployeeDocumentService   $employeeDocumentService,
         private readonly EmployeeOnboardingService $employeeOnboardingService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated employees based on filters.
@@ -71,17 +72,17 @@ class EmployeeService
 
         return Employee::query()
             ->with(['department:id,name',
-                    'designation:id,name',
-                    'shift',
-                    'user.roles:id,name',
-                    'user.permissions:id,name',
-                    'profile',
-                    'employmentType',
-                    'warehouse:id,name',
-                    'workLocation:id,name',
-                    'salaryStructure',
-                    'reportingManager',
-                    'documents'
+                'designation:id,name',
+                'shift',
+                'user.roles:id,name',
+                'user.permissions:id,name',
+                'profile',
+                'employmentType',
+                'warehouse:id,name',
+                'workLocation:id,name',
+                'salaryStructure',
+                'reportingManager',
+                'documents'
             ])
             ->filter($filters)
             ->latest()
@@ -98,82 +99,72 @@ class EmployeeService
     {
         return Employee::active()
             ->select('id', 'name')
-            ->when($warehouseId, fn ($q) => $q->whereHas('user', fn ($userQuery) => $userQuery->where('warehouse_id', $warehouseId)))
+            ->when($warehouseId, fn($q) => $q->whereHas('user', fn($userQuery) => $userQuery->where('warehouse_id', $warehouseId)))
             ->orderBy('name')
             ->get()
-            ->map(fn (Employee $employee) => [
+            ->map(fn(Employee $employee) => [
                 'value' => $employee->id,
                 'label' => $employee->name,
             ]);
     }
 
     /**
-     * Create a newly registered employee and manage associated accounts, profiles, documents, and onboarding.
+     * Bulk delete multiple employees safely.
      *
-     * @param array<string, mixed> $data
-     * @return Employee
+     * @param array<int> $ids
+     * @return int
      */
-    public function create(array $data): Employee
+    public function bulkDelete(array $ids): int
     {
-        return DB::transaction(function () use ($data) {
-            // 1. Extract Nested Payloads
-            $userData = $data['user'] ?? [];
-            $profileData = $data['profile'] ?? [];
-            $documentsData = $data['documents'] ?? [];
-            $onboardingTemplateId = $data['onboarding_checklist_template_id'] ?? null;
+        return DB::transaction(function () use ($ids) {
+            $employees = Employee::query()->whereIn('id', $ids)->get();
+            $count = 0;
 
-            unset($data['user'], $data['profile'], $data['documents'], $data['onboarding_checklist_template_id']);
-
-            // 2. Handle Image Upload First
-            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
-                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
-                $data['image_path'] = $path;
-                $data['image_url'] = $this->uploadService->url($path);
-                unset($data['image']);
+            foreach ($employees as $employee) {
+                $this->delete($employee);
+                $count++;
             }
 
-            // 3. Create System User Account via UserService
-            if (!empty($userData) && !empty($userData['password'])) {
-                $userPayload = [
-                    'name' => $data['name'],
-                    'email' => $data['email'] ?? null,
-                    'phone' => $data['phone_number'] ?? null,
-                    'username' => $userData['username'] ?? null,
-                    'password' => $userData['password'],
-                    'image_path' => $data['image_path'] ?? null,
-                    'image_url' => $data['image_url'] ?? null,
-                    'is_active' => true,
-                    'roles' => $userData['roles'] ?? [],
-                    'permissions' => $userData['permissions'] ?? [],
-                ];
+            return $count;
+        });
+    }
 
-                $user = $this->userService->create($userPayload);
-                $data['user_id'] = $user->id;
+    /**
+     * Delete an employee, their files, and soft-delete their user account.
+     *
+     * @param Employee $employee
+     * @return void
+     */
+    public function delete(Employee $employee): void
+    {
+        DB::transaction(function () use ($employee) {
+            // Soft delete user account via UserService, safeguarding Super Admins
+            if ($employee->user_id) {
+                $user = User::query()->find($employee->user_id);
+                if ($user && !$user->hasRole('Super Admin')) {
+                    $this->userService->delete($user);
+                }
             }
 
-            // 4. Create Root Employee Record
-            $employee = Employee::query()->create($data);
-
-            // 5. Create Extended Employee Profile
-            if (!empty($profileData)) {
-                $employee->profile()->create($profileData);
+            if ($employee->image_path) {
+                $this->uploadService->delete($employee->image_path);
             }
 
-            // 6. Register Initial Documents
-            foreach ($documentsData as $docPayload) {
-                $docPayload['employee_id'] = $employee->id;
-                $this->employeeDocumentService->create($docPayload);
-            }
+            $employee->delete();
+        });
+    }
 
-            // 7. Start Automated Onboarding
-            if ($onboardingTemplateId) {
-                $this->employeeOnboardingService->startOnboarding($employee->id, (int) $onboardingTemplateId);
-            }
-
-            return $employee->fresh([
-                'department', 'designation', 'shift', 'user.roles', 'user.permissions',
-                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
-            ]);
+    /**
+     * Update the active status for multiple employees.
+     *
+     * @param array<int> $ids
+     * @param bool $isActive
+     * @return int
+     */
+    public function bulkUpdateStatus(array $ids, bool $isActive): int
+    {
+        return DB::transaction(function () use ($ids, $isActive) {
+            return Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
         });
     }
 
@@ -299,62 +290,72 @@ class EmployeeService
     }
 
     /**
-     * Delete an employee, their files, and soft-delete their user account.
+     * Create a newly registered employee and manage associated accounts, profiles, documents, and onboarding.
      *
-     * @param Employee $employee
-     * @return void
+     * @param array<string, mixed> $data
+     * @return Employee
      */
-    public function delete(Employee $employee): void
+    public function create(array $data): Employee
     {
-        DB::transaction(function () use ($employee) {
-            // Soft delete user account via UserService, safeguarding Super Admins
-            if ($employee->user_id) {
-                $user = User::query()->find($employee->user_id);
-                if ($user && !$user->hasRole('Super Admin')) {
-                    $this->userService->delete($user);
-                }
+        return DB::transaction(function () use ($data) {
+            // 1. Extract Nested Payloads
+            $userData = $data['user'] ?? [];
+            $profileData = $data['profile'] ?? [];
+            $documentsData = $data['documents'] ?? [];
+            $onboardingTemplateId = $data['onboarding_checklist_template_id'] ?? null;
+
+            unset($data['user'], $data['profile'], $data['documents'], $data['onboarding_checklist_template_id']);
+
+            // 2. Handle Image Upload First
+            if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+                $path = $this->uploadService->upload($data['image'], self::IMAGE_PATH);
+                $data['image_path'] = $path;
+                $data['image_url'] = $this->uploadService->url($path);
+                unset($data['image']);
             }
 
-            if ($employee->image_path) {
-                $this->uploadService->delete($employee->image_path);
+            // 3. Create System User Account via UserService
+            if (!empty($userData) && !empty($userData['password'])) {
+                $userPayload = [
+                    'name' => $data['name'],
+                    'email' => $data['email'] ?? null,
+                    'phone' => $data['phone_number'] ?? null,
+                    'username' => $userData['username'] ?? null,
+                    'password' => $userData['password'],
+                    'image_path' => $data['image_path'] ?? null,
+                    'image_url' => $data['image_url'] ?? null,
+                    'is_active' => true,
+                    'roles' => $userData['roles'] ?? [],
+                    'permissions' => $userData['permissions'] ?? [],
+                ];
+
+                $user = $this->userService->create($userPayload);
+                $data['user_id'] = $user->id;
             }
 
-            $employee->delete();
-        });
-    }
+            // 4. Create Root Employee Record
+            $employee = Employee::query()->create($data);
 
-    /**
-     * Bulk delete multiple employees safely.
-     *
-     * @param array<int> $ids
-     * @return int
-     */
-    public function bulkDelete(array $ids): int
-    {
-        return DB::transaction(function () use ($ids) {
-            $employees = Employee::query()->whereIn('id', $ids)->get();
-            $count = 0;
-
-            foreach ($employees as $employee) {
-                $this->delete($employee);
-                $count++;
+            // 5. Create Extended Employee Profile
+            if (!empty($profileData)) {
+                $employee->profile()->create($profileData);
             }
 
-            return $count;
-        });
-    }
+            // 6. Register Initial Documents
+            foreach ($documentsData as $docPayload) {
+                $docPayload['employee_id'] = $employee->id;
+                $this->employeeDocumentService->create($docPayload);
+            }
 
-    /**
-     * Update the active status for multiple employees.
-     *
-     * @param array<int> $ids
-     * @param bool $isActive
-     * @return int
-     */
-    public function bulkUpdateStatus(array $ids, bool $isActive): int
-    {
-        return DB::transaction(function () use ($ids, $isActive) {
-            return Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+            // 7. Start Automated Onboarding
+            if ($onboardingTemplateId) {
+                $this->employeeOnboardingService->startOnboarding($employee->id, (int)$onboardingTemplateId);
+            }
+
+            return $employee->fresh([
+                'department', 'designation', 'shift', 'user.roles', 'user.permissions',
+                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
+            ]);
         });
     }
 

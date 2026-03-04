@@ -39,7 +39,9 @@ class DocumentTypesExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {}
+    )
+    {
+    }
 
     public function query(): Builder
     {
@@ -53,7 +55,7 @@ class DocumentTypesExport implements FromQuery, WithHeadings, WithMapping
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
 
-        return array_map(fn (string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
+        return array_map(fn(string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
     }
 
     /**

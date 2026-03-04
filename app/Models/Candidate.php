@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\FilterableByDates;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +16,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Class Candidate
- *
+ * 
  * Represents a job candidate within the recruitment workflow. Handles the underlying data
  * structure, relationships, and specific query scopes for candidate entities.
  *
@@ -30,16 +32,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- *
  * @method static Builder|Candidate newModelQuery()
  * @method static Builder|Candidate newQuery()
  * @method static Builder|Candidate query()
  * @method static Builder|Candidate filter(array $filters)
- *
- * @property-read \App\Models\JobOpening $jobOpening
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Interview> $interviews
+ * @property-read JobOpening $jobOpening
+ * @property-read Collection<int, Interview> $interviews
  * @property-read int|null $interviews_count
- *
  * @method static Builder<static>|Candidate customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Candidate last30Days(string $column = 'created_at')
  * @method static Builder<static>|Candidate last7Days(string $column = 'created_at')
@@ -65,8 +64,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|Candidate withoutTrashed()
  * @method static Builder<static>|Candidate yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Candidate yesterday(string $column = 'current_at')
- *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Candidate extends Model
 {
@@ -100,26 +98,26 @@ class Candidate extends Model
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param  Builder  $query  The Eloquent query builder instance.
-     * @param  array<string, mixed>  $filters  An associative array of requested filters.
+     * @param Builder $query The Eloquent query builder instance.
+     * @param array<string, mixed> $filters An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                ! empty($filters['job_opening_id']),
-                fn (Builder $q) => $q->where('job_opening_id', $filters['job_opening_id'])
+                !empty($filters['job_opening_id']),
+                fn(Builder $q) => $q->where('job_opening_id', $filters['job_opening_id'])
             )
             ->when(
-                ! empty($filters['stage']),
-                fn (Builder $q) => $q->where('stage', $filters['stage'])
+                !empty($filters['stage']),
+                fn(Builder $q) => $q->where('stage', $filters['stage'])
             )
             ->when(
-                ! empty($filters['search']),
+                !empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn (Builder $subQ) => $subQ
+                    $q->where(fn(Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone', 'like', $term)
@@ -127,8 +125,8 @@ class Candidate extends Model
                 }
             )
             ->customRange(
-                ! empty($filters['start_date']) ? $filters['start_date'] : null,
-                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+                !empty($filters['start_date']) ? $filters['start_date'] : null,
+                !empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

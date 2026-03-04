@@ -45,6 +45,15 @@ class BrandsImport implements
     }
 
     /**
+     * Helper to handle various boolean formats from Excel (1/0, true/false, "yes"/"no")
+     */
+    private function parseBoolean($value): bool
+    {
+        if (is_bool($value)) return $value;
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+    }
+
+    /**
      * @return string
      */
     public function uniqueBy(): string
@@ -64,15 +73,6 @@ class BrandsImport implements
             'short_description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['nullable'],
         ];
-    }
-
-    /**
-     * Helper to handle various boolean formats from Excel (1/0, true/false, "yes"/"no")
-     */
-    private function parseBoolean($value): bool
-    {
-        if (is_bool($value)) return $value;
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
     }
 
     /**

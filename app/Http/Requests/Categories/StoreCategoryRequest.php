@@ -25,27 +25,6 @@ class StoreCategoryRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     *
-     * This method is called before the validation rules are evaluated.
-     * You can use it to sanitize or format inputs (e.g., casting string booleans to actual booleans).
-     */
-    protected function prepareForValidation(): void
-    {
-        $toBoolean = fn ($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-
-        if ($this->has('is_active')) {
-            $this->merge(['is_active' => $toBoolean($this->is_active)]);
-        }
-        if ($this->has('featured')) {
-            $this->merge(['featured' => $toBoolean($this->featured)]);
-        }
-        if ($this->has('is_sync_disable')) {
-            $this->merge(['is_sync_disable' => $toBoolean($this->is_sync_disable)]);
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -154,5 +133,26 @@ class StoreCategoryRequest extends FormRequest
                 Rule::unique('categories', 'woocommerce_category_id')->withoutTrashed(),
             ],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     *
+     * This method is called before the validation rules are evaluated.
+     * You can use it to sanitize or format inputs (e.g., casting string booleans to actual booleans).
+     */
+    protected function prepareForValidation(): void
+    {
+        $toBoolean = fn($val) => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => $toBoolean($this->is_active)]);
+        }
+        if ($this->has('featured')) {
+            $this->merge(['featured' => $toBoolean($this->featured)]);
+        }
+        if ($this->has('is_sync_disable')) {
+            $this->merge(['is_sync_disable' => $toBoolean($this->is_sync_disable)]);
+        }
     }
 }

@@ -36,8 +36,8 @@ class CustomerGroupService
      * Retrieves a paginated list of customer groups, applying scopes for searching,
      * status filtering, and date ranges.
      *
-     * @param  array<string, mixed>  $filters  An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
-     * @param  int  $perPage  The number of records to return per page.
+     * @param array<string, mixed> $filters An associative array of filters (e.g., 'search', 'status', 'start_date', 'end_date').
+     * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of CustomerGroup models.
      */
     public function getPaginatedCustomerGroups(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -61,7 +61,7 @@ class CustomerGroupService
             ->select('id', 'name')
             ->orderBy('name')
             ->get()
-            ->map(fn (CustomerGroup $group) => [
+            ->map(fn(CustomerGroup $group) => [
                 'value' => $group->id,
                 'label' => $group->name,
             ]);
@@ -73,7 +73,7 @@ class CustomerGroupService
      * Stores the new customer group record within a database transaction.
      * Normalizes is_active to boolean when provided.
      *
-     * @param  array<string, mixed>  $data  The validated request data for the new customer group.
+     * @param array<string, mixed> $data The validated request data for the new customer group.
      * @return CustomerGroup The newly created CustomerGroup model instance.
      */
     public function createCustomerGroup(array $data): CustomerGroup
@@ -89,8 +89,8 @@ class CustomerGroupService
      * Updates the customer group record within a database transaction.
      * Normalizes is_active to boolean when provided.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param CustomerGroup $customerGroup The customer group model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return CustomerGroup The freshly updated CustomerGroup model instance.
      */
     public function updateCustomerGroup(CustomerGroup $customerGroup, array $data): CustomerGroup
@@ -107,7 +107,7 @@ class CustomerGroupService
      *
      * Will abort if the customer group has any associated customers.
      *
-     * @param  CustomerGroup  $customerGroup  The customer group model instance to delete.
+     * @param CustomerGroup $customerGroup The customer group model instance to delete.
      *
      * @throws UnprocessableEntityHttpException If the customer group has associated customers.
      */
@@ -117,7 +117,7 @@ class CustomerGroupService
             throw new ConflictHttpException("Cannot delete customer group '{$customerGroup->name}' as it has associated customers.");
         }
 
-        DB::transaction(fn () => $customerGroup->delete());
+        DB::transaction(fn() => $customerGroup->delete());
     }
 
     /**
@@ -126,7 +126,7 @@ class CustomerGroupService
      * Iterates over an array of customer group IDs and attempts to delete them.
      * Skips any groups that have associated customers.
      *
-     * @param  array<int>  $ids  Array of customer group IDs to be deleted.
+     * @param array<int> $ids Array of customer group IDs to be deleted.
      * @return int The total count of successfully deleted customer groups.
      */
     public function bulkDeleteCustomerGroups(array $ids): int
@@ -149,8 +149,8 @@ class CustomerGroupService
     /**
      * Update the active status for multiple customer groups.
      *
-     * @param  array<int>  $ids  Array of customer group IDs to update.
-     * @param  bool  $isActive  The new active status (true for active, false for inactive).
+     * @param array<int> $ids Array of customer group IDs to update.
+     * @param bool $isActive The new active status (true for active, false for inactive).
      * @return int The number of records updated.
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
@@ -163,7 +163,7 @@ class CustomerGroupService
      *
      * Uses Maatwebsite Excel to process the file in batches and chunks.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file containing customer group data.
+     * @param UploadedFile $file The uploaded spreadsheet file containing customer group data.
      */
     public function importCustomerGroups(UploadedFile $file): void
     {
@@ -180,9 +180,9 @@ class CustomerGroupService
     public function download(): string
     {
         $fileName = 'customer-groups-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template customer groups not found.');
         }
 
@@ -195,16 +195,16 @@ class CustomerGroupService
      * Compiles the requested customer group data into a file stored on the public disk.
      * Supports column selection, ID filtering, and date range filtering.
      *
-     * @param  array<int>  $ids  Specific customer group IDs to export (leave empty to export all based on filters).
-     * @param  string  $format  The file format requested ('excel' or 'pdf').
-     * @param  array<string>  $columns  Specific column names to include in the export.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific customer group IDs to export (leave empty to export all based on filters).
+     * @param string $format The file format requested ('excel' or 'pdf').
+     * @param array<string> $columns Specific column names to include in the export.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'customer_groups_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'customer_groups_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

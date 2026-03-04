@@ -32,16 +32,18 @@ class HolidayService
     /**
      * HolidayService constructor.
      *
-     * @param  UploadService  $uploadService  Service responsible for handling file uploads.
+     * @param UploadService $uploadService Service responsible for handling file uploads.
      */
     public function __construct(
         private readonly UploadService $uploadService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get paginated holidays based on filters.
      *
-     * @param  array<string, mixed>  $filters
+     * @param array<string, mixed> $filters
      */
     public function getPaginatedHolidays(array $filters, int $perPage = 10): LengthAwarePaginator
     {
@@ -55,7 +57,7 @@ class HolidayService
     /**
      * Create a newly registered holiday.
      *
-     * @param  array<string, mixed>  $data  The validated request data.
+     * @param array<string, mixed> $data The validated request data.
      * @return Holiday The newly created Holiday model instance.
      */
     public function createHoliday(array $data): Holiday
@@ -71,8 +73,8 @@ class HolidayService
     /**
      * Update an existing holiday's information.
      *
-     * @param  Holiday  $holiday  The holiday model instance to update.
-     * @param  array<string, mixed>  $data  The validated update data.
+     * @param Holiday $holiday The holiday model instance to update.
+     * @param array<string, mixed> $data The validated update data.
      * @return Holiday The freshly updated Holiday model instance.
      */
     public function updateHoliday(Holiday $holiday, array $data): Holiday
@@ -97,7 +99,7 @@ class HolidayService
     /**
      * Bulk delete multiple holidays.
      *
-     * @param  array<int>  $ids  Array of holiday IDs to be deleted.
+     * @param array<int> $ids Array of holiday IDs to be deleted.
      * @return int The total count of successfully deleted holidays.
      */
     public function bulkDeleteHolidays(array $ids): int
@@ -110,8 +112,8 @@ class HolidayService
     /**
      * Update the approval status for multiple holidays.
      *
-     * @param  array<int>  $ids  Array of holiday IDs to update.
-     * @param  bool  $isApproved  The new approval status.
+     * @param array<int> $ids Array of holiday IDs to update.
+     * @param bool $isApproved The new approval status.
      * @return int The number of records updated.
      */
     public function bulkUpdateApproval(array $ids, bool $isApproved): int
@@ -124,7 +126,7 @@ class HolidayService
     /**
      * Import multiple holidays from an uploaded file.
      *
-     * @param  UploadedFile  $file  The uploaded spreadsheet file.
+     * @param UploadedFile $file The uploaded spreadsheet file.
      */
     public function importHolidays(UploadedFile $file): void
     {
@@ -141,9 +143,9 @@ class HolidayService
     public function download(): string
     {
         $fileName = 'holidays-sample.csv';
-        $path = app_path(self::TEMPLATE_PATH.'/'.$fileName);
+        $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             throw new RuntimeException('Template holidays not found.');
         }
 
@@ -153,16 +155,16 @@ class HolidayService
     /**
      * Generate an export file containing holiday data.
      *
-     * @param  array<int>  $ids  Specific holiday IDs to export.
-     * @param  string  $format  The file format requested (excel/pdf).
-     * @param  array<string>  $columns  Specific column names to include.
-     * @param  array{start_date?: string, end_date?: string}  $filters  Optional date filters.
+     * @param array<int> $ids Specific holiday IDs to export.
+     * @param string $format The file format requested (excel/pdf).
+     * @param array<string> $columns Specific column names to include.
+     * @param array{start_date?: string, end_date?: string} $filters Optional date filters.
      * @return string The relative file path to the generated export file.
      */
     public function generateExportFile(array $ids, string $format, array $columns, array $filters = []): string
     {
-        $fileName = 'holidays_'.now()->timestamp;
-        $relativePath = 'exports/'.$fileName.'.'.($format === 'pdf' ? 'pdf' : 'xlsx');
+        $fileName = 'holidays_' . now()->timestamp;
+        $relativePath = 'exports/' . $fileName . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
         $writerType = $format === 'pdf' ? Excel::DOMPDF : Excel::XLSX;
 
         ExcelFacade::store(

@@ -24,8 +24,8 @@ class LanguagesImport implements
 {
     public function model(array $row): ?Language
     {
-        $name = trim((string) ($row['name'] ?? ''));
-        $code = trim((string) ($row['code'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        $code = trim((string)($row['code'] ?? ''));
 
         if ($name === '' || $code === '') {
             return null;

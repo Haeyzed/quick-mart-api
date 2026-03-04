@@ -82,7 +82,7 @@ class WarehouseResource extends JsonResource
              *
              * @example 1500.5
              */
-            'stock_quantity' => (float) ($this->stock_quantity ?? $this->productWarehouses()->where('qty', '>', 0)->sum('qty')),
+            'stock_quantity' => (float)($this->stock_quantity ?? $this->productWarehouses()->where('qty', '>', 0)->sum('qty')),
 
             /**
              * The date and time when the warehouse was created.

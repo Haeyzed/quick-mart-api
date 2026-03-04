@@ -28,7 +28,7 @@ class CategoryTreeItemResource extends JsonResource
              *
              * @example 1
              */
-            'id' => (string) $this->id,
+            'id' => (string)$this->id,
 
             /**
              * The name of the category.

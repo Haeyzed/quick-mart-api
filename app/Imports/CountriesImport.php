@@ -24,8 +24,8 @@ class CountriesImport implements
 {
     public function model(array $row): ?Country
     {
-        $name = trim((string) ($row['name'] ?? ''));
-        $iso2 = trim((string) ($row['iso2'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        $iso2 = trim((string)($row['iso2'] ?? ''));
 
         if ($name === '' || $iso2 === '') {
             return null;

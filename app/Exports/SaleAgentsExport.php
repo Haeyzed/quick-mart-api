@@ -21,22 +21,23 @@ class SaleAgentsExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $ids = [],
         private readonly array $columns = [],
         private readonly array $filters = [],
-    ) {
+    )
+    {
     }
 
     public function query(): Builder
     {
         return Employee::query()
             ->saleAgents()
-            ->when(! empty($this->ids), fn (Builder $q) => $q->whereIn('id', $this->ids))
-            ->when(! empty($this->filters), fn (Builder $q) => $q->filter($this->filters))
+            ->when(!empty($this->ids), fn(Builder $q) => $q->whereIn('id', $this->ids))
+            ->when(!empty($this->filters), fn(Builder $q) => $q->filter($this->filters))
             ->orderBy('name');
     }
 
     public function headings(): array
     {
         $columns = empty($this->columns) ? self::DEFAULT_COLUMNS : $this->columns;
-        return array_map(fn (string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
+        return array_map(fn(string $col) => ucfirst(str_replace('_', ' ', $col)), $columns);
     }
 
     public function map($row): array

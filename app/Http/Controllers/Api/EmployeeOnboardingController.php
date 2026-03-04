@@ -28,7 +28,9 @@ class EmployeeOnboardingController extends Controller
      */
     public function __construct(
         private readonly EmployeeOnboardingService $service
-    ) {}
+    )
+    {
+    }
 
     /**
      * List Employee Onboardings
@@ -69,7 +71,7 @@ class EmployeeOnboardingController extends Controller
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
             'onboarding_checklist_template_id' => ['required', 'integer', 'exists:onboarding_checklist_templates,id'],
         ]);
-        $model = $this->service->startOnboarding((int) $data['employee_id'], (int) $data['onboarding_checklist_template_id']);
+        $model = $this->service->startOnboarding((int)$data['employee_id'], (int)$data['onboarding_checklist_template_id']);
 
         return response()->success(new EmployeeOnboardingResource($model), 'Onboarding started successfully', ResponseAlias::HTTP_CREATED);
     }

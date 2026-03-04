@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use OwenIt\Auditing\Models\Audit;
 
 /**
  * ProductReturn Model (Pivot)
@@ -35,27 +39,27 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read Product $product
  * @property-read Variant|null $variant
  * @property-read ProductBatch|null $batch
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereDiscount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereImeiNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereNetUnitPrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereProductBatchId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereProductId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereQty($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereReturnId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereSaleUnitId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTax($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReturn whereVariantId($value)
- * @mixin \Eloquent
+ * @method static Builder<static>|ProductReturn newModelQuery()
+ * @method static Builder<static>|ProductReturn newQuery()
+ * @method static Builder<static>|ProductReturn query()
+ * @method static Builder<static>|ProductReturn whereCreatedAt($value)
+ * @method static Builder<static>|ProductReturn whereDiscount($value)
+ * @method static Builder<static>|ProductReturn whereId($value)
+ * @method static Builder<static>|ProductReturn whereImeiNumber($value)
+ * @method static Builder<static>|ProductReturn whereNetUnitPrice($value)
+ * @method static Builder<static>|ProductReturn whereProductBatchId($value)
+ * @method static Builder<static>|ProductReturn whereProductId($value)
+ * @method static Builder<static>|ProductReturn whereQty($value)
+ * @method static Builder<static>|ProductReturn whereReturnId($value)
+ * @method static Builder<static>|ProductReturn whereSaleUnitId($value)
+ * @method static Builder<static>|ProductReturn whereTax($value)
+ * @method static Builder<static>|ProductReturn whereTaxRate($value)
+ * @method static Builder<static>|ProductReturn whereTotal($value)
+ * @method static Builder<static>|ProductReturn whereUpdatedAt($value)
+ * @method static Builder<static>|ProductReturn whereVariantId($value)
+ * @mixin Eloquent
  */
 class ProductReturn extends Model implements AuditableContract
 {

@@ -19,7 +19,7 @@ class ProductResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  Request  $request
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray($request): array
@@ -172,7 +172,7 @@ class ProductResource extends JsonResource
              *
              * @example 100.00
              */
-            'cost' => (float) $this->cost,
+            'cost' => (float)$this->cost,
 
             /**
              * Profit margin.
@@ -181,7 +181,7 @@ class ProductResource extends JsonResource
              *
              * @example 25.00
              */
-            'profit_margin' => $this->profit_margin ? (float) $this->profit_margin : null,
+            'profit_margin' => $this->profit_margin ? (float)$this->profit_margin : null,
 
             /**
              * Profit margin type: percentage or fixed.
@@ -199,7 +199,7 @@ class ProductResource extends JsonResource
              *
              * @example 125.00
              */
-            'price' => (float) $this->price,
+            'price' => (float)$this->price,
 
             /**
              * Wholesale price.
@@ -208,7 +208,7 @@ class ProductResource extends JsonResource
              *
              * @example 110.00
              */
-            'wholesale_price' => $this->wholesale_price ? (float) $this->wholesale_price : null,
+            'wholesale_price' => $this->wholesale_price ? (float)$this->wholesale_price : null,
 
             /**
              * Product quantity.
@@ -226,7 +226,7 @@ class ProductResource extends JsonResource
              *
              * @example 10.00
              */
-            'alert_quantity' => $this->alert_quantity ? (float) $this->alert_quantity : null,
+            'alert_quantity' => $this->alert_quantity ? (float)$this->alert_quantity : null,
 
             /**
              * Daily sale objective.
@@ -235,7 +235,7 @@ class ProductResource extends JsonResource
              *
              * @example 5.00
              */
-            'daily_sale_objective' => $this->daily_sale_objective ? (float) $this->daily_sale_objective : null,
+            'daily_sale_objective' => $this->daily_sale_objective ? (float)$this->daily_sale_objective : null,
 
             /**
              * Whether product is on promotion.
@@ -253,7 +253,7 @@ class ProductResource extends JsonResource
              *
              * @example 100.00
              */
-            'promotion_price' => $this->promotion_price ? (float) $this->promotion_price : null,
+            'promotion_price' => $this->promotion_price ? (float)$this->promotion_price : null,
 
             /**
              * Promotion start date.
@@ -518,7 +518,7 @@ class ProductResource extends JsonResource
              *
              * @example true
              */
-            'is_active' => (bool) $this->is_active,
+            'is_active' => (bool)$this->is_active,
 
             /**
              * Whether product is available online.
@@ -554,7 +554,7 @@ class ProductResource extends JsonResource
              *
              * @example true
              */
-            'track_inventory' => (bool) $this->track_inventory,
+            'track_inventory' => (bool)$this->track_inventory,
 
             /**
              * Whether sync is disabled.
@@ -653,7 +653,7 @@ class ProductResource extends JsonResource
              *
              * @example 5.00
              */
-            'wastage_percent' => $this->wastage_percent ? (float) $this->wastage_percent : null,
+            'wastage_percent' => $this->wastage_percent ? (float)$this->wastage_percent : null,
 
             /**
              * Combo unit ID.
@@ -671,7 +671,7 @@ class ProductResource extends JsonResource
              *
              * @example 90.00
              */
-            'production_cost' => $this->production_cost ? (float) $this->production_cost : null,
+            'production_cost' => $this->production_cost ? (float)$this->production_cost : null,
 
             /**
              * Whether product is a recipe.
@@ -694,9 +694,9 @@ class ProductResource extends JsonResource
                         'variant_id' => $variant->variant_id,
                         'variant_name' => $variant->variant->name ?? null,
                         'item_code' => $variant->item_code,
-                        'additional_cost' => (float) $variant->additional_cost,
-                        'additional_price' => (float) $variant->additional_price,
-                        'qty' => (float) $variant->qty,
+                        'additional_cost' => (float)$variant->additional_cost,
+                        'additional_price' => (float)$variant->additional_price,
+                        'qty' => (float)$variant->qty,
                         'position' => $variant->position,
                     ];
                 });
@@ -733,15 +733,15 @@ class ProductResource extends JsonResource
                     ->where('warehouse_id', $warehouseId)
                     ->sum('qty');
 
-                return $qty ? (float) $qty : 0.0;
+                return $qty ? (float)$qty : 0.0;
             } else {
                 $qty = ProductWarehouse::where('product_id', $this->id)
                     ->sum('qty');
 
-                return $qty ? (float) $qty : 0.0;
+                return $qty ? (float)$qty : 0.0;
             }
         }
 
-        return $this->qty ? (float) $this->qty : null;
+        return $this->qty ? (float)$this->qty : null;
     }
 }

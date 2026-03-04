@@ -31,8 +31,8 @@ class EmployeeDocumentResource extends JsonResource
             'expiry_date' => $this->expiry_date?->toDateString(),
             'is_expired' => $this->resource->isExpired(),
             'notes' => $this->notes,
-            'document_type' => $this->whenLoaded('documentType', fn () => ['id' => $this->documentType->id, 'name' => $this->documentType->name, 'code' => $this->documentType->code]),
-            'employee' => $this->whenLoaded('employee', fn () => ['id' => $this->employee->id, 'name' => $this->employee->name, 'employee_code' => $this->employee->employee_code]),
+            'document_type' => $this->whenLoaded('documentType', fn() => ['id' => $this->documentType->id, 'name' => $this->documentType->name, 'code' => $this->documentType->code]),
+            'employee' => $this->whenLoaded('employee', fn() => ['id' => $this->employee->id, 'name' => $this->employee->name, 'employee_code' => $this->employee->employee_code]),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

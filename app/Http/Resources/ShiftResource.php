@@ -55,21 +55,21 @@ class ShiftResource extends JsonResource
              *
              * @example 15
              */
-            'grace_in' => (int) $this->grace_in,
+            'grace_in' => (int)$this->grace_in,
 
             /**
              * The grace period allowed for early check-out (in minutes).
              *
              * @example 10
              */
-            'grace_out' => (int) $this->grace_out,
+            'grace_out' => (int)$this->grace_out,
 
             /**
              * The total number of hours required for this shift.
              *
              * @example 8.0
              */
-            'total_hours' => (float) $this->total_hours,
+            'total_hours' => (float)$this->total_hours,
 
             /**
              * Indicates if the shift is active.
