@@ -442,6 +442,14 @@ class TenantDatabaseSeeder extends Seeder
                 'import document types',
                 'export document types'
             ],
+            'employment types' => [
+                'view employment types',
+                'create employment types',
+                'update employment types',
+                'delete employment types',
+                'import employment types',
+                'export employment types'
+            ],
             'performance reviews' => [
                 'view performance reviews',
                 'create performance reviews',
