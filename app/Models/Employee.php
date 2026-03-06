@@ -244,6 +244,16 @@ class Employee extends Model implements AuditableContract
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
+        $normalize = function ($value) {
+            if (is_array($value)) {
+                return array_filter($value);
+            }
+            if (is_string($value) && str_contains($value, ',')) {
+                return array_filter(explode(',', $value));
+            }
+            return $value ? [$value] : [];
+        };
+
         return $query
             ->when(
                 isset($filters['is_active']),
@@ -255,39 +265,43 @@ class Employee extends Model implements AuditableContract
             )
             ->when(
                 !empty($filters['user_id']),
-                fn(Builder $q) => $q->where('user_id', (int)$filters['user_id'])
+                fn(Builder $q) => $q->whereIn('user_id', $normalize($filters['user_id']))
             )
             ->when(
                 !empty($filters['department_id']),
-                fn(Builder $q) => $q->where('department_id', (int)$filters['department_id'])
+                fn(Builder $q) => $q->whereIn('department_id', $normalize($filters['department_id']))
             )
             ->when(
                 !empty($filters['employment_type_id']),
-                fn(Builder $q) => $q->where('employment_type_id', (int)$filters['employment_type_id'])
+                fn(Builder $q) => $q->whereIn('employment_type_id', $normalize($filters['employment_type_id']))
             )
             ->when(
                 !empty($filters['designation_id']),
-                fn(Builder $q) => $q->where('designation_id', (int)$filters['designation_id'])
+                fn(Builder $q) => $q->whereIn('designation_id', $normalize($filters['designation_id']))
             )
             ->when(
                 !empty($filters['reporting_manager_id']),
-                fn(Builder $q) => $q->where('reporting_manager_id', (int)$filters['reporting_manager_id'])
+                fn(Builder $q) => $q->whereIn('reporting_manager_id', $normalize($filters['reporting_manager_id']))
             )
             ->when(
                 !empty($filters['country_id']),
-                fn(Builder $q) => $q->where('country_id', (int)$filters['country_id'])
+                fn(Builder $q) => $q->whereIn('country_id', $normalize($filters['country_id']))
             )
             ->when(
                 !empty($filters['state_id']),
-                fn(Builder $q) => $q->where('state_id', (int)$filters['state_id'])
+                fn(Builder $q) => $q->whereIn('state_id', $normalize($filters['state_id']))
             )
             ->when(
                 !empty($filters['city_id']),
-                fn(Builder $q) => $q->where('city_id', (int)$filters['city_id'])
+                fn(Builder $q) => $q->whereIn('city_id', $normalize($filters['city_id']))
             )
             ->when(
                 !empty($filters['warehouse_id']),
-                fn(Builder $q) => $q->where('warehouse_id', (int)$filters['warehouse_id'])
+                fn(Builder $q) => $q->whereIn('warehouse_id', $normalize($filters['warehouse_id']))
+            )
+            ->when(
+                !empty($filters['shift_id']),
+                fn(Builder $q) => $q->whereIn('shift_id', $normalize($filters['shift_id']))
             )
             ->when(
                 !empty($filters['employment_status']),
