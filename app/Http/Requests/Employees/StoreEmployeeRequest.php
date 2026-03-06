@@ -46,27 +46,24 @@ class StoreEmployeeRequest extends BaseRequest
             'is_active' => ['nullable', 'boolean'],
 
             // ==========================================
-            // EMPLOYMENT STATUS & RELATIONS
+            // EMPLOYEE SPECIFIC DETAILS (Nested under 'employee')
             // ==========================================
-            'employment_type_id' => ['nullable', 'integer', 'exists:employment_types,id'],
-            'joining_date' => ['nullable', 'date'],
-            'confirmation_date' => ['nullable', 'date'],
-            'probation_end_date' => ['nullable', 'date'],
-            'reporting_manager_id' => ['nullable', 'integer', 'exists:employees,id'],
-            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
-            'work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
-            'salary_structure_id' => ['nullable', 'integer', 'exists:salary_structures,id'],
-            'employment_status' => ['nullable', 'string', 'max:50'],
-
-            // ==========================================
-            // SALES AGENT SETTINGS
-            // ==========================================
-            'is_sale_agent' => ['nullable', 'boolean'],
-            'sale_commission_percent' => ['nullable', 'numeric', 'min:0'],
-            'sales_target' => ['nullable', 'array'],
-            'sales_target.*.sales_from' => ['required_with:sales_target', 'numeric', 'min:0'],
-            'sales_target.*.sales_to' => ['required_with:sales_target', 'numeric', 'gt:sales_target.*.sales_from'],
-            'sales_target.*.percent' => ['required_with:sales_target', 'numeric', 'min:0', 'max:100'],
+            'employee' => ['nullable', 'array'],
+            'employee.employment_type_id' => ['nullable', 'integer', 'exists:employment_types,id'],
+            'employee.joining_date' => ['nullable', 'date'],
+            'employee.confirmation_date' => ['nullable', 'date'],
+            'employee.probation_end_date' => ['nullable', 'date'],
+            'employee.reporting_manager_id' => ['nullable', 'integer', 'exists:employees,id'],
+            'employee.warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'employee.work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
+            'employee.salary_structure_id' => ['nullable', 'integer', 'exists:salary_structures,id'],
+            'employee.employment_status' => ['nullable', 'string', 'max:50'],
+            'employee.is_sale_agent' => ['nullable', 'boolean'],
+            'employee.sale_commission_percent' => ['nullable', 'numeric', 'min:0'],
+            'employee.sales_target' => ['nullable', 'array'],
+            'employee.sales_target.*.sales_from' => ['required_with:employee.sales_target', 'numeric', 'min:0'],
+            'employee.sales_target.*.sales_to' => ['required_with:employee.sales_target', 'numeric', 'gt:employee.sales_target.*.sales_from'],
+            'employee.sales_target.*.percent' => ['required_with:employee.sales_target', 'numeric', 'min:0', 'max:100'],
 
             // ==========================================
             // NESTED USER ACCOUNT SYNC VALIDATION
@@ -125,7 +122,7 @@ class StoreEmployeeRequest extends BaseRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $salesTargets = $this->input('sales_target');
+            $salesTargets = $this->input('employee.sales_target');
 
             if (is_array($salesTargets) && count($salesTargets) > 0) {
                 $previousTo = null;
@@ -136,7 +133,7 @@ class StoreEmployeeRequest extends BaseRequest
 
                     if ($previousTo !== null && $from <= $previousTo) {
                         $validator->errors()->add(
-                            "sales_target.{$index}.sales_from",
+                            "employee.sales_target.{$index}.sales_from",
                             "The sales from value must be greater than the previous tier's sales to value ({$previousTo})."
                         );
                     }
@@ -157,9 +154,16 @@ class StoreEmployeeRequest extends BaseRequest
         if ($this->has('is_active')) {
             $merge['is_active'] = filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN);
         }
-        if ($this->has('is_sale_agent')) {
-            $merge['is_sale_agent'] = filter_var($this->is_sale_agent, FILTER_VALIDATE_BOOLEAN);
+
+        // Handle nested employee boolean fields
+        if ($this->has('employee')) {
+            $employeeData = $this->input('employee');
+            if (isset($employeeData['is_sale_agent'])) {
+                $employeeData['is_sale_agent'] = filter_var($employeeData['is_sale_agent'], FILTER_VALIDATE_BOOLEAN);
+                $this->merge(['employee' => $employeeData]);
+            }
         }
+
         if (!empty($merge)) {
             $this->merge($merge);
         }

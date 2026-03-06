@@ -21,7 +21,7 @@ use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Employee
- * 
+ *
  * Represents an employee entity within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for employee entities.
  *
@@ -459,7 +459,7 @@ class Employee extends Model implements AuditableContract
      */
     public function reportingManager(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'reporting_manager_id');
+        return $this->belongsTo(Employee::class);
     }
 
     /**

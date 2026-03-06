@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Excel;
@@ -24,7 +25,7 @@ use RuntimeException;
  * Handles all core business logic and database interactions for Employees.
  * Acts as the intermediary between the controllers and the database layer.
  */
-class EmployeeService
+class EmployeeService extends BaseService
 {
     /**
      * The application path where employee images are stored.
@@ -35,6 +36,11 @@ class EmployeeService
      * The application path where import template files are stored.
      */
     private const TEMPLATE_PATH = 'Imports/Templates';
+
+    /**
+     * Cache key prefix for employee options.
+     */
+    private const CACHE_KEY_OPTIONS = 'employee_options';
 
     /**
      * EmployeeService constructor.
@@ -71,18 +77,19 @@ class EmployeeService
         // }
 
         return Employee::query()
-            ->with(['department:id,name',
+            ->with([
+                'department:id,name',
                 'designation:id,name',
                 'shift',
                 'user.roles:id,name',
                 'user.permissions:id,name',
                 'profile',
-                'employmentType',
+                'employmentType:id,name',
                 'warehouse:id,name',
                 'workLocation:id,name',
                 'salaryStructure',
                 'reportingManager',
-                'documents'
+                'documents.documentType'
             ])
             ->filter($filters)
             ->latest()
@@ -97,15 +104,19 @@ class EmployeeService
      */
     public function getOptions(?int $warehouseId = null): Collection
     {
-        return Employee::active()
-            ->select('id', 'name')
-            ->when($warehouseId, fn($q) => $q->whereHas('user', fn($userQuery) => $userQuery->where('warehouse_id', $warehouseId)))
-            ->orderBy('name')
-            ->get()
-            ->map(fn(Employee $employee) => [
-                'value' => $employee->id,
-                'label' => $employee->name,
-            ]);
+        $cacheKey = self::CACHE_KEY_OPTIONS . ($warehouseId ? "_{$warehouseId}" : '');
+
+        return Cache::remember($cacheKey, now()->addHours(24), function () use ($warehouseId) {
+            return Employee::active()
+                ->select('id', 'name')
+                ->when($warehouseId, fn($q) => $q->whereHas('user', fn($userQuery) => $userQuery->where('warehouse_id', $warehouseId)))
+                ->orderBy('name')
+                ->get()
+                ->map(fn(Employee $employee) => [
+                    'value' => $employee->id,
+                    'label' => $employee->name,
+                ]);
+        });
     }
 
     /**
@@ -116,7 +127,7 @@ class EmployeeService
      */
     public function bulkDelete(array $ids): int
     {
-        return DB::transaction(function () use ($ids) {
+        return $this->transaction(function () use ($ids) {
             $employees = Employee::query()->whereIn('id', $ids)->get();
             $count = 0;
 
@@ -125,6 +136,7 @@ class EmployeeService
                 $count++;
             }
 
+            $this->clearCache(self::CACHE_KEY_OPTIONS);
             return $count;
         });
     }
@@ -137,7 +149,7 @@ class EmployeeService
      */
     public function delete(Employee $employee): void
     {
-        DB::transaction(function () use ($employee) {
+        $this->transaction(function () use ($employee) {
             // Soft delete user account via UserService, safeguarding Super Admins
             if ($employee->user_id) {
                 $user = User::query()->find($employee->user_id);
@@ -151,6 +163,7 @@ class EmployeeService
             }
 
             $employee->delete();
+            $this->clearCache(self::CACHE_KEY_OPTIONS);
         });
     }
 
@@ -163,8 +176,10 @@ class EmployeeService
      */
     public function bulkUpdateStatus(array $ids, bool $isActive): int
     {
-        return DB::transaction(function () use ($ids, $isActive) {
-            return Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+        return $this->transaction(function () use ($ids, $isActive) {
+            $count = Employee::query()->whereIn('id', $ids)->update(['is_active' => $isActive]);
+            $this->clearCache(self::CACHE_KEY_OPTIONS);
+            return $count;
         });
     }
 
@@ -177,13 +192,20 @@ class EmployeeService
      */
     public function update(Employee $employee, array $data): Employee
     {
-        return DB::transaction(function () use ($employee, $data) {
+        return $this->transaction(function () use ($employee, $data) {
             // 1. Extract Nested Payloads
             $userData = $data['user'] ?? null;
+            $employeeData = $data['employee'] ?? null;
             $profileData = $data['profile'] ?? null;
             $documentsData = $data['documents'] ?? null;
 
-            unset($data['user'], $data['profile'], $data['documents']);
+            // Remove nested data from main payload to prevent mass assignment errors
+            unset($data['user'], $data['employee'], $data['profile'], $data['documents']);
+
+            // Merge employee specific data if present
+            if ($employeeData) {
+                $data = array_merge($data, $employeeData);
+            }
 
             // 2. Handle Image Replacement
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
@@ -282,9 +304,11 @@ class EmployeeService
                 }
             }
 
+            $this->clearCache(self::CACHE_KEY_OPTIONS);
+
             return $employee->fresh([
                 'department', 'designation', 'shift', 'user.roles', 'user.permissions',
-                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
+                'profile', 'documents.documentType', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
             ]);
         });
     }
@@ -297,14 +321,21 @@ class EmployeeService
      */
     public function create(array $data): Employee
     {
-        return DB::transaction(function () use ($data) {
+        return $this->transaction(function () use ($data) {
             // 1. Extract Nested Payloads
             $userData = $data['user'] ?? [];
+            $employeeData = $data['employee'] ?? [];
             $profileData = $data['profile'] ?? [];
             $documentsData = $data['documents'] ?? [];
             $onboardingTemplateId = $data['onboarding_checklist_template_id'] ?? null;
 
-            unset($data['user'], $data['profile'], $data['documents'], $data['onboarding_checklist_template_id']);
+            // Remove nested data from main payload
+            unset($data['user'], $data['employee'], $data['profile'], $data['documents'], $data['onboarding_checklist_template_id']);
+
+            // Merge employee specific data if present
+            if (!empty($employeeData)) {
+                $data = array_merge($data, $employeeData);
+            }
 
             // 2. Handle Image Upload First
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
@@ -352,9 +383,11 @@ class EmployeeService
                 $this->employeeOnboardingService->startOnboarding($employee->id, (int)$onboardingTemplateId);
             }
 
+            $this->clearCache(self::CACHE_KEY_OPTIONS);
+
             return $employee->fresh([
                 'department', 'designation', 'shift', 'user.roles', 'user.permissions',
-                'profile', 'documents', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
+                'profile', 'documents.documentType', 'employmentType', 'warehouse', 'workLocation', 'salaryStructure', 'reportingManager'
             ]);
         });
     }
@@ -368,6 +401,7 @@ class EmployeeService
     public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new EmployeesImport, $file);
+        $this->clearCache(self::CACHE_KEY_OPTIONS);
     }
 
     /**

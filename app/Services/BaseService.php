@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -50,5 +51,21 @@ abstract class BaseService
     {
         Log::info($message, $context);
     }
-}
 
+    /**
+     * Clear cache for a specific key or tag.
+     *
+     * @param string|array<string> $keys
+     * @return void
+     */
+    protected function clearCache(string|array $keys): void
+    {
+        if (is_array($keys)) {
+            foreach ($keys as $key) {
+                Cache::forget($key);
+            }
+        } else {
+            Cache::forget($keys);
+        }
+    }
+}

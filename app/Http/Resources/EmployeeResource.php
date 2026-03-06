@@ -76,34 +76,6 @@ class EmployeeResource extends JsonResource
             'address' => $this->address,
 
             /**
-             * The associated user ID.
-             *
-             * @example 1
-             */
-            'user_id' => $this->user_id,
-
-            /**
-             * The associated country ID.
-             *
-             * @example 1
-             */
-            'country_id' => $this->country_id,
-
-            /**
-             * The associated state ID.
-             *
-             * @example 12
-             */
-            'state_id' => $this->state_id,
-
-            /**
-             * The associated city ID.
-             *
-             * @example 45
-             */
-            'city_id' => $this->city_id,
-
-            /**
              * The storage path of the employee's image.
              */
             'image_path' => $this->image_path,
@@ -207,15 +179,9 @@ class EmployeeResource extends JsonResource
              * @example yes
              */
             'sales_agent' => $this->is_sale_agent ? 'yes' : 'no',
-
-            'employment_type_id' => $this->employment_type_id,
             'joining_date' => $this->joining_date?->format('Y-m-d'),
             'confirmation_date' => $this->confirmation_date?->format('Y-m-d'),
             'probation_end_date' => $this->probation_end_date?->format('Y-m-d'),
-            'reporting_manager_id' => $this->reporting_manager_id,
-            'warehouse_id' => $this->warehouse_id,
-            'work_location_id' => $this->work_location_id,
-            'salary_structure_id' => $this->salary_structure_id,
             'employment_status' => $this->employment_status ?? 'active',
 
             'employment_type' => $this->whenLoaded('employmentType', fn() => [
@@ -237,6 +203,9 @@ class EmployeeResource extends JsonResource
             'reporting_manager' => $this->whenLoaded('reportingManager', fn() => [
                 'id' => $this->reportingManager->id,
                 'name' => $this->reportingManager->name,
+                'email' => $this->reportingManager->email,
+                'username' => $this->reportingManager->username,
+                'phone_number' => $this->reportingManager->phone_number,
                 'employee_code' => $this->reportingManager->employee_code,
             ]),
             'profile' => $this->whenLoaded('profile', fn() => [
