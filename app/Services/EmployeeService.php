@@ -80,6 +80,9 @@ class EmployeeService extends BaseService
             ->with([
                 'department:id,name',
                 'designation:id,name',
+                'country:id,name',
+                'state:id,name',
+                'city:id,name',
                 'shift',
                 'user.roles:id,name',
                 'user.permissions:id,name',
