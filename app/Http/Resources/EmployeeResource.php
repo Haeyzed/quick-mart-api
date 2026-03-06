@@ -132,6 +132,18 @@ class EmployeeResource extends JsonResource
                 'start_time' => $this->shift->start_time,
                 'end_time' => $this->shift->end_time,
             ]),
+            'country' => $this->whenLoaded('country', fn() => [
+                'id' => $this->country->id,
+                'name' => $this->country->name,
+            ]),
+            'state' => $this->whenLoaded('state', fn() => [
+                'id' => $this->state->id,
+                'name' => $this->state->name,
+            ]),
+            'city' => $this->whenLoaded('city', fn() => [
+                'id' => $this->city->id,
+                'name' => $this->city->name,
+            ]),
 
             /**
              * Indicates if the employee is active.
