@@ -270,6 +270,10 @@ class Employee extends Model implements AuditableContract
                 fn(Builder $q) => $q->where('designation_id', (int)$filters['designation_id'])
             )
             ->when(
+                !empty($filters['reporting_manager_id']),
+                fn(Builder $q) => $q->where('reporting_manager_id', (int)$filters['reporting_manager_id'])
+            )
+            ->when(
                 !empty($filters['country_id']),
                 fn(Builder $q) => $q->where('country_id', (int)$filters['country_id'])
             )
