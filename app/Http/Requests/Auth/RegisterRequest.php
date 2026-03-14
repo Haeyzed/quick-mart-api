@@ -42,9 +42,7 @@ class RegisterRequest extends BaseRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'name')->where(function ($query) {
-                    return $query->where('is_deleted', false);
-                }),
+                Rule::unique('users', 'name'),
             ],
 
             /**
@@ -57,9 +55,7 @@ class RegisterRequest extends BaseRequest
                 'string',
                 'max:255',
                 'alpha_dash',
-                Rule::unique('users', 'username')->where(function ($query) {
-                    return $query->where('is_deleted', false);
-                }),
+                Rule::unique('users', 'username'),
             ],
 
             /**
@@ -71,9 +67,7 @@ class RegisterRequest extends BaseRequest
                 'nullable',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->where(function ($query) {
-                    return $query->where('is_deleted', false);
-                }),
+                Rule::unique('users', 'email'),
             ],
 
             /**
@@ -110,7 +104,7 @@ class RegisterRequest extends BaseRequest
              * @example 1
              */
             'role_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('roles', 'id')->where(function ($query) {
                     return $query->where('is_active', true);
@@ -154,7 +148,7 @@ class RegisterRequest extends BaseRequest
                 Rule::requiredIf(function () {
                     $customerRole = Role::query()->where('name', 'Customer')->where('is_active', true)->first();
 
-                    return $customerRole && (int)$this->role_id === (int)$customerRole->id;
+                    return $customerRole && (int) $this->role_id === (int) $customerRole->id;
                 }),
             ],
         ];

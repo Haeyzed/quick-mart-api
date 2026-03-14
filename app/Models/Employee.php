@@ -48,12 +48,14 @@ use OwenIt\Auditing\Models\Audit;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ *
  * @method static Builder|Employee newModelQuery()
  * @method static Builder|Employee newQuery()
  * @method static Builder|Employee query()
  * @method static Builder|Employee active()
  * @method static Builder|Employee saleAgents()
  * @method static Builder|Employee filter(array $filters)
+ *
  * @property-read Country|null $country
  * @property-read State|null $state
  * @property-read City|null $city
@@ -89,6 +91,7 @@ use OwenIt\Auditing\Models\Audit;
  * @property-read int|null $employee_onboardings_count
  * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
+ *
  * @method static Builder<static>|Employee customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Employee last30Days(string $column = 'created_at')
  * @method static Builder<static>|Employee last7Days(string $column = 'created_at')
@@ -136,6 +139,7 @@ use OwenIt\Auditing\Models\Audit;
  * @method static Builder<static>|Employee withoutTrashed()
  * @method static Builder<static>|Employee yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Employee yesterday(string $column = 'current_at')
+ *
  * @property string|null $employee_code
  * @property int|null $employment_type_id
  * @property Carbon|null $joining_date
@@ -146,7 +150,9 @@ use OwenIt\Auditing\Models\Audit;
  * @property int|null $work_location_id
  * @property int|null $salary_structure_id
  * @property string $employment_status
+ *
  * @method static Builder<static>|Employee whereImagePath($value)
+ *
  * @mixin Eloquent
  */
 class Employee extends Model implements AuditableContract
@@ -230,7 +236,7 @@ class Employee extends Model implements AuditableContract
             if (empty($employee->employee_code)) {
                 $prefix = 'EMP';
                 $last = static::withTrashed()->orderByDesc('id')->value('id') ?? 0;
-                $employee->employee_code = $prefix . str_pad((string)($last + 1), 5, '0', STR_PAD_LEFT);
+                $employee->employee_code = $prefix.str_pad((string) ($last + 1), 5, '0', STR_PAD_LEFT);
             }
         });
     }
@@ -238,84 +244,74 @@ class Employee extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param Builder $query The Eloquent query builder instance.
-     * @param array<string, mixed> $filters An associative array of requested filters.
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        $normalize = function ($value) {
-            if (is_array($value)) {
-                return array_filter($value);
-            }
-            if (is_string($value) && str_contains($value, ',')) {
-                return array_filter(explode(',', $value));
-            }
-            return $value ? [$value] : [];
-        };
-
         return $query
             ->when(
-                isset($filters['is_active']),
-                fn(Builder $q) => $q->active()
+                ! empty($filters['is_active']),
+                fn (Builder $q) => $q->whereIn('is_active', $filters['is_active'])
             )
             ->when(
-                isset($filters['is_sale_agent']),
-                fn(Builder $q) => $q->saleAgent()
+                ! empty($filters['is_sale_agent']),
+                fn (Builder $q) => $q->whereIn('is_sale_agent', $filters['is_sale_agent'])
             )
             ->when(
-                !empty($filters['user_id']),
-                fn(Builder $q) => $q->whereIn('user_id', $normalize($filters['user_id']))
+                ! empty($filters['user_id']),
+                fn (Builder $q) => $q->whereIn('user_id', $filters['user_id'])
             )
             ->when(
-                !empty($filters['department_id']),
-                fn(Builder $q) => $q->whereIn('department_id', $normalize($filters['department_id']))
+                ! empty($filters['department_id']),
+                fn (Builder $q) => $q->whereIn('department_id', $filters['department_id'])
             )
             ->when(
-                !empty($filters['employment_type_id']),
-                fn(Builder $q) => $q->whereIn('employment_type_id', $normalize($filters['employment_type_id']))
+                ! empty($filters['employment_type_id']),
+                fn (Builder $q) => $q->whereIn('employment_type_id', $filters['employment_type_id'])
             )
             ->when(
-                !empty($filters['designation_id']),
-                fn(Builder $q) => $q->whereIn('designation_id', $normalize($filters['designation_id']))
+                ! empty($filters['designation_id']),
+                fn (Builder $q) => $q->whereIn('designation_id', $filters['designation_id'])
             )
             ->when(
-                !empty($filters['reporting_manager_id']),
-                fn(Builder $q) => $q->whereIn('reporting_manager_id', $normalize($filters['reporting_manager_id']))
+                ! empty($filters['reporting_manager_id']),
+                fn (Builder $q) => $q->whereIn('reporting_manager_id', $filters['reporting_manager_id'])
             )
             ->when(
-                !empty($filters['country_id']),
-                fn(Builder $q) => $q->whereIn('country_id', $normalize($filters['country_id']))
+                ! empty($filters['country_id']),
+                fn (Builder $q) => $q->whereIn('country_id', $filters['country_id'])
             )
             ->when(
-                !empty($filters['state_id']),
-                fn(Builder $q) => $q->whereIn('state_id', $normalize($filters['state_id']))
+                ! empty($filters['state_id']),
+                fn (Builder $q) => $q->whereIn('state_id', $filters['state_id'])
             )
             ->when(
-                !empty($filters['city_id']),
-                fn(Builder $q) => $q->whereIn('city_id', $normalize($filters['city_id']))
+                ! empty($filters['city_id']),
+                fn (Builder $q) => $q->whereIn('city_id', $filters['city_id'])
             )
             ->when(
-                !empty($filters['warehouse_id']),
-                fn(Builder $q) => $q->whereIn('warehouse_id', $normalize($filters['warehouse_id']))
+                ! empty($filters['warehouse_id']),
+                fn (Builder $q) => $q->whereIn('warehouse_id', $filters['warehouse_id'])
             )
             ->when(
-                !empty($filters['shift_id']),
-                fn(Builder $q) => $q->whereIn('shift_id', $normalize($filters['shift_id']))
+                ! empty($filters['shift_id']),
+                fn (Builder $q) => $q->whereIn('shift_id', $filters['shift_id'])
             )
             ->when(
-                !empty($filters['employment_status']),
-                fn(Builder $q) => $q->where('employment_status', $filters['employment_status'])
+                ! empty($filters['employment_status']),
+                fn (Builder $q) => $q->where('employment_status', $filters['employment_status'])
             )
             ->when(
-                !empty($filters['employee_code']),
-                fn(Builder $q) => $q->where('employee_code', 'like', '%' . $filters['employee_code'] . '%')
+                ! empty($filters['employee_code']),
+                fn (Builder $q) => $q->where('employee_code', 'like', '%'.$filters['employee_code'].'%')
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone_number', 'like', $term)
@@ -329,8 +325,8 @@ class Employee extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

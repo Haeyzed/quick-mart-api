@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Brands\BrandBulkActionRequest;
+use App\Http\Requests\Brands\BrandFilterRequest;
 use App\Http\Requests\Brands\StoreBrandRequest;
 use App\Http\Requests\Brands\UpdateBrandRequest;
 use App\Http\Requests\ExportRequest;
@@ -18,7 +19,6 @@ use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\BrandService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -39,49 +39,21 @@ class BrandController extends Controller
      */
     public function __construct(
         private readonly BrandService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * List Brands
      *
-     * Display a paginated listing of brands. Supports searching and filtering by active status and date ranges.
+     * Display a paginated listing of brands. Supports searching and filtering by active status (array/whereIn) and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(BrandFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view brands')) {
             return response()->forbidden('Permission denied for viewing brands list.');
         }
 
         $brands = $this->service->getPaginatedBrands(
-            $request->validate([
-                /**
-                 * Search term to filter brands by name or slug.
-                 * @example "Apple"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 * @example true
-                 */
-                'is_active' => ['nullable', 'boolean'],
-                /**
-                 * Filter brands starting from this date.
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter brands up to this date.
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
-            /**
-             * Amount of items per page.
-             * @example 50
-             * @default 10
-             */
+            $request->validated(),
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -284,13 +256,13 @@ class BrandController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -300,7 +272,7 @@ class BrandController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'brands_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'brands_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Brand Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -309,7 +281,7 @@ class BrandController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 

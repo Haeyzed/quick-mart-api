@@ -18,7 +18,7 @@ use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Expense
- * 
+ *
  * Represents an expense transaction. Handles the underlying data
  * structure, relationships, and specific query scopes for expense entities.
  *
@@ -37,10 +37,12 @@ use OwenIt\Auditing\Models\Audit;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int|null $boutique_id
+ *
  * @method static Builder|Expense newModelQuery()
  * @method static Builder|Expense newQuery()
  * @method static Builder|Expense query()
  * @method static Builder|Expense filter(array $filters)
+ *
  * @property-read ExpenseCategory $expenseCategory
  * @property-read Warehouse $warehouse
  * @property-read Account|null $account
@@ -49,6 +51,7 @@ use OwenIt\Auditing\Models\Audit;
  * @property-read Employee|null $employee
  * @property-read Collection<int, Audit> $audits
  * @property-read int|null $audits_count
+ *
  * @method static Builder<static>|Expense customRange($startDate = null, $endDate = null, string $column = 'created_at')
  * @method static Builder<static>|Expense last30Days(string $column = 'created_at')
  * @method static Builder<static>|Expense last7Days(string $column = 'created_at')
@@ -74,6 +77,7 @@ use OwenIt\Auditing\Models\Audit;
  * @method static Builder<static>|Expense whereWarehouseId($value)
  * @method static Builder<static>|Expense yearToDate(string $column = 'created_at')
  * @method static Builder<static>|Expense yesterday(string $column = 'current_at')
+ *
  * @mixin Eloquent
  */
 class Expense extends Model implements AuditableContract
@@ -119,34 +123,34 @@ class Expense extends Model implements AuditableContract
     /**
      * Scope a query to apply dynamic filters.
      *
-     * @param Builder $query The Eloquent query builder instance.
-     * @param array<string, mixed> $filters An associative array of requested filters.
+     * @param  Builder  $query  The Eloquent query builder instance.
+     * @param  array<string, mixed>  $filters  An associative array of requested filters.
      * @return Builder The modified query builder instance.
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when(
-                !empty($filters['warehouse_id']),
-                fn(Builder $q) => $q->where('warehouse_id', (int)$filters['warehouse_id'])
+                ! empty($filters['warehouse_id']),
+                fn (Builder $q) => $q->where('warehouse_id', (int) $filters['warehouse_id'])
             )
             ->when(
-                !empty($filters['expense_category_id']),
-                fn(Builder $q) => $q->where('expense_category_id', (int)$filters['expense_category_id'])
+                ! empty($filters['expense_category_id']),
+                fn (Builder $q) => $q->where('expense_category_id', (int) $filters['expense_category_id'])
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('reference_no', 'like', $term)
                         ->orWhere('note', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
                 'created_at'
             );
     }

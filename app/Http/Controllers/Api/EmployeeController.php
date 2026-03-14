@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employees\EmployeeBulkActionRequest;
+use App\Http\Requests\Employees\EmployeeFilterRequest;
 use App\Http\Requests\Employees\StoreEmployeeRequest;
 use App\Http\Requests\Employees\UpdateEmployeeRequest;
 use App\Http\Requests\ExportRequest;
@@ -39,61 +40,21 @@ class EmployeeController extends Controller
      */
     public function __construct(
         private readonly EmployeeService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * List Employees
      *
      * Display a paginated listing of employees. Supports searching and filtering by active status and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(EmployeeFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view employees')) {
             return response()->forbidden('Permission denied for viewing employees list.');
         }
 
         $employees = $this->service->getPaginated(
-            $request->validate([
-                /**
-                 * Search term to filter employees by name, email, phone, or staff ID.
-                 *
-                 * @example "Jane Doe"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 *
-                 * @example true
-                 */
-                'is_active' => ['nullable', 'boolean'],
-                /**
-                 * Filter by associated department ID.
-                 *
-                 * @example 2
-                 */
-                'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-                /**
-                 * Filter employees starting from this date.
-                 *
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter employees up to this date.
-                 *
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
-            /**
-             * Amount of items per page.
-             *
-             * @example 50
-             *
-             * @default 10
-             */
+            $request->validated(),
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -113,7 +74,7 @@ class EmployeeController extends Controller
         if (auth()->user()->denies('view employees')) {
             return response()->forbidden('Permission denied for viewing employees options.');
         }
-        $warehouseId = $request->filled('warehouse_id') ? (int)$request->input('warehouse_id') : null;
+        $warehouseId = $request->filled('warehouse_id') ? (int) $request->input('warehouse_id') : null;
 
         return response()->success($this->service->getOptions($warehouseId), 'Employee options retrieved successfully');
     }
@@ -296,13 +257,13 @@ class EmployeeController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -312,7 +273,7 @@ class EmployeeController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'employees_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'employees_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Employee Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -321,7 +282,7 @@ class EmployeeController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
