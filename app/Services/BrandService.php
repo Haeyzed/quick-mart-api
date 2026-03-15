@@ -55,7 +55,7 @@ class BrandService
      * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Brand models.
      */
-    public function getPaginatedBrands(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Brand::query()
             ->filter($filters)
@@ -91,7 +91,7 @@ class BrandService
      * @param array<string, mixed> $data The validated request data for the new brand.
      * @return Brand The newly created Brand model instance.
      */
-    public function createBrand(array $data): Brand
+    public function create(array $data): Brand
     {
         return DB::transaction(function () use ($data) {
             $data = $this->handleUploads($data);
@@ -134,7 +134,7 @@ class BrandService
      * @param array<string, mixed> $data The validated update data.
      * @return Brand The freshly updated Brand model instance.
      */
-    public function updateBrand(Brand $brand, array $data): Brand
+    public function update(Brand $brand, array $data): Brand
     {
         return DB::transaction(function () use ($brand, $data) {
             $data = $this->handleUploads($data, $brand);
@@ -154,7 +154,7 @@ class BrandService
      *
      * @throws ConflictHttpException If the brand has associated products.
      */
-    public function deleteBrand(Brand $brand): void
+    public function delete(Brand $brand): void
     {
         if ($brand->products()->exists()) {
             throw new ConflictHttpException("Cannot delete brand '{$brand->name}' as it has associated products.");
@@ -187,7 +187,7 @@ class BrandService
      * @param array<int> $ids Array of brand IDs to be deleted.
      * @return int The total count of successfully deleted brands.
      */
-    public function bulkDeleteBrands(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $brands = Brand::query()->whereIn('id', $ids)->withCount('products')->get();
@@ -226,7 +226,7 @@ class BrandService
      *
      * @param UploadedFile $file The uploaded spreadsheet file containing brand data.
      */
-    public function importBrands(UploadedFile $file): void
+    public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new BrandsImport, $file);
     }

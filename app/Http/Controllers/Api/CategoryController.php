@@ -53,7 +53,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for viewing categories list.');
         }
 
-        $categories = $this->service->getPaginatedCategories(
+        $categories = $this->service->getPaginated(
             $request->validated(),
             $request->integer('per_page', config('app.per_page'))
         );
@@ -108,7 +108,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for create category.');
         }
 
-        $category = $this->service->createCategory($request->validated());
+        $category = $this->service->create($request->validated());
 
         return response()->success(
             new CategoryResource($category),
@@ -145,7 +145,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for update category.');
         }
 
-        $updatedCategory = $this->service->updateCategory($category, $request->validated());
+        $updatedCategory = $this->service->update($category, $request->validated());
 
         return response()->success(
             new CategoryResource($updatedCategory),
@@ -186,7 +186,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for delete category.');
         }
 
-        $this->service->deleteCategory($category);
+        $this->service->delete($category);
 
         return response()->success(null, 'Category deleted successfully');
     }
@@ -202,7 +202,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for bulk delete categories.');
         }
 
-        $count = $this->service->bulkDeleteCategories($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
@@ -335,7 +335,7 @@ class CategoryController extends Controller
             return response()->forbidden('Permission denied for import categories.');
         }
 
-        $this->service->importCategories($request->file('file'));
+        $this->service->import($request->file('file'));
 
         return response()->success(null, 'Categories imported successfully');
     }

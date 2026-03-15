@@ -52,7 +52,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for viewing brands list.');
         }
 
-        $brands = $this->service->getPaginatedBrands(
+        $brands = $this->service->getPaginated(
             $request->validated(),
             $request->integer('per_page', config('app.per_page'))
         );
@@ -88,7 +88,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for create brand.');
         }
 
-        $brand = $this->service->createBrand($request->validated());
+        $brand = $this->service->create($request->validated());
 
         return response()->success(
             new BrandResource($brand),
@@ -125,7 +125,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for update brand.');
         }
 
-        $updatedBrand = $this->service->updateBrand($brand, $request->validated());
+        $updatedBrand = $this->service->update($brand, $request->validated());
 
         return response()->success(
             new BrandResource($updatedBrand),
@@ -144,7 +144,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for delete brand.');
         }
 
-        $this->service->deleteBrand($brand);
+        $this->service->delete($brand);
 
         return response()->success(null, 'Brand deleted successfully');
     }
@@ -160,7 +160,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for bulk delete brands.');
         }
 
-        $count = $this->service->bulkDeleteBrands($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
@@ -217,7 +217,7 @@ class BrandController extends Controller
             return response()->forbidden('Permission denied for import brands.');
         }
 
-        $this->service->importBrands($request->file('file'));
+        $this->service->import($request->file('file'));
 
         return response()->success(null, 'Brands imported successfully');
     }

@@ -61,7 +61,7 @@ class CategoryService
      * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Category models.
      */
-    public function getPaginatedCategories(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Category::query()
             ->with([
@@ -142,7 +142,7 @@ class CategoryService
      * @param array<string, mixed> $data The validated request data for the new category.
      * @return Category The newly created Category model instance.
      */
-    public function createCategory(array $data): Category
+    public function create(array $data): Category
     {
         return DB::transaction(function () use ($data) {
             $data = $this->handleUploads($data);
@@ -241,7 +241,7 @@ class CategoryService
      * @param array<string, mixed> $data The validated update data.
      * @return Category The freshly updated Category model instance.
      */
-    public function updateCategory(Category $category, array $data): Category
+    public function update(Category $category, array $data): Category
     {
         return DB::transaction(function () use ($category, $data) {
             $data = $this->handleUploads($data, $category);
@@ -261,7 +261,7 @@ class CategoryService
      *
      * @throws ConflictHttpException If the category has children or associated products.
      */
-    public function deleteCategory(Category $category): void
+    public function delete(Category $category): void
     {
         if ($category->children()->exists()) {
             throw new ConflictHttpException("Cannot delete category '{$category->name}' as it has child categories.");
@@ -301,7 +301,7 @@ class CategoryService
      * @param array<int> $ids Array of category IDs to be deleted.
      * @return int The total count of successfully deleted categories.
      */
-    public function bulkDeleteCategories(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $categories = Category::query()->whereIn('id', $ids)->withCount(['products', 'children'])->get();
@@ -364,7 +364,7 @@ class CategoryService
      *
      * @param UploadedFile $file The uploaded spreadsheet file containing category data.
      */
-    public function importCategories(UploadedFile $file): void
+    public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new CategoriesImport, $file);
     }
