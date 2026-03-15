@@ -120,27 +120,6 @@ class CategoryResource extends JsonResource
             'woocommerce_category_id' => $this->woocommerce_category_id,
 
             /**
-             * The active status as a readable string.
-             *
-             * @example active
-             */
-            'active_status' => $this->is_active ? 'active' : 'inactive',
-
-            /**
-             * The featured status as a readable string.
-             *
-             * @example yes
-             */
-            'featured_status' => $this->featured ? 'yes' : 'no',
-
-            /**
-             * The sync status as a readable string.
-             *
-             * @example enabled
-             */
-            'sync_status' => $this->is_sync_disable ? 'disabled' : 'enabled',
-
-            /**
              * The date and time when the category was created.
              *
              * @example 2024-01-01T12:00:00Z

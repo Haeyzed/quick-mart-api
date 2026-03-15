@@ -78,13 +78,6 @@ class BrandResource extends JsonResource
             'is_active' => $this->is_active,
 
             /**
-             * The active status as a readable string.
-             *
-             * @example active
-             */
-            'active_status' => $this->is_active ? 'active' : 'inactive',
-
-            /**
              * The start date for the brand's validity.
              *
              * @example 2024-01-01T00:00:00Z

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Categories\CategoryBulkActionRequest;
+use App\Http\Requests\Categories\CategoryFilterRequest;
 use App\Http\Requests\Categories\ReparentCategoryRequest;
 use App\Http\Requests\Categories\StoreCategoryRequest;
 use App\Http\Requests\Categories\UpdateCategoryRequest;
@@ -19,7 +20,6 @@ use App\Models\MailSetting;
 use App\Models\User;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -40,67 +40,21 @@ class CategoryController extends Controller
      */
     public function __construct(
         private readonly CategoryService $service
-    )
-    {
-    }
+    ) {}
 
     /**
      * List Categories
      *
-     * Display a paginated listing of categories. Supports searching and filtering by status, featured, parent, and date ranges.
+     * Display a paginated listing of categories. Supports searching and filtering by is_active, featured, is_sync_disable, parent, and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(CategoryFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view categories')) {
             return response()->forbidden('Permission denied for viewing categories list.');
         }
 
         $categories = $this->service->getPaginatedCategories(
-            $request->validate([
-                /**
-                 * Search term to filter categories by name or slug.
-                 *
-                 * @example "Electronics"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 *
-                 * @example true
-                 */
-                'status' => ['nullable', 'boolean'],
-                /**
-                 * Filter by featured status.
-                 *
-                 * @example true
-                 */
-                'featured' => ['nullable', 'boolean'],
-                /**
-                 * Filter by parent category ID.
-                 *
-                 * @example 1
-                 */
-                'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
-                /**
-                 * Filter categories starting from this date.
-                 *
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter categories up to this date.
-                 *
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
-            /**
-             * Amount of items per page.
-             *
-             * @example 50
-             *
-             * @default 10
-             */
+            $request->validated(),
             $request->integer('per_page', config('app.per_page'))
         );
 
@@ -420,13 +374,13 @@ class CategoryController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -436,7 +390,7 @@ class CategoryController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'categories_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'categories_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Categories Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -445,7 +399,7 @@ class CategoryController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 
