@@ -48,39 +48,14 @@ class UnitController extends Controller
      *
      * Display a paginated listing of units. Supports searching and filtering by active status and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(\App\Http\Requests\Units\UnitFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view units')) {
             return response()->forbidden('Permission denied for viewing units list.');
         }
 
         $units = $this->service->getPaginated(
-            $request->validate([
-                /**
-                 * Search term to filter units by name or code.
-                 *
-                 * @example "kg"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 *
-                 * @example true
-                 */
-                'status' => ['nullable', 'boolean'],
-                /**
-                 * Filter units starting from this date.
-                 *
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter units up to this date.
-                 *
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
+            $request->validated(),
             /**
              * Amount of items per page.
              *
