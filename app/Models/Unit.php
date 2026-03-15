@@ -118,10 +118,6 @@ class Unit extends Model implements AuditableContract
                 static fn (Builder $q) => $q->whereIn('is_active', $filters['is_active'])
             )
             ->when(
-                isset($filters['status']) && $filters['status'] !== null,
-                static fn (Builder $q) => $q->where('is_active', (bool) $filters['status'])
-            )
-            ->when(
                 ! empty($filters['search']),
                 static function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
