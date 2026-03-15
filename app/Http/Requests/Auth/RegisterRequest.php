@@ -75,7 +75,7 @@ class RegisterRequest extends BaseRequest
              *
              * @example avatar.jpg
              */
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
 
             /**
              * User's phone number.
