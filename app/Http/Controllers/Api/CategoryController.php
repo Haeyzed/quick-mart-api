@@ -79,6 +79,20 @@ class CategoryController extends Controller
     }
 
     /**
+     * Get Parent Category Options
+     *
+     * Retrieve a simplified list of active categories for use in the parent filter dropdown.
+     */
+    public function parentOptions(): JsonResponse
+    {
+        if (auth()->user()->denies('view categories')) {
+            return response()->forbidden('Permission denied for viewing category parent options.');
+        }
+
+        return response()->success($this->service->getParentOptions(), 'Parent category options retrieved successfully');
+    }
+
+    /**
      * Category Tree
      *
      * Display a tree-view listing of root categories with nested children (active only).

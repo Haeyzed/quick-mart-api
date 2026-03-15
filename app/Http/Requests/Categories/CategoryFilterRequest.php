@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Categories;
 
 use App\Http\Requests\BaseRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Arr;
 
 /**
