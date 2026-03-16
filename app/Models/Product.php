@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
@@ -35,8 +36,8 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $brand_id
  * @property int $category_id
  * @property int $unit_id
- * @property int $purchase_unit_id
- * @property int $sale_unit_id
+ * @property int|null $purchase_unit_id
+ * @property int|null $sale_unit_id
  * @property float $cost
  * @property float|null $profit_margin
  * @property string|null $profit_margin_type
@@ -47,13 +48,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property float|null $daily_sale_objective
  * @property bool|null $promotion
  * @property float|null $promotion_price
- * @property \Illuminate\Support\Carbon|null $starting_date
- * @property \Illuminate\Support\Carbon|null $last_date
+ * @property Carbon|null $starting_date
+ * @property Carbon|null $last_date
  * @property int|null $tax_id
  * @property TaxMethodEnum|null $tax_method
- * @property array|null $image_path
- * @property array|null $image_url
- * @property string|null $file
+ * @property array|null $image_paths
+ * @property array|null $image_urls
+ * @property string|null $file_path
  * @property string|null $file_url
  * @property bool|null $is_embeded
  * @property bool $is_batch
@@ -89,20 +90,22 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property int|null $guarantee
  * @property string|null $warranty_type
  * @property string|null $guarantee_type
- * @property float|null $wastage_percent
+ * @property string|null $wastage_percent
  * @property string|null $combo_unit_id
  * @property float|null $production_cost
  * @property bool|null $is_recipe
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  *
- * @property-read Category $category
+ * @property-read Category|null $category
  * @property-read Brand|null $brand
  * @property-read Tax|null $tax
- * @property-read Unit $unit
- * @property-read Unit $purchaseUnit
- * @property-read Unit $saleUnit
+ * @property-read Unit|null $unit
+ * @property-read Unit|null $purchaseUnit
+ * @property-read Unit|null $saleUnit
+ * @property-read Unit|null $comboUnit
+ * @property-read Kitchen|null $kitchen
  * @property-read Collection<int, Variant> $variants
  * @property-read Collection<int, Warehouse> $warehouses
  * @property-read Collection<int, Purchase> $purchases
@@ -153,9 +156,9 @@ class Product extends Model implements AuditableContract
         'last_date',
         'tax_id',
         'tax_method',
-        'image_path',
-        'image_url',
-        'file',
+        'image_paths',
+        'image_urls',
+        'file_path',
         'file_url',
         'is_embeded',
         'is_batch',
@@ -240,8 +243,8 @@ class Product extends Model implements AuditableContract
             'combo_unit_id' => 'string',
             'production_cost' => 'float',
             'is_recipe' => 'boolean',
-            'image_path' => 'array',
-            'image_url' => 'array',
+            'image_paths' => 'array',
+            'image_urls' => 'array',
             'file_url' => 'string',
             'product_details' => 'array',
             'specification' => 'array',
@@ -252,11 +255,6 @@ class Product extends Model implements AuditableContract
 
     /**
      * Scope a query to apply dynamic filters.
-     * Mirrors the robust filtering found in the original system.
-     *
-     * @param  Builder  $query
-     * @param  array<string, mixed>  $filters
-     * @return Builder
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
@@ -366,6 +364,10 @@ class Product extends Model implements AuditableContract
         }
     }
 
+    // ------------------------------------------------------------------------
+    // Relationships
+    // ------------------------------------------------------------------------
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -394,6 +396,16 @@ class Product extends Model implements AuditableContract
     public function saleUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'sale_unit_id');
+    }
+
+    public function comboUnit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class, 'combo_unit_id');
+    }
+
+    public function kitchen(): BelongsTo
+    {
+        return $this->belongsTo(Kitchen::class); // Make sure the Kitchen model exists
     }
 
     public function variants(): BelongsToMany
@@ -466,6 +478,10 @@ class Product extends Model implements AuditableContract
     {
         return $this->hasMany(ProductWarehouse::class);
     }
+
+    // ------------------------------------------------------------------------
+    // Helpers & Scopes
+    // ------------------------------------------------------------------------
 
     public function getEffectivePrice(): float
     {

@@ -62,7 +62,7 @@ class ProductService extends BaseService
     public function get(Product $product): Product
     {
         return $product->load([
-            'category', 'brand', 'unit', 'purchaseUnit', 'saleUnit', 'tax',
+            'category:id,name', 'brand:id,name', 'unit:id,name,code', 'purchaseUnit', 'saleUnit', 'tax:id,name',
             'productVariants.variant', 'productWarehouses.warehouse'
         ]);
     }
@@ -83,8 +83,6 @@ class ProductService extends BaseService
             $this->handleInitialStock($product, $data);
             $this->handleCustomFields($product, $data);
 
-            $this->clearCache(['product_list', 'product_list_with_variant']);
-
             return $product->fresh(['category', 'brand', 'unit']);
         });
     }
@@ -104,8 +102,6 @@ class ProductService extends BaseService
             $this->handleWarehousePrices($product, $data['warehouse_prices'] ?? []);
             $this->handleCustomFields($product, $data);
 
-            $this->clearCache(['product_list', 'product_list_with_variant']);
-
             return $product->fresh(['category', 'brand', 'unit']);
         });
     }
@@ -122,8 +118,8 @@ class ProductService extends BaseService
             }
 
             // Cleanup images
-            if (!empty($product->image_path)) {
-                foreach ($product->image_path as $image) {
+            if (!empty($product->image_paths)) {
+                foreach ($product->image_paths as $image) {
                     $this->uploadService->delete($image);
                 }
             }
@@ -136,8 +132,6 @@ class ProductService extends BaseService
             $product->productWarehouses()->delete();
 
             $product->delete();
-
-            $this->clearCache(['product_list', 'product_list_with_variant']);
         });
     }
 
@@ -169,7 +163,6 @@ class ProductService extends BaseService
     public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new ProductsImport, $file);
-        $this->clearCache(['product_list', 'product_list_with_variant']);
     }
 
     /**
@@ -224,8 +217,8 @@ class ProductService extends BaseService
      */
     private function handleImages(array $data, ?Product $product = null): array
     {
-        $existingImages = $product ? ($product->image_path ?? []) : [];
-        $existingUrls = $product ? ($product->image_url ?? []) : [];
+        $existingImages = $product ? ($product->image_paths ?? []) : [];
+        $existingUrls = $product ? ($product->image_urls ?? []) : [];
 
         // Handle deletions
         if (isset($data['deleted_images'])) {
@@ -252,14 +245,14 @@ class ProductService extends BaseService
             }
         }
 
-        $data['image_path'] = $existingImages;
-        $data['image_url'] = $existingUrls;
+        $data['image_paths'] = $existingImages;
+        $data['image_urls'] = $existingUrls;
 
-        if (isset($data['file']) && $data['file'] instanceof UploadedFile) {
+        if (isset($data['file_path']) && $data['file_path'] instanceof UploadedFile) {
             if ($product?->file_url) {
                 $this->uploadService->delete($product->file_url);
             }
-            $path = $this->uploadService->upload($data['file'], 'product/files');
+            $path = $this->uploadService->upload($data['file_path'], 'product/files');
             $data['file_url'] = $path;
         }
 
@@ -528,7 +521,7 @@ class ProductService extends BaseService
     public function reorderImages(Product $product, array $imageUrls): Product
     {
         $product->update([
-            'image_path' => $imageUrls, // Assuming the array matches the paths or URLs correctly
+            'image_paths' => $imageUrls, // Assuming the array matches the paths or URLs correctly
         ]);
 
         return $product->fresh();

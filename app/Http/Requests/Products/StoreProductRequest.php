@@ -79,10 +79,10 @@ class StoreProductRequest extends BaseRequest
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'tax_method' => ['nullable', Rule::enum(TaxMethodEnum::class)],
 
-            'images' => ['nullable', 'array'],
-            'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_paths' => ['nullable', 'array'],
+            'image_paths.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
 
-            'file' => ['nullable', 'file', 'max:10240'],
+            'file_path' => ['nullable', 'file', 'max:10240'],
 
             'is_embeded' => ['nullable', 'boolean'],
             'is_batch' => ['nullable', 'boolean'],
