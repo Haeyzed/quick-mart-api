@@ -50,7 +50,7 @@ class ProductService extends BaseService
     public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Product::query()
-            ->with(['category:id,name', 'brand:id,name', 'unit:id,name,unit_code'])
+            ->with(['category:id,name', 'brand:id,name', 'unit:id,name,code'])
             ->filter($filters)
             ->latest()
             ->paginate($perPage);
