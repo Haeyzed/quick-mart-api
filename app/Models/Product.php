@@ -266,6 +266,10 @@ class Product extends Model implements AuditableContract
                 fn (Builder $q) => $q->whereIn('is_active', (array) $filters['is_active'])
             )
             ->when(
+                isset($filters['featured']),
+                fn (Builder $q) => $q->whereIn('featured', (array) $filters['featured'])
+            )
+            ->when(
                 isset($filters['type']),
                 fn (Builder $q) => $q->whereIn('type', (array) $filters['type'])
             )

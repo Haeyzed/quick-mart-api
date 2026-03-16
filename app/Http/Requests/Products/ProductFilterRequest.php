@@ -27,7 +27,7 @@ class ProductFilterRequest extends BaseRequest
      */
     protected function prepareForValidation(): void
     {
-        $arrayFields = ['is_active', 'type', 'brand_id', 'category_id', 'unit_id'];
+        $arrayFields = ['is_active', 'featured', 'type', 'brand_id', 'category_id', 'unit_id'];
 
         foreach ($arrayFields as $field) {
             if ($this->has($field)) {
@@ -69,6 +69,12 @@ class ProductFilterRequest extends BaseRequest
              */
             'is_active' => ['nullable', 'array'],
             'is_active.*' => ['boolean'],
+
+            /**
+             * Filter by featured status.
+             */
+            'featured' => ['nullable', 'array'],
+            'featured.*' => ['boolean'],
 
             /**
              * Filter by product type.
