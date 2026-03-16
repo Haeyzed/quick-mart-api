@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use App\Enums\ProductTypeEnum;
+use App\Enums\TaxMethodEnum;
+use App\Traits\FilterableByDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,20 +14,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
-use OwenIt\Auditing\Models\Audit;
 
 /**
- * Product Model
- * 
+ * Class Product
+ *
  * Represents a product in the inventory system with support for variants, batches, and multiple pricing.
+ * Handles the underlying data structure, relationships, and specific query scopes for product entities.
  *
  * @property int $id
  * @property string $name
  * @property string $code
- * @property string $type
+ * @property ProductTypeEnum $type
  * @property string|null $slug
  * @property string $barcode_symbology
  * @property int|null $brand_id
@@ -47,7 +50,7 @@ use OwenIt\Auditing\Models\Audit;
  * @property \Illuminate\Support\Carbon|null $starting_date
  * @property \Illuminate\Support\Carbon|null $last_date
  * @property int|null $tax_id
- * @property int|null $tax_method
+ * @property TaxMethodEnum|null $tax_method
  * @property array|null $image_path
  * @property array|null $image_url
  * @property string|null $file
@@ -64,13 +67,13 @@ use OwenIt\Auditing\Models\Audit;
  * @property string|null $price_list
  * @property array|null $product_details
  * @property string|null $short_description
- * @property string|null $specification
+ * @property array|null $specification
  * @property string|null $related_products
  * @property bool|null $is_addon
  * @property string|null $extras
  * @property string|null $menu_type
- * @property string|null $variant_option
- * @property string|null $variant_value
+ * @property array|null $variant_option
+ * @property array|null $variant_value
  * @property bool $is_active
  * @property bool|null $is_online
  * @property int|null $kitchen_id
@@ -87,11 +90,13 @@ use OwenIt\Auditing\Models\Audit;
  * @property string|null $warranty_type
  * @property string|null $guarantee_type
  * @property float|null $wastage_percent
- * @property int|null $combo_unit_id
+ * @property string|null $combo_unit_id
  * @property float|null $production_cost
  * @property bool|null $is_recipe
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ *
  * @property-read Category $category
  * @property-read Brand|null $brand
  * @property-read Tax|null $tax
@@ -102,105 +107,27 @@ use OwenIt\Auditing\Models\Audit;
  * @property-read Collection<int, Warehouse> $warehouses
  * @property-read Collection<int, Purchase> $purchases
  * @property-read Collection<int, Sale> $sales
+ * @property-read Collection<int, Returns> $saleReturns
+ * @property-read Collection<int, ReturnPurchase> $purchaseReturns
+ * @property-read Collection<int, Adjustment> $adjustments
+ * @property-read Collection<int, Transfer> $transfers
  * @property-read Collection<int, ProductBatch> $batches
  * @property-read Collection<int, ProductVariant> $productVariants
  * @property-read Collection<int, ProductWarehouse> $productWarehouses
+ *
  * @method static Builder|Product active()
  * @method static Builder|Product activeStandard()
  * @method static Builder|Product activeFeatured()
  * @method static Builder|Product featured()
  * @method static Builder|Product online()
- * @property string|null $deleted_at
- * @property-read Collection<int, Audit> $audits
- * @property-read int|null $audits_count
- * @property-read int|null $batches_count
- * @property-read int|null $product_variants_count
- * @property-read int|null $product_warehouses_count
- * @property-read int|null $purchases_count
- * @property-read int|null $sales_count
- * @property-read int|null $variants_count
- * @property-read int|null $warehouses_count
- * @method static Builder<static>|Product newModelQuery()
- * @method static Builder<static>|Product newQuery()
- * @method static Builder<static>|Product query()
- * @method static Builder<static>|Product whereAlertQuantity($value)
- * @method static Builder<static>|Product whereBarcodeSymbology($value)
- * @method static Builder<static>|Product whereBrandId($value)
- * @method static Builder<static>|Product whereCategoryId($value)
- * @method static Builder<static>|Product whereCode($value)
- * @method static Builder<static>|Product whereComboUnitId($value)
- * @method static Builder<static>|Product whereCost($value)
- * @method static Builder<static>|Product whereCreatedAt($value)
- * @method static Builder<static>|Product whereDailySaleObjective($value)
- * @method static Builder<static>|Product whereDeletedAt($value)
- * @method static Builder<static>|Product whereFeatured($value)
- * @method static Builder<static>|Product whereFile($value)
- * @method static Builder<static>|Product whereFileUrl($value)
- * @method static Builder<static>|Product whereGuarantee($value)
- * @method static Builder<static>|Product whereGuaranteeType($value)
- * @method static Builder<static>|Product whereId($value)
- * @method static Builder<static>|Product whereImage($value)
- * @method static Builder<static>|Product whereImageUrl($value)
- * @method static Builder<static>|Product whereInStock($value)
- * @method static Builder<static>|Product whereIsActive($value)
- * @method static Builder<static>|Product whereIsBatch($value)
- * @method static Builder<static>|Product whereIsDiffPrice($value)
- * @method static Builder<static>|Product whereIsEmbeded($value)
- * @method static Builder<static>|Product whereIsImei($value)
- * @method static Builder<static>|Product whereIsOnline($value)
- * @method static Builder<static>|Product whereIsRecipe($value)
- * @method static Builder<static>|Product whereIsSyncDisable($value)
- * @method static Builder<static>|Product whereIsVariant($value)
- * @method static Builder<static>|Product whereLastDate($value)
- * @method static Builder<static>|Product whereMetaDescription($value)
- * @method static Builder<static>|Product whereMetaTitle($value)
- * @method static Builder<static>|Product whereName($value)
- * @method static Builder<static>|Product wherePrice($value)
- * @method static Builder<static>|Product wherePriceList($value)
- * @method static Builder<static>|Product whereProductDetails($value)
- * @method static Builder<static>|Product whereProductList($value)
- * @method static Builder<static>|Product whereProductionCost($value)
- * @method static Builder<static>|Product whereProfitMargin($value)
- * @method static Builder<static>|Product whereProfitMarginType($value)
- * @method static Builder<static>|Product wherePromotion($value)
- * @method static Builder<static>|Product wherePromotionPrice($value)
- * @method static Builder<static>|Product wherePurchaseUnitId($value)
- * @method static Builder<static>|Product whereQty($value)
- * @method static Builder<static>|Product whereQtyList($value)
- * @method static Builder<static>|Product whereRelatedProducts($value)
- * @method static Builder<static>|Product whereSaleUnitId($value)
- * @method static Builder<static>|Product whereShortDescription($value)
- * @method static Builder<static>|Product whereSlug($value)
- * @method static Builder<static>|Product whereSpecification($value)
- * @method static Builder<static>|Product whereStartingDate($value)
- * @method static Builder<static>|Product whereTags($value)
- * @method static Builder<static>|Product whereTaxId($value)
- * @method static Builder<static>|Product whereTaxMethod($value)
- * @method static Builder<static>|Product whereTrackInventory($value)
- * @method static Builder<static>|Product whereType($value)
- * @method static Builder<static>|Product whereUnitId($value)
- * @method static Builder<static>|Product whereUpdatedAt($value)
- * @method static Builder<static>|Product whereVariantList($value)
- * @method static Builder<static>|Product whereVariantOption($value)
- * @method static Builder<static>|Product whereVariantValue($value)
- * @method static Builder<static>|Product whereWarranty($value)
- * @method static Builder<static>|Product whereWarrantyType($value)
- * @method static Builder<static>|Product whereWastagePercent($value)
- * @method static Builder<static>|Product whereWholesalePrice($value)
- * @method static Builder<static>|Product whereWoocommerceMediaId($value)
- * @method static Builder<static>|Product whereWoocommerceProductId($value)
- * @method static Builder<static>|Product whereImagePath($value)
- * @mixin Eloquent
+ * @method static Builder|Product filter(array $filters)
+ *
+ * @mixin \Eloquent
  */
 class Product extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'code',
@@ -270,9 +197,141 @@ class Product extends Model implements AuditableContract
         'is_recipe',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'type' => ProductTypeEnum::class,
+            'tax_method' => TaxMethodEnum::class,
+            'brand_id' => 'integer',
+            'category_id' => 'integer',
+            'unit_id' => 'integer',
+            'purchase_unit_id' => 'integer',
+            'sale_unit_id' => 'integer',
+            'cost' => 'float',
+            'profit_margin' => 'float',
+            'price' => 'float',
+            'wholesale_price' => 'float',
+            'qty' => 'float',
+            'alert_quantity' => 'float',
+            'daily_sale_objective' => 'float',
+            'promotion' => 'boolean',
+            'promotion_price' => 'float',
+            'starting_date' => 'date',
+            'last_date' => 'date',
+            'tax_id' => 'integer',
+            'is_embeded' => 'boolean',
+            'is_batch' => 'boolean',
+            'is_variant' => 'boolean',
+            'is_diff_price' => 'boolean',
+            'is_imei' => 'boolean',
+            'featured' => 'boolean',
+            'is_addon' => 'boolean',
+            'is_active' => 'boolean',
+            'is_online' => 'boolean',
+            'kitchen_id' => 'integer',
+            'in_stock' => 'boolean',
+            'track_inventory' => 'boolean',
+            'is_sync_disable' => 'boolean',
+            'woocommerce_product_id' => 'integer',
+            'woocommerce_media_id' => 'integer',
+            'warranty' => 'integer',
+            'guarantee' => 'integer',
+            'wastage_percent' => 'string',
+            'combo_unit_id' => 'string',
+            'production_cost' => 'float',
+            'is_recipe' => 'boolean',
+            'image_path' => 'array',
+            'image_url' => 'array',
+            'file_url' => 'string',
+            'product_details' => 'array',
+            'specification' => 'array',
+            'variant_option' => 'array',
+            'variant_value' => 'array',
+        ];
+    }
+
     /**
-     * Boot the model and set up event listeners for slug generation.
+     * Scope a query to apply dynamic filters.
+     * Mirrors the robust filtering found in the original system.
+     *
+     * @param  Builder  $query
+     * @param  array<string, mixed>  $filters
+     * @return Builder
      */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                isset($filters['is_active']),
+                fn (Builder $q) => $q->whereIn('is_active', (array) $filters['is_active'])
+            )
+            ->when(
+                isset($filters['type']),
+                fn (Builder $q) => $q->whereIn('type', (array) $filters['type'])
+            )
+            ->when(
+                isset($filters['brand_id']),
+                fn (Builder $q) => $q->whereIn('brand_id', (array) $filters['brand_id'])
+            )
+            ->when(
+                isset($filters['category_id']),
+                fn (Builder $q) => $q->whereIn('category_id', (array) $filters['category_id'])
+            )
+            ->when(
+                isset($filters['unit_id']),
+                fn (Builder $q) => $q->whereIn('unit_id', (array) $filters['unit_id'])
+            )
+            ->when(
+                isset($filters['is_imei']),
+                fn (Builder $q) => $q->where('is_imei', filter_var($filters['is_imei'], FILTER_VALIDATE_BOOLEAN))
+            )
+            ->when(
+                isset($filters['is_variant']),
+                fn (Builder $q) => $q->where('is_variant', filter_var($filters['is_variant'], FILTER_VALIDATE_BOOLEAN))
+            )
+            ->when(
+                isset($filters['is_recipe']),
+                fn (Builder $q) => $q->where('is_recipe', filter_var($filters['is_recipe'], FILTER_VALIDATE_BOOLEAN))
+            )
+            ->when(
+                isset($filters['stock_filter']) && $filters['stock_filter'] !== 'all',
+                function (Builder $q) use ($filters) {
+                    if ($filters['stock_filter'] === 'with_stock') {
+                        $q->whereHas('productWarehouses', fn($subQ) => $subQ->havingRaw('SUM(qty) > 0'));
+                    } elseif ($filters['stock_filter'] === 'without_stock') {
+                        $q->whereDoesntHave('productWarehouses', fn($subQ) => $subQ->havingRaw('SUM(qty) > 0'));
+                    }
+                }
+            )
+            ->when(
+                !empty($filters['search']),
+                function (Builder $q) use ($filters) {
+                    $term = "%{$filters['search']}%";
+                    $q->where(function (Builder $subQ) use ($term) {
+                        $subQ->where('products.name', 'like', $term)
+                            ->orWhere('products.code', 'like', $term)
+                            ->orWhereHas('brand', fn($b) => $b->where('name', 'like', $term))
+                            ->orWhereHas('category', fn($c) => $c->where('name', 'like', $term))
+                            ->orWhereHas('productVariants', fn($pv) => $pv->where('item_code', 'like', $term))
+                            ->orWhereHas('purchases', fn($pp) => $pp->where('imei_number', 'like', $term));
+
+                        // Also account for custom fields dynamically if needed
+                        $customFields = CustomField::where('belongs_to', 'product')->pluck('name');
+                        foreach ($customFields as $field) {
+                            $safeField = str_replace(' ', '_', strtolower($field));
+                            if (Schema::hasColumn('products', $safeField)) {
+                                $subQ->orWhere("products.{$safeField}", 'like', $term);
+                            }
+                        }
+                    });
+                }
+            )
+            ->customRange(
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
+            );
+    }
+
     protected static function boot(): void
     {
         parent::boot();
@@ -282,98 +341,57 @@ class Product extends Model implements AuditableContract
         });
     }
 
-    /**
-     * Generate and normalize slug if ecommerce/restaurant module is enabled and slug is missing.
-     */
     protected function generateSlugIfNeeded(): void
     {
-        // Check if ecommerce or restaurant module is enabled
         $generalSetting = GeneralSetting::latest()->first();
         $modules = explode(',', $generalSetting->modules ?? '');
         $hasEcommerce = in_array('ecommerce', $modules);
         $hasRestaurant = in_array('restaurant', $modules);
 
-        if (!$hasEcommerce && !$hasRestaurant) {
+        if (! $hasEcommerce && ! $hasRestaurant) {
             return;
         }
 
-        // Generate slug if name exists and slug is missing
-        if ($this->name && !$this->slug) {
+        if ($this->name && ! $this->slug) {
             $this->slug = Str::slug($this->name, '-');
         }
 
-        // Normalize slug if it exists
         if ($this->slug) {
             $this->slug = preg_replace('/[^A-Za-z0-9\-]/', '', $this->slug);
             $this->slug = str_replace('\/', '/', $this->slug);
         }
     }
 
-    /**
-     * Get the category for this product.
-     *
-     * @return BelongsTo<Category, self>
-     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Get the brand for this product.
-     *
-     * @return BelongsTo<Brand, self>
-     */
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-    /**
-     * Get the tax for this product.
-     *
-     * @return BelongsTo<Tax, self>
-     */
     public function tax(): BelongsTo
     {
         return $this->belongsTo(Tax::class);
     }
 
-    /**
-     * Get the unit for this product.
-     *
-     * @return BelongsTo<Unit, self>
-     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
     }
 
-    /**
-     * Get the purchase unit for this product.
-     *
-     * @return BelongsTo<Unit, self>
-     */
     public function purchaseUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'purchase_unit_id');
     }
 
-    /**
-     * Get the sale unit for this product.
-     *
-     * @return BelongsTo<Unit, self>
-     */
     public function saleUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'sale_unit_id');
     }
 
-    /**
-     * Get the variants for this product.
-     *
-     * @return BelongsToMany<Variant>
-     */
     public function variants(): BelongsToMany
     {
         return $this->belongsToMany(Variant::class, 'product_variants')
@@ -381,11 +399,6 @@ class Product extends Model implements AuditableContract
             ->withTimestamps();
     }
 
-    /**
-     * Get the warehouses for this product.
-     *
-     * @return BelongsToMany<Warehouse>
-     */
     public function warehouses(): BelongsToMany
     {
         return $this->belongsToMany(Warehouse::class, 'product_warehouse')
@@ -393,11 +406,6 @@ class Product extends Model implements AuditableContract
             ->withTimestamps();
     }
 
-    /**
-     * Get the purchases for this product.
-     *
-     * @return BelongsToMany<Purchase>
-     */
     public function purchases(): BelongsToMany
     {
         return $this->belongsToMany(Purchase::class, 'product_purchases')
@@ -405,11 +413,6 @@ class Product extends Model implements AuditableContract
             ->withTimestamps();
     }
 
-    /**
-     * Get the sales for this product.
-     *
-     * @return BelongsToMany<Sale>
-     */
     public function sales(): BelongsToMany
     {
         return $this->belongsToMany(Sale::class, 'product_sales')
@@ -417,52 +420,59 @@ class Product extends Model implements AuditableContract
             ->withTimestamps();
     }
 
-    /**
-     * Get the batches for this product.
-     *
-     * @return HasMany<ProductBatch>
-     */
+    public function saleReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(Returns::class, 'product_returns', 'product_id', 'return_id')
+            ->withPivot('qty', 'sale_unit_id', 'net_unit_price', 'discount', 'tax_rate', 'tax', 'total', 'variant_id', 'imei_number')
+            ->withTimestamps();
+    }
+
+    public function purchaseReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(ReturnPurchase::class, 'purchase_product_return', 'product_id', 'return_id')
+            ->withPivot('qty', 'purchase_unit_id', 'net_unit_cost', 'discount', 'tax_rate', 'tax', 'total', 'variant_id', 'imei_number')
+            ->withTimestamps();
+    }
+
+    public function adjustments(): BelongsToMany
+    {
+        return $this->belongsToMany(Adjustment::class, 'product_adjustments')
+            ->withPivot('variant_id', 'unit_cost', 'qty', 'action')
+            ->withTimestamps();
+    }
+
+    public function transfers(): BelongsToMany
+    {
+        return $this->belongsToMany(Transfer::class, 'product_transfer')
+            ->withPivot('product_batch_id', 'variant_id', 'imei_number', 'qty', 'purchase_unit_id', 'net_unit_cost', 'tax_rate', 'tax', 'total')
+            ->withTimestamps();
+    }
+
     public function batches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);
     }
 
-    /**
-     * Get the product variants.
-     *
-     * @return HasMany<ProductVariant>
-     */
     public function productVariants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
     }
 
-    /**
-     * Get the product warehouse relationships.
-     *
-     * @return HasMany<ProductWarehouse>
-     */
     public function productWarehouses(): HasMany
     {
         return $this->hasMany(ProductWarehouse::class);
     }
 
-    /**
-     * Get the effective price (promotion price if on promotion, otherwise regular price).
-     */
     public function getEffectivePrice(): float
     {
         return $this->isOnPromotion() && $this->promotion_price
-            ? (float)$this->promotion_price
+            ? (float) $this->promotion_price
             : $this->price;
     }
 
-    /**
-     * Check if the product is on promotion.
-     */
     public function isOnPromotion(): bool
     {
-        if (!$this->promotion) {
+        if (! $this->promotion) {
             return false;
         }
 
@@ -481,112 +491,39 @@ class Product extends Model implements AuditableContract
         return true;
     }
 
-    /**
-     * Check if product quantity is below alert threshold.
-     */
     public function isLowStock(): bool
     {
-        if (!$this->alert_quantity || !$this->track_inventory) {
+        if (! $this->alert_quantity || ! $this->track_inventory) {
             return false;
         }
 
         return $this->qty <= $this->alert_quantity;
     }
 
-    /**
-     * Scope a query to only include active products.
-     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope a query to only include active standard products.
-     */
     public function scopeActiveStandard(Builder $query): Builder
     {
         return $query->where('is_active', true)
-            ->where('type', 'standard');
+            ->where('type', ProductTypeEnum::STANDARD->value);
     }
 
-    /**
-     * Scope a query to only include active featured products.
-     */
     public function scopeActiveFeatured(Builder $query): Builder
     {
         return $query->where('is_active', true)
             ->where('featured', true);
     }
 
-    /**
-     * Scope a query to only include featured products.
-     */
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('featured', true);
     }
 
-    /**
-     * Scope a query to only include online products.
-     */
     public function scopeOnline(Builder $query): Builder
     {
         return $query->where('is_online', true);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'brand_id' => 'integer',
-            'category_id' => 'integer',
-            'unit_id' => 'integer',
-            'purchase_unit_id' => 'integer',
-            'sale_unit_id' => 'integer',
-            'cost' => 'float',
-            'profit_margin' => 'float',
-            'price' => 'float',
-            'wholesale_price' => 'float',
-            'qty' => 'float',
-            'alert_quantity' => 'float',
-            'daily_sale_objective' => 'float',
-            'promotion' => 'boolean',
-            'promotion_price' => 'float',
-            'starting_date' => 'date',
-            'last_date' => 'date',
-            'tax_id' => 'integer',
-            'tax_method' => 'integer',
-            'is_embeded' => 'boolean',
-            'is_batch' => 'boolean',
-            'is_variant' => 'boolean',
-            'is_diff_price' => 'boolean',
-            'is_imei' => 'boolean',
-            'featured' => 'boolean',
-            'is_addon' => 'boolean',
-            'is_active' => 'boolean',
-            'is_online' => 'boolean',
-            'kitchen_id' => 'integer',
-            'in_stock' => 'boolean',
-            'track_inventory' => 'boolean',
-            'is_sync_disable' => 'boolean',
-            'woocommerce_product_id' => 'integer',
-            'woocommerce_media_id' => 'integer',
-            'warranty' => 'integer',
-            'guarantee' => 'integer',
-            'wastage_percent' => 'float',
-            'combo_unit_id' => 'integer',
-            'production_cost' => 'float',
-            'is_recipe' => 'boolean',
-            'image_path' => 'array',
-            'image_url' => 'array',
-            'file_url' => 'string',
-            'product_details' => 'array', // Cast JSON column to array/object
-            'specification' => 'array', // Cast JSON column to array/object
-        ];
     }
 }

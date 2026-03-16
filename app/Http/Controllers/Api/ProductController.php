@@ -5,366 +5,390 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
-use App\Http\Requests\Product\ProductHistoryRequest;
-use App\Http\Requests\Product\ProductIndexRequest;
-use App\Http\Requests\Product\ProductRequest;
+use App\Http\Requests\Products\StoreProductRequest;
+use App\Http\Requests\Products\UpdateProductRequest;
+use App\Http\Requests\Products\ProductBulkActionRequest;
+use App\Http\Requests\Products\ProductFilterRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
- * ProductController
+ * Class ProductController
  *
- * API controller for managing products with full CRUD operations, variants, batches,
- * warehouses, images, and comprehensive business logic.
+ * API Controller for Product CRUD and bulk operations.
+ * Handles authorization via Policy and delegates logic to ProductService.
+ *
+ * @tags Product Management
  */
 class ProductController extends Controller
 {
     /**
-     * Create a new controller instance.
-     *
-     * @param ProductService $service
+     * ProductController constructor.
      */
     public function __construct(
         private readonly ProductService $service
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Display a paginated listing of products.
+     * List Products
      *
-     * @param ProductIndexRequest $request
-     * @return JsonResponse
+     * Display a paginated listing of products. Supports searching and advanced filtering.
      */
-    public function index(ProductIndexRequest $request): JsonResponse
+    public function index(ProductFilterRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = $validated['per_page'] ?? 10;
-        $filters = array_diff_key($validated, array_flip(['per_page', 'page']));
-
-        // Handle imeiorvariant filter
-        if (isset($filters['imeiorvariant'])) {
-            if ($filters['imeiorvariant'] === 'imei') {
-                $filters['is_imei'] = '1';
-            } elseif ($filters['imeiorvariant'] === 'variant') {
-                $filters['is_variant'] = '1';
-            }
-            unset($filters['imeiorvariant']);
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products list.');
         }
 
-        $products = $this->service->getProducts($filters, $perPage)
-            ->through(fn($product) => new ProductResource($product));
+        $products = $this->service->getPaginated(
+            $request->validated(),
+            $request->integer('per_page', config('app.per_page'))
+        );
 
-        return response()->success($products, 'Products fetched successfully');
+        return response()->success(
+            ProductResource::collection($products),
+            'Products retrieved successfully'
+        );
     }
 
     /**
-     * Store a newly created product.
+     * Create Product
      *
-     * @param ProductRequest $request
-     * @return JsonResponse
+     * Store a newly created product in the system.
      */
-    public function store(ProductRequest $request): JsonResponse
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->service->createProduct($request->validated());
+        if (auth()->user()->denies('create products')) {
+            return response()->forbidden('Permission denied for creating a product.');
+        }
+
+        $product = $this->service->create($request->validated());
 
         return response()->success(
             new ProductResource($product),
             'Product created successfully',
-            201
+            ResponseAlias::HTTP_CREATED
         );
     }
 
     /**
-     * Display the specified product.
+     * Show Product
      *
-     * @param Product $product
-     * @return JsonResponse
+     * Retrieve the details of a specific product by its ID.
      */
     public function show(Product $product): JsonResponse
     {
-        $product = $this->service->getProduct($product->id);
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing product details.');
+        }
 
         return response()->success(
-            new ProductResource($product),
-            'Product retrieved successfully'
+            new ProductResource($this->service->get($product)),
+            'Product details retrieved successfully'
         );
     }
 
     /**
-     * Update the specified product.
+     * Update Product
      *
-     * @param ProductRequest $request
-     * @param Product $product
-     * @return JsonResponse
+     * Update the specified product's information.
      */
-    public function update(ProductRequest $request, Product $product): JsonResponse
+    public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $product = $this->service->updateProduct($product, $request->validated());
+        if (auth()->user()->denies('update products')) {
+            return response()->forbidden('Permission denied for updating a product.');
+        }
+
+        $updatedProduct = $this->service->update($product, $request->validated());
 
         return response()->success(
-            new ProductResource($product),
+            new ProductResource($updatedProduct),
             'Product updated successfully'
         );
     }
 
     /**
-     * Remove the specified product from storage (soft delete).
+     * Delete Product
      *
-     * @param Product $product
-     * @return JsonResponse
+     * Remove the specified product from storage.
      */
     public function destroy(Product $product): JsonResponse
     {
-        $this->service->deleteProduct($product);
+        if (auth()->user()->denies('delete products')) {
+            return response()->forbidden('Permission denied for deleting a product.');
+        }
+
+        $this->service->delete($product);
 
         return response()->success(null, 'Product deleted successfully');
     }
 
     /**
-     * Bulk delete multiple products.
+     * Bulk Delete Products
      *
-     * @param Request $request
-     * @return JsonResponse
+     * Delete multiple products simultaneously using an array of IDs.
      */
-    public function bulkDestroy(Request $request): JsonResponse
+    public function bulkDestroy(ProductBulkActionRequest $request): JsonResponse
     {
-        $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['required', 'integer', 'exists:products,id'],
-        ]);
+        if (auth()->user()->denies('delete products')) {
+            return response()->forbidden('Permission denied for bulk delete products.');
+        }
 
-        $count = $this->service->bulkDeleteProducts($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
-            "Deleted {$count} product" . ($count !== 1 ? 's' : '') . " successfully"
+            "Successfully deleted {$count} products"
         );
     }
 
     /**
-     * Get products without variants.
-     *
-     * @return JsonResponse
+     * Get Products Without Variant.
      */
     public function getProductsWithoutVariant(): JsonResponse
     {
-        $products = $this->service->getProductsWithoutVariant();
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products.');
+        }
 
-        return response()->success($products, 'Products without variants fetched successfully');
+        return response()->success(
+            $this->service->getProductsWithoutVariant(),
+            'Products without variants retrieved successfully'
+        );
     }
 
     /**
-     * Get products with variants.
-     *
-     * @return JsonResponse
+     * Get Products With Variant.
      */
     public function getProductsWithVariant(): JsonResponse
     {
-        $products = $this->service->getProductsWithVariant();
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products.');
+        }
 
-        return response()->success($products, 'Products with variants fetched successfully');
+        return response()->success(
+            $this->service->getProductsWithVariant(),
+            'Products with variants retrieved successfully'
+        );
     }
 
     /**
-     * Generate a unique product code.
-     *
-     * @return JsonResponse
+     * Generate unique product code.
      */
     public function generateCode(): JsonResponse
     {
-        $code = $this->service->generateCode();
+        if (auth()->user()->denies('create products')) {
+            return response()->forbidden('Permission denied for creating a product.');
+        }
 
         return response()->success(
-            ['code' => $code],
+            ['code' => $this->service->generateCode()],
             'Product code generated successfully'
         );
     }
 
     /**
-     * Import products from a file.
-     *
-     * @param ImportRequest $request
-     * @return JsonResponse
+     * Import multiple products from an uploaded file.
      */
     public function import(ImportRequest $request): JsonResponse
     {
-        $this->service->importProducts($request->file('file'));
+        if (auth()->user()->denies('import products')) {
+            return response()->forbidden('Permission denied for importing products.');
+        }
+
+        $this->service->import($request->file('file'));
 
         return response()->success(null, 'Products imported successfully');
     }
 
     /**
-     * Reorder product images.
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
+     * Reorder multiple images for a product.
      */
     public function reorderImages(Request $request, Product $product): JsonResponse
     {
+        if (auth()->user()->denies('update products')) {
+            return response()->forbidden('Permission denied for updating a product.');
+        }
+
         $validated = $request->validate([
-            'image_urls' => ['required', 'array', 'min:1'],
-            'image_urls.*' => ['required', 'string'],
+            'image_urls' => ['required', 'array'],
+            'image_urls.*' => ['string'],
         ]);
 
-        $product = $this->service->reorderImages($product, $validated['image_urls']);
+        $updatedProduct = $this->service->reorderImages($product, $validated['image_urls']);
 
         return response()->success(
-            new ProductResource($product),
+            new ProductResource($updatedProduct),
             'Product images reordered successfully'
         );
     }
 
     /**
-     * Search products by name or code (for related products and extras).
-     *
-     * @param Request $request
-     * @return JsonResponse
+     * Search products by keyword (name, code, variant item_code).
      */
     public function search(Request $request): JsonResponse
     {
-        $request->validate([
-            'term' => ['required', 'string', 'min:3'],
-        ]);
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products.');
+        }
 
-        $products = $this->service->searchProducts($request->input('term'));
+        $keyword = $request->input('keyword');
+        $warehouseId = $request->input('warehouse_id') ? (int) $request->input('warehouse_id') : null;
 
-        return response()->success($products, 'Products found successfully');
+        if (!$keyword) {
+            return response()->success([], 'Please provide a keyword to search.');
+        }
+
+        return response()->success(
+            ProductResource::collection($this->service->search((string)$keyword, $warehouseId)),
+            'Products searched successfully'
+        );
     }
 
     /**
-     * Get sale and purchase units based on base unit ID.
-     *
-     * @param int $unitId Base unit ID
-     * @return JsonResponse
+     * Get sale units based on base unit ID.
      */
     public function getSaleUnits(int $unitId): JsonResponse
     {
-        $units = $this->service->getSaleUnits($unitId);
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products.');
+        }
 
-        return response()->success($units, 'Sale units fetched successfully');
+        return response()->success(
+            $this->service->getSaleUnits($unitId),
+            'Sale units retrieved successfully'
+        );
     }
 
     /**
-     * Search product for combo products table.
-     *
-     * @param Request $request
-     * @return JsonResponse
+     * Search combo products.
      */
     public function searchComboProduct(Request $request): JsonResponse
     {
-        $request->validate([
-            'data' => ['required', 'string'],
-        ]);
-
-        $result = $this->service->searchComboProduct($request->input('data'));
-
-        if ($result === null) {
-            return response()->error('Product not found', 404);
+        if (auth()->user()->denies('view products')) {
+            return response()->forbidden('Permission denied for viewing products.');
         }
 
-        return response()->success([$result], 'Product found successfully');
+        $keyword = $request->input('keyword');
+
+        if (!$keyword) {
+            return response()->success([], 'Please provide a keyword to search.');
+        }
+
+        // Just use the standard search for combo products too, since it filters by active standard products
+        // Alternatively, you could add a specific scope if combo product searching needs different logic
+        return response()->success(
+            ProductResource::collection($this->service->search((string)$keyword, null)),
+            'Combo products searched successfully'
+        );
     }
 
     /**
-     * Get sale history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product sale history.
      */
-    public function saleHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function saleHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getSaleHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Sale history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getSaleHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product sale history retrieved successfully');
     }
 
     /**
-     * Get purchase history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product purchase history.
      */
-    public function purchaseHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function purchaseHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getPurchaseHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Purchase history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getPurchaseHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product purchase history retrieved successfully');
     }
 
     /**
-     * Get sale return history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product sale return history.
      */
-    public function saleReturnHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function saleReturnHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getSaleReturnHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Sale return history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getSaleReturnHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product sale return history retrieved successfully');
     }
 
     /**
-     * Get purchase return history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product purchase return history.
      */
-    public function purchaseReturnHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function purchaseReturnHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getPurchaseReturnHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date', 'search', 'limit', 'offset'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Purchase return history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getPurchaseReturnHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product purchase return history retrieved successfully');
     }
 
     /**
-     * Get adjustment history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product adjustment history.
      */
-    public function adjustmentHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function adjustmentHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getAdjustmentHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Adjustment history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getAdjustmentHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product adjustment history retrieved successfully');
     }
 
     /**
-     * Get transfer history for a product.
-     *
-     * @param Product $product
-     * @param ProductHistoryRequest $request
-     * @return JsonResponse
+     * Get product transfer history.
      */
-    public function transferHistory(Product $product, ProductHistoryRequest $request): JsonResponse
+    public function transferHistory(Request $request, Product $product): JsonResponse
     {
-        $history = $this->service->getTransferHistory($product->id, $request->only([
-            'warehouse_id', 'starting_date', 'ending_date'
-        ]));
+        if (auth()->user()->denies('view product history')) {
+            return response()->forbidden('Permission denied for viewing product history.');
+        }
 
-        return response()->success($history, 'Transfer history fetched successfully');
+        $filters = $request->only(['warehouse_id', 'start_date', 'end_date']);
+        $perPage = $request->integer('per_page', config('app.per_page'));
+
+        $history = $this->service->getTransferHistory($product, $filters, $perPage);
+
+        return response()->success($history, 'Product transfer history retrieved successfully');
     }
 }
-

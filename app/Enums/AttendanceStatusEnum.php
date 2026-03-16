@@ -15,4 +15,9 @@ enum AttendanceStatusEnum: string
     case LATE = 'late';
     case ABSENT = 'absent';
     case LEAVE = 'leave';
+
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
 }

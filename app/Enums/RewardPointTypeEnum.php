@@ -30,7 +30,7 @@ enum RewardPointTypeEnum: string
      *
      * @return array<string> Array of all enum values
      */
-    public static function toArray(): array
+    public static function values(): array
     {
         return array_column(self::cases(), 'value');
     }

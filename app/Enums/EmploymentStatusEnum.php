@@ -11,8 +11,13 @@ namespace App\Enums;
  */
 enum EmploymentStatusEnum: string
 {
-    case Active = 'active';
-    case Suspended = 'suspended';
-    case Resigned = 'resigned';
-    case Terminated = 'terminated';
+    case ACTIVE = 'active';
+    case SUSPENDED = 'suspended';
+    case RESIGNED = 'resigned';
+    case TERMINATED = 'terminated';
+
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
 }
