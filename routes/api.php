@@ -685,36 +685,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('variants/bulk-destroy', [VariantController::class, 'bulkDestroy'])
         ->name('variants.bulkDestroy');
 
-    Route::delete('products/bulk-destroy', [ProductController::class, 'bulkDestroy'])
-        ->name('products.bulkDestroy');
-    Route::get('products/without-variant', [ProductController::class, 'getProductsWithoutVariant'])
-        ->name('products.without-variant');
-    Route::get('products/with-variant', [ProductController::class, 'getProductsWithVariant'])
-        ->name('products.with-variant');
-    Route::get('products/generate-code', [ProductController::class, 'generateCode'])
-        ->name('products.generate-code');
-    Route::post('products/import', [ProductController::class, 'import'])
-        ->name('products.import');
-    Route::post('products/{product}/reorder-images', [ProductController::class, 'reorderImages'])
-        ->name('products.reorder-images');
-    Route::get('products/search', [ProductController::class, 'search'])
-        ->name('products.search');
-    Route::get('products/sale-unit/{unitId}', [ProductController::class, 'getSaleUnits'])
-        ->name('products.sale-unit');
-    Route::get('products/combo-search', [ProductController::class, 'searchComboProduct'])
-        ->name('products.combo-search');
-    Route::get('products/{product}/history/sales', [ProductController::class, 'saleHistory'])
-        ->name('products.history.sales');
-    Route::get('products/{product}/history/purchases', [ProductController::class, 'purchaseHistory'])
-        ->name('products.history.purchases');
-    Route::get('products/{product}/history/sale-returns', [ProductController::class, 'saleReturnHistory'])
-        ->name('products.history.sale-returns');
-    Route::get('products/{product}/history/purchase-returns', [ProductController::class, 'purchaseReturnHistory'])
-        ->name('products.history.purchase-returns');
-    Route::get('products/{product}/history/adjustments', [ProductController::class, 'adjustmentHistory'])
-        ->name('products.history.adjustments');
-    Route::get('products/{product}/history/transfers', [ProductController::class, 'transferHistory'])
-        ->name('products.history.transfers');
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::delete('bulk-destroy', [ProductController::class, 'bulkDestroy'])->name('bulk-destroy');
+        Route::get('without-variant', [ProductController::class, 'getProductsWithoutVariant'])->name('without-variant');
+        Route::get('with-variant', [ProductController::class, 'getProductsWithVariant'])->name('with-variant');
+        Route::get('generate-code', [ProductController::class, 'generateCode'])->name('generate-code');
+        Route::post('import', [ProductController::class, 'import'])->name('import');
+        Route::post('{product}/reorder-images', [ProductController::class, 'reorderImages'])->name('reorder-images');
+        Route::get('search', [ProductController::class, 'search'])->name('search');
+        Route::get('sale-unit/{unitId}', [ProductController::class, 'getSaleUnits'])->name('sale-unit');
+        Route::get('combo-search', [ProductController::class, 'searchComboProduct'])->name('combo-search');
+        Route::get('{product}/history/sales', [ProductController::class, 'saleHistory'])->name('history.sales');
+        Route::get('{product}/history/purchases', [ProductController::class, 'purchaseHistory'])->name('history.purchases');
+        Route::get('{product}/history/sale-returns', [ProductController::class, 'saleReturnHistory'])->name('history.sale-returns');
+        Route::get('{product}/history/purchase-returns', [ProductController::class, 'purchaseReturnHistory'])->name('history.purchase-returns');
+        Route::get('{product}/history/adjustments', [ProductController::class, 'adjustmentHistory'])->name('history.adjustments');
+        Route::get('{product}/history/transfers', [ProductController::class, 'transferHistory'])->name('history.transfers');
+    });
     Route::apiResource('products', ProductController::class);
 
     Route::get('suppliers/all/active', [SupplierController::class, 'getAllActive'])

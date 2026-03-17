@@ -27,7 +27,7 @@ class ProductFilterRequest extends BaseRequest
      */
     protected function prepareForValidation(): void
     {
-        $arrayFields = ['is_active', 'featured', 'type', 'brand_id', 'category_id', 'unit_id'];
+        $arrayFields = ['is_active', 'featured', 'type', 'brand_id', 'category_id', 'unit_id', 'warehouse_id'];
 
         foreach ($arrayFields as $field) {
             if ($this->has($field)) {
@@ -103,7 +103,8 @@ class ProductFilterRequest extends BaseRequest
             /**
              * Filter by warehouse ID to see stock.
              */
-            'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+            'warehouse_id' => ['nullable', 'array'],
+            'warehouse_id.*' => ['integer', 'exists:warehouses,id'],
 
             /**
              * Stock filter (all, with_stock, without_stock).

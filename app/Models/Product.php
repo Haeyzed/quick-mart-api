@@ -246,8 +246,6 @@ class Product extends Model implements AuditableContract
             'image_paths' => 'array',
             'image_urls' => 'array',
             'file_url' => 'string',
-            'product_details' => 'array',
-            'specification' => 'array',
             'variant_option' => 'array',
             'variant_value' => 'array',
         ];
