@@ -31,22 +31,11 @@ class WarehouseService
     private const TEMPLATE_PATH = 'Imports/Templates';
 
     /**
-     * WarehouseService constructor.
-     *
-     * @param UploadService $uploadService Service responsible for handling file uploads and deletions.
-     */
-    public function __construct(
-        private readonly UploadService $uploadService
-    )
-    {
-    }
-
-    /**
      * Get paginated warehouses based on filters.
      *
      * @param array<string, mixed> $filters
      */
-    public function getPaginatedWarehouses(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Warehouse::query()
             ->filter($filters)
@@ -84,7 +73,7 @@ class WarehouseService
      * @param array<string, mixed> $data The validated request data for the new warehouse.
      * @return Warehouse The newly created Warehouse model instance.
      */
-    public function createWarehouse(array $data): Warehouse
+    public function create(array $data): Warehouse
     {
         return DB::transaction(function () use ($data) {
             $warehouse = Warehouse::query()->create($data);
@@ -111,7 +100,7 @@ class WarehouseService
      * @param array<string, mixed> $data The validated update data.
      * @return Warehouse The freshly updated Warehouse model instance.
      */
-    public function updateWarehouse(Warehouse $warehouse, array $data): Warehouse
+    public function update(Warehouse $warehouse, array $data): Warehouse
     {
         return DB::transaction(function () use ($warehouse, $data) {
             $warehouse->update($data);
@@ -123,7 +112,7 @@ class WarehouseService
     /**
      * Delete a warehouse.
      */
-    public function deleteWarehouse(Warehouse $warehouse): void
+    public function delete(Warehouse $warehouse): void
     {
         DB::transaction(function () use ($warehouse) {
             $warehouse->delete();
@@ -138,7 +127,7 @@ class WarehouseService
      * @param array<int> $ids Array of warehouse IDs to be deleted.
      * @return int The total count of successfully deleted warehouses.
      */
-    public function bulkDeleteWarehouses(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $warehouses = Warehouse::query()->whereIn('id', $ids)->get();
@@ -172,22 +161,22 @@ class WarehouseService
      *
      * @param UploadedFile $file The uploaded spreadsheet file containing warehouse data.
      */
-    public function importWarehouses(UploadedFile $file): void
+    public function import(UploadedFile $file): void
     {
         ExcelFacade::import(new WarehousesImport, $file);
     }
 
     /**
-     * Download a brands CSV template.
+     * Download a warehouses CSV template.
      */
     public function download(): string
     {
-        $fileName = 'brands-sample.csv';
+        $fileName = 'warehouses-sample.csv';
 
         $path = app_path(self::TEMPLATE_PATH . '/' . $fileName);
 
         if (!File::exists($path)) {
-            throw new RuntimeException('Template brands not found.');
+            throw new RuntimeException('Template warehouses not found.');
         }
 
         return $path;

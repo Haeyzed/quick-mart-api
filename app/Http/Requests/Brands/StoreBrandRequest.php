@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Brands;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -11,7 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  *
  * Handles validation and authorization for creating a new brand.
  */
-class StoreBrandRequest extends FormRequest
+class StoreBrandRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

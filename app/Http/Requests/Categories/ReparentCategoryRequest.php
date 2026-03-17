@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Categories;
 
+use App\Http\Requests\BaseRequest;
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for reparenting a category (updating its parent_id).
  */
-class ReparentCategoryRequest extends FormRequest
+class ReparentCategoryRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

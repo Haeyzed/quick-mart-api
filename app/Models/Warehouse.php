@@ -20,7 +20,7 @@ use OwenIt\Auditing\Models\Audit;
 
 /**
  * Class Warehouse
- * 
+ *
  * Represents a warehouse within the system. Handles the underlying data
  * structure, relationships, and specific query scopes for warehouse entities.
  *
@@ -79,7 +79,7 @@ use OwenIt\Auditing\Models\Audit;
  */
 class Warehouse extends Model implements AuditableContract
 {
-    use Auditable, FilterableByDates, HasFactory, SoftDeletes;
+    use Auditable, FilterableByDates, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -116,14 +116,14 @@ class Warehouse extends Model implements AuditableContract
     {
         return $query
             ->when(
-                isset($filters['is_active']),
-                fn(Builder $q) => $q->active()
+                ! empty($filters['is_active']),
+                fn (Builder $q) => $q->whereIn('is_active', $filters['is_active'])
             )
             ->when(
-                !empty($filters['search']),
+                ! empty($filters['search']),
                 function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
                         ->orWhere('phone_number', 'like', $term)
@@ -131,8 +131,8 @@ class Warehouse extends Model implements AuditableContract
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

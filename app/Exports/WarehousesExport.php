@@ -23,7 +23,7 @@ class WarehousesExport implements FromQuery, WithHeadings, WithMapping
     private const DEFAULT_COLUMNS = [
         'id',
         'name',
-        'phone',
+        'phone_number',
         'email',
         'address',
         'number_of_products',

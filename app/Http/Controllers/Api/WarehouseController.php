@@ -10,6 +10,7 @@ use App\Http\Requests\ImportRequest;
 use App\Http\Requests\Warehouses\StoreWarehouseRequest;
 use App\Http\Requests\Warehouses\UpdateWarehouseRequest;
 use App\Http\Requests\Warehouses\WarehouseBulkActionRequest;
+use App\Http\Requests\Warehouses\WarehouseFilterRequest;
 use App\Http\Resources\WarehouseResource;
 use App\Mail\ExportMail;
 use App\Models\GeneralSetting;
@@ -18,7 +19,6 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\WarehouseService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -46,41 +46,16 @@ class WarehouseController extends Controller
     /**
      * List Warehouses
      *
-     * Display a paginated listing of warehouses. Supports searching and filtering by active status and date ranges.
+     * Display a paginated listing of warehouses. Supports searching and filtering by active status (array/whereIn) and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(WarehouseFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view warehouses')) {
             return response()->forbidden('Permission denied for viewing warehouses list.');
         }
 
-        $warehouses = $this->service->getPaginatedWarehouses(
-            $request->validate([
-                /**
-                 * Search term to filter warehouses by name, email, or phone.
-                 *
-                 * @example "Main"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 *
-                 * @example true
-                 */
-                'status' => ['nullable', 'boolean'],
-                /**
-                 * Filter warehouses starting from this date.
-                 *
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter warehouses up to this date.
-                 *
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
+        $warehouses = $this->service->getPaginated(
+            $request->validated(),
             /**
              * Amount of items per page.
              *
@@ -122,7 +97,7 @@ class WarehouseController extends Controller
             return response()->forbidden('Permission denied for create warehouse.');
         }
 
-        $warehouse = $this->service->createWarehouse($request->validated());
+        $warehouse = $this->service->create($request->validated());
 
         return response()->success(
             new WarehouseResource($warehouse),
@@ -159,7 +134,7 @@ class WarehouseController extends Controller
             return response()->forbidden('Permission denied for update warehouse.');
         }
 
-        $updatedWarehouse = $this->service->updateWarehouse($warehouse, $request->validated());
+        $updatedWarehouse = $this->service->update($warehouse, $request->validated());
 
         return response()->success(
             new WarehouseResource($updatedWarehouse),
@@ -178,7 +153,7 @@ class WarehouseController extends Controller
             return response()->forbidden('Permission denied for delete warehouse.');
         }
 
-        $this->service->deleteWarehouse($warehouse);
+        $this->service->delete($warehouse);
 
         return response()->success(null, 'Warehouse deleted successfully');
     }
@@ -194,7 +169,7 @@ class WarehouseController extends Controller
             return response()->forbidden('Permission denied for bulk delete warehouses.');
         }
 
-        $count = $this->service->bulkDeleteWarehouses($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],
@@ -251,7 +226,7 @@ class WarehouseController extends Controller
             return response()->forbidden('Permission denied for import warehouses.');
         }
 
-        $this->service->importWarehouses($request->file('file'));
+        $this->service->import($request->file('file'));
 
         return response()->success(null, 'Warehouses imported successfully');
     }
@@ -289,13 +264,13 @@ class WarehouseController extends Controller
             $userId = $validated['user_id'] ?? auth()->id();
             $user = User::query()->find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->error('User not found for email delivery.');
             }
 
             $mailSetting = MailSetting::default()->first();
 
-            if (!$mailSetting) {
+            if (! $mailSetting) {
                 return response()->error('System mail settings are not configured. Cannot send email.');
             }
 
@@ -305,7 +280,7 @@ class WarehouseController extends Controller
                 new ExportMail(
                     $user,
                     $path,
-                    'warehouses_export.' . ($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
+                    'warehouses_export.'.($validated['format'] === 'pdf' ? 'pdf' : 'xlsx'),
                     'Your Warehouse Export Is Ready',
                     $generalSetting,
                     $mailSetting
@@ -314,7 +289,7 @@ class WarehouseController extends Controller
 
             return response()->success(
                 null,
-                'Export is being processed and will be sent to email: ' . $user->email
+                'Export is being processed and will be sent to email: '.$user->email
             );
         }
 

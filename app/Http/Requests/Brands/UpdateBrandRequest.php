@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Brands;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for updating an existing brand.
  */
-class UpdateBrandRequest extends FormRequest
+class UpdateBrandRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

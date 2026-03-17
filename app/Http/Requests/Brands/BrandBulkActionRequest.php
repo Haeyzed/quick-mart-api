@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Brands;
 
+use App\Http\Requests\BaseRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -11,7 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  *
  * Handles validation and authorization for performing bulk actions (like deletion or status updates) on multiple brands.
  */
-class BrandBulkActionRequest extends FormRequest
+class BrandBulkActionRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
