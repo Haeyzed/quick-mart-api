@@ -9,6 +9,7 @@ use App\Http\Requests\ExportRequest;
 use App\Http\Requests\ImportRequest;
 use App\Http\Requests\Taxes\StoreTaxRequest;
 use App\Http\Requests\Taxes\TaxBulkActionRequest;
+use App\Http\Requests\Taxes\TaxFilterRequest;
 use App\Http\Requests\Taxes\UpdateTaxRequest;
 use App\Http\Resources\TaxResource;
 use App\Mail\ExportMail;
@@ -18,7 +19,6 @@ use App\Models\Tax;
 use App\Models\User;
 use App\Services\TaxService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -48,39 +48,14 @@ class TaxController extends Controller
      *
      * Display a paginated listing of taxes. Supports searching and filtering by active status and date ranges.
      */
-    public function index(Request $request): JsonResponse
+    public function index(TaxFilterRequest $request): JsonResponse
     {
         if (auth()->user()->denies('view taxes')) {
             return response()->forbidden('Permission denied for viewing taxes list.');
         }
 
-        $taxes = $this->service->getPaginatedTaxes(
-            $request->validate([
-                /**
-                 * Search term to filter taxes by name.
-                 *
-                 * @example "VAT"
-                 */
-                'search' => ['nullable', 'string'],
-                /**
-                 * Filter by active status.
-                 *
-                 * @example true
-                 */
-                'status' => ['nullable', 'boolean'],
-                /**
-                 * Filter taxes starting from this date.
-                 *
-                 * @example "2024-01-01"
-                 */
-                'start_date' => ['nullable', 'date'],
-                /**
-                 * Filter taxes up to this date.
-                 *
-                 * @example "2024-12-31"
-                 */
-                'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            ]),
+        $taxes = $this->service->getPaginated(
+            $request->validated(),
             /**
              * Amount of items per page.
              *
@@ -122,7 +97,7 @@ class TaxController extends Controller
             return response()->forbidden('Permission denied for create tax.');
         }
 
-        $tax = $this->service->createTax($request->validated());
+        $tax = $this->service->create($request->validated());
 
         return response()->success(
             new TaxResource($tax),
@@ -159,7 +134,7 @@ class TaxController extends Controller
             return response()->forbidden('Permission denied for update tax.');
         }
 
-        $updatedTax = $this->service->updateTax($tax, $request->validated());
+        $updatedTax = $this->service->update($tax, $request->validated());
 
         return response()->success(
             new TaxResource($updatedTax),
@@ -178,7 +153,7 @@ class TaxController extends Controller
             return response()->forbidden('Permission denied for delete tax.');
         }
 
-        $this->service->deleteTax($tax);
+        $this->service->delete($tax);
 
         return response()->success(null, 'Tax deleted successfully');
     }
@@ -194,7 +169,7 @@ class TaxController extends Controller
             return response()->forbidden('Permission denied for bulk delete taxes.');
         }
 
-        $count = $this->service->bulkDeleteTaxes($request->validated()['ids']);
+        $count = $this->service->bulkDelete($request->validated()['ids']);
 
         return response()->success(
             ['deleted_count' => $count],

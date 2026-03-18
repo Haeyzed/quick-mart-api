@@ -103,21 +103,21 @@ class Tax extends Model implements AuditableContract
     {
         return $query
             ->when(
-                isset($filters['status']),
-                fn(Builder $q) => $q->active()
+                ! empty($filters['is_active']),
+                static fn (Builder $q) => $q->whereIn('is_active', $filters['is_active'])
             )
             ->when(
-                !empty($filters['search']),
-                function (Builder $q) use ($filters) {
+                ! empty($filters['search']),
+                static function (Builder $q) use ($filters) {
                     $term = "%{$filters['search']}%";
-                    $q->where(fn(Builder $subQ) => $subQ
+                    $q->where(static fn (Builder $subQ) => $subQ
                         ->where('name', 'like', $term)
                     );
                 }
             )
             ->customRange(
-                !empty($filters['start_date']) ? $filters['start_date'] : null,
-                !empty($filters['end_date']) ? $filters['end_date'] : null,
+                ! empty($filters['start_date']) ? $filters['start_date'] : null,
+                ! empty($filters['end_date']) ? $filters['end_date'] : null,
             );
     }
 

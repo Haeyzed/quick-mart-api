@@ -50,13 +50,6 @@ class TaxResource extends JsonResource
             'is_active' => $this->is_active,
 
             /**
-             * The active status as a readable string.
-             *
-             * @example active
-             */
-            'active_status' => $this->is_active ? 'active' : 'inactive',
-
-            /**
              * Optional WooCommerce tax ID for sync.
              *
              * @example 1

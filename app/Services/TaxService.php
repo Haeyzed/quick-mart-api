@@ -50,7 +50,7 @@ class TaxService
      * @param int $perPage The number of records to return per page.
      * @return LengthAwarePaginator A paginated collection of Tax models.
      */
-    public function getPaginatedTaxes(array $filters, int $perPage = 10): LengthAwarePaginator
+    public function getPaginated(array $filters, int $perPage = 10): LengthAwarePaginator
     {
         return Tax::query()
             ->filter($filters)
@@ -85,7 +85,7 @@ class TaxService
      * @param array<string, mixed> $data The validated request data for the new tax.
      * @return Tax The newly created Tax model instance.
      */
-    public function createTax(array $data): Tax
+    public function create(array $data): Tax
     {
         return DB::transaction(function () use ($data) {
             return Tax::query()->create($data);
@@ -101,7 +101,7 @@ class TaxService
      * @param array<string, mixed> $data The validated update data.
      * @return Tax The freshly updated Tax model instance.
      */
-    public function updateTax(Tax $tax, array $data): Tax
+    public function update(Tax $tax, array $data): Tax
     {
         return DB::transaction(function () use ($tax, $data) {
             $tax->update($data);
@@ -119,7 +119,7 @@ class TaxService
      *
      * @throws ConflictHttpException If the tax has associated products.
      */
-    public function deleteTax(Tax $tax): void
+    public function delete(Tax $tax): void
     {
         if ($tax->products()->exists()) {
             throw new ConflictHttpException("Cannot delete tax '{$tax->name}' as it has associated products.");
@@ -139,7 +139,7 @@ class TaxService
      * @param array<int> $ids Array of tax IDs to be deleted.
      * @return int The total count of successfully deleted taxes.
      */
-    public function bulkDeleteTaxes(array $ids): int
+    public function bulkDelete(array $ids): int
     {
         return DB::transaction(function () use ($ids) {
             $taxes = Tax::query()->whereIn('id', $ids)->withCount('products')->get();

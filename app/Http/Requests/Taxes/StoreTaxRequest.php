@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Taxes;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
  *
  * Handles validation and authorization for creating a new tax.
  */
-class StoreTaxRequest extends FormRequest
+class StoreTaxRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
